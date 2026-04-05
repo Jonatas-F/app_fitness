@@ -3,6 +3,7 @@ import Sidebar from "./components/Sidebar";
 import BottomNav from "./components/BottomNav";
 import PageHeader from "./components/PageHeader";
 import HeroSection from "./components/HeroSection";
+import MetricsGrid from "./components/MetricsGrid";
 import { navItems, pageContent } from "./data/appData";
 
 function App() {
@@ -35,15 +36,7 @@ function App() {
             secondaryAction={currentPage.secondaryAction}
           />
 
-          <section className="grid grid-4 mt-24">
-            {currentPage.metrics.map((metric) => (
-              <div key={metric.label} className="metric-card">
-                <p className="metric-label">{metric.label}</p>
-                <h3 className="metric-value">{metric.value}</h3>
-                <p className="metric-trend">{metric.trend}</p>
-              </div>
-            ))}
-          </section>
+          <MetricsGrid metrics={currentPage.metrics} />
 
           <section className="grid grid-3 mt-24">
             {currentPage.cards.map((card) => (
