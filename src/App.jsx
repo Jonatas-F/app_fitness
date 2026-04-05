@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Sidebar from "./components/Sidebar";
 import BottomNav from "./components/BottomNav";
+import PageHeader from "./components/PageHeader";
 import { navItems, pageContent } from "./data/appData";
 
 function App() {
@@ -18,23 +19,12 @@ function App() {
 
       <main className="page-content">
         <div className="page-container">
-          <header className="topbar">
-            <div className="brand">
-              <div className="brand-text">
-                <h1>{currentPage.title}</h1>
-                <span>{currentPage.subtitle}</span>
-              </div>
-            </div>
-
-            <div className="hero-actions">
-              <button className="secondary-button" type="button">
-                {currentPage.secondaryAction}
-              </button>
-              <button className="primary-button" type="button">
-                {currentPage.primaryAction}
-              </button>
-            </div>
-          </header>
+          <PageHeader
+            title={currentPage.title}
+            subtitle={currentPage.subtitle}
+            primaryAction={currentPage.primaryAction}
+            secondaryAction={currentPage.secondaryAction}
+          />
 
           <section className="hero-card">
             <span className="eyebrow">{currentPage.heroEyebrow}</span>
