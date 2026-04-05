@@ -27,7 +27,9 @@ function Sidebar({ navItems, activePage, onChangePage }) {
         <div className="card-header">
           <div>
             <h3 className="card-title">Status do plano</h3>
-            <p className="card-subtitle">Seu acompanhamento está em evolução contínua.</p>
+            <p className="card-subtitle">
+              Seu acompanhamento está em evolução contínua.
+            </p>
           </div>
           <span className="badge badge-success">Ativo</span>
         </div>
