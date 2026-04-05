@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Sidebar from "./components/Sidebar";
+import BottomNav from "./components/BottomNav";
 import { navItems, pageContent } from "./data/appData";
 
 function App() {
@@ -107,19 +108,11 @@ function App() {
           </section>
         </div>
 
-        <nav className="bottom-nav">
-          {navItems.slice(0, 4).map((item) => (
-            <button
-              key={item.label}
-              className={`nav-item ${activePage === item.label ? "active" : ""}`}
-              type="button"
-              onClick={() => setActivePage(item.label)}
-            >
-              <span className="nav-icon">{item.short}</span>
-              <span className="nav-label">{item.label}</span>
-            </button>
-          ))}
-        </nav>
+        <BottomNav
+          navItems={navItems}
+          activePage={activePage}
+          onChangePage={setActivePage}
+        />
       </main>
     </div>
   );
