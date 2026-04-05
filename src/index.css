@@ -143,7 +143,6 @@ ol {
   background: rgba(255, 46, 46, 0.7);
 }
 
-/* Estrutura base */
 .app-shell {
   min-height: 100vh;
   display: grid;
@@ -212,7 +211,6 @@ ol {
   margin-top: 4px;
 }
 
-/* Navegação */
 .sidebar-nav {
   display: flex;
   flex-direction: column;
@@ -253,7 +251,6 @@ ol {
   opacity: 0.95;
 }
 
-/* Cards e módulos */
 .glass-card {
   position: relative;
   overflow: hidden;
@@ -313,7 +310,6 @@ ol {
   font-size: 0.92rem;
 }
 
-/* Hero */
 .hero-card {
   padding: 28px;
   border-radius: var(--radius-lg);
@@ -363,7 +359,6 @@ ol {
   margin-top: 22px;
 }
 
-/* Botões */
 .primary-button,
 .secondary-button,
 .ghost-button {
@@ -410,7 +405,6 @@ ol {
   background: rgba(255, 46, 46, 0.08);
 }
 
-/* Grids */
 .grid {
   display: grid;
   gap: 18px;
@@ -428,7 +422,6 @@ ol {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-/* Métricas */
 .metric-card {
   padding: 20px;
   border-radius: 18px;
@@ -462,7 +455,6 @@ ol {
   font-weight: 600;
 }
 
-/* Badges */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -493,7 +485,6 @@ ol {
   border-color: rgba(245, 158, 11, 0.22);
 }
 
-/* Inputs */
 .form-grid {
   display: grid;
   gap: 16px;
@@ -544,23 +535,6 @@ ol {
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* Barras e progresso */
-.progress-track {
-  width: 100%;
-  height: 10px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--primary), var(--primary-strong));
-  box-shadow: 0 0 24px rgba(255, 46, 46, 0.35);
-}
-
-/* Tabelas simples */
 .data-list {
   display: flex;
   flex-direction: column;
@@ -582,7 +556,6 @@ ol {
   background: rgba(255, 255, 255, 0.07);
 }
 
-/* Utilitários */
 .mt-8 { margin-top: 8px; }
 .mt-12 { margin-top: 12px; }
 .mt-16 { margin-top: 16px; }
@@ -598,27 +571,10 @@ ol {
   color: var(--text-secondary);
 }
 
-.highlight {
-  color: #ffb4b4;
-}
-
-.divider {
-  width: 100%;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.12),
-    transparent
-  );
-}
-
-/* Navegação mobile */
 .bottom-nav {
   display: none;
 }
 
-/* Responsividade */
 @media (max-width: 1200px) {
   .grid-4 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
