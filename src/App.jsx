@@ -2,6 +2,7 @@ import { useState } from "react";
 import Sidebar from "./components/Sidebar";
 import BottomNav from "./components/BottomNav";
 import PageHeader from "./components/PageHeader";
+import HeroSection from "./components/HeroSection";
 import { navItems, pageContent } from "./data/appData";
 
 function App() {
@@ -26,22 +27,13 @@ function App() {
             secondaryAction={currentPage.secondaryAction}
           />
 
-          <section className="hero-card">
-            <span className="eyebrow">{currentPage.heroEyebrow}</span>
-
-            <h2 className="hero-title">{currentPage.heroTitle}</h2>
-
-            <p className="hero-description">{currentPage.heroDescription}</p>
-
-            <div className="hero-actions">
-              <button className="primary-button" type="button">
-                {currentPage.primaryAction}
-              </button>
-              <button className="ghost-button" type="button">
-                {currentPage.secondaryAction}
-              </button>
-            </div>
-          </section>
+          <HeroSection
+            eyebrow={currentPage.heroEyebrow}
+            title={currentPage.heroTitle}
+            description={currentPage.heroDescription}
+            primaryAction={currentPage.primaryAction}
+            secondaryAction={currentPage.secondaryAction}
+          />
 
           <section className="grid grid-4 mt-24">
             {currentPage.metrics.map((metric) => (
