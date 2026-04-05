@@ -7,8 +7,35 @@ import HeroSection from "./components/HeroSection";
 import MetricsGrid from "./components/MetricsGrid";
 import FeatureCardsGrid from "./components/FeatureCardsGrid";
 import BottomSectionsGrid from "./components/BottomSectionsGrid";
-import ProfileSetupPage from "./pages/profile/ProfileSetupPage";
 import { navItems, pageContent } from "./data/appData";
+
+function ProfilePlaceholder() {
+  return (
+    <section className="glass-card card-padding mt-24">
+      <div className="card-header">
+        <div>
+          <h3 className="card-title">Página de Perfil temporária</h3>
+          <p className="card-subtitle">
+            A importação da página grande foi isolada para testar se ela está
+            quebrando o layout global.
+          </p>
+        </div>
+        <span className="badge badge-warning">Teste</span>
+      </div>
+
+      <div className="data-list">
+        <div className="data-row">
+          <span>Objetivo</span>
+          <strong>Validar a base visual</strong>
+        </div>
+        <div className="data-row">
+          <span>Status</span>
+          <strong>Placeholder ativo</strong>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 function App() {
   const [activePage, setActivePage] = useState("Dashboard");
@@ -34,7 +61,7 @@ function App() {
           />
 
           {isProfilePage ? (
-            <ProfileSetupPage />
+            <ProfilePlaceholder />
           ) : (
             <>
               <HeroSection
