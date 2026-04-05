@@ -4,6 +4,7 @@ import BottomNav from "./components/BottomNav";
 import PageHeader from "./components/PageHeader";
 import HeroSection from "./components/HeroSection";
 import MetricsGrid from "./components/MetricsGrid";
+import FeatureCardsGrid from "./components/FeatureCardsGrid";
 import { navItems, pageContent } from "./data/appData";
 
 function App() {
@@ -38,27 +39,7 @@ function App() {
 
           <MetricsGrid metrics={currentPage.metrics} />
 
-          <section className="grid grid-3 mt-24">
-            {currentPage.cards.map((card) => (
-              <article key={card.title} className="glass-card card-padding">
-                <div className="card-header">
-                  <div>
-                    <h3 className="card-title">{card.title}</h3>
-                    <p className="card-subtitle">{card.subtitle}</p>
-                  </div>
-                  <span className="badge badge-primary">{card.badge}</span>
-                </div>
-
-                <div className="data-list">
-                  {card.items.map((item) => (
-                    <div key={item} className="data-row">
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </article>
-            ))}
-          </section>
+          <FeatureCardsGrid cards={currentPage.cards} />
 
           <section className="grid grid-2 mt-24">
             {currentPage.bottomSections.map((section) => (
