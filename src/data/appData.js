@@ -1,4 +1,4 @@
-import { ROUTE_PATHS } from '../router/routePaths';
+import { ROUTE_PATHS } from '../routes/routePaths';
 
 export const navigationItems = [
   { label: 'Dashboard', path: ROUTE_PATHS.dashboard, icon: '🏠' },

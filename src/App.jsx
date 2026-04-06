@@ -1,6 +1,27 @@
-import { RouterProvider } from 'react-router-dom';
-import { router } from './routes/router';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+
+function TestPage() {
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        background: '#111111',
+        color: '#ffffff',
+        padding: '40px',
+        fontSize: '32px',
+      }}
+    >
+      BrowserRouter funcionando
+    </div>
+  );
+}
 
 export default function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="*" element={<TestPage />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ROUTE_PATHS } from '../../../router/routePaths';
+import { ROUTE_PATHS } from '../../../routes/routePaths';
 import './NotFoundPage.css';
 
 export default function NotFoundPage() {
