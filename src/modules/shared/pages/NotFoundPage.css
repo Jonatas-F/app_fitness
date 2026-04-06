@@ -1,0 +1,47 @@
+.not-found-page {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.not-found-page__card {
+  width: min(560px, 100%);
+  padding: 32px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 46, 46, 0.22);
+  backdrop-filter: blur(16px);
+  text-align: center;
+}
+
+.not-found-page__badge {
+  display: inline-flex;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 46, 46, 0.18);
+  border: 1px solid rgba(255, 46, 46, 0.26);
+  margin-bottom: 16px;
+}
+
+.not-found-page__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.not-found-page__actions a {
+  text-decoration: none;
+  color: #ffffff;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  transition: all 0.2s ease-in-out;
+}
+
+.not-found-page__actions a:hover {
+  transform: scale(1.03);
+  background: rgba(255, 46, 46, 0.2);
+}

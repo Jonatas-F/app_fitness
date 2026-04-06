@@ -1,49 +1,43 @@
-function Sidebar({ navItems, activePage, onChangePage }) {
+import { NavLink } from 'react-router-dom';
+import { navigationItems, quickSummary } from '../data/appData';
+
+export default function Sidebar() {
   return (
-    <aside className="sidebar">
-      <div className="brand">
-        <div className="brand-badge">SF</div>
-        <div className="brand-text">
-          <h2>Shape Fitness IA</h2>
-          <span>Evolução inteligente</span>
+    <aside className="app-shell__sidebar">
+      <div className="sidebar__brand">
+        <span className="sidebar__brand-mark">SC</span>
+
+        <div>
+          <p className="sidebar__brand-title">Shape Certo</p>
+          <p className="sidebar__brand-subtitle">Fitness IA</p>
         </div>
       </div>
 
-      <nav className="sidebar-nav">
-        {navItems.map((item) => (
-          <button
-            key={item.label}
-            className={`nav-item ${activePage === item.label ? "active" : ""}`}
-            type="button"
-            onClick={() => onChangePage(item.label)}
+      <nav className="sidebar__nav">
+        {navigationItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            end={item.path === '/'}
+            className={({ isActive }) =>
+              `sidebar__link ${isActive ? 'sidebar__link--active' : ''}`
+            }
           >
-            <span className="nav-icon">{item.short}</span>
+            <span className="sidebar__link-icon">{item.icon}</span>
             <span>{item.label}</span>
-          </button>
+          </NavLink>
         ))}
       </nav>
 
-      <div className="glass-card card-padding mt-24">
-        <div className="card-header">
-          <div>
-            <h3 className="card-title">Status do plano</h3>
-            <p className="card-subtitle">
-              Seu acompanhamento está em evolução contínua.
-            </p>
-          </div>
-          <span className="badge badge-success">Ativo</span>
-        </div>
+      <section className="sidebar__summary glass-panel">
+        <h3 className="sidebar__summary-title">{quickSummary.title}</h3>
 
-        <div className="progress-track">
-          <div className="progress-fill" style={{ width: "72%" }} />
-        </div>
-
-        <p className="text-secondary mt-12">
-          72% da meta mensal concluída com base em treino, dieta e monitoramento.
-        </p>
-      </div>
+        <ul className="sidebar__summary-list">
+          {quickSummary.items.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </section>
     </aside>
   );
 }
-
-export default Sidebar;

@@ -1,19 +1,22 @@
-function BottomNav({ navItems, activePage, onChangePage }) {
+import { NavLink } from 'react-router-dom';
+import { mobileNavigationItems } from '../data/appData';
+
+export default function BottomNav() {
   return (
     <nav className="bottom-nav">
-      {navItems.slice(0, 4).map((item) => (
-        <button
-          key={item.label}
-          className={`nav-item ${activePage === item.label ? "active" : ""}`}
-          type="button"
-          onClick={() => onChangePage(item.label)}
+      {mobileNavigationItems.map((item) => (
+        <NavLink
+          key={item.path}
+          to={item.path}
+          end={item.path === '/'}
+          className={({ isActive }) =>
+            `bottom-nav__link ${isActive ? 'bottom-nav__link--active' : ''}`
+          }
         >
-          <span className="nav-icon">{item.short}</span>
-          <span className="nav-label">{item.label}</span>
-        </button>
+          <span className="bottom-nav__icon">{item.icon}</span>
+          <span>{item.shortLabel}</span>
+        </NavLink>
       ))}
     </nav>
   );
 }
-
-export default BottomNav;
