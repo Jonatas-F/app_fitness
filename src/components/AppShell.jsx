@@ -7,6 +7,7 @@ import MetricsGrid from "./MetricsGrid";
 import FeatureCardsGrid from "./FeatureCardsGrid";
 import BottomSectionsGrid from "./BottomSectionsGrid";
 import ProfileSetupPage from "../pages/profile/ProfileSetupPage";
+import AccountPage from "../pages/account/AccountPage";
 import { navItems, pageContent } from "../data/appData";
 import {
   getDashboardMetricsFromProfile,
@@ -18,6 +19,7 @@ function AppShell() {
 
   const currentPage = pageContent[activePage];
   const isProfilePage = activePage === "Perfil";
+  const isAccountPage = activePage === "Conta";
 
   const resolvedMetrics = useMemo(() => {
     if (activePage === "Dashboard") {
@@ -50,6 +52,8 @@ function AppShell() {
 
           {isProfilePage ? (
             <ProfileSetupPage />
+          ) : isAccountPage ? (
+            <AccountPage />
           ) : (
             <>
               <HeroSection

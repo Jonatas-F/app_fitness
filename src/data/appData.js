@@ -5,6 +5,7 @@ export const navItems = [
   { label: "Progresso", short: "PR" },
   { label: "Check-ins", short: "CK" },
   { label: "Chat IA", short: "IA" },
+  { label: "Conta", short: "CT" },
   { label: "Perfil", short: "PF" },
 ];
 
@@ -336,6 +337,24 @@ export const pageContent = {
         items: ["Pedir análise do treino de hoje", "Solicitar revisão da dieta", "Perguntar sobre estratégia de fim de semana"],
       },
     ],
+  },
+
+  Conta: {
+    title: "Conta",
+    subtitle: "Acesso, autenticação e preferências de entrada",
+    heroEyebrow: "",
+    heroTitle: "",
+    heroDescription: "",
+    primaryAction: "Salvar conta",
+    secondaryAction: "Revisar segurança",
+    metrics: [
+      { label: "Status", value: "Ativa", trend: "Conta pronta para autenticação real" },
+      { label: "Login social", value: "Planejado", trend: "Integração com Google em evolução" },
+      { label: "Segurança", value: "Base criada", trend: "Alteração de senha disponível" },
+      { label: "Persistência", value: "Local", trend: "Salvamento provisório neste passo" },
+    ],
+    cards: [],
+    bottomSections: [],
   },
 
   Perfil: {

@@ -1,0 +1,150 @@
+.account-page {
+  display: grid;
+  gap: 20px;
+}
+
+.account-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+  gap: 20px;
+}
+
+.account-side-column {
+  display: grid;
+  gap: 20px;
+}
+
+.account-form {
+  gap: 18px;
+}
+
+.account-password-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.account-actions > * {
+  flex: 1 1 220px;
+}
+
+.account-feedback {
+  padding: 14px 16px;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 0.94rem;
+}
+
+.account-feedback-success {
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.22);
+  color: #ddffe8;
+}
+
+.account-feedback-error {
+  background: rgba(255, 46, 46, 0.12);
+  border: 1px solid rgba(255, 46, 46, 0.2);
+  color: #ffd7d7;
+}
+
+.account-status-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.account-toggle-list {
+  display: grid;
+  gap: 14px;
+}
+
+.account-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.account-toggle-row strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.98rem;
+}
+
+.account-toggle-row span {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  max-width: 340px;
+}
+
+.account-toggle-row input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+  flex-shrink: 0;
+}
+
+.account-info-list {
+  display: grid;
+  gap: 12px;
+}
+
+.account-info-list li {
+  padding-left: 18px;
+  position: relative;
+  color: var(--text-secondary);
+}
+
+.account-info-list li::before {
+  content: "";
+  position: absolute;
+  top: 9px;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  box-shadow: 0 0 12px rgba(229, 9, 20, 0.35);
+}
+
+@media (max-width: 1100px) {
+  .account-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .account-password-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-status-box,
+  .account-toggle-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .account-actions {
+    flex-direction: column;
+  }
+
+  .account-actions > * {
+    width: 100%;
+  }
+}
