@@ -10,6 +10,7 @@ import ProfileSetupPage from "../pages/profile/ProfileSetupPage";
 import AccountPage from "../pages/account/AccountPage";
 import TrainingPage from "../pages/training/TrainingPage";
 import DietPage from "../pages/diet/DietPage";
+import CheckinsPage from "../pages/checkins/CheckinsPage";
 import { navItems, pageContent } from "../data/appData";
 import {
   getDashboardMetricsFromProfile,
@@ -24,6 +25,7 @@ function AppShell() {
   const isAccountPage = activePage === "Conta";
   const isTrainingPage = activePage === "Treinos";
   const isDietPage = activePage === "Dieta";
+  const isCheckinsPage = activePage === "Check-ins";
 
   const resolvedMetrics = useMemo(() => {
     if (activePage === "Dashboard") {
@@ -62,6 +64,8 @@ function AppShell() {
             <TrainingPage />
           ) : isDietPage ? (
             <DietPage />
+          ) : isCheckinsPage ? (
+            <CheckinsPage />
           ) : (
             <>
               <HeroSection
