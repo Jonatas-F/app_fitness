@@ -1,4 +1,9 @@
-import { loadProfileData, getProfileCompletion } from "./profileStorage";
+import {
+  loadProfileData,
+  loadProfileHistory,
+  getProfileCompletion,
+  getLatestProfileComparison,
+} from "./profileStorage";
 
 function formatFallback(value, fallback = "--") {
   return String(value || "").trim() ? value : fallback;
@@ -18,17 +23,21 @@ function formatHeight(height) {
 
 export function getProfileSummary() {
   const profile = loadProfileData();
+  const history = loadProfileHistory();
   const completion = getProfileCompletion(profile);
 
   return {
     completion,
     updatedAt: profile?.metadata?.updatedAt || null,
+    historyCount: history.length,
     basic: {
       fullName: formatFallback(profile?.basic?.fullName),
       age: formatFallback(profile?.basic?.age),
       height: formatHeight(profile?.basic?.height),
       weight: formatWeight(profile?.basic?.weight),
       sex: formatFallback(profile?.basic?.sex),
+      bodyFat: formatFallback(profile?.basic?.bodyFat),
+      leanMass: formatFallback(profile?.basic?.leanMass),
     },
     goals: {
       primaryGoal: formatFallback(profile?.goals?.primaryGoal),
@@ -108,4 +117,54 @@ export function getProfileHighlights() {
     `Estratégia alimentar: ${summary.diet.strategy}`,
     `Preenchimento do perfil: ${summary.completion}%`,
   ];
+}
+
+export function getProfileHistorySummary() {
+  return loadProfileHistory().map((entry) => ({
+    id: entry.id,
+    savedAt: entry.savedAt,
+    previousUpdatedAt: entry.previousUpdatedAt,
+    changedFields: entry.changedFields || [],
+    basic: {
+      fullName: formatFallback(entry?.profile?.basic?.fullName),
+      weight: formatWeight(entry?.profile?.basic?.weight),
+      bodyFat: formatFallback(entry?.profile?.basic?.bodyFat),
+      leanMass: formatFallback(entry?.profile?.basic?.leanMass),
+    },
+    goals: {
+      primaryGoal: formatFallback(entry?.profile?.goals?.primaryGoal),
+      conditioningGoal: formatFallback(entry?.profile?.goals?.conditioningGoal),
+    },
+    diet: {
+      strategy: formatFallback(entry?.profile?.diet?.strategy),
+      waterPerDay: formatFallback(entry?.profile?.diet?.waterPerDay),
+    },
+  }));
+}
+
+export function getCurrentVsPreviousComparison() {
+  const comparison = getLatestProfileComparison();
+
+  if (!comparison) {
+    return null;
+  }
+
+  return {
+    savedAt: comparison.savedAt,
+    changedFields: comparison.changedFields,
+    current: {
+      weight: formatWeight(comparison?.current?.basic?.weight),
+      bodyFat: formatFallback(comparison?.current?.basic?.bodyFat),
+      leanMass: formatFallback(comparison?.current?.basic?.leanMass),
+      primaryGoal: formatFallback(comparison?.current?.goals?.primaryGoal),
+      strategy: formatFallback(comparison?.current?.diet?.strategy),
+    },
+    previous: {
+      weight: formatWeight(comparison?.previous?.basic?.weight),
+      bodyFat: formatFallback(comparison?.previous?.basic?.bodyFat),
+      leanMass: formatFallback(comparison?.previous?.basic?.leanMass),
+      primaryGoal: formatFallback(comparison?.previous?.goals?.primaryGoal),
+      strategy: formatFallback(comparison?.previous?.diet?.strategy),
+    },
+  };
 }

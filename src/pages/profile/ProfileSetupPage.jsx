@@ -6,6 +6,11 @@ import {
   resetProfileData,
   getProfileCompletion,
 } from "../../data/profileStorage";
+import {
+  getProfileHistorySummary,
+  getCurrentVsPreviousComparison,
+} from "../../data/profileDerivedData";
+import "./profile.css";
 
 function ProfileSetupPage() {
   const [profileData, setProfileData] = useState(() => loadProfileData());
@@ -14,6 +19,16 @@ function ProfileSetupPage() {
   const completion = useMemo(
     () => getProfileCompletion(profileData),
     [profileData]
+  );
+
+  const historySummary = useMemo(
+    () => getProfileHistorySummary(),
+    [profileData, statusMessage]
+  );
+
+  const currentVsPrevious = useMemo(
+    () => getCurrentVsPreviousComparison(),
+    [profileData, statusMessage]
   );
 
   function updateSectionField(section, field, value) {
@@ -29,13 +44,13 @@ function ProfileSetupPage() {
   function handleSave() {
     const saved = saveProfileData(profileData);
     setProfileData(saved);
-    setStatusMessage("Perfil salvo com sucesso.");
+    setStatusMessage("Perfil salvo com histórico atualizado com sucesso.");
   }
 
   function handleReset() {
     const resetData = resetProfileData();
     setProfileData(resetData);
-    setStatusMessage("Perfil resetado com sucesso.");
+    setStatusMessage("Perfil e histórico resetados com sucesso.");
   }
 
   const updatedAtLabel = profileData?.metadata?.updatedAt
@@ -50,9 +65,9 @@ function ProfileSetupPage() {
           Base do usuário para personalização de treino, dieta e progresso
         </h2>
         <p className="hero-description">
-          Esta área reúne os dados principais do usuário para que o app consiga
-          evoluir para bioimpedância, dieta personalizada, dashboards,
-          check-ins e recomendações da IA.
+          Agora o perfil funciona como base viva do sistema: salva os dados
+          atuais, registra snapshots anteriores e mostra uma comparação simples
+          entre versões.
         </p>
 
         <div className="hero-actions">
@@ -95,11 +110,89 @@ function ProfileSetupPage() {
         <article className="metric-card">
           <div className="metric-label">Última atualização</div>
           <div className="metric-value">{updatedAtLabel}</div>
-          <div className="metric-trend">Persistido em localStorage</div>
+          <div className="metric-trend">Perfil persistido localmente</div>
         </article>
       </section>
 
       <ProfileSummaryCard />
+
+      {currentVsPrevious ? (
+        <section className="glass-card card-padding">
+          <div className="card-header">
+            <div>
+              <h3 className="card-title">Comparação atual vs anterior</h3>
+              <p className="card-subtitle">
+                Comparação básica do perfil atual com o snapshot anterior salvo.
+              </p>
+            </div>
+            <span className="badge badge-success">
+              {currentVsPrevious.changedFields.length} mudanças
+            </span>
+          </div>
+
+          <div className="profile-comparison-grid">
+            <div className="profile-comparison-card">
+              <h4>Atual</h4>
+              <div className="data-list">
+                <div className="data-row">
+                  <span>Peso</span>
+                  <strong>{currentVsPrevious.current.weight}</strong>
+                </div>
+                <div className="data-row">
+                  <span>Gordura</span>
+                  <strong>{currentVsPrevious.current.bodyFat}</strong>
+                </div>
+                <div className="data-row">
+                  <span>Massa magra</span>
+                  <strong>{currentVsPrevious.current.leanMass}</strong>
+                </div>
+                <div className="data-row">
+                  <span>Objetivo</span>
+                  <strong>{currentVsPrevious.current.primaryGoal}</strong>
+                </div>
+                <div className="data-row">
+                  <span>Dieta</span>
+                  <strong>{currentVsPrevious.current.strategy}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div className="profile-comparison-card">
+              <h4>Anterior</h4>
+              <div className="data-list">
+                <div className="data-row">
+                  <span>Peso</span>
+                  <strong>{currentVsPrevious.previous.weight}</strong>
+                </div>
+                <div className="data-row">
+                  <span>Gordura</span>
+                  <strong>{currentVsPrevious.previous.bodyFat}</strong>
+                </div>
+                <div className="data-row">
+                  <span>Massa magra</span>
+                  <strong>{currentVsPrevious.previous.leanMass}</strong>
+                </div>
+                <div className="data-row">
+                  <span>Objetivo</span>
+                  <strong>{currentVsPrevious.previous.primaryGoal}</strong>
+                </div>
+                <div className="data-row">
+                  <span>Dieta</span>
+                  <strong>{currentVsPrevious.previous.strategy}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="profile-changed-fields mt-20">
+            {currentVsPrevious.changedFields.map((field) => (
+              <span key={field} className="badge badge-primary">
+                {field}
+              </span>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="glass-card card-padding">
         <div className="card-header">
@@ -181,6 +274,34 @@ function ProfileSetupPage() {
               <option value="feminino">Feminino</option>
               <option value="outro">Outro</option>
             </select>
+          </div>
+        </div>
+
+        <div className="form-grid grid-2 mt-16">
+          <div className="input-group">
+            <label className="input-label">Gordura corporal</label>
+            <input
+              className="input-field"
+              type="text"
+              placeholder="Ex.: 14%"
+              value={profileData.basic.bodyFat}
+              onChange={(e) =>
+                updateSectionField("basic", "bodyFat", e.target.value)
+              }
+            />
+          </div>
+
+          <div className="input-group">
+            <label className="input-label">Massa magra</label>
+            <input
+              className="input-field"
+              type="text"
+              placeholder="Ex.: 72 kg"
+              value={profileData.basic.leanMass}
+              onChange={(e) =>
+                updateSectionField("basic", "leanMass", e.target.value)
+              }
+            />
           </div>
         </div>
       </section>
@@ -315,6 +436,82 @@ function ProfileSetupPage() {
             }
           />
         </div>
+      </section>
+
+      <section className="glass-card card-padding">
+        <div className="card-header">
+          <div>
+            <h3 className="card-title">Histórico do perfil</h3>
+            <p className="card-subtitle">
+              Snapshots anteriores salvos automaticamente sempre que o perfil é atualizado.
+            </p>
+          </div>
+          <span className="badge badge-primary">{historySummary.length}</span>
+        </div>
+
+        {historySummary.length === 0 ? (
+          <div className="profile-history-empty">
+            Ainda não existem versões anteriores. Salve o perfil e depois altere
+            algum campo para começar o histórico.
+          </div>
+        ) : (
+          <div className="profile-history-list">
+            {historySummary.map((entry) => (
+              <article key={entry.id} className="profile-history-item">
+                <div className="profile-history-top">
+                  <div>
+                    <h4>Snapshot anterior</h4>
+                    <p>
+                      Salvo em{" "}
+                      <strong>
+                        {new Date(entry.savedAt).toLocaleString("pt-BR")}
+                      </strong>
+                    </p>
+                  </div>
+
+                  <span className="badge badge-success">
+                    {entry.changedFields.length} campos alterados
+                  </span>
+                </div>
+
+                <div className="profile-history-fields">
+                  {entry.changedFields.map((field) => (
+                    <span key={field} className="badge badge-primary">
+                      {field}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="profile-history-grid">
+                  <div className="data-row">
+                    <span>Peso anterior</span>
+                    <strong>{entry.basic.weight}</strong>
+                  </div>
+                  <div className="data-row">
+                    <span>Gordura anterior</span>
+                    <strong>{entry.basic.bodyFat}</strong>
+                  </div>
+                  <div className="data-row">
+                    <span>Massa magra anterior</span>
+                    <strong>{entry.basic.leanMass}</strong>
+                  </div>
+                  <div className="data-row">
+                    <span>Objetivo anterior</span>
+                    <strong>{entry.goals.primaryGoal}</strong>
+                  </div>
+                  <div className="data-row">
+                    <span>Dieta anterior</span>
+                    <strong>{entry.diet.strategy}</strong>
+                  </div>
+                  <div className="data-row">
+                    <span>Água anterior</span>
+                    <strong>{entry.diet.waterPerDay}</strong>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );
