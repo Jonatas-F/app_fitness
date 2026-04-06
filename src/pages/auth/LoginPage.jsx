@@ -21,9 +21,6 @@ function LoginPage() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-
-    // Fluxo temporário até a autenticação real:
-    // ao enviar o formulário, o usuário entra na área interna existente.
     navigate("/app");
   };
 
@@ -138,8 +135,10 @@ function LoginPage() {
 
           <div className="auth-footer-note">
             <span className="text-muted">
-              Cadastro entra no próximo passo. Neste momento, a rota de cadastro
-              está temporariamente redirecionada para o login.
+              Ainda não tem conta?{" "}
+              <Link to="/cadastro" className="auth-inline-link">
+                Criar cadastro
+              </Link>
             </span>
           </div>
         </section>
