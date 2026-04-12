@@ -39,9 +39,7 @@ function EquipmentCard({ item, selected, onToggle }) {
 
 export default function UserGymPage() {
   const [selectedIds, setSelectedIds] = useState(() => loadGymEquipmentSelection());
-  const [openCategories, setOpenCategories] = useState(() =>
-    gymEquipmentCatalog.slice(0, 2).map((category) => category.id)
-  );
+  const [openCategories, setOpenCategories] = useState([]);
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
   const aiContext = useMemo(
     () => buildEquipmentAiContext(selectedIds),

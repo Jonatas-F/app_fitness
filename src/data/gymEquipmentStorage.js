@@ -57,6 +57,6 @@ export function buildEquipmentAiContext(selectedIds) {
         category: item.categoryTitle,
       })),
     rule:
-      "A IA deve montar treinos usando preferencialmente os aparelhos disponiveis. Aparelhos desmarcados devem ser evitados ou substituidos.",
+      "O Personal Virtual deve montar treinos usando preferencialmente os aparelhos disponiveis. Aparelhos desmarcados devem ser evitados ou substituidos.",
   };
 }

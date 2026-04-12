@@ -9,7 +9,7 @@ export default function Sidebar() {
         <span className="sidebar__brand-mark">SC</span>
         <div>
           <p className="sidebar__brand-title">Shape Certo</p>
-          <p className="sidebar__brand-subtitle">Fitness IA</p>
+          <p className="sidebar__brand-subtitle">Personal Virtual</p>
         </div>
       </div>
 

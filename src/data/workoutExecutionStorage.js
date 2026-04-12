@@ -1,6 +1,7 @@
 import { loadCheckins } from "./checkinStorage";
 
 const WORKOUT_EXECUTION_KEY = "shapeCertoWorkoutExecution";
+const WORKOUT_SESSION_HISTORY_KEY = "shapeCertoWorkoutSessionHistory";
 
 const defaultExercises = {
   A: [
@@ -12,6 +13,7 @@ const defaultExercises = {
   B: ["Puxada alta", "Remada baixa", "Pullover machine", "Biceps curl machine"],
   C: ["Leg press 45°", "Cadeira extensora", "Mesa flexora", "Panturrilha sentada"],
   D: ["Hip thrust machine", "Abdutora", "Reverse fly machine", "Abdominal crunch machine"],
+  E: ["Shoulder press", "Lateral raise machine", "Shrug machine", "Rotary torso"],
 };
 
 function safeParse(value, fallback) {
@@ -45,7 +47,8 @@ export function resolveWorkoutSplit(days) {
 export function createDefaultWorkoutPlan() {
   const availability = latestTrainingAvailability();
   const split = resolveWorkoutSplit(availability.weeklyTrainingDays);
-  const letters = split.replace("Treino ", "").split("");
+  const enabledLetters = split.replace("Treino ", "").split("");
+  const letters = ["A", "B", "C", "D", "E"];
 
   return {
     weeklyTrainingDays: availability.weeklyTrainingDays,
@@ -54,6 +57,7 @@ export function createDefaultWorkoutPlan() {
     workouts: letters.map((letter) => ({
       id: letter,
       title: `Treino ${letter}`,
+      enabled: enabledLetters.includes(letter),
       focus:
         letter === "A"
           ? "Peito, ombro e triceps"
@@ -61,7 +65,9 @@ export function createDefaultWorkoutPlan() {
             ? "Costas e biceps"
             : letter === "C"
               ? "Pernas"
-              : "Complementar",
+              : letter === "D"
+                ? "Gluteos, posterior e complementares"
+                : "Acessorios e condicionamento",
       exercises: (defaultExercises[letter] || defaultExercises.D).map((name) => ({
         id: `${letter}-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
         name,
@@ -71,11 +77,12 @@ export function createDefaultWorkoutPlan() {
         userVideoFileName: "",
         aiFeedback: "",
         notes: "",
-        sets: [
-          { set: 1, weight: "", reps: "" },
-          { set: 2, weight: "", reps: "" },
-          { set: 3, weight: "", reps: "" },
-        ],
+        sets: Array.from({ length: 5 }, (_, index) => ({
+          set: index + 1,
+          enabled: index < 3,
+          weight: "",
+          reps: "",
+        })),
       })),
     })),
     updatedAt: new Date().toISOString(),
@@ -84,7 +91,46 @@ export function createDefaultWorkoutPlan() {
 
 export function loadWorkoutExecution() {
   const raw = localStorage.getItem(WORKOUT_EXECUTION_KEY);
-  return raw ? safeParse(raw, createDefaultWorkoutPlan()) : createDefaultWorkoutPlan();
+  const parsed = raw ? safeParse(raw, createDefaultWorkoutPlan()) : createDefaultWorkoutPlan();
+  const fallback = createDefaultWorkoutPlan();
+  const existingById = new Map((parsed.workouts || []).map((workout) => [workout.id, workout]));
+  const enabledLetters = String(parsed.split || fallback.split).split("");
+
+  return {
+    ...fallback,
+    ...parsed,
+    workouts: fallback.workouts.map((fallbackWorkout) => {
+      const existing = existingById.get(fallbackWorkout.id);
+
+      return {
+        ...fallbackWorkout,
+        ...existing,
+        enabled:
+          typeof existing?.enabled === "boolean"
+            ? existing.enabled
+            : enabledLetters.includes(fallbackWorkout.id),
+        exercises: (existing?.exercises?.length ? existing.exercises : fallbackWorkout.exercises).map(
+          (exercise) => {
+            const prescribedSets = Number(exercise.suggestedSets || 3);
+            const existingSets = Array.isArray(exercise.sets) ? exercise.sets : [];
+
+            return {
+              ...exercise,
+              sets: Array.from({ length: 5 }, (_, index) => ({
+                set: index + 1,
+                enabled:
+                  typeof existingSets[index]?.enabled === "boolean"
+                    ? existingSets[index].enabled
+                    : index < prescribedSets,
+                weight: existingSets[index]?.weight || "",
+                reps: existingSets[index]?.reps || "",
+              })),
+            };
+          }
+        ),
+      };
+    }),
+  };
 }
 
 export function saveWorkoutExecution(plan) {
@@ -95,6 +141,40 @@ export function saveWorkoutExecution(plan) {
 
   localStorage.setItem(WORKOUT_EXECUTION_KEY, JSON.stringify(next));
   return next;
+}
+
+export function loadWorkoutSessionHistory() {
+  const raw = localStorage.getItem(WORKOUT_SESSION_HISTORY_KEY);
+  const parsed = raw ? safeParse(raw, []) : [];
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+export function saveWorkoutSession(workout) {
+  const history = loadWorkoutSessionHistory();
+  const session = {
+    id: `session-${workout.id}-${Date.now()}`,
+    workoutId: workout.id,
+    workoutTitle: workout.title,
+    createdAt: new Date().toISOString(),
+    exercises: workout.exercises.map((exercise) => ({
+      id: exercise.id,
+      name: exercise.name,
+                  sets: exercise.sets.map((set) => ({
+                    set: set.set,
+                    enabled: set.enabled !== false,
+                    weight: set.weight || "",
+                    reps: set.reps || "",
+                  })),
+    })),
+  };
+
+  const updated = [session, ...history];
+  localStorage.setItem(WORKOUT_SESSION_HISTORY_KEY, JSON.stringify(updated));
+  return updated;
+}
+
+export function getPreviousWorkoutSession(workoutId) {
+  return loadWorkoutSessionHistory().find((session) => session.workoutId === workoutId);
 }
 
 export function getWorkoutDashboardSummary(plan = loadWorkoutExecution()) {

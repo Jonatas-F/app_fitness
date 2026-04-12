@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
-import ModulePageLayout from "../../../components/ModulePageLayout";
 import { workoutsViews } from "../../../data/appData";
 import {
+  getPreviousWorkoutSession,
   loadWorkoutExecution,
+  saveWorkoutSession,
   saveWorkoutExecution,
 } from "../../../data/workoutExecutionStorage";
 import "./WorkoutsPage.css";
@@ -17,9 +18,9 @@ function getWorkoutView(pathname, workoutId) {
 
 function WorkoutExecutionSection() {
   const [plan, setPlan] = useState(() => loadWorkoutExecution());
-  const [openWorkouts, setOpenWorkouts] = useState(() =>
-    plan.workouts.slice(0, 1).map((workout) => workout.id)
-  );
+  const [openWorkouts, setOpenWorkouts] = useState([]);
+  const [activeVideo, setActiveVideo] = useState(null);
+  const [feedback, setFeedback] = useState("");
 
   function updatePlan(nextPlan) {
     setPlan(saveWorkoutExecution(nextPlan));
@@ -64,37 +65,13 @@ function WorkoutExecutionSection() {
     });
   }
 
-  function handleSetCountChange(workoutId, exerciseId, value) {
-    const nextCount = Math.max(1, Math.min(8, Number(value) || 1));
-
-    updatePlan({
-      ...plan,
-      workouts: plan.workouts.map((workout) =>
-        workout.id !== workoutId
-          ? workout
-          : {
-              ...workout,
-              exercises: workout.exercises.map((exercise) => {
-                if (exercise.id !== exerciseId) return exercise;
-
-                const nextSets = Array.from({ length: nextCount }, (_, index) => ({
-                  set: index + 1,
-                  weight: exercise.sets[index]?.weight || "",
-                  reps: exercise.sets[index]?.reps || "",
-                }));
-
-                return {
-                  ...exercise,
-                  suggestedSets: String(nextCount),
-                  sets: nextSets,
-                };
-              }),
-            }
-      ),
-    });
-  }
-
   function toggleWorkout(workoutId) {
+    const targetWorkout = plan.workouts.find((workout) => workout.id === workoutId);
+
+    if (targetWorkout && !targetWorkout.enabled) {
+      return;
+    }
+
     setOpenWorkouts((current) =>
       current.includes(workoutId)
         ? current.filter((id) => id !== workoutId)
@@ -105,6 +82,51 @@ function WorkoutExecutionSection() {
   function handleVideoUpload(workoutId, exerciseId, file) {
     if (!file) return;
     handleExerciseChange(workoutId, exerciseId, "userVideoFileName", file.name);
+  }
+
+  function handleSaveWorkoutSession(workout) {
+    saveWorkoutSession(workout);
+    setFeedback(`${workout.title} salvo no historico de execucao.`);
+  }
+
+  function handleRequestExerciseFeedback(workoutId, exerciseId, source) {
+    const message =
+      source === "video"
+        ? "Feedback solicitado com base no video enviado."
+        : "Feedback solicitado com base nas anotacoes do exercicio.";
+
+    handleExerciseChange(workoutId, exerciseId, "aiFeedback", message);
+    setFeedback(message);
+  }
+
+  function renderPreviousSession(workout) {
+    const previous = getPreviousWorkoutSession(workout.id);
+
+    if (!previous) {
+      return (
+        <p className="previous-session-empty">
+          Sem registro anterior para este treino neste protocolo.
+        </p>
+      );
+    }
+
+    return (
+      <div className="previous-session">
+        <strong>
+          Ultimo registro: {new Date(previous.createdAt).toLocaleDateString("pt-BR")}
+        </strong>
+        {previous.exercises.map((exercise) => (
+          <div key={exercise.id} className="previous-session__exercise">
+            <span>{exercise.name}</span>
+            <small>
+              {exercise.sets
+                .map((set) => `S${set.set}: ${set.weight || "--"}kg x ${set.reps || "--"}`)
+                .join(" | ")}
+            </small>
+          </div>
+        ))}
+      </div>
+    );
   }
 
   return (
@@ -128,6 +150,8 @@ function WorkoutExecutionSection() {
         </aside>
       </header>
 
+      {feedback ? <p className="workout-feedback">{feedback}</p> : null}
+
       <div className="workout-source-note">
         <strong>Disponibilidade vem do check-in mensal</strong>
         <p>
@@ -140,7 +164,9 @@ function WorkoutExecutionSection() {
         {plan.workouts.map((workout) => (
           <article
             key={workout.id}
-            className={`workout-day-card ${openWorkouts.includes(workout.id) ? "is-open" : ""}`}
+            className={`workout-day-card ${
+              openWorkouts.includes(workout.id) ? "is-open" : ""
+            } ${workout.enabled ? "is-enabled" : "is-disabled"}`}
           >
             <div className="workout-day-card__header">
               <button
@@ -148,6 +174,7 @@ function WorkoutExecutionSection() {
                 className="workout-day-card__toggle"
                 onClick={() => toggleWorkout(workout.id)}
                 aria-expanded={openWorkouts.includes(workout.id)}
+                disabled={!workout.enabled}
               >
                 <span>{openWorkouts.includes(workout.id) ? "−" : "+"}</span>
                 <div>
@@ -155,10 +182,24 @@ function WorkoutExecutionSection() {
                   <p>{workout.focus}</p>
                 </div>
               </button>
-              <strong>{workout.exercises.length} exercicios</strong>
+              <div className="workout-day-card__meta">
+                <strong>{workout.exercises.length} exercicios</strong>
+                <em>{workout.enabled ? "Habilitado" : "Desabilitado"}</em>
+              </div>
             </div>
 
             {openWorkouts.includes(workout.id) ? <div className="exercise-list">
+              <div className="workout-history-panel">
+                <div>
+                  <h4>Historico do {workout.title}</h4>
+                  <p>Consulte o desempenho anterior antes de registrar a proxima execucao.</p>
+                </div>
+                <button type="button" onClick={() => handleSaveWorkoutSession(workout)}>
+                  Salvar execucao atual
+                </button>
+                {renderPreviousSession(workout)}
+              </div>
+
               {workout.exercises.map((exercise) => (
                 <section key={exercise.id} className="exercise-card">
                   <div className="exercise-card__top">
@@ -181,31 +222,24 @@ function WorkoutExecutionSection() {
                   </div>
 
                   <div className="exercise-fields">
-                    <label>
-                      Series prescritas
-                      <select
-                        value={exercise.sets.length}
-                        onChange={(event) =>
-                          handleSetCountChange(workout.id, exercise.id, event.target.value)
-                        }
+                    <div className="exercise-video-preview">
+                      <button
+                        type="button"
+                        onClick={() => setActiveVideo(exercise)}
+                        disabled={!exercise.executionVideoUrl}
                       >
-                        {["1", "2", "3", "4", "5", "6", "7", "8"].map((count) => (
-                          <option key={count} value={count}>
-                            {count} serie{count === "1" ? "" : "s"}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      Repeticoes sugeridas
-                      <input
-                        value={exercise.suggestedReps}
-                        onChange={(event) =>
-                          handleExerciseChange(workout.id, exercise.id, "suggestedReps", event.target.value)
-                        }
-                        placeholder="Ex.: 8-12"
-                      />
-                    </label>
+                        <span>{exercise.executionVideoUrl ? "Ver video" : "Sem video"}</span>
+                      </button>
+                      <small>Miniatura do video demonstrativo</small>
+                    </div>
+
+                    <div className="exercise-prescription">
+                      <span>Prescricao do Personal Virtual</span>
+                      <strong>{exercise.suggestedSets} series</strong>
+                      <strong>{exercise.suggestedReps} reps</strong>
+                      <small>Somente o Personal Virtual altera series e repeticoes prescritas.</small>
+                    </div>
+
                     <label>
                       Video demonstrativo
                       <input
@@ -217,23 +251,36 @@ function WorkoutExecutionSection() {
                       />
                     </label>
                     <label>
-                      Feedback da IA
+                      Feedback do Personal Virtual
                       <textarea
                         value={exercise.aiFeedback}
                         onChange={(event) =>
                           handleExerciseChange(workout.id, exercise.id, "aiFeedback", event.target.value)
                         }
-                        placeholder="Feedback tecnico gerado pela IA apos analisar o video"
+                        placeholder="Feedback tecnico gerado pelo Personal Virtual apos analisar o video ou as anotacoes"
                       />
+                      <button
+                        type="button"
+                        className="feedback-request-button"
+                        onClick={() =>
+                          handleRequestExerciseFeedback(workout.id, exercise.id, "video")
+                        }
+                      >
+                        Solicitar feedback do video
+                      </button>
                     </label>
                   </div>
 
                   <div className="set-log-grid">
                     {exercise.sets.map((set, index) => (
-                      <div key={set.set} className="set-log-row">
+                      <div
+                        key={set.set}
+                        className={`set-log-row ${set.enabled ? "is-enabled" : "is-disabled"}`}
+                      >
                         <strong>Serie {set.set}</strong>
                         <input
                           value={set.weight}
+                          disabled={!set.enabled}
                           onChange={(event) =>
                             handleSetChange(workout.id, exercise.id, index, "weight", event.target.value)
                           }
@@ -241,6 +288,7 @@ function WorkoutExecutionSection() {
                         />
                         <input
                           value={set.reps}
+                          disabled={!set.enabled}
                           onChange={(event) =>
                             handleSetChange(workout.id, exercise.id, index, "reps", event.target.value)
                           }
@@ -259,6 +307,15 @@ function WorkoutExecutionSection() {
                       }
                       placeholder="Carga sentida, dor, RPE, ajuste de tecnica..."
                     />
+                    <button
+                      type="button"
+                      className="feedback-request-button"
+                      onClick={() =>
+                        handleRequestExerciseFeedback(workout.id, exercise.id, "notes")
+                      }
+                    >
+                      Solicitar feedback das anotacoes
+                    </button>
                   </label>
                 </section>
               ))}
@@ -266,6 +323,27 @@ function WorkoutExecutionSection() {
           </article>
         ))}
       </div>
+
+      {activeVideo ? (
+        <div className="video-modal" role="dialog" aria-modal="true">
+          <div className="video-modal__content">
+            <button type="button" onClick={() => setActiveVideo(null)}>
+              Fechar
+            </button>
+            <h3>{activeVideo.name}</h3>
+            {activeVideo.executionVideoUrl ? (
+              <iframe
+                src={activeVideo.executionVideoUrl}
+                title={`Video de execucao ${activeVideo.name}`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <p>Adicione uma URL de video demonstrativo para visualizar.</p>
+            )}
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -284,7 +362,13 @@ export default function WorkoutsPage() {
 
   return (
     <div className="workouts-page">
-      <ModulePageLayout {...content} />
+      <header className="workouts-clean-hero glass-panel">
+        <span>{content.badge}</span>
+        <h1>{content.title}</h1>
+        <p>
+          Plano de treino, execução, vídeos e histórico de cargas do protocolo atual.
+        </p>
+      </header>
       {["list", "generate"].includes(viewKey) ? <WorkoutExecutionSection /> : null}
     </div>
   );

@@ -3,8 +3,8 @@
   display: grid;
   grid-template-columns: 280px 1fr;
   background:
-    radial-gradient(circle at top, rgba(255, 46, 46, 0.1), transparent 35%),
-    linear-gradient(180deg, #121212 0%, #0b0b0b 100%);
+    radial-gradient(circle at top, rgba(148, 163, 184, 0.1), transparent 35%),
+    linear-gradient(180deg, #121212 0%, #070708 100%);
   color: #ffffff;
 }
 
@@ -44,7 +44,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #ff2e2e, #e50914);
+  background: linear-gradient(135deg, #8b929e, #5f6670);
   color: #ffffff;
   font-weight: 800;
 }
@@ -94,10 +94,10 @@
   color: #ffffff;
   background: linear-gradient(
     135deg,
-    rgba(255, 46, 46, 0.24),
+    rgba(148, 163, 184, 0.2),
     rgba(255, 255, 255, 0.08)
   );
-  border: 1px solid rgba(255, 46, 46, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.3);
 }
 
 .sidebar__link-icon,

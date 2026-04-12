@@ -332,7 +332,7 @@ export function getCheckinMetrics(checkins) {
     return [
       { label: "Ultimo check-in", value: "--", trend: "Nenhum registro salvo ainda" },
       { label: "Dias uteis", value: "--", trend: "Somente check-ins realizados entram na media" },
-      { label: "Dados para IA", value: "--", trend: "Gaps ficam registrados e ignorados na media" },
+      { label: "Dados para o Personal Virtual", value: "--", trend: "Gaps ficam registrados e ignorados na media" },
       { label: "Historico", value: "0", trend: "Check-ins salvos" },
     ];
   }
@@ -363,7 +363,7 @@ export function getCheckinMetrics(checkins) {
       trend: `${missed.length} ausencia(s) registradas`,
     },
     {
-      label: "Dados para IA",
+      label: "Dados para o Personal Virtual",
       value: `${completenessAverage}%`,
       trend: "Media somente dos check-ins realizados",
     },
@@ -417,7 +417,7 @@ export function getWeeklyAiDataset(checkins) {
       sleep: average(weeklySources, "sleep"),
       adherence: average(weeklySources, "adherence"),
     },
-    rule: "A IA deve calcular tendencias somente com check-ins diarios e semanais realizados. Ausencias registradas explicam lacunas, mas nao viram zero.",
+    rule: "O Personal Virtual deve calcular tendencias somente com check-ins diarios e semanais realizados. Ausencias registradas explicam lacunas, mas nao viram zero.",
   };
 }
 

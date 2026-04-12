@@ -70,7 +70,7 @@ export function getDashboardMetricsFromProfile() {
     {
       label: "Preenchimento",
       value: `${summary.completion}%`,
-      trend: "Quanto mais completo, melhor para a IA",
+      trend: "Quanto mais completo, melhor para o Personal Virtual",
     },
     {
       label: "Estratégia alimentar",
