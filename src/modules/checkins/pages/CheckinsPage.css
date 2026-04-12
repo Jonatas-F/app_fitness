@@ -94,10 +94,74 @@
   font-weight: 700;
 }
 
+.checkins-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.checkins-tabs button {
+  display: grid;
+  gap: 6px;
+  min-height: 112px;
+  padding: 16px;
+  text-align: left;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.74);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.checkins-tabs button:hover,
+.checkins-tabs button.is-active {
+  transform: translateY(-2px);
+  color: #fff;
+  background: rgba(255, 46, 46, 0.12);
+  border-color: rgba(255, 46, 46, 0.32);
+}
+
+.checkins-tabs strong {
+  font-size: 1rem;
+}
+
+.checkins-tabs span {
+  line-height: 1.45;
+}
+
 .checkins-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
+}
+
+.checkins-cadence-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.checkins-cadence-summary article {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+}
+
+.checkins-cadence-summary div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.checkins-cadence-summary span,
+.checkins-cadence-summary p,
+.checkins-cadence-summary small {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.checkins-cadence-summary strong {
+  font-size: 1.35rem;
 }
 
 .checkins-form {
@@ -116,6 +180,23 @@
 .checkins-sidebar {
   position: sticky;
   top: 20px;
+}
+
+.checkins-mode-note {
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.checkins-mode-note strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.checkins-mode-note p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .checkin-section__header {
@@ -213,6 +294,7 @@
 }
 
 .checkins-actions .primary-button,
+.checkins-actions .secondary-button,
 .checkins-actions .ghost-button {
   width: 100%;
   border-radius: 8px;
@@ -286,6 +368,11 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.checkins-history-card.is-missed {
+  border-color: rgba(245, 158, 11, 0.28);
+  background: rgba(245, 158, 11, 0.06);
+}
+
 .checkins-history-card h3 {
   margin: 0 0 4px;
   font-size: 1rem;
@@ -336,6 +423,8 @@
   }
 
   .checkins-metrics,
+  .checkins-tabs,
+  .checkins-cadence-summary,
   .checkins-grid--three {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -350,6 +439,8 @@
   }
 
   .checkins-metrics,
+  .checkins-tabs,
+  .checkins-cadence-summary,
   .checkins-grid--two,
   .checkins-grid--three,
   .checkins-history-card__grid {

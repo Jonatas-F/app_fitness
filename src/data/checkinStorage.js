@@ -3,7 +3,23 @@ import { loadDietProtocol } from "./dietStorage";
 
 const CHECKINS_STORAGE_KEY = "shapeCertoCheckins";
 
+export const checkinCadences = {
+  daily: {
+    label: "Diario",
+    description: "Sinais rapidos de sono, energia, fome, estresse e aderencia.",
+  },
+  weekly: {
+    label: "Semanal",
+    description: "Fechamento da semana para ajustar dieta ou treino quando fizer sentido.",
+  },
+  monthly: {
+    label: "Mensal",
+    description: "Reavaliacao completa com objetivo, medidas e bioimpedancia.",
+  },
+};
+
 export const defaultCheckinForm = {
+  cadence: "monthly",
   goal: "hipertrofia",
   sport: "",
   sex: "",
@@ -32,18 +48,18 @@ export const defaultCheckinForm = {
   adherence: "85",
   hunger: "",
   stress: "",
+  digestion: "",
+  trainingPerformance: "",
+  protocolAction: "none",
   notes: "",
   photoNote: "",
 };
 
-export const requiredCheckinFields = [
-  "goal",
-  "weight",
-  "height",
-  "energy",
-  "sleep",
-  "adherence",
-];
+const requiredFieldsByCadence = {
+  daily: ["energy", "sleep", "adherence"],
+  weekly: ["weight", "energy", "sleep", "adherence"],
+  monthly: ["goal", "weight", "height", "energy", "sleep", "adherence"],
+};
 
 const checkinFieldLabels = {
   goal: "objetivo",
@@ -54,10 +70,13 @@ const checkinFieldLabels = {
   adherence: "aderencia",
 };
 
-const aiRelevantOptionalFields = [
+const aiRelevantFields = [
+  "goal",
   "sport",
   "sex",
   "age",
+  "weight",
+  "height",
   "bodyFat",
   "leanMass",
   "fatMass",
@@ -75,8 +94,14 @@ const aiRelevantOptionalFields = [
   "foodPreferences",
   "mealsPerDay",
   "waterIntake",
+  "energy",
+  "sleep",
+  "adherence",
   "hunger",
   "stress",
+  "digestion",
+  "trainingPerformance",
+  "protocolAction",
   "notes",
   "photoNote",
 ];
@@ -104,8 +129,29 @@ function daysBetween(dateA, dateB) {
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
+function normalizeCadence(cadence) {
+  return checkinCadences[cadence] ? cadence : "monthly";
+}
+
+function completedOnly(checkins) {
+  return checkins.filter((item) => item.status !== "missed");
+}
+
+function average(entries, field) {
+  const values = entries
+    .map((item) => Number(String(item[field] ?? "").replace(",", ".")))
+    .filter((value) => Number.isFinite(value) && value > 0);
+
+  if (!values.length) {
+    return "--";
+  }
+
+  return (values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1);
+}
+
 export function validateCheckinForm(checkinData) {
-  const missingFields = requiredCheckinFields.filter(
+  const cadence = normalizeCadence(checkinData.cadence);
+  const missingFields = requiredFieldsByCadence[cadence].filter(
     (field) => !hasValue(checkinData[field])
   );
 
@@ -121,14 +167,28 @@ export function validateCheckinForm(checkinData) {
 }
 
 export function calculateCheckinCompleteness(checkinData) {
-  const fields = [...requiredCheckinFields, ...aiRelevantOptionalFields];
+  const cadence = normalizeCadence(checkinData.cadence);
+  const cadenceWeight = cadence === "daily" ? 12 : cadence === "weekly" ? 22 : 32;
+  const fields = aiRelevantFields.slice(0, cadenceWeight);
   const completed = fields.filter((field) => hasValue(checkinData[field])).length;
   return Math.round((completed / fields.length) * 100);
 }
 
-function buildAiContext(checkinData, completeness) {
+function buildAiContext(checkinData, completeness, status) {
+  const cadence = normalizeCadence(checkinData.cadence);
+
   return {
-    readiness: completeness >= 75 ? "alta" : completeness >= 45 ? "media" : "basica",
+    cadence,
+    status,
+    readiness: status === "missed" ? "ausente" : completeness >= 75 ? "alta" : completeness >= 45 ? "media" : "basica",
+    inferencePolicy:
+      status === "missed"
+        ? "Registro mantido como gap. Nao usar para media; apenas sinalizar ausencia."
+        : "Usar apenas dados informados. Gaps diarios e semanais devem ser ignorados nas medias.",
+    regenerationPolicy:
+      checkinData.protocolAction === "request-adjustment"
+        ? "Usuario sinalizou necessidade de ajuste. Avaliar treino e dieta antes de regenerar."
+        : "Nao regenerar treino ou dieta automaticamente.",
     goal: checkinData.goal || "",
     requiredData: {
       weight: checkinData.weight || "",
@@ -154,6 +214,7 @@ function buildAiContext(checkinData, completeness) {
       availableMinutes: checkinData.availableMinutes || "",
       injuries: checkinData.injuries || "",
       restingHeartRate: checkinData.restingHeartRate || "",
+      performance: checkinData.trainingPerformance || "",
     },
     nutritionContext: {
       dietaryRestrictions: checkinData.dietaryRestrictions || "",
@@ -161,6 +222,7 @@ function buildAiContext(checkinData, completeness) {
       mealsPerDay: checkinData.mealsPerDay || "",
       waterIntake: checkinData.waterIntake || "",
       hunger: checkinData.hunger || "",
+      digestion: checkinData.digestion || "",
     },
     subjectiveContext: {
       sex: checkinData.sex || "",
@@ -183,12 +245,17 @@ export function loadCheckins() {
   return Array.isArray(parsed) ? parsed : [];
 }
 
-export function saveCheckin(checkinData) {
+export function saveCheckin(checkinData, options = {}) {
   const current = loadCheckins();
-  const completeness = calculateCheckinCompleteness(checkinData);
+  const cadence = normalizeCadence(checkinData.cadence);
+  const status = options.status || "completed";
+  const completeness =
+    status === "missed" ? 0 : calculateCheckinCompleteness({ ...checkinData, cadence });
 
   const newCheckin = {
-    id: `checkin-${Date.now()}`,
+    id: `checkin-${cadence}-${Date.now()}`,
+    cadence,
+    status,
     goal: checkinData.goal || "",
     sport: checkinData.sport || "",
     sex: checkinData.sex || "",
@@ -212,21 +279,34 @@ export function saveCheckin(checkinData) {
     foodPreferences: checkinData.foodPreferences || "",
     mealsPerDay: checkinData.mealsPerDay || "",
     waterIntake: checkinData.waterIntake || "",
-    energy: checkinData.energy || "",
-    sleep: checkinData.sleep || "",
-    adherence: checkinData.adherence || "",
+    energy: status === "missed" ? "" : checkinData.energy || "",
+    sleep: status === "missed" ? "" : checkinData.sleep || "",
+    adherence: status === "missed" ? "" : checkinData.adherence || "",
     hunger: checkinData.hunger || "",
     stress: checkinData.stress || "",
-    notes: checkinData.notes || "",
+    digestion: checkinData.digestion || "",
+    trainingPerformance: checkinData.trainingPerformance || "",
+    protocolAction: checkinData.protocolAction || "none",
+    notes:
+      status === "missed"
+        ? options.reason || "Check-in nao realizado."
+        : checkinData.notes || "",
     photoNote: checkinData.photoNote || "",
     completeness,
-    aiContext: buildAiContext(checkinData, completeness),
+    aiContext: buildAiContext({ ...checkinData, cadence }, completeness, status),
     createdAt: getTodayDate(),
   };
 
   const updated = [newCheckin, ...current];
   localStorage.setItem(CHECKINS_STORAGE_KEY, JSON.stringify(updated));
   return updated;
+}
+
+export function saveMissedCheckin(cadence, reason = "") {
+  return saveCheckin(
+    { ...defaultCheckinForm, cadence: normalizeCadence(cadence), protocolAction: "none" },
+    { status: "missed", reason: reason || "Check-in nao realizado no periodo." }
+  );
 }
 
 export function resetCheckins() {
@@ -236,71 +316,101 @@ export function resetCheckins() {
 
 export function getCheckinMetrics(checkins) {
   const data = Array.isArray(checkins) ? checkins : [];
+  const completed = completedOnly(data);
+  const missed = data.filter((item) => item.status === "missed");
+  const latest = completed[0];
 
   if (data.length === 0) {
     return [
-      {
-        label: "Ultimo check-in",
-        value: "--",
-        trend: "Nenhum registro salvo ainda",
-      },
-      {
-        label: "Energia media",
-        value: "--",
-        trend: "Preencha check-ins para acompanhar",
-      },
-      {
-        label: "Dados para IA",
-        value: "--",
-        trend: "Quanto mais dados, melhor o plano",
-      },
-      {
-        label: "Historico",
-        value: "0",
-        trend: "Check-ins salvos",
-      },
+      { label: "Ultimo check-in", value: "--", trend: "Nenhum registro salvo ainda" },
+      { label: "Dias uteis", value: "--", trend: "Somente check-ins realizados entram na media" },
+      { label: "Dados para IA", value: "--", trend: "Gaps ficam registrados e ignorados na media" },
+      { label: "Historico", value: "0", trend: "Check-ins salvos" },
     ];
   }
 
-  const latest = data[0];
-  const energyAverage = (
-    data.reduce((sum, item) => sum + Number(item.energy || 0), 0) / data.length
-  ).toFixed(1);
-
-  const completenessAverage = Math.round(
-    data.reduce(
-      (sum, item) =>
-        sum +
-        Number(
-          item.completeness ??
-            calculateCheckinCompleteness({ ...defaultCheckinForm, ...item })
-        ),
-      0
-    ) / data.length
-  );
+  const completenessAverage = completed.length
+    ? Math.round(
+        completed.reduce(
+          (sum, item) =>
+            sum +
+            Number(
+              item.completeness ??
+                calculateCheckinCompleteness({ ...defaultCheckinForm, ...item })
+            ),
+          0
+        ) / completed.length
+      )
+    : 0;
 
   return [
     {
       label: "Ultimo check-in",
-      value: new Date(latest.createdAt).toLocaleDateString("pt-BR"),
-      trend: "Registro mais recente salvo",
+      value: latest ? new Date(latest.createdAt).toLocaleDateString("pt-BR") : "--",
+      trend: latest ? `${checkinCadences[normalizeCadence(latest.cadence)].label} realizado` : "Ainda sem check-in realizado",
     },
     {
-      label: "Energia media",
-      value: `${energyAverage}/10`,
-      trend: "Baseada no historico atual",
+      label: "Dias uteis",
+      value: `${completed.length}/${data.length}`,
+      trend: `${missed.length} ausencia(s) registradas`,
     },
     {
       label: "Dados para IA",
       value: `${completenessAverage}%`,
-      trend: "Completude media dos registros",
+      trend: "Media somente dos check-ins realizados",
     },
     {
       label: "Historico",
       value: `${data.length}`,
-      trend: "Check-ins salvos",
+      trend: "Registros realizados e ausentes",
     },
   ];
+}
+
+export function getCheckinCadenceSummary(checkins) {
+  const data = Array.isArray(checkins) ? checkins : [];
+
+  return Object.keys(checkinCadences).map((cadence) => {
+    const cadenceEntries = data.filter(
+      (item) => normalizeCadence(item.cadence) === cadence
+    );
+    const completed = completedOnly(cadenceEntries);
+    const missed = cadenceEntries.length - completed.length;
+
+    return {
+      cadence,
+      label: checkinCadences[cadence].label,
+      total: cadenceEntries.length,
+      completed: completed.length,
+      missed,
+      energyAverage: average(completed, "energy"),
+      sleepAverage: average(completed, "sleep"),
+      adherenceAverage: average(completed, "adherence"),
+    };
+  });
+}
+
+export function getWeeklyAiDataset(checkins) {
+  const weeklySources = completedOnly(
+    (Array.isArray(checkins) ? checkins : []).filter((item) =>
+      ["daily", "weekly"].includes(normalizeCadence(item.cadence))
+    )
+  );
+
+  return {
+    usableEntries: weeklySources.length,
+    ignoredGaps: (Array.isArray(checkins) ? checkins : []).filter(
+      (item) =>
+        item.status === "missed" &&
+        ["daily", "weekly"].includes(normalizeCadence(item.cadence))
+    ).length,
+    averages: {
+      energy: average(weeklySources, "energy"),
+      sleep: average(weeklySources, "sleep"),
+      adherence: average(weeklySources, "adherence"),
+    },
+    rule: "A IA deve calcular tendencias somente com check-ins diarios e semanais realizados. Ausencias registradas explicam lacunas, mas nao viram zero.",
+  };
 }
 
 function resolveCycleStatus(endDate) {

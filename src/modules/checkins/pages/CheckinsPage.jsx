@@ -1,12 +1,16 @@
 import { useMemo, useState } from "react";
 import {
   calculateCheckinCompleteness,
+  checkinCadences,
   defaultCheckinForm,
+  getCheckinCadenceSummary,
   getCheckinMetrics,
   getMonthlyReevaluation,
+  getWeeklyAiDataset,
   loadCheckins,
   resetCheckins,
   saveCheckin,
+  saveMissedCheckin,
   validateCheckinForm,
 } from "../../../data/checkinStorage";
 import "./CheckinsPage.css";
@@ -56,18 +60,62 @@ function formatValue(value, suffix = "") {
   return value ? `${value}${suffix}` : "--";
 }
 
+function getCadenceIntro(cadence) {
+  if (cadence === "daily") {
+    return {
+      title: "Check-in diario",
+      description:
+        "Registre sinais rapidos. Se faltar um dia, marque como nao realizado; a IA ignora o gap nas medias.",
+    };
+  }
+
+  if (cadence === "weekly") {
+    return {
+      title: "Check-in semanal",
+      description:
+        "Feche a semana com peso, sinais medios e necessidade de ajuste. Isso nao regenera dieta ou treino sozinho.",
+    };
+  }
+
+  return {
+    title: "Check-in mensal",
+    description:
+      "Reavaliacao completa com objetivo, medidas, bioimpedancia e contexto para um novo ciclo.",
+  };
+}
+
 export default function CheckinsPage() {
-  const [formData, setFormData] = useState(defaultCheckinForm);
+  const [activeCadence, setActiveCadence] = useState("monthly");
+  const [formData, setFormData] = useState({
+    ...defaultCheckinForm,
+    cadence: "monthly",
+  });
   const [checkins, setCheckins] = useState(() => loadCheckins());
   const [feedback, setFeedback] = useState("");
 
   const metrics = useMemo(() => getCheckinMetrics(checkins), [checkins]);
+  const cadenceSummary = useMemo(
+    () => getCheckinCadenceSummary(checkins),
+    [checkins]
+  );
+  const weeklyDataset = useMemo(() => getWeeklyAiDataset(checkins), [checkins]);
   const reevaluation = useMemo(() => getMonthlyReevaluation(), [checkins]);
   const completeness = useMemo(
     () => calculateCheckinCompleteness(formData),
     [formData]
   );
-  const latestCheckin = checkins[0];
+  const latestCheckin = checkins.find((item) => item.status !== "missed");
+  const intro = getCadenceIntro(activeCadence);
+
+  function handleCadenceChange(cadence) {
+    setActiveCadence(cadence);
+    setFormData((current) => ({
+      ...defaultCheckinForm,
+      ...current,
+      cadence,
+    }));
+    setFeedback("");
+  }
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -81,17 +129,28 @@ export default function CheckinsPage() {
   function handleSubmit(event) {
     event.preventDefault();
 
-    const validation = validateCheckinForm(formData);
+    const payload = { ...formData, cadence: activeCadence };
+    const validation = validateCheckinForm(payload);
 
     if (!validation.isValid) {
       setFeedback(validation.message);
       return;
     }
 
-    const updated = saveCheckin(formData);
+    const updated = saveCheckin(payload);
     setCheckins(updated);
-    setFormData(defaultCheckinForm);
-    setFeedback("Check-in salvo. O historico ja pode alimentar treino, dieta e dashboard.");
+    setFormData({ ...defaultCheckinForm, cadence: activeCadence });
+    setFeedback(
+      `${checkinCadences[activeCadence].label} salvo. O historico foi atualizado sem regenerar treino ou dieta automaticamente.`
+    );
+  }
+
+  function handleMissedCheckin() {
+    const updated = saveMissedCheckin(activeCadence);
+    setCheckins(updated);
+    setFeedback(
+      `${checkinCadences[activeCadence].label} marcado como nao realizado. A IA vai considerar apenas os check-ins preenchidos.`
+    );
   }
 
   function handleReset() {
@@ -100,15 +159,19 @@ export default function CheckinsPage() {
     setFeedback("Historico de check-ins resetado.");
   }
 
+  const showDaily = activeCadence === "daily";
+  const showWeekly = activeCadence === "weekly";
+  const showMonthly = activeCadence === "monthly";
+
   return (
     <section className="checkins-page">
       <header className="checkins-hero glass-panel">
         <div>
           <span className="checkins-hero__eyebrow">Check-in inteligente</span>
-          <h1>Dados suficientes para montar treino e dieta com IA.</h1>
+          <h1>Diario, semanal e mensal trabalhando juntos.</h1>
           <p>
-            O basico e obrigatorio. Bioimpedancia, rotina, preferencias e
-            historico deixam a recomendacao mais precisa a cada registro.
+            Registre o que aconteceu, marque ausencias quando elas ocorrerem e
+            mantenha uma linha do tempo limpa para dashboard, treino, dieta e IA.
           </p>
         </div>
 
@@ -119,11 +182,25 @@ export default function CheckinsPage() {
             <span style={{ width: `${completeness}%` }} />
           </div>
           <small>
-            A IA pode trabalhar com o minimo, mas melhora quando o usuario
-            informa bioimpedancia, restricoes e rotina real.
+            Ausencias ficam registradas como gap. Elas explicam o historico, mas
+            nao entram como zero nas medias.
           </small>
         </aside>
       </header>
+
+      <nav className="checkins-tabs" aria-label="Tipo de check-in">
+        {Object.entries(checkinCadences).map(([cadence, config]) => (
+          <button
+            key={cadence}
+            type="button"
+            className={activeCadence === cadence ? "is-active" : ""}
+            onClick={() => handleCadenceChange(cadence)}
+          >
+            <strong>{config.label}</strong>
+            <span>{config.description}</span>
+          </button>
+        ))}
+      </nav>
 
       {feedback ? <p className="checkins-feedback">{feedback}</p> : null}
 
@@ -137,204 +214,251 @@ export default function CheckinsPage() {
         ))}
       </section>
 
+      <section className="checkins-cadence-summary">
+        {cadenceSummary.map((item) => (
+          <article key={item.cadence} className="glass-panel">
+            <div>
+              <span>{item.label}</span>
+              <strong>
+                {item.completed}/{item.total}
+              </strong>
+            </div>
+            <p>{item.missed} ausencia(s) registradas</p>
+            <small>
+              Energia {item.energyAverage} | Sono {item.sleepAverage}h |
+              Aderencia {item.adherenceAverage}%
+            </small>
+          </article>
+        ))}
+      </section>
+
       <form className="checkins-form" onSubmit={handleSubmit}>
         <div className="checkins-form__main">
-          <Section
-            eyebrow="01"
-            title="Objetivo e dados obrigatorios"
-            description="Esses campos definem o ponto de partida para qualquer plano."
-          >
-            <div className="checkins-grid checkins-grid--two">
-              <Field label="Objetivo principal" required>
-                <select name="goal" value={formData.goal} onChange={handleChange}>
-                  {goalOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-
-              <Field
-                label="Esporte especifico"
-                hint="Use quando o objetivo for corrida, futebol, luta, ciclismo ou outro esporte."
-              >
-                <input
-                  name="sport"
-                  value={formData.sport}
-                  onChange={handleChange}
-                  placeholder="Ex.: corrida de 10 km"
-                />
-              </Field>
-
-              <Field label="Peso atual" required>
-                <input
-                  name="weight"
-                  value={formData.weight}
-                  onChange={handleChange}
-                  inputMode="decimal"
-                  placeholder="Ex.: 84.6 kg"
-                />
-              </Field>
-
-              <Field label="Altura" required>
-                <input
-                  name="height"
-                  value={formData.height}
-                  onChange={handleChange}
-                  inputMode="decimal"
-                  placeholder="Ex.: 1.78 m"
-                />
-              </Field>
-
-              <Field label="Sexo biologico">
-                <select name="sex" value={formData.sex} onChange={handleChange}>
-                  <option value="">Selecione</option>
-                  <option value="feminino">Feminino</option>
-                  <option value="masculino">Masculino</option>
-                  <option value="outro">Outro / prefiro nao informar</option>
-                </select>
-              </Field>
-
-              <Field label="Idade">
-                <input
-                  name="age"
-                  value={formData.age}
-                  onChange={handleChange}
-                  inputMode="numeric"
-                  placeholder="Ex.: 32"
-                />
-              </Field>
+          <Section eyebrow="01" title={intro.title} description={intro.description}>
+            <div className="checkins-mode-note">
+              <strong>Regra da IA</strong>
+              <p>
+                Usar somente dados informados. Check-ins nao realizados ficam no
+                historico, mas sao ignorados nas medias e tendencias.
+              </p>
             </div>
           </Section>
 
+          {showMonthly ? (
+            <Section
+              eyebrow="02"
+              title="Objetivo e base mensal"
+              description="Esses dados definem o ciclo principal do usuario."
+            >
+              <div className="checkins-grid checkins-grid--two">
+                <Field label="Objetivo principal" required>
+                  <select name="goal" value={formData.goal} onChange={handleChange}>
+                    {goalOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+
+                <Field label="Esporte especifico">
+                  <input
+                    name="sport"
+                    value={formData.sport}
+                    onChange={handleChange}
+                    placeholder="Ex.: corrida de 10 km"
+                  />
+                </Field>
+
+                <Field label="Peso atual" required>
+                  <input
+                    name="weight"
+                    value={formData.weight}
+                    onChange={handleChange}
+                    inputMode="decimal"
+                    placeholder="Ex.: 84.6 kg"
+                  />
+                </Field>
+
+                <Field label="Altura" required>
+                  <input
+                    name="height"
+                    value={formData.height}
+                    onChange={handleChange}
+                    inputMode="decimal"
+                    placeholder="Ex.: 1.78 m"
+                  />
+                </Field>
+
+                <Field label="Sexo biologico">
+                  <select name="sex" value={formData.sex} onChange={handleChange}>
+                    <option value="">Selecione</option>
+                    <option value="feminino">Feminino</option>
+                    <option value="masculino">Masculino</option>
+                    <option value="outro">Outro / prefiro nao informar</option>
+                  </select>
+                </Field>
+
+                <Field label="Idade">
+                  <input
+                    name="age"
+                    value={formData.age}
+                    onChange={handleChange}
+                    inputMode="numeric"
+                    placeholder="Ex.: 32"
+                  />
+                </Field>
+              </div>
+            </Section>
+          ) : null}
+
+          {showMonthly ? (
+            <Section
+              eyebrow="03"
+              title="Bioimpedancia e medidas"
+              description="Quanto mais dados corporais, melhor a leitura de calorias, macros e volume de treino."
+            >
+              <div className="checkins-grid checkins-grid--three">
+                <Field label="Gordura corporal">
+                  <input name="bodyFat" value={formData.bodyFat} onChange={handleChange} placeholder="Ex.: 18%" />
+                </Field>
+                <Field label="Massa magra">
+                  <input name="leanMass" value={formData.leanMass} onChange={handleChange} placeholder="Ex.: 62 kg" />
+                </Field>
+                <Field label="Massa gorda">
+                  <input name="fatMass" value={formData.fatMass} onChange={handleChange} placeholder="Ex.: 15 kg" />
+                </Field>
+                <Field label="Massa muscular">
+                  <input name="muscleMass" value={formData.muscleMass} onChange={handleChange} placeholder="Ex.: 38 kg" />
+                </Field>
+                <Field label="Gordura visceral">
+                  <input name="visceralFat" value={formData.visceralFat} onChange={handleChange} placeholder="Ex.: 8" />
+                </Field>
+                <Field label="Cintura">
+                  <input name="waist" value={formData.waist} onChange={handleChange} placeholder="Ex.: 86 cm" />
+                </Field>
+                <Field label="Abdomen">
+                  <input name="abdomen" value={formData.abdomen} onChange={handleChange} placeholder="Ex.: 92 cm" />
+                </Field>
+                <Field label="Quadril">
+                  <input name="hip" value={formData.hip} onChange={handleChange} placeholder="Ex.: 101 cm" />
+                </Field>
+                <Field label="Frequencia cardiaca repouso">
+                  <input name="restingHeartRate" value={formData.restingHeartRate} onChange={handleChange} placeholder="Ex.: 62 bpm" />
+                </Field>
+              </div>
+            </Section>
+          ) : null}
+
+          {(showWeekly || showMonthly) ? (
+            <Section
+              eyebrow={showMonthly ? "04" : "02"}
+              title="Rotina, treino e dieta"
+              description="Use para fechar a semana ou atualizar o contexto mensal do protocolo."
+            >
+              <div className="checkins-grid checkins-grid--two">
+                <Field label="Experiencia de treino">
+                  <select
+                    name="trainingExperience"
+                    value={formData.trainingExperience}
+                    onChange={handleChange}
+                  >
+                    {experienceOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+
+                <Field label="Dias treinados / disponiveis">
+                  <input
+                    name="weeklyTrainingDays"
+                    value={formData.weeklyTrainingDays}
+                    onChange={handleChange}
+                    placeholder="Ex.: 5"
+                  />
+                </Field>
+
+                <Field label="Tempo por treino">
+                  <input
+                    name="availableMinutes"
+                    value={formData.availableMinutes}
+                    onChange={handleChange}
+                    placeholder="Ex.: 60 min"
+                  />
+                </Field>
+
+                <Field label="Refeicoes por dia">
+                  <input
+                    name="mealsPerDay"
+                    value={formData.mealsPerDay}
+                    onChange={handleChange}
+                    placeholder="Ex.: 4"
+                  />
+                </Field>
+
+                <Field label="Restricoes alimentares">
+                  <input
+                    name="dietaryRestrictions"
+                    value={formData.dietaryRestrictions}
+                    onChange={handleChange}
+                    placeholder="Ex.: lactose, gluten, vegetariano"
+                  />
+                </Field>
+
+                <Field label="Preferencias alimentares">
+                  <input
+                    name="foodPreferences"
+                    value={formData.foodPreferences}
+                    onChange={handleChange}
+                    placeholder="Ex.: arroz, ovos, frango, frutas"
+                  />
+                </Field>
+
+                <Field label="Agua por dia">
+                  <input
+                    name="waterIntake"
+                    value={formData.waterIntake}
+                    onChange={handleChange}
+                    placeholder="Ex.: 2.5 L"
+                  />
+                </Field>
+
+                <Field label="Lesoes ou limitacoes">
+                  <input
+                    name="injuries"
+                    value={formData.injuries}
+                    onChange={handleChange}
+                    placeholder="Ex.: lombar, joelho, ombro"
+                  />
+                </Field>
+              </div>
+            </Section>
+          ) : null}
+
           <Section
-            eyebrow="02"
-            title="Bioimpedancia e medidas"
-            description="Campos opcionais para melhorar calorias, macros e escolha do treino."
+            eyebrow={showDaily ? "02" : showWeekly ? "03" : "05"}
+            title={showDaily ? "Sinais do dia" : "Sinais da semana"}
+            description={
+              showDaily
+                ? "Sono, energia e aderencia de hoje alimentam a tendencia semanal."
+                : "Fechamento semanal para analisar ajustes sem regenerar plano automaticamente."
+            }
           >
             <div className="checkins-grid checkins-grid--three">
-              <Field label="Gordura corporal">
-                <input name="bodyFat" value={formData.bodyFat} onChange={handleChange} placeholder="Ex.: 18%" />
-              </Field>
-              <Field label="Massa magra">
-                <input name="leanMass" value={formData.leanMass} onChange={handleChange} placeholder="Ex.: 62 kg" />
-              </Field>
-              <Field label="Massa gorda">
-                <input name="fatMass" value={formData.fatMass} onChange={handleChange} placeholder="Ex.: 15 kg" />
-              </Field>
-              <Field label="Massa muscular">
-                <input name="muscleMass" value={formData.muscleMass} onChange={handleChange} placeholder="Ex.: 38 kg" />
-              </Field>
-              <Field label="Gordura visceral">
-                <input name="visceralFat" value={formData.visceralFat} onChange={handleChange} placeholder="Ex.: 8" />
-              </Field>
-              <Field label="Cintura">
-                <input name="waist" value={formData.waist} onChange={handleChange} placeholder="Ex.: 86 cm" />
-              </Field>
-              <Field label="Abdomen">
-                <input name="abdomen" value={formData.abdomen} onChange={handleChange} placeholder="Ex.: 92 cm" />
-              </Field>
-              <Field label="Quadril">
-                <input name="hip" value={formData.hip} onChange={handleChange} placeholder="Ex.: 101 cm" />
-              </Field>
-              <Field label="Frequencia cardiaca repouso">
-                <input name="restingHeartRate" value={formData.restingHeartRate} onChange={handleChange} placeholder="Ex.: 62 bpm" />
-              </Field>
-            </div>
-          </Section>
+              {showWeekly ? (
+                <Field label="Peso da semana" required>
+                  <input
+                    name="weight"
+                    value={formData.weight}
+                    onChange={handleChange}
+                    inputMode="decimal"
+                    placeholder="Ex.: 84.1 kg"
+                  />
+                </Field>
+              ) : null}
 
-          <Section
-            eyebrow="03"
-            title="Rotina, treino e dieta"
-            description="Essas respostas ajudam a IA a montar um plano executavel, nao apenas ideal."
-          >
-            <div className="checkins-grid checkins-grid--two">
-              <Field label="Experiencia de treino">
-                <select
-                  name="trainingExperience"
-                  value={formData.trainingExperience}
-                  onChange={handleChange}
-                >
-                  {experienceOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-
-              <Field label="Dias disponiveis por semana">
-                <input
-                  name="weeklyTrainingDays"
-                  value={formData.weeklyTrainingDays}
-                  onChange={handleChange}
-                  placeholder="Ex.: 5"
-                />
-              </Field>
-
-              <Field label="Tempo por treino">
-                <input
-                  name="availableMinutes"
-                  value={formData.availableMinutes}
-                  onChange={handleChange}
-                  placeholder="Ex.: 60 min"
-                />
-              </Field>
-
-              <Field label="Refeicoes por dia">
-                <input
-                  name="mealsPerDay"
-                  value={formData.mealsPerDay}
-                  onChange={handleChange}
-                  placeholder="Ex.: 4"
-                />
-              </Field>
-
-              <Field label="Restricoes alimentares">
-                <input
-                  name="dietaryRestrictions"
-                  value={formData.dietaryRestrictions}
-                  onChange={handleChange}
-                  placeholder="Ex.: lactose, gluten, vegetariano"
-                />
-              </Field>
-
-              <Field label="Preferencias alimentares">
-                <input
-                  name="foodPreferences"
-                  value={formData.foodPreferences}
-                  onChange={handleChange}
-                  placeholder="Ex.: arroz, ovos, frango, frutas"
-                />
-              </Field>
-
-              <Field label="Agua por dia">
-                <input
-                  name="waterIntake"
-                  value={formData.waterIntake}
-                  onChange={handleChange}
-                  placeholder="Ex.: 2.5 L"
-                />
-              </Field>
-
-              <Field label="Lesoes ou limitacoes">
-                <input
-                  name="injuries"
-                  value={formData.injuries}
-                  onChange={handleChange}
-                  placeholder="Ex.: lombar, joelho, ombro"
-                />
-              </Field>
-            </div>
-          </Section>
-
-          <Section
-            eyebrow="04"
-            title="Sinais da semana"
-            description="Energia, sono e aderencia ajudam a decidir quando ajustar volume, calorias e recuperacao."
-          >
-            <div className="checkins-grid checkins-grid--three">
               <Field label="Energia" required>
                 <select name="energy" value={formData.energy} onChange={handleChange}>
                   {Array.from({ length: 10 }, (_, index) => String(index + 1)).map((value) => (
@@ -345,7 +469,7 @@ export default function CheckinsPage() {
                 </select>
               </Field>
 
-              <Field label="Sono medio" required>
+              <Field label={showDaily ? "Sono de hoje" : "Sono medio"} required>
                 <input
                   name="sleep"
                   value={formData.sleep}
@@ -383,6 +507,28 @@ export default function CheckinsPage() {
                 </select>
               </Field>
 
+              <Field label="Digestao">
+                <select name="digestion" value={formData.digestion} onChange={handleChange}>
+                  <option value="">Selecione</option>
+                  <option value="boa">Boa</option>
+                  <option value="regular">Regular</option>
+                  <option value="ruim">Ruim</option>
+                </select>
+              </Field>
+
+              <Field label="Performance no treino">
+                <select
+                  name="trainingPerformance"
+                  value={formData.trainingPerformance}
+                  onChange={handleChange}
+                >
+                  <option value="">Selecione</option>
+                  <option value="abaixo">Abaixo do esperado</option>
+                  <option value="normal">Normal</option>
+                  <option value="acima">Acima do esperado</option>
+                </select>
+              </Field>
+
               <Field label="Fotos">
                 <input
                   name="photoNote"
@@ -393,12 +539,31 @@ export default function CheckinsPage() {
               </Field>
             </div>
 
+            {(showWeekly || showMonthly) ? (
+              <div className="checkins-grid checkins-grid--two">
+                <Field
+                  label="Acao sobre protocolo"
+                  hint="Sinaliza necessidade, mas nao gera dieta ou treino automaticamente."
+                >
+                  <select
+                    name="protocolAction"
+                    value={formData.protocolAction}
+                    onChange={handleChange}
+                  >
+                    <option value="none">Manter protocolo atual</option>
+                    <option value="monitor">Acompanhar sem alterar</option>
+                    <option value="request-adjustment">Sinalizar ajuste manual/IA</option>
+                  </select>
+                </Field>
+              </div>
+            ) : null}
+
             <Field label="Observacoes gerais">
               <textarea
                 name="notes"
                 value={formData.notes}
                 onChange={handleChange}
-                placeholder="Ex.: fome a noite, treino rendeu pouco, viagem, ciclo menstrual, dores, exames recentes."
+                placeholder="Ex.: fome a noite, treino rendeu pouco, viagem, dores, refeicoes fora do plano."
               />
             </Field>
           </Section>
@@ -406,17 +571,31 @@ export default function CheckinsPage() {
 
         <aside className="checkins-sidebar">
           <article className="checkins-actions glass-panel">
-            <h2>Salvar check-in</h2>
+            <h2>Registrar {checkinCadences[activeCadence].label.toLowerCase()}</h2>
             <p>
-              O registro fica no historico local e ja nasce estruturado para uma
-              futura chamada de IA.
+              Salvar registra dados reais. Marcar como nao realizado preserva o
+              gap sem distorcer medias.
             </p>
             <button type="submit" className="primary-button">
               Salvar check-in
             </button>
+            <button type="button" className="secondary-button" onClick={handleMissedCheckin}>
+              Marcar como nao realizado
+            </button>
             <button type="button" className="ghost-button" onClick={handleReset}>
               Resetar historico
             </button>
+          </article>
+
+          <article className="checkins-actions glass-panel">
+            <h2>Base semanal da IA</h2>
+            <div className="checkins-payload">
+              <span>Entradas usadas: {weeklyDataset.usableEntries}</span>
+              <span>Gaps ignorados: {weeklyDataset.ignoredGaps}</span>
+              <span>Energia media: {weeklyDataset.averages.energy}</span>
+              <span>Sono medio: {weeklyDataset.averages.sleep}h</span>
+              <span>Aderencia media: {weeklyDataset.averages.adherence}%</span>
+            </div>
           </article>
 
           <article className="checkins-actions glass-panel">
@@ -433,18 +612,16 @@ export default function CheckinsPage() {
           </article>
 
           <article className="checkins-actions glass-panel">
-            <h2>Ultimo payload</h2>
+            <h2>Ultimo payload valido</h2>
             {latestCheckin ? (
               <div className="checkins-payload">
+                <span>Tipo: {checkinCadences[latestCheckin.cadence || "monthly"].label}</span>
                 <span>Objetivo: {latestCheckin.goal || "--"}</span>
                 <span>Prontidao IA: {latestCheckin.aiContext?.readiness || "basica"}</span>
                 <span>Completude: {latestCheckin.completeness ?? "--"}%</span>
-                <span>
-                  Criado em: {new Date(latestCheckin.createdAt).toLocaleString("pt-BR")}
-                </span>
               </div>
             ) : (
-              <p>Nenhum check-in salvo ainda.</p>
+              <p>Nenhum check-in realizado ainda.</p>
             )}
           </article>
         </aside>
@@ -461,52 +638,64 @@ export default function CheckinsPage() {
 
         {checkins.length === 0 ? (
           <p className="checkins-empty">
-            Crie o primeiro check-in para iniciar a linha do tempo do usuario.
+            Crie o primeiro check-in ou registre uma ausencia para iniciar a
+            linha do tempo do usuario.
           </p>
         ) : (
           <div className="checkins-history__list">
-            {checkins.map((item) => (
-              <article key={item.id} className="checkins-history-card">
-                <div className="checkins-history-card__top">
-                  <div>
-                    <h3>{new Date(item.createdAt).toLocaleString("pt-BR")}</h3>
-                    <p>{item.goal || "Objetivo nao informado"}</p>
-                  </div>
-                  <span>{item.completeness ?? "--"}% para IA</span>
-                </div>
+            {checkins.map((item) => {
+              const cadence = item.cadence || "monthly";
+              const isMissed = item.status === "missed";
 
-                <div className="checkins-history-card__grid">
-                  <div>
-                    <small>Peso</small>
-                    <strong>{formatValue(item.weight)}</strong>
+              return (
+                <article
+                  key={item.id}
+                  className={`checkins-history-card ${isMissed ? "is-missed" : ""}`}
+                >
+                  <div className="checkins-history-card__top">
+                    <div>
+                      <h3>{new Date(item.createdAt).toLocaleString("pt-BR")}</h3>
+                      <p>
+                        {checkinCadences[cadence].label} -{" "}
+                        {isMissed ? "nao realizado" : item.goal || "realizado"}
+                      </p>
+                    </div>
+                    <span>{isMissed ? "Gap registrado" : `${item.completeness ?? "--"}% para IA`}</span>
                   </div>
-                  <div>
-                    <small>Altura</small>
-                    <strong>{formatValue(item.height)}</strong>
-                  </div>
-                  <div>
-                    <small>Gordura</small>
-                    <strong>{formatValue(item.bodyFat)}</strong>
-                  </div>
-                  <div>
-                    <small>Sono</small>
-                    <strong>{formatValue(item.sleep, "h")}</strong>
-                  </div>
-                  <div>
-                    <small>Energia</small>
-                    <strong>{formatValue(item.energy, "/10")}</strong>
-                  </div>
-                  <div>
-                    <small>Aderencia</small>
-                    <strong>{formatValue(item.adherence, "%")}</strong>
-                  </div>
-                </div>
 
-                <p className="checkins-history-card__notes">
-                  {item.notes || "Sem observacoes registradas."}
-                </p>
-              </article>
-            ))}
+                  <div className="checkins-history-card__grid">
+                    <div>
+                      <small>Peso</small>
+                      <strong>{formatValue(item.weight)}</strong>
+                    </div>
+                    <div>
+                      <small>Sono</small>
+                      <strong>{formatValue(item.sleep, "h")}</strong>
+                    </div>
+                    <div>
+                      <small>Energia</small>
+                      <strong>{formatValue(item.energy, "/10")}</strong>
+                    </div>
+                    <div>
+                      <small>Aderencia</small>
+                      <strong>{formatValue(item.adherence, "%")}</strong>
+                    </div>
+                    <div>
+                      <small>Fome</small>
+                      <strong>{formatValue(item.hunger)}</strong>
+                    </div>
+                    <div>
+                      <small>Acao</small>
+                      <strong>{item.protocolAction || "none"}</strong>
+                    </div>
+                  </div>
+
+                  <p className="checkins-history-card__notes">
+                    {item.notes || "Sem observacoes registradas."}
+                  </p>
+                </article>
+              );
+            })}
           </div>
         )}
       </section>
