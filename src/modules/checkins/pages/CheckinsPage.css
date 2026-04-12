@@ -1,3 +1,363 @@
-.checkins-page .module-page__hero {
+.checkins-page {
+  display: grid;
+  gap: 20px;
+}
+
+.checkins-hero,
+.checkin-section,
+.checkins-actions,
+.checkins-history {
+  padding: 22px;
+}
+
+.checkins-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+  gap: 22px;
+  align-items: stretch;
+}
+
+.checkins-hero__eyebrow,
+.checkin-section__header span,
+.checkins-history__header span {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 30px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(255, 46, 46, 0.16);
+  border: 1px solid rgba(255, 46, 46, 0.26);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.checkins-hero h1 {
+  max-width: 780px;
+  margin: 14px 0 10px;
+  font-size: clamp(1.9rem, 3vw, 2.8rem);
+  line-height: 1.06;
+}
+
+.checkins-hero p,
+.checkin-section__header p,
+.checkins-actions p,
+.checkins-history-card p,
+.checkins-empty {
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.6;
+}
+
+.checkins-readiness {
+  display: grid;
+  align-content: center;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.checkins-readiness span,
+.checkins-readiness small {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.checkins-readiness strong {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.checkins-progress {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.checkins-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff2e2e, #f59e0b);
+}
+
+.checkins-feedback {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 8px;
+  background: rgba(255, 46, 46, 0.12);
+  border: 1px solid rgba(255, 46, 46, 0.24);
+  color: #fff;
+  font-weight: 700;
+}
+
+.checkins-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.checkins-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 20px;
+  align-items: start;
+}
+
+.checkins-form__main,
+.checkins-sidebar {
+  display: grid;
+  gap: 20px;
+}
+
+.checkins-sidebar {
+  position: sticky;
+  top: 20px;
+}
+
+.checkin-section__header {
+  margin-bottom: 18px;
+}
+
+.checkin-section__header h2,
+.checkins-actions h2,
+.checkins-history__header h2 {
+  margin: 12px 0 8px;
+  font-size: 1.18rem;
+}
+
+.checkins-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.checkins-grid--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.checkins-grid--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.checkin-field {
+  display: grid;
+  gap: 8px;
+}
+
+.checkin-field__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.checkin-field__label strong,
+.checkin-field__label em {
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-style: normal;
+}
+
+.checkin-field__label strong {
+  color: #fff;
+  background: rgba(255, 46, 46, 0.18);
+}
+
+.checkin-field__label em {
+  color: rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.checkin-field input,
+.checkin-field select,
+.checkin-field textarea {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  outline: none;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.checkin-field textarea {
+  min-height: 112px;
+  resize: vertical;
+}
+
+.checkin-field input:focus,
+.checkin-field select:focus,
+.checkin-field textarea:focus {
+  border-color: rgba(255, 46, 46, 0.42);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 4px rgba(255, 46, 46, 0.1);
+}
+
+.checkin-field small {
+  color: rgba(255, 255, 255, 0.58);
+  line-height: 1.5;
+}
+
+.checkins-actions {
+  display: grid;
+  gap: 12px;
+}
+
+.checkins-actions .primary-button,
+.checkins-actions .ghost-button {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.checkins-status {
+  width: fit-content;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.checkins-status--success {
+  color: #dcffe8;
+  background: rgba(34, 197, 94, 0.16);
+  border: 1px solid rgba(34, 197, 94, 0.26);
+}
+
+.checkins-status--warning {
+  color: #fff4da;
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.22);
+}
+
+.checkins-payload {
+  display: grid;
+  gap: 9px;
+}
+
+.checkins-payload span {
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.checkins-history__header,
+.checkins-history-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.checkins-history__header {
+  margin-bottom: 18px;
+}
+
+.checkins-history__header strong,
+.checkins-history-card__top span {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.checkins-history__list {
+  display: grid;
+  gap: 14px;
+}
+
+.checkins-history-card {
+  padding: 18px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.checkins-history-card h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.checkins-history-card__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.checkins-history-card__grid div {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.checkins-history-card__grid small {
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.checkins-history-card__notes {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.checkins-empty {
+  margin: 0;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+@media (max-width: 1180px) {
+  .checkins-hero,
+  .checkins-form {
+    grid-template-columns: 1fr;
+  }
+
+  .checkins-sidebar {
+    position: static;
+  }
+
+  .checkins-metrics,
+  .checkins-grid--three {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .checkins-hero,
+  .checkin-section,
+  .checkins-actions,
+  .checkins-history {
+    padding: 18px;
+  }
+
+  .checkins-metrics,
+  .checkins-grid--two,
+  .checkins-grid--three,
+  .checkins-history-card__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .checkins-history__header,
+  .checkins-history-card__top {
+    flex-direction: column;
+  }
 }
