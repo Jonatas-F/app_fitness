@@ -94,39 +94,163 @@
   font-weight: 700;
 }
 
+.checkins-selector {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+
+.checkins-selector__header span {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 28px;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.checkins-selector__header h2 {
+  margin: 10px 0 6px;
+  font-size: 1.24rem;
+}
+
+.checkins-selector__header h2 strong {
+  color: #ffb4b4;
+}
+
+.checkins-selector__header p {
+  max-width: 820px;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.55;
+}
+
 .checkins-tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
-.checkins-tabs button {
+.checkins-tab {
+  position: relative;
   display: grid;
-  gap: 6px;
-  min-height: 112px;
+  grid-template-columns: 46px 1fr;
+  gap: 12px;
+  min-height: 148px;
   padding: 16px;
   text-align: left;
   border-radius: 8px;
   color: rgba(255, 255, 255, 0.74);
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.checkins-tabs button:hover,
-.checkins-tabs button.is-active {
-  transform: translateY(-2px);
+.checkins-tab:hover,
+.checkins-tab.is-active {
+  transform: translateY(-3px);
   color: #fff;
-  background: rgba(255, 46, 46, 0.12);
-  border-color: rgba(255, 46, 46, 0.32);
 }
 
-.checkins-tabs strong {
+.checkins-tab--daily {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.13), rgba(255, 255, 255, 0.05));
+}
+
+.checkins-tab--weekly {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.14), rgba(255, 255, 255, 0.05));
+}
+
+.checkins-tab--monthly {
+  background: linear-gradient(135deg, rgba(255, 46, 46, 0.14), rgba(255, 255, 255, 0.05));
+}
+
+.checkins-tab--daily:hover,
+.checkins-tab--daily.is-active {
+  border-color: rgba(34, 197, 94, 0.52);
+  box-shadow: 0 12px 28px rgba(34, 197, 94, 0.16), inset 0 0 0 1px rgba(34, 197, 94, 0.18);
+}
+
+.checkins-tab--weekly:hover,
+.checkins-tab--weekly.is-active {
+  border-color: rgba(245, 158, 11, 0.54);
+  box-shadow: 0 12px 28px rgba(245, 158, 11, 0.16), inset 0 0 0 1px rgba(245, 158, 11, 0.18);
+}
+
+.checkins-tab--monthly:hover,
+.checkins-tab--monthly.is-active {
+  border-color: rgba(255, 46, 46, 0.56);
+  box-shadow: 0 12px 28px rgba(255, 46, 46, 0.18), inset 0 0 0 1px rgba(255, 46, 46, 0.2);
+}
+
+.checkins-tab__icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.checkins-tab--daily .checkins-tab__icon {
+  background: rgba(34, 197, 94, 0.22);
+}
+
+.checkins-tab--weekly .checkins-tab__icon {
+  background: rgba(245, 158, 11, 0.24);
+}
+
+.checkins-tab--monthly .checkins-tab__icon {
+  background: rgba(255, 46, 46, 0.24);
+}
+
+.checkins-tab__content {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.checkins-tab__content strong {
   font-size: 1rem;
 }
 
-.checkins-tabs span {
+.checkins-tab__content span {
   line-height: 1.45;
+}
+
+.checkins-tab__content em {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.82rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.checkins-tab__state {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  min-height: 28px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.66);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.checkins-tab.is-active .checkins-tab__state {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .checkins-metrics {
@@ -288,6 +412,145 @@
   line-height: 1.5;
 }
 
+.photo-checkin-panel {
+  display: grid;
+  gap: 16px;
+  margin-top: 4px;
+  padding: 16px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.photo-checkin-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.photo-checkin-panel__header h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.photo-checkin-panel__header p {
+  max-width: 760px;
+  color: rgba(255, 255, 255, 0.68);
+  line-height: 1.55;
+}
+
+.photo-checkin-panel__header span {
+  min-width: 78px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(255, 46, 46, 0.16);
+  border: 1px solid rgba(255, 46, 46, 0.24);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.photo-pose-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.photo-pose-card {
+  display: grid;
+  grid-template-rows: 150px 1fr;
+  overflow: hidden;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.photo-pose-card__silhouette {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 150px;
+  padding: 10px 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)),
+    radial-gradient(circle at center, rgba(255, 46, 46, 0.14), transparent 62%);
+}
+
+.photo-pose-card__silhouette::before,
+.photo-pose-card__silhouette::after {
+  content: "";
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  border: 1px dashed rgba(255, 255, 255, 0.22);
+}
+
+.photo-pose-card__silhouette::before {
+  top: 14px;
+}
+
+.photo-pose-card__silhouette::after {
+  bottom: 14px;
+}
+
+.photo-pose-card__silhouette img {
+  position: relative;
+  z-index: 1;
+  transform: translateY(-10px);
+  width: auto;
+  max-width: 120%;
+  height: 154px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.28));
+}
+
+.photo-pose-card__silhouette--back,
+.photo-pose-card__silhouette--double-back {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)),
+    radial-gradient(circle at center, rgba(245, 158, 11, 0.16), transparent 62%);
+}
+
+.photo-pose-card__content {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.photo-pose-card__content h3 {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.photo-pose-card__content p,
+.photo-pose-card__content small {
+  color: rgba(255, 255, 255, 0.64);
+  line-height: 1.45;
+}
+
+.photo-pose-card__button {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 46, 46, 0.18);
+  border: 1px solid rgba(255, 46, 46, 0.3);
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.photo-pose-card__button input {
+  display: none;
+}
+
 .checkins-actions {
   display: grid;
   gap: 12px;
@@ -425,6 +688,7 @@
   .checkins-metrics,
   .checkins-tabs,
   .checkins-cadence-summary,
+  .photo-pose-grid,
   .checkins-grid--three {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -441,6 +705,7 @@
   .checkins-metrics,
   .checkins-tabs,
   .checkins-cadence-summary,
+  .photo-pose-grid,
   .checkins-grid--two,
   .checkins-grid--three,
   .checkins-history-card__grid {
@@ -448,7 +713,8 @@
   }
 
   .checkins-history__header,
-  .checkins-history-card__top {
+  .checkins-history-card__top,
+  .photo-checkin-panel__header {
     flex-direction: column;
   }
 }

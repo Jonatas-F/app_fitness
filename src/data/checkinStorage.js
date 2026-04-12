@@ -53,6 +53,7 @@ export const defaultCheckinForm = {
   protocolAction: "none",
   notes: "",
   photoNote: "",
+  photos: [],
 };
 
 const requiredFieldsByCadence = {
@@ -104,6 +105,7 @@ const aiRelevantFields = [
   "protocolAction",
   "notes",
   "photoNote",
+  "photos",
 ];
 
 function safeParse(value, fallback) {
@@ -230,6 +232,7 @@ function buildAiContext(checkinData, completeness, status) {
       stress: checkinData.stress || "",
       notes: checkinData.notes || "",
       photoNote: checkinData.photoNote || "",
+      photos: Array.isArray(checkinData.photos) ? checkinData.photos : [],
     },
   };
 }
@@ -292,6 +295,7 @@ export function saveCheckin(checkinData, options = {}) {
         ? options.reason || "Check-in nao realizado."
         : checkinData.notes || "",
     photoNote: checkinData.photoNote || "",
+    photos: Array.isArray(checkinData.photos) ? checkinData.photos : [],
     completeness,
     aiContext: buildAiContext({ ...checkinData, cadence }, completeness, status),
     createdAt: getTodayDate(),

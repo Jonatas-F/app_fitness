@@ -1,4 +1,9 @@
 import { useMemo, useState } from "react";
+import costasNormalSilhouette from "../../../assets/costasnormal.svg";
+import duploBicepsSilhouette from "../../../assets/duplobiceps.svg";
+import duploBicepsCostasSilhouette from "../../../assets/duplobicepscostas.svg";
+import frenteNormalSilhouette from "../../../assets/frentenormal.svg";
+import ladoSilhouette from "../../../assets/lado.svg";
 import {
   calculateCheckinCompleteness,
   checkinCadences,
@@ -28,6 +33,59 @@ const experienceOptions = [
   { value: "iniciante", label: "Iniciante" },
   { value: "intermediario", label: "Intermediario" },
   { value: "avancado", label: "Avancado" },
+];
+
+const cadenceVisuals = {
+  daily: {
+    icon: "☀",
+    action: "Preencher sinais de hoje",
+  },
+  weekly: {
+    icon: "▦",
+    action: "Fechar resumo da semana",
+  },
+  monthly: {
+    icon: "◉",
+    action: "Fazer reavaliacao completa",
+  },
+};
+
+const photoPoseSlots = [
+  {
+    id: "front-double-biceps",
+    title: "Frente duplo biceps",
+    instruction: "Corpo inteiro, camera na altura do peito, bracos flexionados.",
+    pose: "double-front",
+    silhouette: duploBicepsSilhouette,
+  },
+  {
+    id: "side-relaxed",
+    title: "Lateral bracos caidos",
+    instruction: "Corpo inteiro de lado, postura natural, bracos soltos.",
+    pose: "side",
+    silhouette: ladoSilhouette,
+  },
+  {
+    id: "back-double-biceps",
+    title: "Costas duplo biceps",
+    instruction: "Corpo inteiro de costas, bracos flexionados, mesma distancia.",
+    pose: "double-back",
+    silhouette: duploBicepsCostasSilhouette,
+  },
+  {
+    id: "front-relaxed",
+    title: "Frente normal",
+    instruction: "Corpo inteiro de frente, bracos relaxados, pes alinhados.",
+    pose: "front",
+    silhouette: frenteNormalSilhouette,
+  },
+  {
+    id: "back-relaxed",
+    title: "Costas normal",
+    instruction: "Corpo inteiro de costas, bracos relaxados, postura neutra.",
+    pose: "back",
+    silhouette: costasNormalSilhouette,
+  },
 ];
 
 function Field({ label, required = false, hint, children }) {
@@ -60,6 +118,30 @@ function formatValue(value, suffix = "") {
   return value ? `${value}${suffix}` : "--";
 }
 
+function PhotoPoseCard({ slot, fileName, onChange }) {
+  return (
+    <article className="photo-pose-card">
+      <div className={`photo-pose-card__silhouette photo-pose-card__silhouette--${slot.pose}`}>
+        <img src={slot.silhouette} alt={`Silhueta para ${slot.title}`} />
+      </div>
+
+      <div className="photo-pose-card__content">
+        <h3>{slot.title}</h3>
+        <p>{slot.instruction}</p>
+        <label className="photo-pose-card__button">
+          {fileName ? "Trocar foto" : "Enviar foto"}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(event) => onChange(slot, event.target.files?.[0])}
+          />
+        </label>
+        <small>{fileName || "Nenhuma foto selecionada"}</small>
+      </div>
+    </article>
+  );
+}
+
 function getCadenceIntro(cadence) {
   if (cadence === "daily") {
     return {
@@ -90,6 +172,7 @@ export default function CheckinsPage() {
     ...defaultCheckinForm,
     cadence: "monthly",
   });
+  const [photoUploads, setPhotoUploads] = useState({});
   const [checkins, setCheckins] = useState(() => loadCheckins());
   const [feedback, setFeedback] = useState("");
 
@@ -129,7 +212,16 @@ export default function CheckinsPage() {
   function handleSubmit(event) {
     event.preventDefault();
 
-    const payload = { ...formData, cadence: activeCadence };
+    const selectedPhotos = photoPoseSlots
+      .map((slot) => ({
+        id: slot.id,
+        title: slot.title,
+        fileName: photoUploads[slot.id]?.fileName || "",
+        selected: Boolean(photoUploads[slot.id]?.fileName),
+      }))
+      .filter((photo) => photo.selected);
+
+    const payload = { ...formData, cadence: activeCadence, photos: selectedPhotos };
     const validation = validateCheckinForm(payload);
 
     if (!validation.isValid) {
@@ -140,6 +232,7 @@ export default function CheckinsPage() {
     const updated = saveCheckin(payload);
     setCheckins(updated);
     setFormData({ ...defaultCheckinForm, cadence: activeCadence });
+    setPhotoUploads({});
     setFeedback(
       `${checkinCadences[activeCadence].label} salvo. O historico foi atualizado sem regenerar treino ou dieta automaticamente.`
     );
@@ -157,6 +250,26 @@ export default function CheckinsPage() {
     const resetData = resetCheckins();
     setCheckins(resetData);
     setFeedback("Historico de check-ins resetado.");
+  }
+
+  function handlePhotoChange(slot, file) {
+    if (!file) {
+      return;
+    }
+
+    setPhotoUploads((current) => ({
+      ...current,
+      [slot.id]: {
+        title: slot.title,
+        fileName: file.name,
+        type: file.type,
+      },
+    }));
+
+    setFormData((current) => ({
+      ...current,
+      photoNote: "Fotos de progresso selecionadas",
+    }));
   }
 
   const showDaily = activeCadence === "daily";
@@ -188,19 +301,45 @@ export default function CheckinsPage() {
         </aside>
       </header>
 
+      <section className="checkins-selector glass-panel">
+        <div className="checkins-selector__header">
+          <span>Escolha o tipo de registro</span>
+          <h2>
+            Agora voce esta preenchendo:{" "}
+            <strong>{checkinCadences[activeCadence].label}</strong>
+          </h2>
+          <p>
+            Clique em Diario, Semanal ou Mensal para trocar o formulario antes
+            de salvar. Cada tipo fica salvo separadamente no historico.
+          </p>
+        </div>
+
       <nav className="checkins-tabs" aria-label="Tipo de check-in">
         {Object.entries(checkinCadences).map(([cadence, config]) => (
           <button
             key={cadence}
             type="button"
-            className={activeCadence === cadence ? "is-active" : ""}
+            className={`checkins-tab checkins-tab--${cadence} ${
+              activeCadence === cadence ? "is-active" : ""
+            }`}
             onClick={() => handleCadenceChange(cadence)}
+            aria-pressed={activeCadence === cadence}
           >
-            <strong>{config.label}</strong>
-            <span>{config.description}</span>
+            <span className="checkins-tab__icon" aria-hidden="true">
+              {cadenceVisuals[cadence].icon}
+            </span>
+            <span className="checkins-tab__content">
+              <strong>{config.label}</strong>
+              <span>{config.description}</span>
+              <em>{cadenceVisuals[cadence].action}</em>
+            </span>
+            <span className="checkins-tab__state">
+              {activeCadence === cadence ? "Selecionado" : "Clique para usar"}
+            </span>
           </button>
         ))}
       </nav>
+      </section>
 
       {feedback ? <p className="checkins-feedback">{feedback}</p> : null}
 
@@ -566,6 +705,31 @@ export default function CheckinsPage() {
                 placeholder="Ex.: fome a noite, treino rendeu pouco, viagem, dores, refeicoes fora do plano."
               />
             </Field>
+
+            <div className="photo-checkin-panel">
+              <div className="photo-checkin-panel__header">
+                <div>
+                  <h3>Fotos de progresso</h3>
+                  <p>
+                    Envie ate cinco fotos de corpo inteiro seguindo as poses
+                    marcadas. Use o mesmo local, luz e distancia sempre que
+                    possivel.
+                  </p>
+                </div>
+                <span>{Object.keys(photoUploads).length}/5 fotos</span>
+              </div>
+
+              <div className="photo-pose-grid">
+                {photoPoseSlots.map((slot) => (
+                  <PhotoPoseCard
+                    key={slot.id}
+                    slot={slot}
+                    fileName={photoUploads[slot.id]?.fileName}
+                    onChange={handlePhotoChange}
+                  />
+                ))}
+              </div>
+            </div>
           </Section>
         </div>
 
@@ -687,6 +851,10 @@ export default function CheckinsPage() {
                     <div>
                       <small>Acao</small>
                       <strong>{item.protocolAction || "none"}</strong>
+                    </div>
+                    <div>
+                      <small>Fotos</small>
+                      <strong>{Array.isArray(item.photos) ? item.photos.length : 0}/5</strong>
                     </div>
                   </div>
 
