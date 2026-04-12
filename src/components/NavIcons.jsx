@@ -30,6 +30,19 @@ export function IconWorkouts({ stroke = 'currentColor' }) {
   );
 }
 
+export function IconGym({ stroke = 'currentColor' }) {
+  return (
+    <svg {...base} stroke={stroke}>
+      <path d="M4 6v12" />
+      <path d="M20 6v12" />
+      <path d="M7 9v6" />
+      <path d="M17 9v6" />
+      <path d="M7 12h10" />
+      <path d="M3 8h2M19 8h2M3 16h2M19 16h2" />
+    </svg>
+  );
+}
+
 export function IconDiet({ stroke = 'currentColor' }) {
   return (
     <svg {...base} stroke={stroke}>
@@ -87,6 +100,7 @@ export function IconSettings({ stroke = 'currentColor' }) {
 export const NAV_ICONS = {
   dashboard:    IconDashboard,
   workouts:     IconWorkouts,
+  gym:          IconGym,
   diet:         IconDiet,
   progress:     IconProgress,
   checkin:      IconCheckin,

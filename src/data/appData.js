@@ -3,6 +3,7 @@ import { ROUTE_PATHS } from "../routes/routePaths";
 export const navigationItems = [
   { label: "Dashboard", path: ROUTE_PATHS.dashboard, iconKey: "dashboard" },
   { label: "Treinos", path: ROUTE_PATHS.workouts, iconKey: "workouts" },
+  { label: "Academia do usuário", path: ROUTE_PATHS.userGym, iconKey: "gym" },
   { label: "Dietas", path: ROUTE_PATHS.diets, iconKey: "diet" },
   { label: "Progresso", path: ROUTE_PATHS.progress, iconKey: "progress" },
   { label: "Check-ins", path: ROUTE_PATHS.checkins, iconKey: "checkin" },

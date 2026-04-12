@@ -35,6 +35,8 @@ const experienceOptions = [
   { value: "avancado", label: "Avancado" },
 ];
 
+const weeklyTrainingDayOptions = ["1", "2", "3", "4", "5", "6", "7"];
+
 const cadenceVisuals = {
   daily: {
     icon: "☀",
@@ -489,11 +491,11 @@ export default function CheckinsPage() {
             </Section>
           ) : null}
 
-          {(showWeekly || showMonthly) ? (
+          {showMonthly ? (
             <Section
-              eyebrow={showMonthly ? "04" : "02"}
-              title="Rotina, treino e dieta"
-              description="Use para fechar a semana ou atualizar o contexto mensal do protocolo."
+              eyebrow="04"
+              title="Disponibilidade para treino"
+              description="Esses dados orientam se a IA deve montar ABC, ABCD ou outra divisao."
             >
               <div className="checkins-grid checkins-grid--two">
                 <Field label="Experiencia de treino">
@@ -511,12 +513,32 @@ export default function CheckinsPage() {
                 </Field>
 
                 <Field label="Dias treinados / disponiveis">
-                  <input
+                  <select
                     name="weeklyTrainingDays"
                     value={formData.weeklyTrainingDays}
                     onChange={handleChange}
-                    placeholder="Ex.: 5"
-                  />
+                  >
+                    <option value="">Selecione</option>
+                    {weeklyTrainingDayOptions.map((value) => (
+                      <option key={value} value={value}>
+                        {value} dia{value === "1" ? "" : "s"} por semana
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+
+                <Field label="Turno usual do treino">
+                  <select
+                    name="trainingShift"
+                    value={formData.trainingShift}
+                    onChange={handleChange}
+                  >
+                    <option value="">Selecione</option>
+                    <option value="manha">Manha</option>
+                    <option value="tarde">Tarde</option>
+                    <option value="noite">Noite</option>
+                    <option value="variavel">Variavel</option>
+                  </select>
                 </Field>
 
                 <Field label="Tempo por treino">
@@ -571,6 +593,44 @@ export default function CheckinsPage() {
                     onChange={handleChange}
                     placeholder="Ex.: lombar, joelho, ombro"
                   />
+                </Field>
+              </div>
+            </Section>
+          ) : null}
+
+          {showWeekly ? (
+            <Section
+              eyebrow="02"
+              title="Resumo semanal do treino"
+              description="Feche a semana sem alterar os dados fixos do ciclo mensal."
+            >
+              <div className="checkins-grid checkins-grid--two">
+                <Field label="Dias treinados nesta semana">
+                  <select
+                    name="weeklyTrainingDays"
+                    value={formData.weeklyTrainingDays}
+                    onChange={handleChange}
+                  >
+                    <option value="">Selecione</option>
+                    {weeklyTrainingDayOptions.map((value) => (
+                      <option key={value} value={value}>
+                        {value} dia{value === "1" ? "" : "s"}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+
+                <Field label="Performance geral">
+                  <select
+                    name="trainingPerformance"
+                    value={formData.trainingPerformance}
+                    onChange={handleChange}
+                  >
+                    <option value="">Selecione</option>
+                    <option value="abaixo">Abaixo do esperado</option>
+                    <option value="normal">Normal</option>
+                    <option value="acima">Acima do esperado</option>
+                  </select>
                 </Field>
               </div>
             </Section>

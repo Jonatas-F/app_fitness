@@ -3,6 +3,7 @@ import AppLayout from '../layouts/AppLayout';
 
 import DashboardPage from '../modules/dashboard/pages/DashboardPage';
 import WorkoutsPage from '../modules/workouts/pages/WorkoutsPage';
+import UserGymPage from '../modules/userGym/pages/UserGymPage';
 import NutritionPage from '../modules/nutrition/pages/NutritionPage';
 import ProgressPage from '../modules/progress/pages/ProgressPage';
 import CheckinsPage from '../modules/checkins/pages/CheckinsPage';
@@ -23,6 +24,7 @@ export const router = createBrowserRouter(
         { path: 'treinos/historico', element: <WorkoutsPage /> },
         { path: 'treinos/gerar', element: <WorkoutsPage /> },
         { path: 'treinos/:workoutId', element: <WorkoutsPage /> },
+        { path: 'academia', element: <UserGymPage /> },
 
         { path: 'dietas', element: <NutritionPage /> },
         { path: 'dietas/historico', element: <NutritionPage /> },

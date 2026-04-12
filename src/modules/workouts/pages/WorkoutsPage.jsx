@@ -2,13 +2,10 @@ import { useMemo, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import ModulePageLayout from "../../../components/ModulePageLayout";
 import { workoutsViews } from "../../../data/appData";
-import { gymEquipmentCatalog, allGymEquipment } from "../../../data/gymEquipmentCatalog";
 import {
-  buildEquipmentAiContext,
-  getAllEquipmentIds,
-  loadGymEquipmentSelection,
-  saveGymEquipmentSelection,
-} from "../../../data/gymEquipmentStorage";
+  loadWorkoutExecution,
+  saveWorkoutExecution,
+} from "../../../data/workoutExecutionStorage";
 import "./WorkoutsPage.css";
 
 function getWorkoutView(pathname, workoutId) {
@@ -18,178 +15,256 @@ function getWorkoutView(pathname, workoutId) {
   return "list";
 }
 
-function EquipmentCard({ item, selected, onToggle }) {
-  return (
-    <article className={`equipment-card ${selected ? "is-selected" : ""}`}>
-      <label className="equipment-card__control">
-        <input
-          type="checkbox"
-          checked={selected}
-          onChange={() => onToggle(item.id)}
-        />
-        <span>
-          <strong>{item.name}</strong>
-          <small>{selected ? "Disponivel para IA" : "Nao usar no treino"}</small>
-        </span>
-      </label>
-
-      <div className="equipment-card__image">
-        {item.image ? (
-          <img src={item.image} alt={`Aparelho ${item.name}`} />
-        ) : (
-          <div>
-            <span>Imagem</span>
-            <small>Adicionar foto do aparelho</small>
-          </div>
-        )}
-      </div>
-    </article>
-  );
-}
-
-function GymEquipmentSection() {
-  const [selectedIds, setSelectedIds] = useState(() => loadGymEquipmentSelection());
-  const [openCategories, setOpenCategories] = useState(() =>
-    gymEquipmentCatalog.slice(0, 2).map((category) => category.id)
-  );
-  const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds]);
-  const aiContext = useMemo(
-    () => buildEquipmentAiContext(selectedIds),
-    [selectedIds]
+function WorkoutExecutionSection() {
+  const [plan, setPlan] = useState(() => loadWorkoutExecution());
+  const [openWorkouts, setOpenWorkouts] = useState(() =>
+    plan.workouts.slice(0, 1).map((workout) => workout.id)
   );
 
-  function updateSelection(nextIds) {
-    setSelectedIds(saveGymEquipmentSelection(nextIds));
+  function updatePlan(nextPlan) {
+    setPlan(saveWorkoutExecution(nextPlan));
   }
 
-  function handleToggle(id) {
-    const next = selectedSet.has(id)
-      ? selectedIds.filter((selectedId) => selectedId !== id)
-      : [...selectedIds, id];
-
-    updateSelection(next);
+  function handleExerciseChange(workoutId, exerciseId, field, value) {
+    updatePlan({
+      ...plan,
+      workouts: plan.workouts.map((workout) =>
+        workout.id !== workoutId
+          ? workout
+          : {
+              ...workout,
+              exercises: workout.exercises.map((exercise) =>
+                exercise.id !== exerciseId ? exercise : { ...exercise, [field]: value }
+              ),
+            }
+      ),
+    });
   }
 
-  function handleSelectAll() {
-    updateSelection(getAllEquipmentIds());
+  function handleSetChange(workoutId, exerciseId, setIndex, field, value) {
+    updatePlan({
+      ...plan,
+      workouts: plan.workouts.map((workout) =>
+        workout.id !== workoutId
+          ? workout
+          : {
+              ...workout,
+              exercises: workout.exercises.map((exercise) =>
+                exercise.id !== exerciseId
+                  ? exercise
+                  : {
+                      ...exercise,
+                      sets: exercise.sets.map((set, index) =>
+                        index !== setIndex ? set : { ...set, [field]: value }
+                      ),
+                    }
+              ),
+            }
+      ),
+    });
   }
 
-  function handleClearAll() {
-    updateSelection([]);
+  function handleSetCountChange(workoutId, exerciseId, value) {
+    const nextCount = Math.max(1, Math.min(8, Number(value) || 1));
+
+    updatePlan({
+      ...plan,
+      workouts: plan.workouts.map((workout) =>
+        workout.id !== workoutId
+          ? workout
+          : {
+              ...workout,
+              exercises: workout.exercises.map((exercise) => {
+                if (exercise.id !== exerciseId) return exercise;
+
+                const nextSets = Array.from({ length: nextCount }, (_, index) => ({
+                  set: index + 1,
+                  weight: exercise.sets[index]?.weight || "",
+                  reps: exercise.sets[index]?.reps || "",
+                }));
+
+                return {
+                  ...exercise,
+                  suggestedSets: String(nextCount),
+                  sets: nextSets,
+                };
+              }),
+            }
+      ),
+    });
   }
 
-  function toggleCategory(categoryId) {
-    setOpenCategories((current) =>
-      current.includes(categoryId)
-        ? current.filter((id) => id !== categoryId)
-        : [...current, categoryId]
+  function toggleWorkout(workoutId) {
+    setOpenWorkouts((current) =>
+      current.includes(workoutId)
+        ? current.filter((id) => id !== workoutId)
+        : [...current, workoutId]
     );
   }
 
-  function handleSelectCategory(category) {
-    const next = new Set(selectedIds);
-    category.items.forEach((item) => next.add(item.id));
-    updateSelection([...next]);
-  }
-
-  function handleClearCategory(category) {
-    const categoryIds = new Set(category.items.map((item) => item.id));
-    updateSelection(selectedIds.filter((id) => !categoryIds.has(id)));
+  function handleVideoUpload(workoutId, exerciseId, file) {
+    if (!file) return;
+    handleExerciseChange(workoutId, exerciseId, "userVideoFileName", file.name);
   }
 
   return (
-    <section className="gym-equipment glass-panel">
-      <header className="gym-equipment__header">
+    <section className="workout-execution glass-panel">
+      <header className="workout-execution__header">
         <div>
-          <span className="gym-equipment__eyebrow">Academia do usuario</span>
-          <h2>Aparelhos disponiveis para montar o treino</h2>
+          <span>Plano e execucao</span>
+          <h2>Divisao do treino, videos, feedback e cargas</h2>
           <p>
-            Tudo comeca selecionado. Desmarque o que nao existe na academia para
-            a IA evitar exercicios com aparelhos indisponiveis.
+            A divisao ABC/ABCD deve considerar dias por semana e turno informados
+            no check-in. Os registros abaixo alimentam evolucao de carga e
+            feedback tecnico.
           </p>
         </div>
 
-        <aside className="gym-equipment__summary">
-          <strong>
-            {selectedIds.length}/{allGymEquipment.length}
-          </strong>
-          <span>aparelhos liberados</span>
-          <small>{aiContext.unavailableEquipment.length} fora do treino</small>
+        <aside>
+          <strong>{plan.split}</strong>
+          <small>
+            {plan.weeklyTrainingDays} dia(s) | {plan.trainingShift || "turno nao informado"}
+          </small>
         </aside>
       </header>
 
-      <div className="gym-equipment__actions">
-        <button type="button" className="primary-button" onClick={handleSelectAll}>
-          Marcar todos
-        </button>
-        <button type="button" className="ghost-button" onClick={handleClearAll}>
-          Desmarcar todos
-        </button>
-      </div>
-
-      <div className="gym-equipment__ai-note">
-        <strong>Regra para a IA</strong>
+      <div className="workout-source-note">
+        <strong>Disponibilidade vem do check-in mensal</strong>
         <p>
-          Priorizar aparelhos marcados. Aparelhos desmarcados devem ser
-          substituidos por alternativas equivalentes.
+          Dias por semana, turno e tempo de treino devem ser atualizados no
+          check-in mensal. Aqui ficam a prescricao e a execucao dos treinos.
         </p>
       </div>
 
-      <div className="gym-equipment__categories">
-        {gymEquipmentCatalog.map((category) => {
-          const selectedInCategory = category.items.filter((item) =>
-            selectedSet.has(item.id)
-          ).length;
-          const isOpen = openCategories.includes(category.id);
-
-          return (
-            <section
-              key={category.id}
-              className={`equipment-category ${isOpen ? "is-open" : ""}`}
-            >
-              <div className="equipment-category__header">
-                <button
-                  type="button"
-                  className="equipment-category__toggle"
-                  onClick={() => toggleCategory(category.id)}
-                  aria-expanded={isOpen}
-                >
-                  <span className="equipment-category__chevron">
-                    {isOpen ? "−" : "+"}
-                  </span>
-                  <span>
-                    <strong>{category.title}</strong>
-                    <small>
-                      {selectedInCategory}/{category.items.length} disponiveis
-                    </small>
-                  </span>
-                </button>
-
-                <div className="equipment-category__actions">
-                  <button type="button" onClick={() => handleSelectCategory(category)}>
-                    Marcar grupo
-                  </button>
-                  <button type="button" onClick={() => handleClearCategory(category)}>
-                    Desmarcar grupo
-                  </button>
+      <div className="workout-days">
+        {plan.workouts.map((workout) => (
+          <article
+            key={workout.id}
+            className={`workout-day-card ${openWorkouts.includes(workout.id) ? "is-open" : ""}`}
+          >
+            <div className="workout-day-card__header">
+              <button
+                type="button"
+                className="workout-day-card__toggle"
+                onClick={() => toggleWorkout(workout.id)}
+                aria-expanded={openWorkouts.includes(workout.id)}
+              >
+                <span>{openWorkouts.includes(workout.id) ? "−" : "+"}</span>
+                <div>
+                  <h3>{workout.title}</h3>
+                  <p>{workout.focus}</p>
                 </div>
-              </div>
+              </button>
+              <strong>{workout.exercises.length} exercicios</strong>
+            </div>
 
-              {isOpen ? (
-                <div className="equipment-category__grid">
-                  {category.items.map((item) => (
-                    <EquipmentCard
-                      key={item.id}
-                      item={item}
-                      selected={selectedSet.has(item.id)}
-                      onToggle={handleToggle}
+            {openWorkouts.includes(workout.id) ? <div className="exercise-list">
+              {workout.exercises.map((exercise) => (
+                <section key={exercise.id} className="exercise-card">
+                  <div className="exercise-card__top">
+                    <div>
+                      <h4>{exercise.name}</h4>
+                      <span>
+                        Sugestao: {exercise.suggestedSets} series de {exercise.suggestedReps} reps
+                      </span>
+                    </div>
+                    <label className="exercise-video-upload">
+                      Enviar video
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={(event) =>
+                          handleVideoUpload(workout.id, exercise.id, event.target.files?.[0])
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  <div className="exercise-fields">
+                    <label>
+                      Series prescritas
+                      <select
+                        value={exercise.sets.length}
+                        onChange={(event) =>
+                          handleSetCountChange(workout.id, exercise.id, event.target.value)
+                        }
+                      >
+                        {["1", "2", "3", "4", "5", "6", "7", "8"].map((count) => (
+                          <option key={count} value={count}>
+                            {count} serie{count === "1" ? "" : "s"}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Repeticoes sugeridas
+                      <input
+                        value={exercise.suggestedReps}
+                        onChange={(event) =>
+                          handleExerciseChange(workout.id, exercise.id, "suggestedReps", event.target.value)
+                        }
+                        placeholder="Ex.: 8-12"
+                      />
+                    </label>
+                    <label>
+                      Video demonstrativo
+                      <input
+                        value={exercise.executionVideoUrl}
+                        onChange={(event) =>
+                          handleExerciseChange(workout.id, exercise.id, "executionVideoUrl", event.target.value)
+                        }
+                        placeholder="URL do video de execucao"
+                      />
+                    </label>
+                    <label>
+                      Feedback da IA
+                      <textarea
+                        value={exercise.aiFeedback}
+                        onChange={(event) =>
+                          handleExerciseChange(workout.id, exercise.id, "aiFeedback", event.target.value)
+                        }
+                        placeholder="Feedback tecnico gerado pela IA apos analisar o video"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="set-log-grid">
+                    {exercise.sets.map((set, index) => (
+                      <div key={set.set} className="set-log-row">
+                        <strong>Serie {set.set}</strong>
+                        <input
+                          value={set.weight}
+                          onChange={(event) =>
+                            handleSetChange(workout.id, exercise.id, index, "weight", event.target.value)
+                          }
+                          placeholder="kg"
+                        />
+                        <input
+                          value={set.reps}
+                          onChange={(event) =>
+                            handleSetChange(workout.id, exercise.id, index, "reps", event.target.value)
+                          }
+                          placeholder="reps"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <label className="exercise-notes">
+                    Anotacoes
+                    <textarea
+                      value={exercise.notes}
+                      onChange={(event) =>
+                        handleExerciseChange(workout.id, exercise.id, "notes", event.target.value)
+                      }
+                      placeholder="Carga sentida, dor, RPE, ajuste de tecnica..."
                     />
-                  ))}
-                </div>
-              ) : null}
-            </section>
-          );
-        })}
+                  </label>
+                </section>
+              ))}
+            </div> : null}
+          </article>
+        ))}
       </div>
     </section>
   );
@@ -210,7 +285,7 @@ export default function WorkoutsPage() {
   return (
     <div className="workouts-page">
       <ModulePageLayout {...content} />
-      {["list", "generate"].includes(viewKey) ? <GymEquipmentSection /> : null}
+      {["list", "generate"].includes(viewKey) ? <WorkoutExecutionSection /> : null}
     </div>
   );
 }

@@ -7,20 +7,19 @@
   border: 1px solid rgba(255, 46, 46, 0.18);
 }
 
-.gym-equipment {
+.workout-execution {
   display: grid;
   gap: 18px;
   padding: 22px;
 }
 
-.gym-equipment__header {
+.workout-execution__header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 260px);
   gap: 18px;
-  align-items: stretch;
 }
 
-.gym-equipment__eyebrow {
+.workout-execution__header span {
   display: inline-flex;
   width: fit-content;
   min-height: 30px;
@@ -34,81 +33,107 @@
   font-weight: 800;
 }
 
-.gym-equipment__header h2 {
+.workout-execution__header h2 {
   margin: 12px 0 8px;
   font-size: clamp(1.45rem, 2.3vw, 2rem);
 }
 
-.gym-equipment__header p,
-.gym-equipment__summary span,
-.gym-equipment__summary small,
-.gym-equipment__ai-note p {
+.workout-execution__header p,
+.workout-execution__header small {
   color: rgba(255, 255, 255, 0.72);
   line-height: 1.55;
 }
 
-.gym-equipment__summary {
+.workout-execution__header aside {
   display: grid;
   align-content: center;
-  gap: 6px;
+  gap: 8px;
   padding: 18px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.22);
 }
 
-.gym-equipment__summary strong {
+.workout-execution__header aside strong {
   font-size: 2rem;
-  line-height: 1;
 }
 
-.gym-equipment__actions {
-  display: flex;
-  flex-wrap: wrap;
+.workout-source-note,
+.exercise-fields {
+  display: grid;
   gap: 12px;
 }
 
-.gym-equipment__actions .primary-button,
-.gym-equipment__actions .ghost-button {
-  border-radius: 8px;
-}
-
-.gym-equipment__ai-note {
+.workout-source-note {
   padding: 14px 16px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.gym-equipment__ai-note strong {
-  display: block;
-  margin-bottom: 6px;
+.workout-source-note p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.55;
 }
 
-.gym-equipment__categories {
-  display: grid;
-  gap: 18px;
+.exercise-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.equipment-category {
+.exercise-fields label,
+.exercise-notes {
   display: grid;
-  gap: 12px;
-  padding: 12px;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.exercise-fields input,
+.exercise-fields select,
+.exercise-fields textarea,
+.exercise-notes textarea,
+.set-log-row input {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.035);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  outline: none;
 }
 
-.equipment-category__header {
+.exercise-fields textarea,
+.exercise-notes textarea {
+  min-height: 86px;
+  resize: vertical;
+}
+
+.workout-days {
+  display: grid;
+  gap: 16px;
+}
+
+.workout-day-card,
+.exercise-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.workout-day-card__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.equipment-category__toggle {
+.workout-day-card__toggle {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -119,12 +144,11 @@
   text-align: left;
 }
 
-.equipment-category__chevron {
-  display: inline-flex;
+.workout-day-card__toggle > span {
+  display: grid;
   width: 34px;
   height: 34px;
-  align-items: center;
-  justify-content: center;
+  place-items: center;
   flex-shrink: 0;
   border-radius: 8px;
   color: #fff;
@@ -134,204 +158,88 @@
   font-weight: 900;
 }
 
-.equipment-category__toggle span:last-child {
-  display: grid;
-  gap: 4px;
+.workout-day-card__header strong {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: #dcffe8;
+  background: rgba(34, 197, 94, 0.14);
+  border: 1px solid rgba(34, 197, 94, 0.22);
+  font-size: 0.78rem;
 }
 
-.equipment-category__toggle strong {
-  font-size: 1.05rem;
+.workout-day-card__header h3,
+.exercise-card__top h4 {
+  margin: 0 0 4px;
 }
 
-.equipment-category__toggle small {
+.workout-day-card__header p,
+.exercise-card__top span {
   color: rgba(255, 255, 255, 0.64);
 }
 
-.equipment-category__actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
+.exercise-list {
+  display: grid;
+  gap: 12px;
 }
 
-.equipment-category__actions button {
-  min-height: 32px;
-  padding: 0 10px;
+.exercise-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.exercise-video-upload {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
   border-radius: 8px;
   color: #fff;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: 0.78rem;
+  background: rgba(255, 46, 46, 0.18);
+  border: 1px solid rgba(255, 46, 46, 0.3);
+  font-size: 0.82rem;
   font-weight: 800;
-}
-
-.equipment-category__actions button:hover {
-  background: rgba(255, 255, 255, 0.13);
-}
-
-.equipment-category__grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.equipment-card {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 118px;
-  min-height: 124px;
-  overflow: hidden;
-  border-radius: 8px;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(255, 255, 255, 0.045));
-  border: 1px solid rgba(96, 165, 250, 0.24);
-  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
-}
-
-.equipment-card:hover {
-  transform: translateY(-2px);
-}
-
-.equipment-card.is-selected {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.18), rgba(255, 255, 255, 0.05));
-  border-color: rgba(34, 197, 94, 0.38);
-  box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.08);
-}
-
-.equipment-card:not(.is-selected) {
-  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.08);
-}
-
-.equipment-card__control {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  padding: 14px;
   cursor: pointer;
 }
 
-.equipment-card__control input {
-  width: 18px;
-  height: 18px;
-  margin-top: 2px;
-  accent-color: #22c55e;
+.exercise-video-upload input {
+  display: none;
 }
 
-.equipment-card__control span {
+.set-log-grid {
   display: grid;
-  gap: 6px;
-  min-width: 0;
+  gap: 8px;
 }
 
-.equipment-card__control strong {
-  line-height: 1.35;
-}
-
-.equipment-card__control small {
-  width: fit-content;
-  padding: 4px 8px;
-  border-radius: 999px;
-  color: #dbeafe;
-  background: rgba(37, 99, 235, 0.28);
-  border: 1px solid rgba(96, 165, 250, 0.24);
-  font-size: 0.72rem;
-  font-weight: 800;
-}
-
-.equipment-card.is-selected .equipment-card__control small {
-  color: #dcffe8;
-  background: rgba(34, 197, 94, 0.2);
-  border-color: rgba(34, 197, 94, 0.28);
-}
-
-.equipment-card__image {
+.set-log-row {
   display: grid;
-  place-items: center;
-  min-height: 124px;
-  padding: 10px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)),
-    radial-gradient(circle at center, rgba(96, 165, 250, 0.16), transparent 65%);
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.equipment-card.is-selected .equipment-card__image {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)),
-    radial-gradient(circle at center, rgba(34, 197, 94, 0.16), transparent 65%);
-}
-
-.equipment-card__image img {
-  width: 100%;
-  height: 100px;
-  object-fit: contain;
-}
-
-.equipment-card__image div {
-  display: grid;
-  gap: 6px;
-  place-items: center;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.74);
-}
-
-.equipment-card__image span {
-  display: grid;
-  width: 46px;
-  height: 46px;
-  place-items: center;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px dashed rgba(255, 255, 255, 0.18);
-  font-size: 0.72rem;
-  font-weight: 800;
-}
-
-.equipment-card__image small {
-  max-width: 88px;
-  color: rgba(255, 255, 255, 0.56);
-  font-size: 0.72rem;
-  line-height: 1.35;
-}
-
-@media (max-width: 1120px) {
-  .equipment-category__grid {
-    grid-template-columns: 1fr;
-  }
+  grid-template-columns: 92px repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  align-items: center;
 }
 
 @media (max-width: 760px) {
-  .gym-equipment {
+  .workout-execution {
     padding: 18px;
   }
 
-  .gym-equipment__header {
+  .workout-execution__header,
+  .exercise-fields {
     grid-template-columns: 1fr;
   }
 
-  .gym-equipment__actions .primary-button,
-  .gym-equipment__actions .ghost-button {
-    width: 100%;
-  }
-
-  .equipment-card {
-    grid-template-columns: 1fr;
-  }
-
-  .equipment-category__header {
+  .exercise-card__top,
+  .workout-day-card__header {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .equipment-category__actions {
-    width: 100%;
-  }
-
-  .equipment-category__actions button {
-    flex: 1;
-  }
-
-  .equipment-card__image {
-    min-height: 110px;
-    border-left: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  .set-log-row {
+    grid-template-columns: 1fr;
   }
 }

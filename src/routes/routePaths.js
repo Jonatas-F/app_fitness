@@ -4,6 +4,7 @@ export const ROUTE_PATHS = {
   workoutsHistory: '/treinos/historico',
   workoutsGenerate: '/treinos/gerar',
   workoutDetail: '/treinos/:workoutId',
+  userGym: '/academia',
 
   diets: '/dietas',
   dietsHistory: '/dietas/historico',
