@@ -44,9 +44,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #8b929e, #5f6670);
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  border: 1px solid rgba(255, 46, 46, 0.3);
   color: #ffffff;
   font-weight: 800;
+  overflow: hidden;
+}
+
+.sidebar__brand-mark img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
 }
 
 .sidebar__brand-title {

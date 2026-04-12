@@ -472,6 +472,48 @@ export default function CheckinsPage() {
                 <Field label="Massa muscular">
                   <input name="muscleMass" value={formData.muscleMass} onChange={handleChange} placeholder="Ex.: 38 kg" />
                 </Field>
+                <Field label="Massa muscular braço direito">
+                  <input name="rightArmMuscleMass" value={formData.rightArmMuscleMass} onChange={handleChange} placeholder="Ex.: 3.8 kg" />
+                </Field>
+                <Field label="Massa muscular braço esquerdo">
+                  <input name="leftArmMuscleMass" value={formData.leftArmMuscleMass} onChange={handleChange} placeholder="Ex.: 3.7 kg" />
+                </Field>
+                <Field label="Massa muscular perna direita">
+                  <input name="rightLegMuscleMass" value={formData.rightLegMuscleMass} onChange={handleChange} placeholder="Ex.: 10.8 kg" />
+                </Field>
+                <Field label="Massa muscular perna esquerda">
+                  <input name="leftLegMuscleMass" value={formData.leftLegMuscleMass} onChange={handleChange} placeholder="Ex.: 10.6 kg" />
+                </Field>
+                <Field label="Massa muscular tronco">
+                  <input name="trunkMuscleMass" value={formData.trunkMuscleMass} onChange={handleChange} placeholder="Ex.: 28 kg" />
+                </Field>
+                <Field label="Gordura braço direito">
+                  <input name="rightArmFat" value={formData.rightArmFat} onChange={handleChange} placeholder="Ex.: 18%" />
+                </Field>
+                <Field label="Gordura braço esquerdo">
+                  <input name="leftArmFat" value={formData.leftArmFat} onChange={handleChange} placeholder="Ex.: 18%" />
+                </Field>
+                <Field label="Gordura perna direita">
+                  <input name="rightLegFat" value={formData.rightLegFat} onChange={handleChange} placeholder="Ex.: 20%" />
+                </Field>
+                <Field label="Gordura perna esquerda">
+                  <input name="leftLegFat" value={formData.leftLegFat} onChange={handleChange} placeholder="Ex.: 20%" />
+                </Field>
+                <Field label="Gordura tronco">
+                  <input name="trunkFat" value={formData.trunkFat} onChange={handleChange} placeholder="Ex.: 22%" />
+                </Field>
+                <Field label="Braço direito">
+                  <input name="rightArmMeasure" value={formData.rightArmMeasure} onChange={handleChange} placeholder="Ex.: 38 cm" />
+                </Field>
+                <Field label="Braço esquerdo">
+                  <input name="leftArmMeasure" value={formData.leftArmMeasure} onChange={handleChange} placeholder="Ex.: 37.5 cm" />
+                </Field>
+                <Field label="Coxa direita">
+                  <input name="rightThighMeasure" value={formData.rightThighMeasure} onChange={handleChange} placeholder="Ex.: 61 cm" />
+                </Field>
+                <Field label="Coxa esquerda">
+                  <input name="leftThighMeasure" value={formData.leftThighMeasure} onChange={handleChange} placeholder="Ex.: 60 cm" />
+                </Field>
                 <Field label="Gordura visceral">
                   <input name="visceralFat" value={formData.visceralFat} onChange={handleChange} placeholder="Ex.: 8" />
                 </Field>

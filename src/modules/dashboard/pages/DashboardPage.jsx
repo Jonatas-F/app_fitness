@@ -1,12 +1,40 @@
 import { loadCheckins } from "../../../data/checkinStorage";
+import { loadTrainingHistory } from "../../../data/trainingStorage";
 import {
   getWorkoutDashboardSummary,
   loadWorkoutExecution,
+  loadWorkoutSessionHistory,
 } from "../../../data/workoutExecutionStorage";
+import logoMark from "../../../assets/logo.svg";
 import "./DashboardPage.css";
 
-function completedCheckins() {
-  return loadCheckins().filter((item) => item.status !== "missed");
+function numberValue(value) {
+  const parsed = Number(String(value || "").replace(",", ".").replace(/[^\d.-]/g, ""));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function daysAgo(days) {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return date;
+}
+
+function within(dateValue, startDate) {
+  const date = new Date(dateValue);
+  return !Number.isNaN(date.getTime()) && date >= startDate;
+}
+
+function average(items, field) {
+  const values = items
+    .map((item) => numberValue(item[field]))
+    .filter((value) => value !== null);
+
+  if (!values.length) return "--";
+  return (values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1);
+}
+
+function completedCheckins(allCheckins) {
+  return allCheckins.filter((item) => item.status !== "missed");
 }
 
 function compareLatestCheckins(checkins) {
@@ -15,65 +43,275 @@ function compareLatestCheckins(checkins) {
   if (!latest || !previous) {
     return {
       weight: "--",
-      adherence: "--",
-      energy: "--",
+      bodyFat: "--",
+      muscleMass: "--",
+      leanMass: "--",
       message: "Salve pelo menos dois check-ins para comparar evolucao.",
     };
   }
 
   const diff = (field) => {
-    const a = Number(String(latest[field] || "").replace(",", "."));
-    const b = Number(String(previous[field] || "").replace(",", "."));
-    return Number.isFinite(a) && Number.isFinite(b) ? (a - b).toFixed(1) : "--";
+    const a = numberValue(latest[field]);
+    const b = numberValue(previous[field]);
+    return a !== null && b !== null ? (a - b).toFixed(1) : "--";
   };
 
   return {
     weight: diff("weight"),
-    adherence: diff("adherence"),
-    energy: diff("energy"),
+    bodyFat: diff("bodyFat"),
+    muscleMass: diff("muscleMass"),
+    leanMass: diff("leanMass"),
     message: "Comparacao entre os dois check-ins realizados mais recentes.",
   };
 }
 
+function summarizeLoads(sessions) {
+  const loadsByDate = sessions.map((session) => {
+    const totalLoad = session.exercises.reduce(
+      (exerciseSum, exercise) =>
+        exerciseSum +
+        exercise.sets.reduce((setSum, set) => {
+          const weight = numberValue(set.weight) || 0;
+          const reps = numberValue(set.reps) || 0;
+          return setSum + weight * reps;
+        }, 0),
+      0
+    );
+
+    return {
+      date: session.createdAt,
+      label: new Date(session.createdAt).toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+      }),
+      totalLoad,
+      workoutTitle: session.workoutTitle,
+    };
+  });
+
+  const maxLoad = loadsByDate.reduce((max, item) => Math.max(max, item.totalLoad), 0);
+
+  return { loadsByDate, maxLoad };
+}
+
+function buildCalendar(allCheckins, sessions) {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  return Array.from({ length: daysInMonth }, (_, index) => {
+    const day = index + 1;
+    const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const hasTraining = sessions.some((session) => session.createdAt.slice(0, 10) === dateKey);
+    const hasMissed = allCheckins.some(
+      (checkin) => checkin.createdAt.slice(0, 10) === dateKey && checkin.status === "missed"
+    );
+    const hasCheckin = allCheckins.some(
+      (checkin) => checkin.createdAt.slice(0, 10) === dateKey && checkin.status !== "missed"
+    );
+
+    return {
+      day,
+      status: hasTraining ? "trained" : hasMissed ? "missed" : hasCheckin ? "checkin" : "empty",
+    };
+  });
+}
+
+function makeFeedbacks({ weekSessions, monthSessions, checkins, trainingHistory }) {
+  const sleep = average(checkins, "sleep");
+  const adherence = average(checkins, "adherence");
+  const latest = checkins[0];
+  const previous = checkins[1];
+  const weightDiff =
+    latest && previous && numberValue(latest.weight) !== null && numberValue(previous.weight) !== null
+      ? numberValue(latest.weight) - numberValue(previous.weight)
+      : null;
+
+  const protocolDirection =
+    monthSessions.length >= 12 && Number(adherence) >= 80
+      ? "O proximo protocolo pode evoluir em volume, carga ou complexidade, porque a execucao recente indica boa aderencia."
+      : monthSessions.length < 6 || Number(adherence) < 65
+        ? "O proximo protocolo deve ser facilitado ou reorganizado, porque houve baixa frequencia, baixa aderencia ou pouco dado confiavel."
+        : "O protocolo pode ser mantido com ajustes pontuais enquanto mais dados sao registrados.";
+
+  return [
+    {
+      title: "Sono e recuperacao",
+      text:
+        sleep === "--"
+          ? "Ainda nao ha dados suficientes de sono para orientar recuperacao."
+          : `Sono medio registrado: ${sleep}h. O Personal Virtual deve considerar esse dado antes de aumentar volume.`,
+    },
+    {
+      title: "Alimentacao e aderencia",
+      text:
+        adherence === "--"
+          ? "Registre aderencia nos check-ins para cruzar dieta, treino e progresso."
+          : `Aderencia media: ${adherence}%. Esse valor ajuda a decidir se o protocolo progride ou fica mais simples.`,
+    },
+    {
+      title: "Mudanca de protocolo",
+      text: protocolDirection,
+    },
+    {
+      title: "Evolucao corporal",
+      text:
+        weightDiff === null
+          ? "Dois check-ins completos permitem comparar peso, gordura e massa muscular."
+          : `Variacao recente de peso: ${weightDiff.toFixed(1)} kg. Combine com bioimpedancia antes de concluir ganho ou perda real.`,
+    },
+    {
+      title: "Historico mensal",
+      text: `${trainingHistory.length} protocolo(s) anterior(es) arquivado(s). Esses registros ajudam a explicar progresso, regressao ou troca de estimulo.`,
+    },
+  ];
+}
+
+const bodyChartGroups = [
+  {
+    title: "Peso, gordura e massa muscular",
+    fields: [
+      { key: "weight", label: "Peso" },
+      { key: "bodyFat", label: "Gordura" },
+      { key: "muscleMass", label: "Massa muscular" },
+    ],
+  },
+  {
+    title: "Massa muscular por segmento",
+    fields: [
+      { key: "rightArmMuscleMass", label: "Braço D" },
+      { key: "leftArmMuscleMass", label: "Braço E" },
+      { key: "rightLegMuscleMass", label: "Perna D" },
+      { key: "leftLegMuscleMass", label: "Perna E" },
+      { key: "trunkMuscleMass", label: "Tronco" },
+    ],
+  },
+  {
+    title: "Gordura por segmento",
+    fields: [
+      { key: "rightArmFat", label: "Braço D" },
+      { key: "leftArmFat", label: "Braço E" },
+      { key: "rightLegFat", label: "Perna D" },
+      { key: "leftLegFat", label: "Perna E" },
+      { key: "trunkFat", label: "Tronco" },
+    ],
+  },
+  {
+    title: "Medidas corporais",
+    fields: [
+      { key: "waist", label: "Cintura" },
+      { key: "abdomen", label: "Abdomen" },
+      { key: "hip", label: "Quadril" },
+      { key: "rightArmMeasure", label: "Braço D" },
+      { key: "leftArmMeasure", label: "Braço E" },
+      { key: "rightThighMeasure", label: "Coxa D" },
+      { key: "leftThighMeasure", label: "Coxa E" },
+    ],
+  },
+];
+
+function BodyLineChart({ title, fields, checkins }) {
+  const points = checkins.slice(0, 6).reverse();
+  const values = points.flatMap((item) =>
+    fields.map((field) => numberValue(item[field.key])).filter((value) => value !== null)
+  );
+  const min = values.length ? Math.min(...values) : 0;
+  const max = values.length ? Math.max(...values) : 1;
+  const range = max - min || 1;
+
+  return (
+    <article className="body-chart">
+      <h3>{title}</h3>
+      <div className="body-chart__plot">
+        {fields.map((field, fieldIndex) => (
+          <div key={field.key} className={`body-chart__line body-chart__line--${fieldIndex + 1}`}>
+            {points.map((item, index) => {
+              const value = numberValue(item[field.key]);
+              const left = points.length <= 1 ? 0 : (index / (points.length - 1)) * 100;
+              const bottom = value === null ? 0 : ((value - min) / range) * 86 + 7;
+
+              return value === null ? null : (
+                <span
+                  key={`${field.key}-${item.id}`}
+                  style={{ left: `${left}%`, bottom: `${bottom}%` }}
+                  title={`${field.label}: ${value}`}
+                />
+              );
+            })}
+          </div>
+        ))}
+      </div>
+      <div className="body-chart__legend">
+        {fields.map((field, index) => (
+          <span key={field.key} className={`body-chart__legend-item body-chart__legend-item--${index + 1}`}>
+            {field.label}
+          </span>
+        ))}
+      </div>
+    </article>
+  );
+}
+
 export default function DashboardPage() {
-  const checkins = completedCheckins();
-  const missedCheckins = loadCheckins().filter((item) => item.status === "missed");
+  const allCheckins = loadCheckins();
+  const checkins = completedCheckins(allCheckins);
+  const missedCheckins = allCheckins.filter((item) => item.status === "missed");
   const workoutPlan = loadWorkoutExecution();
+  const sessions = loadWorkoutSessionHistory();
+  const trainingHistory = loadTrainingHistory();
   const workoutSummary = getWorkoutDashboardSummary(workoutPlan);
   const comparison = compareLatestCheckins(checkins);
+  const weekSessions = sessions.filter((session) => within(session.createdAt, daysAgo(7)));
+  const monthSessions = sessions.filter((session) => within(session.createdAt, daysAgo(30)));
+  const yearSessions = sessions.filter((session) => within(session.createdAt, daysAgo(365)));
+  const weeklyCheckins = checkins.filter((checkin) => within(checkin.createdAt, daysAgo(7)));
+  const monthlyCheckins = checkins.filter((checkin) => within(checkin.createdAt, daysAgo(30)));
+  const calendarDays = buildCalendar(allCheckins, sessions);
+  const { loadsByDate, maxLoad } = summarizeLoads(sessions.slice(0, 8).reverse());
+  const feedbacks = makeFeedbacks({
+    weekSessions,
+    monthSessions,
+    checkins,
+    trainingHistory,
+  });
 
   const metrics = [
     {
-      label: "Treinos planejados",
-      value: `${workoutSummary.workoutCount}`,
-      helper: `${workoutSummary.split} | ${workoutSummary.weeklyTrainingDays} dia(s)`,
+      label: "Treinos na semana",
+      value: `${weekSessions.length}`,
+      helper: `${workoutSummary.weeklyTrainingDays} dia(s) planejados`,
     },
     {
-      label: "Series registradas",
-      value: `${workoutSummary.completedSets}`,
-      helper: `Maior carga: ${workoutSummary.maxWeight || "--"} kg`,
+      label: "Treinos no mes",
+      value: `${monthSessions.length}`,
+      helper: `${sessions.length} no total`,
     },
     {
-      label: "Check-ins realizados",
-      value: `${checkins.length}`,
-      helper: `${missedCheckins.length} ausencia(s) registradas`,
+      label: "Treinos no ano",
+      value: `${yearSessions.length}`,
+      helper: "Sessoes registradas",
     },
     {
-      label: "Exercicios no plano",
-      value: `${workoutSummary.exerciseCount}`,
-      helper: `Turno: ${workoutSummary.trainingShift}`,
+      label: "Maior carga",
+      value: `${workoutSummary.maxWeight || "--"} kg`,
+      helper: `${workoutSummary.completedSets} series registradas`,
     },
   ];
 
   return (
     <section className="dashboard-page">
       <header className="dashboard-hero glass-panel">
-        <span>Dashboard</span>
-        <h1>Acompanhamento de check-ins, treino e cargas.</h1>
-        <p>
-          Este painel consolida os registros locais para mostrar aderencia,
-          evolucao de carga e comparacao entre check-ins.
-        </p>
+        <div className="dashboard-hero__logo">
+          <img src={logoMark} alt="Shape Certo" />
+        </div>
+        <div>
+          <span>Dashboard</span>
+          <h1>Acompanhamento semanal, mensal e historico.</h1>
+          <p>
+            Evolucao de treinos, cargas, sono, alimentacao, check-ins e composicao corporal em um unico painel.
+          </p>
+        </div>
       </header>
 
       <section className="dashboard-metrics">
@@ -88,38 +326,137 @@ export default function DashboardPage() {
 
       <section className="dashboard-grid">
         <article className="dashboard-card glass-panel">
-          <h2>Comparacao de check-ins</h2>
+          <h2>Comparacao corporal</h2>
           <p>{comparison.message}</p>
           <div className="dashboard-comparison">
             <div>
               <span>Peso</span>
-              <strong>{comparison.weight}</strong>
+              <strong>{comparison.weight} kg</strong>
             </div>
             <div>
-              <span>Aderencia</span>
-              <strong>{comparison.adherence}</strong>
+              <span>Gordura</span>
+              <strong>{comparison.bodyFat}%</strong>
             </div>
             <div>
-              <span>Energia</span>
-              <strong>{comparison.energy}</strong>
+              <span>Massa muscular</span>
+              <strong>{comparison.muscleMass} kg</strong>
             </div>
           </div>
         </article>
 
         <article className="dashboard-card glass-panel">
+          <h2>Check-ins e qualidade da semana</h2>
+          <p>Leitura com base nos registros recentes.</p>
+          <div className="dashboard-comparison">
+            <div>
+              <span>Check-ins semanais</span>
+              <strong>{weeklyCheckins.length}</strong>
+            </div>
+            <div>
+              <span>Sono medio</span>
+              <strong>{average(weeklyCheckins, "sleep")}h</strong>
+            </div>
+            <div>
+              <span>Aderencia</span>
+              <strong>{average(weeklyCheckins, "adherence")}%</strong>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section className="dashboard-card glass-panel">
+        <h2>Bioimpedância e medidas</h2>
+        <p>Gráficos de linha com os últimos registros do check-in mensal.</p>
+        <div className="body-chart-grid">
+          {bodyChartGroups.map((group) => (
+            <BodyLineChart
+              key={group.title}
+              title={group.title}
+              fields={group.fields}
+              checkins={checkins}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className="dashboard-grid dashboard-grid--wide">
+        <article className="dashboard-card glass-panel">
           <h2>Evolucao de cargas</h2>
-          <p>
-            Cargas e repeticoes registradas nos treinos alimentam esta leitura.
-          </p>
+          <p>Volume estimado por sessoes salvas: peso x repeticoes.</p>
+          <div className="load-chart">
+            {loadsByDate.length ? (
+              loadsByDate.map((item) => (
+                <div key={`${item.date}-${item.workoutTitle}`} className="load-chart__bar">
+                  <span style={{ height: `${maxLoad ? Math.max(8, (item.totalLoad / maxLoad) * 100) : 0}%` }} />
+                  <small>{item.label}</small>
+                </div>
+              ))
+            ) : (
+              <p>Salve execucoes de treino para montar o grafico de carga.</p>
+            )}
+          </div>
+        </article>
+
+        <article className="dashboard-card glass-panel">
+          <h2>Calendario do mes</h2>
+          <p>Treino realizado, check-in preenchido e ausencia registrada.</p>
+          <div className="training-calendar">
+            {calendarDays.map((item) => (
+              <span key={item.day} className={`calendar-day calendar-day--${item.status}`}>
+                {item.day}
+              </span>
+            ))}
+          </div>
+          <div className="calendar-legend">
+            <span className="calendar-day--trained">Treino</span>
+            <span className="calendar-day--checkin">Check-in</span>
+            <span className="calendar-day--missed">Falta</span>
+          </div>
+        </article>
+      </section>
+
+      <section className="dashboard-grid">
+        <article className="dashboard-card glass-panel">
+          <h2>Evolucao mensal</h2>
+          <div className="dashboard-comparison">
+            <div>
+              <span>Check-ins no mes</span>
+              <strong>{monthlyCheckins.length}</strong>
+            </div>
+            <div>
+              <span>Peso medio</span>
+              <strong>{average(monthlyCheckins, "weight")} kg</strong>
+            </div>
+            <div>
+              <span>Gordura media</span>
+              <strong>{average(monthlyCheckins, "bodyFat")}%</strong>
+            </div>
+          </div>
+        </article>
+
+        <article className="dashboard-card glass-panel">
+          <h2>Protocolos de treino</h2>
           <div className="dashboard-workout-list">
             {workoutPlan.workouts.map((workout) => (
               <div key={workout.id}>
                 <strong>{workout.title}</strong>
-                <span>{workout.exercises.length} exercicios</span>
+                <span>{workout.enabled ? "Habilitado" : "Desabilitado"} | {workout.exercises.length} exercicios</span>
               </div>
             ))}
           </div>
         </article>
+      </section>
+
+      <section className="dashboard-card glass-panel">
+        <h2>Feedbacks do Personal Virtual</h2>
+        <div className="virtual-feedback-grid">
+          {feedbacks.map((item) => (
+            <article key={item.title}>
+              <strong>{item.title}</strong>
+              <p>{item.text}</p>
+            </article>
+          ))}
+        </div>
       </section>
     </section>
   );

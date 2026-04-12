@@ -1,12 +1,15 @@
 import { NavLink } from 'react-router-dom';
 import { navigationItems, quickSummary } from '../data/appData';
 import { NAV_ICONS } from './NavIcons';
+import logoMark from '../assets/logo.svg';
 
 export default function Sidebar() {
   return (
     <aside className="app-shell__sidebar">
       <div className="sidebar__brand">
-        <span className="sidebar__brand-mark">SC</span>
+        <span className="sidebar__brand-mark">
+          <img src={logoMark} alt="Shape Certo" />
+        </span>
         <div>
           <p className="sidebar__brand-title">Shape Certo</p>
           <p className="sidebar__brand-subtitle">Personal Virtual</p>

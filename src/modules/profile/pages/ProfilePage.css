@@ -1,3 +1,494 @@
-.profile-page .module-page__hero {
-  border: 1px solid rgba(255, 255, 255, 0.14);
+.profile-page {
+  display: grid;
+  gap: 20px;
+}
+
+.profile-hero,
+.profile-section {
+  padding: 22px;
+}
+
+.profile-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+  gap: 18px;
+}
+
+.profile-hero__copy > span,
+.profile-section__heading > div > span {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 30px;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(255, 46, 46, 0.16);
+  border: 1px solid rgba(255, 46, 46, 0.26);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.profile-hero h1,
+.profile-section h2 {
+  max-width: 840px;
+  margin: 12px 0 8px;
+  line-height: 1.08;
+}
+
+.profile-hero h1 {
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+}
+
+.profile-section h2 {
+  font-size: clamp(1.35rem, 2.4vw, 2rem);
+}
+
+.profile-hero p,
+.profile-section p,
+.profile-section__heading aside span,
+.profile-section__heading aside small,
+.profile-photo-card strong {
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.55;
+}
+
+.profile-photo-card {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+}
+
+.profile-photo-card__preview {
+  display: grid;
+  width: 148px;
+  height: 148px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--primary);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.profile-photo-card__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-photo-card__preview img[src$=".svg"] {
+  width: 170%;
+  height: 170%;
+  object-fit: contain;
+}
+
+.profile-photo-card__button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  border-radius: 8px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  box-shadow: 0 12px 30px rgba(255, 46, 46, 0.28);
+  font-size: 0.88rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.profile-photo-card__button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.profile-section {
+  display: grid;
+  gap: 18px;
+}
+
+.profile-section__heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 260px);
+  gap: 18px;
+}
+
+.profile-section__heading aside {
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  padding: 18px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.profile-section__heading aside strong {
+  font-size: 2rem;
+}
+
+.profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.profile-actions .primary-button,
+.profile-actions .ghost-button {
+  border-radius: 8px;
+}
+
+.profile-categories,
+.food-subgroups {
+  display: grid;
+  gap: 18px;
+}
+
+.profile-category {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.profile-category__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-category.is-open .profile-category__header {
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.profile-category__toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 0;
+  color: #fff;
+  background: transparent;
+  text-align: left;
+}
+
+.profile-category__chevron {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.profile-category__toggle span:last-child {
+  display: grid;
+  gap: 4px;
+}
+
+.profile-category__toggle strong {
+  font-size: 1.05rem;
+}
+
+.profile-category__toggle small,
+.food-card__heading small,
+.food-subgroup h3 {
+  color: rgba(255, 255, 255, 0.64);
+}
+
+.profile-category__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.profile-category__actions button {
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.profile-equipment-grid,
+.food-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-equipment-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 118px;
+  min-height: 124px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(255, 255, 255, 0.045));
+  border: 1px solid rgba(96, 165, 250, 0.24);
+}
+
+.profile-equipment-card.is-selected {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.18), rgba(255, 255, 255, 0.05));
+  border-color: rgba(34, 197, 94, 0.38);
+}
+
+.profile-equipment-card__control {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px;
+  cursor: pointer;
+}
+
+.profile-equipment-card__control input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: #22c55e;
+}
+
+.profile-equipment-card__control span {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.profile-equipment-card__control strong {
+  line-height: 1.35;
+}
+
+.profile-equipment-card__control small {
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #dbeafe;
+  background: rgba(37, 99, 235, 0.28);
+  border: 1px solid rgba(96, 165, 250, 0.24);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.profile-equipment-card.is-selected .profile-equipment-card__control small {
+  color: #dcffe8;
+  background: rgba(34, 197, 94, 0.2);
+  border-color: rgba(34, 197, 94, 0.28);
+}
+
+.profile-equipment-card__image {
+  display: grid;
+  place-items: center;
+  min-height: 124px;
+  padding: 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)),
+    radial-gradient(circle at center, rgba(96, 165, 250, 0.16), transparent 65%);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.profile-equipment-card.is-selected .profile-equipment-card__image {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)),
+    radial-gradient(circle at center, rgba(34, 197, 94, 0.16), transparent 65%);
+}
+
+.profile-equipment-card__image div {
+  display: grid;
+  gap: 6px;
+  place-items: center;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.profile-equipment-card__image span {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.profile-equipment-card__image small {
+  max-width: 88px;
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.food-subgroup {
+  display: grid;
+  gap: 10px;
+}
+
+.food-subgroup h3 {
+  margin: 0;
+  font-size: 0.92rem;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.food-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.food-card.is-positive {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.14), rgba(255, 255, 255, 0.045));
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.food-card.is-negative,
+.food-card.is-muted {
+  background: linear-gradient(135deg, rgba(100, 116, 139, 0.22), rgba(255, 255, 255, 0.045));
+  border-color: rgba(148, 163, 184, 0.22);
+}
+
+.food-card.is-danger {
+  background: linear-gradient(135deg, rgba(255, 46, 46, 0.18), rgba(255, 255, 255, 0.045));
+  border-color: rgba(255, 46, 46, 0.32);
+}
+
+.food-card.is-warning {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(255, 255, 255, 0.045));
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+.food-card__heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.food-card__heading strong {
+  line-height: 1.35;
+}
+
+.food-card__heading small {
+  flex-shrink: 0;
+}
+
+.food-card__marks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.food-mark {
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.food-mark.is-active.is-positive {
+  color: #dcffe8;
+  background: rgba(34, 197, 94, 0.25);
+  border-color: rgba(34, 197, 94, 0.38);
+}
+
+.food-mark.is-active.is-danger {
+  color: #fff;
+  background: rgba(255, 46, 46, 0.32);
+  border-color: rgba(255, 46, 46, 0.45);
+}
+
+.food-mark.is-active.is-warning {
+  color: #fff7ed;
+  background: rgba(245, 158, 11, 0.26);
+  border-color: rgba(245, 158, 11, 0.42);
+}
+
+.food-mark.is-active.is-negative,
+.food-mark.is-active.is-muted {
+  color: #f8fafc;
+  background: rgba(100, 116, 139, 0.36);
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+.food-mark.is-clear {
+  color: rgba(255, 255, 255, 0.7);
+  border-style: dashed;
+}
+
+@media (max-width: 1120px) {
+  .profile-equipment-grid,
+  .food-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .profile-hero,
+  .profile-section__heading {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-hero,
+  .profile-section {
+    padding: 18px;
+  }
+
+  .profile-actions .primary-button,
+  .profile-actions .ghost-button {
+    width: 100%;
+  }
+
+  .profile-category__header,
+  .food-card__heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .profile-category__actions {
+    width: 100%;
+  }
+
+  .profile-category__actions button {
+    flex: 1;
+  }
+
+  .profile-equipment-card {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-equipment-card__image {
+    min-height: 110px;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
 }

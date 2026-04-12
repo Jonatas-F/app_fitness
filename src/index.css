@@ -14,10 +14,10 @@
   --border: rgba(255, 255, 255, 0.1);
   --border-strong: rgba(255, 255, 255, 0.18);
 
-  --primary: #8b929e;
-  --primary-strong: #5f6670;
-  --primary-soft: rgba(148, 163, 184, 0.14);
-  --primary-glow: rgba(148, 163, 184, 0.24);
+  --primary: #ff2e2e;
+  --primary-strong: #e50914;
+  --primary-soft: rgba(255, 46, 46, 0.14);
+  --primary-glow: rgba(255, 46, 46, 0.3);
 
   --text-primary: #ffffff;
   --text-secondary: rgba(255, 255, 255, 0.74);
