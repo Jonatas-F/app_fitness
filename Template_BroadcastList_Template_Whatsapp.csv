@@ -1,0 +1,3 @@
+COUNTRY CODE;CHANNEL ID;ELEMENT NAME;SPACE NAME;GROUP;LANGUAGE;GROUP_CLIENT;HEADER;BODY 1;BODY 2;FOOTER;BUTTON 1;BUTTON 2
+55;34999998888;chatclub_open_session_v2;whatsapp:hsm:ecommerce:movile;VNC;pt_BR;VNC;;TM2 Digital;"Venha conhecer nossa plataforma de atendimento multicanais, e experimente por 1 mês grátis! Saiba mais em www.neppo.com.br ";Rodapé;;
+49;40808179000;media_template_v1;whatsapp:hsm:media:file;VNC;en_US;VNC;https://media.link.com/my-image.com;Text argument 1; Text argument 2;Rodapé;Botão 1; Botão 2

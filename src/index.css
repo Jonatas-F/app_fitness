@@ -710,3 +710,145 @@ ol {
     width: 100%;
   }
 }
+
+/* ============================================================
+   SHAPE CERTO — Patch: ícones stroke + glow ativo
+   Adicione este bloco ao FINAL do seu index.css
+   ============================================================ */
+
+/* ── Ícone SVG dentro dos nav links ────────────────────────── */
+.sidebar__link-icon,
+.bottom-nav__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.sidebar__link-icon svg,
+.bottom-nav__icon svg {
+  width: 18px;
+  height: 18px;
+  /* herda a cor do link pai */
+  stroke: currentColor;
+  transition: stroke 0.2s ease, filter 0.2s ease;
+}
+
+/* Ativo: ícone recebe cor accent + glow suave */
+.sidebar__link--active .sidebar__link-icon svg {
+  stroke: #ff7a6a;
+  filter: drop-shadow(0 0 5px rgba(255, 77, 61, 0.70))
+          drop-shadow(0 0 12px rgba(255, 77, 61, 0.35));
+}
+
+.bottom-nav__link--active .bottom-nav__icon svg {
+  stroke: #ff7a6a;
+  filter: drop-shadow(0 0 4px rgba(255, 77, 61, 0.65))
+          drop-shadow(0 0 10px rgba(255, 77, 61, 0.30));
+}
+
+/* Hover: leve brilho antes de ativar */
+.sidebar__link:hover .sidebar__link-icon svg {
+  stroke: #e8ecf7;
+  filter: drop-shadow(0 0 3px rgba(232, 236, 247, 0.25));
+}
+
+
+/* ── Glow intenso no item ativo (sobrescreve o anterior) ───── */
+.sidebar__link--active {
+  color: var(--text-primary) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 77,  61,  0.20) 0%,
+    rgba(40,  55,  110, 0.22) 60%,
+    rgba(255, 255, 255, 0.05) 100%
+  ) !important;
+  border-color: rgba(255, 77, 61, 0.38) !important;
+
+  /* Glow externo em camadas — efeito PrismaFlow */
+  box-shadow:
+    0 0 0 1px rgba(255, 77, 61, 0.15),
+    0 4px 16px rgba(255, 77, 61, 0.22),
+    0 8px 32px rgba(255, 77, 61, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    inset 0 0 20px rgba(255, 77, 61, 0.06) !important;
+}
+
+/* Barra lateral — mais brilhante */
+.sidebar__link--active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 18%;
+  height: 64%;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(180deg, #ff6b47, #ff3b3b);
+  box-shadow:
+    0 0 6px  rgba(255, 77, 61, 0.80),
+    0 0 14px rgba(255, 77, 61, 0.50),
+    0 0 28px rgba(255, 77, 61, 0.25);
+}
+
+/* Bottom nav ativo */
+.bottom-nav__link--active {
+  color: var(--text-primary) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 77,  61,  0.22),
+    rgba(40,  55,  110, 0.18)
+  ) !important;
+  border-color: rgba(255, 77, 61, 0.35) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 77, 61, 0.12),
+    0 4px 18px rgba(255, 77, 61, 0.28),
+    0 8px 30px rgba(255, 77, 61, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+}
+
+
+/* ── Brand mark: glow pulsante ──────────────────────────────── */
+.sidebar__brand-mark {
+  animation: brand-pulse 3s ease-in-out infinite;
+}
+
+@keyframes brand-pulse {
+  0%,  100% { box-shadow: 0 6px 20px rgba(255, 77, 61, 0.28), inset 0 1px 0 rgba(255,255,255,0.18); }
+  50%        { box-shadow: 0 6px 28px rgba(255, 77, 61, 0.48), inset 0 1px 0 rgba(255,255,255,0.22); }
+}
+
+
+/* ── Hover nos stat/metric cards — glow border ──────────────── */
+.module-stat:hover {
+  border-color: rgba(148, 163, 210, 0.30) !important;
+  box-shadow:
+    0 6px 24px rgba(10, 13, 22, 0.50),
+    0 0 0 1px rgba(148, 163, 210, 0.14),
+    inset 0 1px 0 rgba(255,255,255,0.10) !important;
+}
+
+/* Card primário — glow accent suave */
+.module-card--primary:hover {
+  border-color: rgba(255, 77, 61, 0.28) !important;
+  box-shadow:
+    0 8px 30px rgba(10, 13, 22, 0.45),
+    0 0 0 1px rgba(255, 77, 61, 0.10),
+    0 0 40px rgba(255, 77, 61, 0.06),
+    inset 0 1px 0 rgba(255,255,255,0.10) !important;
+}
+
+/* Botão primário — glow no hover */
+.primary-button:hover {
+  box-shadow:
+    0 0 0 1px rgba(255, 77, 61, 0.40),
+    0 8px 24px rgba(255, 77, 61, 0.40),
+    0 16px 40px rgba(255, 77, 61, 0.20),
+    inset 0 1px 0 rgba(255,255,255,0.20) !important;
+}
+
+/* Badge ativo — glow */
+.badge-primary {
+  box-shadow: 0 0 10px rgba(255, 77, 61, 0.22);
+}
