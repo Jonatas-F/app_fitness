@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { loadCheckins } from "../../../data/checkinStorage";
 import {
   getDietMetrics,
   loadDietHistory,
@@ -7,11 +8,74 @@ import {
 } from "../../../data/dietStorage";
 import "./NutritionPage.css";
 
+function parseNumeric(value) {
+  const normalized = String(value || "").replace(",", ".").replace(/[^\d.]/g, "");
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getLatestCompletedCheckin() {
+  return loadCheckins().find((item) => item.status !== "missed");
+}
+
+function getWaterRecommendation(checkin) {
+  if (!checkin) {
+    return {
+      value: "--",
+      trend: "Complete um check-in para estimar",
+      detail: "A meta final deve ser definida pelo Personal Virtual.",
+    };
+  }
+
+  const weight = parseNumeric(checkin.weight);
+  const bodyFat = parseNumeric(checkin.bodyFat);
+  const muscleMass = parseNumeric(checkin.muscleMass);
+
+  if (!weight) {
+    return {
+      value: "--",
+      trend: "Peso nao informado no check-in",
+      detail: "Peso, altura e bioimpedancia melhoram a recomendacao.",
+    };
+  }
+
+  let liters = weight * 0.035;
+
+  if (bodyFat && bodyFat > 28) {
+    liters += 0.2;
+  }
+
+  if (muscleMass && muscleMass > weight * 0.45) {
+    liters += 0.2;
+  }
+
+  const rounded = Math.round(liters * 10) / 10;
+
+  return {
+    value: `${rounded.toLocaleString("pt-BR", { minimumFractionDigits: 1 })} L`,
+    trend: "Estimativa pelo ultimo check-in",
+    detail: `Base: ${checkin.weight || "--"} kg${checkin.bodyFat ? `, gordura ${checkin.bodyFat}` : ""}${
+      checkin.muscleMass ? `, massa muscular ${checkin.muscleMass}` : ""
+    }.`,
+  };
+}
+
 export default function NutritionPage() {
   const [diet, setDiet] = useState(() => loadDietProtocol());
   const [feedback, setFeedback] = useState("");
   const [openMeals, setOpenMeals] = useState([]);
   const metrics = getDietMetrics(diet, loadDietHistory());
+  const waterRecommendation = getWaterRecommendation(getLatestCompletedCheckin());
+  const nutritionMetrics = [
+    metrics[0],
+    {
+      label: "Meta de agua",
+      value: waterRecommendation.value,
+      trend: waterRecommendation.trend,
+      detail: waterRecommendation.detail,
+    },
+    ...metrics.slice(1),
+  ];
 
   function updateDiet(nextDiet) {
     setDiet(saveDietProtocol(nextDiet));
@@ -62,11 +126,15 @@ export default function NutritionPage() {
       {feedback ? <p className="nutrition-feedback">{feedback}</p> : null}
 
       <section className="nutrition-metrics">
-        {metrics.map((item) => (
-          <article key={item.label} className="module-stat glass-panel">
+        {nutritionMetrics.map((item) => (
+          <article
+            key={item.label}
+            className={`module-stat glass-panel ${item.label === "Meta de agua" ? "nutrition-water-card" : ""}`}
+          >
             <span className="module-stat__label">{item.label}</span>
             <strong className="module-stat__value">{item.value}</strong>
             <span className="module-stat__helper">{item.trend}</span>
+            {item.detail ? <small>{item.detail}</small> : null}
           </article>
         ))}
       </section>

@@ -22,7 +22,6 @@ export const quickSummary = {
   items: [
     "Objetivo ativo: recomposicao corporal",
     "Treinos da semana: 5 sessoes",
-    "Meta de agua: 3,2 L por dia",
     "Proximo check-in: domingo",
   ],
 };

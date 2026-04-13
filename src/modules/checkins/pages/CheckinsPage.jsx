@@ -120,6 +120,146 @@ function formatValue(value, suffix = "") {
   return value ? `${value}${suffix}` : "--";
 }
 
+function toDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function parseDateKey(dateKey) {
+  return new Date(`${dateKey}T12:00:00`);
+}
+
+function formatDateKey(dateKey) {
+  return parseDateKey(dateKey).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function getCalendarDays(monthDate) {
+  const year = monthDate.getFullYear();
+  const month = monthDate.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const start = new Date(firstDay);
+  start.setDate(firstDay.getDate() - firstDay.getDay());
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
+    return date;
+  });
+}
+
+function CheckinCalendar({
+  checkins,
+  selectedDateKey,
+  calendarMonth,
+  onSelectDate,
+  onChangeMonth,
+  onToday,
+}) {
+  const entriesByDate = useMemo(() => {
+    return checkins.reduce((acc, item) => {
+      const key = toDateKey(new Date(item.createdAt));
+      acc[key] = [...(acc[key] || []), item];
+      return acc;
+    }, {});
+  }, [checkins]);
+  const selectedEntries = entriesByDate[selectedDateKey] || [];
+  const days = getCalendarDays(calendarMonth);
+  const monthLabel = calendarMonth.toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
+  const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
+
+  return (
+    <section className="checkins-calendar glass-panel">
+      <div className="checkins-calendar__header">
+        <div>
+          <span>Calendario</span>
+          <h2>Consultar ou lancar data retroativa</h2>
+          <p>
+            Selecione um dia para ver registros anteriores ou salvar o proximo
+            check-in nessa data.
+          </p>
+        </div>
+
+        <div className="checkins-calendar__controls">
+          <button type="button" onClick={() => onChangeMonth(-1)}>
+            Anterior
+          </button>
+          <strong>{monthLabel}</strong>
+          <button type="button" onClick={() => onChangeMonth(1)}>
+            Proximo
+          </button>
+          <button type="button" onClick={onToday}>
+            Hoje
+          </button>
+        </div>
+      </div>
+
+      <div className="checkins-calendar__body">
+        <div className="checkins-calendar__grid">
+          {weekDays.map((day) => (
+            <span key={day} className="checkins-calendar__weekday">
+              {day}
+            </span>
+          ))}
+
+          {days.map((date) => {
+            const dateKey = toDateKey(date);
+            const entries = entriesByDate[dateKey] || [];
+            const completed = entries.some((item) => item.status !== "missed");
+            const missed = entries.some((item) => item.status === "missed");
+            const isSelected = dateKey === selectedDateKey;
+            const isCurrentMonth = date.getMonth() === calendarMonth.getMonth();
+            const isToday = dateKey === toDateKey(new Date());
+
+            return (
+              <button
+                key={dateKey}
+                type="button"
+                className={`checkins-calendar__day ${isSelected ? "is-selected" : ""} ${
+                  isCurrentMonth ? "" : "is-outside"
+                } ${completed ? "has-completed" : ""} ${missed ? "has-missed" : ""} ${
+                  isToday ? "is-today" : ""
+                }`}
+                onClick={() => onSelectDate(dateKey)}
+              >
+                <span>{date.getDate()}</span>
+                {entries.length ? <small>{entries.length}</small> : null}
+              </button>
+            );
+          })}
+        </div>
+
+        <aside className="checkins-calendar__details">
+          <span>Data selecionada</span>
+          <h3>{formatDateKey(selectedDateKey)}</h3>
+          {selectedEntries.length ? (
+            <div className="checkins-calendar__entries">
+              {selectedEntries.map((item) => (
+                <article key={item.id}>
+                  <strong>{checkinCadences[item.cadence || "monthly"].label}</strong>
+                  <small>
+                    {item.status === "missed" ? "Nao realizado" : `${item.completeness ?? "--"}% completo`}
+                  </small>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p>Nenhum check-in nessa data. Voce pode salvar o formulario atual para esse dia.</p>
+          )}
+        </aside>
+      </div>
+    </section>
+  );
+}
+
 function PhotoPoseCard({ slot, fileName, onChange }) {
   return (
     <article className="photo-pose-card">
@@ -169,7 +309,10 @@ function getCadenceIntro(cadence) {
 }
 
 export default function CheckinsPage() {
+  const todayKey = toDateKey(new Date());
   const [activeCadence, setActiveCadence] = useState("monthly");
+  const [selectedDateKey, setSelectedDateKey] = useState(todayKey);
+  const [calendarMonth, setCalendarMonth] = useState(() => parseDateKey(todayKey));
   const [formData, setFormData] = useState({
     ...defaultCheckinForm,
     cadence: "monthly",
@@ -231,20 +374,22 @@ export default function CheckinsPage() {
       return;
     }
 
-    const updated = saveCheckin(payload);
+    const updated = saveCheckin(payload, { createdAt: `${selectedDateKey}T12:00:00` });
     setCheckins(updated);
     setFormData({ ...defaultCheckinForm, cadence: activeCadence });
     setPhotoUploads({});
     setFeedback(
-      `${checkinCadences[activeCadence].label} salvo. O historico foi atualizado sem regenerar treino ou dieta automaticamente.`
+      `${checkinCadences[activeCadence].label} salvo em ${formatDateKey(selectedDateKey)}. O historico foi atualizado sem regenerar treino ou dieta automaticamente.`
     );
   }
 
   function handleMissedCheckin() {
-    const updated = saveMissedCheckin(activeCadence);
+    const updated = saveMissedCheckin(activeCadence, "", {
+      createdAt: `${selectedDateKey}T12:00:00`,
+    });
     setCheckins(updated);
     setFeedback(
-      `${checkinCadences[activeCadence].label} marcado como nao realizado. A IA vai considerar apenas os check-ins preenchidos.`
+      `${checkinCadences[activeCadence].label} marcado como nao realizado em ${formatDateKey(selectedDateKey)}. A IA vai considerar apenas os check-ins preenchidos.`
     );
   }
 
@@ -272,6 +417,16 @@ export default function CheckinsPage() {
       ...current,
       photoNote: "Fotos de progresso selecionadas",
     }));
+  }
+
+  function handleCalendarMonthChange(direction) {
+    setCalendarMonth((current) => new Date(current.getFullYear(), current.getMonth() + direction, 1));
+  }
+
+  function handleCalendarToday() {
+    const nextTodayKey = toDateKey(new Date());
+    setSelectedDateKey(nextTodayKey);
+    setCalendarMonth(parseDateKey(nextTodayKey));
   }
 
   const showDaily = activeCadence === "daily";
@@ -372,6 +527,15 @@ export default function CheckinsPage() {
           </article>
         ))}
       </section>
+
+      <CheckinCalendar
+        checkins={checkins}
+        selectedDateKey={selectedDateKey}
+        calendarMonth={calendarMonth}
+        onSelectDate={setSelectedDateKey}
+        onChangeMonth={handleCalendarMonthChange}
+        onToday={handleCalendarToday}
+      />
 
       <form className="checkins-form" onSubmit={handleSubmit}>
         <div className="checkins-form__main">
@@ -619,15 +783,6 @@ export default function CheckinsPage() {
                   />
                 </Field>
 
-                <Field label="Agua por dia">
-                  <input
-                    name="waterIntake"
-                    value={formData.waterIntake}
-                    onChange={handleChange}
-                    placeholder="Ex.: 2.5 L"
-                  />
-                </Field>
-
                 <Field label="Lesoes ou limitacoes">
                   <input
                     name="injuries"
@@ -839,8 +994,8 @@ export default function CheckinsPage() {
           <article className="checkins-actions glass-panel">
             <h2>Registrar {checkinCadences[activeCadence].label.toLowerCase()}</h2>
             <p>
-              Salvar registra dados reais. Marcar como nao realizado preserva o
-              gap sem distorcer medias.
+              Salvar registra dados reais em {formatDateKey(selectedDateKey)}.
+              Marcar como nao realizado preserva o gap sem distorcer medias.
             </p>
             <button type="submit" className="primary-button">
               Salvar check-in

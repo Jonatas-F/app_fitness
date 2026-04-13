@@ -106,6 +106,27 @@ select {
   font: inherit;
 }
 
+select {
+  color-scheme: dark;
+}
+
+select option,
+select optgroup {
+  color: #ffffff;
+  background: #111113;
+}
+
+select option:checked {
+  color: #ffffff;
+  background: #2b2b2f;
+}
+
+select option:hover,
+select option:focus {
+  color: #ffffff;
+  background: #2f2f34;
+}
+
 button {
   border: none;
   cursor: pointer;

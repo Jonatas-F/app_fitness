@@ -1,6 +1,8 @@
 import { createBrowserRouter } from 'react-router-dom';
 import AppLayout from '../layouts/AppLayout';
 
+import HomePage from '../modules/home/pages/HomePage';
+import CheckoutPage from '../modules/checkout/pages/CheckoutPage';
 import DashboardPage from '../modules/dashboard/pages/DashboardPage';
 import WorkoutsPage from '../modules/workouts/pages/WorkoutsPage';
 import NutritionPage from '../modules/nutrition/pages/NutritionPage';
@@ -12,11 +14,12 @@ import NotFoundPage from '../modules/shared/pages/NotFoundPage';
 
 export const router = createBrowserRouter(
   [
+    { path: '/', element: <HomePage /> },
+    { path: '/checkout', element: <CheckoutPage /> },
     {
-      path: '/',
       element: <AppLayout />,
       children: [
-        { index: true, element: <DashboardPage /> },
+        { path: 'dashboard', element: <DashboardPage /> },
 
         { path: 'treinos', element: <WorkoutsPage /> },
         { path: 'treinos/historico', element: <WorkoutsPage /> },

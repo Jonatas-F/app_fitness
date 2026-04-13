@@ -288,6 +288,192 @@
   font-size: 1.35rem;
 }
 
+.checkins-calendar {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+}
+
+.checkins-calendar__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.checkins-calendar__header span,
+.checkins-calendar__details > span {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 28px;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(255, 46, 46, 0.16);
+  border: 1px solid rgba(255, 46, 46, 0.24);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.checkins-calendar__header h2 {
+  margin: 10px 0 6px;
+  font-size: 1.18rem;
+}
+
+.checkins-calendar__header p,
+.checkins-calendar__details p,
+.checkins-calendar__details small {
+  color: rgba(255, 255, 255, 0.68);
+  line-height: 1.5;
+}
+
+.checkins-calendar__controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkins-calendar__controls strong {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  text-transform: capitalize;
+}
+
+.checkins-calendar__controls button {
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.checkins-calendar__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  gap: 16px;
+}
+
+.checkins-calendar__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.checkins-calendar__weekday {
+  min-height: 28px;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.checkins-calendar__day {
+  position: relative;
+  display: grid;
+  min-height: 58px;
+  place-items: center;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.checkins-calendar__day:hover,
+.checkins-calendar__day.is-selected {
+  transform: translateY(-2px);
+  color: #fff;
+  border-color: rgba(255, 46, 46, 0.42);
+  background: rgba(255, 46, 46, 0.14);
+}
+
+.checkins-calendar__day.is-outside {
+  opacity: 0.42;
+}
+
+.checkins-calendar__day.is-today {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.checkins-calendar__day.has-completed {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.18), rgba(255, 255, 255, 0.045));
+  border-color: rgba(34, 197, 94, 0.28);
+}
+
+.checkins-calendar__day.has-missed {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(255, 255, 255, 0.045));
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+.checkins-calendar__day.is-selected {
+  box-shadow: 0 10px 24px rgba(255, 46, 46, 0.16), inset 0 0 0 1px rgba(255, 46, 46, 0.2);
+}
+
+.checkins-calendar__day span {
+  font-weight: 900;
+}
+
+.checkins-calendar__day small {
+  position: absolute;
+  right: 6px;
+  bottom: 5px;
+  min-width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.32);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.checkins-calendar__details {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.checkins-calendar__details h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  text-transform: capitalize;
+}
+
+.checkins-calendar__entries {
+  display: grid;
+  gap: 8px;
+}
+
+.checkins-calendar__entries article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 .checkins-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
@@ -392,6 +578,33 @@
   color: #fff;
   background: rgba(255, 255, 255, 0.06);
   transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.checkin-field select {
+  appearance: none;
+  color-scheme: dark;
+  padding-right: 42px;
+  background:
+    linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.76) 50%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.76) 50%, transparent 50%),
+    rgba(255, 255, 255, 0.06);
+  background-position:
+    calc(100% - 18px) 21px,
+    calc(100% - 12px) 21px,
+    0 0;
+  background-size: 6px 6px, 6px 6px, 100% 100%;
+  background-repeat: no-repeat;
+}
+
+.checkin-field select option,
+.checkin-field select optgroup {
+  color: #ffffff;
+  background: #111113;
+}
+
+.checkin-field select option:checked {
+  color: #ffffff;
+  background: #2b2b2f;
 }
 
 .checkin-field textarea {
@@ -714,7 +927,21 @@
 
   .checkins-history__header,
   .checkins-history-card__top,
+  .checkins-calendar__header,
   .photo-checkin-panel__header {
     flex-direction: column;
+  }
+
+  .checkins-calendar,
+  .checkins-calendar__body {
+    grid-template-columns: 1fr;
+  }
+
+  .checkins-calendar__grid {
+    gap: 6px;
+  }
+
+  .checkins-calendar__day {
+    min-height: 46px;
   }
 }

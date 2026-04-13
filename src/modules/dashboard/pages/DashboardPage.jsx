@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { loadCheckins } from "../../../data/checkinStorage";
 import { loadTrainingHistory } from "../../../data/trainingStorage";
 import {
@@ -253,6 +254,151 @@ function BodyLineChart({ title, fields, checkins }) {
   );
 }
 
+function getExerciseVolume(exercise) {
+  return exercise.sets.reduce((sum, set) => {
+    const weight = numberValue(set.weight) || 0;
+    const reps = numberValue(set.reps) || 0;
+    return sum + weight * reps;
+  }, 0);
+}
+
+function buildWorkoutEvolution(workout, sessions) {
+  const monthlySessions = sessions
+    .filter((session) => session.workoutId === workout.id && within(session.createdAt, daysAgo(30)))
+    .slice(0, 6)
+    .reverse();
+
+  const exerciseRows = workout.exercises.map((exercise) => {
+    const sessionValues = monthlySessions.map((session) => {
+      const sessionExercise = session.exercises.find(
+        (item) => item.id === exercise.id || item.name === exercise.name
+      );
+      return sessionExercise ? getExerciseVolume(sessionExercise) : 0;
+    });
+    const first = sessionValues.find((value) => value > 0) || 0;
+    const latest = [...sessionValues].reverse().find((value) => value > 0) || 0;
+
+    return {
+      id: exercise.id,
+      name: exercise.name,
+      values: sessionValues,
+      first,
+      latest,
+      diff: latest - first,
+    };
+  });
+
+  const maxValue = exerciseRows.reduce(
+    (max, exercise) => Math.max(max, ...exercise.values),
+    0
+  );
+
+  return {
+    sessionCount: monthlySessions.length,
+    labels: monthlySessions.map((session) =>
+      new Date(session.createdAt).toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+      })
+    ),
+    exerciseRows,
+    maxValue,
+  };
+}
+
+function WorkoutEvolutionPanel({ workouts, sessions }) {
+  const firstEnabledWorkout = workouts.find((workout) => workout.enabled)?.id || "A";
+  const [openWorkoutId, setOpenWorkoutId] = useState(firstEnabledWorkout);
+
+  return (
+    <section className="dashboard-card glass-panel">
+      <h2>Evolucao por treino do protocolo mensal</h2>
+      <p>
+        Selecione o treino A, B, C, D ou E para comparar a evolucao de carga dos
+        exercicios registrados neste protocolo.
+      </p>
+
+      <div className="workout-evolution-tabs">
+        {workouts.map((workout) => (
+          <button
+            key={workout.id}
+            type="button"
+            className={`${openWorkoutId === workout.id ? "is-selected" : ""} ${
+              workout.enabled ? "is-enabled" : "is-disabled"
+            }`}
+            disabled={!workout.enabled}
+            onClick={() => setOpenWorkoutId((current) => (current === workout.id ? "" : workout.id))}
+          >
+            <strong>{workout.title}</strong>
+            <span>{workout.enabled ? "Habilitado" : "Desabilitado"}</span>
+          </button>
+        ))}
+      </div>
+
+      {workouts.map((workout) => {
+        if (workout.id !== openWorkoutId || !workout.enabled) {
+          return null;
+        }
+
+        const evolution = buildWorkoutEvolution(workout, sessions);
+
+        return (
+          <article key={workout.id} className="workout-evolution-panel">
+            <header>
+              <div>
+                <h3>{workout.title}</h3>
+                <p>{workout.focus}</p>
+              </div>
+              <span>{evolution.sessionCount} registro(s) no mes</span>
+            </header>
+
+            {evolution.sessionCount ? (
+              <>
+                <div className="workout-evolution-labels">
+                  {evolution.labels.map((label) => (
+                    <span key={label}>{label}</span>
+                  ))}
+                </div>
+
+                <div className="workout-evolution-list">
+                  {evolution.exerciseRows.map((exercise) => (
+                    <section key={exercise.id} className="workout-evolution-exercise">
+                      <div className="workout-evolution-exercise__heading">
+                        <strong>{exercise.name}</strong>
+                        <small>
+                          {exercise.latest || "--"} kg/reps volume |{" "}
+                          {exercise.diff > 0 ? "+" : ""}
+                          {exercise.diff}
+                        </small>
+                      </div>
+                      <div className="workout-evolution-bars">
+                        {exercise.values.map((value, index) => (
+                          <span key={`${exercise.id}-${index}`}>
+                            <i
+                              style={{
+                                height: `${evolution.maxValue ? Math.max(6, (value / evolution.maxValue) * 100) : 0}%`,
+                              }}
+                            />
+                          </span>
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p>
+                Salve execucoes desse treino na aba Treinos para gerar os
+                comparativos de carga por exercicio.
+              </p>
+            )}
+          </article>
+        );
+      })}
+    </section>
+  );
+}
+
 export default function DashboardPage() {
   const allCheckins = loadCheckins();
   const checkins = completedCheckins(allCheckins);
@@ -414,6 +560,8 @@ export default function DashboardPage() {
           </div>
         </article>
       </section>
+
+      <WorkoutEvolutionPanel workouts={workoutPlan.workouts} sessions={sessions} />
 
       <section className="dashboard-grid">
         <article className="dashboard-card glass-panel">

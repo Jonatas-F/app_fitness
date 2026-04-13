@@ -57,7 +57,6 @@ export const defaultCheckinForm = {
   dietaryRestrictions: "",
   foodPreferences: "",
   mealsPerDay: "",
-  waterIntake: "",
   energy: "8",
   sleep: "",
   adherence: "85",
@@ -124,7 +123,6 @@ const aiRelevantFields = [
   "dietaryRestrictions",
   "foodPreferences",
   "mealsPerDay",
-  "waterIntake",
   "energy",
   "sleep",
   "adherence",
@@ -148,6 +146,20 @@ function safeParse(value, fallback) {
 
 function getTodayDate() {
   return new Date().toISOString();
+}
+
+function getCreatedAtFromOptions(options) {
+  if (!options.createdAt) {
+    return getTodayDate();
+  }
+
+  const date = new Date(options.createdAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return getTodayDate();
+  }
+
+  return date.toISOString();
 }
 
 function hasValue(value) {
@@ -267,7 +279,6 @@ function buildAiContext(checkinData, completeness, status) {
       dietaryRestrictions: checkinData.dietaryRestrictions || "",
       foodPreferences: checkinData.foodPreferences || "",
       mealsPerDay: checkinData.mealsPerDay || "",
-      waterIntake: checkinData.waterIntake || "",
       hunger: checkinData.hunger || "",
       digestion: checkinData.digestion || "",
     },
@@ -341,7 +352,6 @@ export function saveCheckin(checkinData, options = {}) {
     dietaryRestrictions: checkinData.dietaryRestrictions || "",
     foodPreferences: checkinData.foodPreferences || "",
     mealsPerDay: checkinData.mealsPerDay || "",
-    waterIntake: checkinData.waterIntake || "",
     energy: status === "missed" ? "" : checkinData.energy || "",
     sleep: status === "missed" ? "" : checkinData.sleep || "",
     adherence: status === "missed" ? "" : checkinData.adherence || "",
@@ -358,18 +368,24 @@ export function saveCheckin(checkinData, options = {}) {
     photos: Array.isArray(checkinData.photos) ? checkinData.photos : [],
     completeness,
     aiContext: buildAiContext({ ...checkinData, cadence }, completeness, status),
-    createdAt: getTodayDate(),
+    createdAt: getCreatedAtFromOptions(options),
   };
 
-  const updated = [newCheckin, ...current];
+  const updated = [newCheckin, ...current].sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
   localStorage.setItem(CHECKINS_STORAGE_KEY, JSON.stringify(updated));
   return updated;
 }
 
-export function saveMissedCheckin(cadence, reason = "") {
+export function saveMissedCheckin(cadence, reason = "", options = {}) {
   return saveCheckin(
     { ...defaultCheckinForm, cadence: normalizeCadence(cadence), protocolAction: "none" },
-    { status: "missed", reason: reason || "Check-in nao realizado no periodo." }
+    {
+      status: "missed",
+      reason: reason || "Check-in nao realizado no periodo.",
+      createdAt: options.createdAt,
+    }
   );
 }
 

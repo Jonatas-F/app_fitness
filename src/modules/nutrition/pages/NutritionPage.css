@@ -46,8 +46,21 @@
 
 .nutrition-metrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 16px;
+}
+
+.nutrition-water-card {
+  border-color: rgba(96, 165, 250, 0.26);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(255, 255, 255, 0.055));
+}
+
+.nutrition-water-card small {
+  display: block;
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.76rem;
+  line-height: 1.4;
 }
 
 .nutrition-config {
@@ -102,7 +115,12 @@
 
 .nutrition-config select option {
   color: #fff;
-  background: #111216;
+  background: #111113;
+}
+
+.nutrition-config select option:checked {
+  color: #fff;
+  background: #2b2b2f;
 }
 
 .nutrition-config textarea,

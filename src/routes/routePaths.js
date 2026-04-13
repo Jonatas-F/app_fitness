@@ -1,5 +1,7 @@
 export const ROUTE_PATHS = {
-  dashboard: '/',
+  home: '/',
+  checkout: '/checkout',
+  dashboard: '/dashboard',
   workouts: '/treinos',
   workoutsHistory: '/treinos/historico',
   workoutsGenerate: '/treinos/gerar',

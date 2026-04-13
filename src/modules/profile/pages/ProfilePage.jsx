@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import logo from "../../../assets/logo.svg";
 import { foodMarkOptions, foodPreferencesCatalog } from "../../../data/foodPreferencesCatalog";
 import {
@@ -13,9 +14,27 @@ import {
   loadGymEquipmentSelection,
   saveGymEquipmentSelection,
 } from "../../../data/gymEquipmentStorage";
+import { formatCurrency, getAnnualPrice, getPlanById, subscriptionPlans } from "../../../data/plans";
 import "./ProfilePage.css";
 
 const PROFILE_PHOTO_KEY = "shapeCertoProfilePhoto";
+const PROFILE_ACCOUNT_KEY = "shapeCertoProfileAccount";
+
+const defaultAccount = {
+  fullName: "",
+  username: "",
+  email: "",
+  googleLinked: false,
+  paymentMethod: "principal",
+  activePlan: "intermediario",
+  billingCycle: "monthly",
+};
+
+const paymentMethods = [
+  { id: "principal", brand: "Visa", ending: "2847", label: "Cartao principal" },
+  { id: "reserva", brand: "Mastercard", ending: "9132", label: "Cartao reserva" },
+  { id: "novo", brand: "+", ending: "novo", label: "Adicionar novo cartao" },
+];
 
 function loadProfilePhoto() {
   try {
@@ -28,6 +47,19 @@ function loadProfilePhoto() {
 function saveProfilePhoto(photo) {
   localStorage.setItem(PROFILE_PHOTO_KEY, JSON.stringify(photo));
   return photo;
+}
+
+function loadProfileAccount() {
+  try {
+    return { ...defaultAccount, ...JSON.parse(localStorage.getItem(PROFILE_ACCOUNT_KEY)) };
+  } catch (error) {
+    return defaultAccount;
+  }
+}
+
+function saveProfileAccount(account) {
+  localStorage.setItem(PROFILE_ACCOUNT_KEY, JSON.stringify(account));
+  return account;
 }
 
 function EquipmentCard({ item, selected, onToggle }) {
@@ -90,6 +122,16 @@ function FoodPreferenceCard({ item, selectedMark, onChange }) {
 
 export default function ProfilePage() {
   const [profilePhoto, setProfilePhoto] = useState(() => loadProfilePhoto());
+  const [account, setAccount] = useState(() => loadProfileAccount());
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [accountMessage, setAccountMessage] = useState("");
+  const [passwordMessage, setPasswordMessage] = useState("");
+  const [pendingPlan, setPendingPlan] = useState(() => loadProfileAccount().activePlan);
+  const [pendingBillingCycle, setPendingBillingCycle] = useState(() => loadProfileAccount().billingCycle);
   const [selectedEquipmentIds, setSelectedEquipmentIds] = useState(() => loadGymEquipmentSelection());
   const [openEquipmentGroups, setOpenEquipmentGroups] = useState([]);
   const [foodPreferences, setFoodPreferences] = useState(() => loadFoodPreferences());
@@ -101,6 +143,14 @@ export default function ProfilePage() {
     [selectedEquipmentIds]
   );
   const foodContext = useMemo(() => buildFoodPreferencesContext(foodPreferences), [foodPreferences]);
+  const activePlan = getPlanById(account.activePlan);
+  const selectedPlan = getPlanById(pendingPlan);
+  const selectedPaymentMethod =
+    paymentMethods.find((method) => method.id === account.paymentMethod) || paymentMethods[0];
+  const selectedPlanPrice =
+    pendingBillingCycle === "annual"
+      ? getAnnualPrice(selectedPlan)
+      : selectedPlan.monthlyPrice;
 
   function handlePhotoUpload(event) {
     const file = event.target.files?.[0];
@@ -114,6 +164,71 @@ export default function ProfilePage() {
       setProfilePhoto(saveProfilePhoto({ name: file.name, dataUrl: reader.result }));
     };
     reader.readAsDataURL(file);
+  }
+
+  function handleAccountChange(event) {
+    const { name, value } = event.target;
+    setAccountMessage("");
+    setAccount((current) => ({ ...current, [name]: value }));
+  }
+
+  function handleAccountSubmit(event) {
+    event.preventDefault();
+    setAccount(saveProfileAccount(account));
+    setAccountMessage("Dados de perfil salvos neste dispositivo.");
+  }
+
+  function handlePasswordChange(event) {
+    const { name, value } = event.target;
+    setPasswordMessage("");
+    setPasswordForm((current) => ({ ...current, [name]: value }));
+  }
+
+  function handlePasswordSubmit(event) {
+    event.preventDefault();
+
+    if (!passwordForm.newPassword || passwordForm.newPassword.length < 8) {
+      setPasswordMessage("Use uma nova senha com pelo menos 8 caracteres.");
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordMessage("A confirmacao precisa ser igual a nova senha.");
+      return;
+    }
+
+    setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    setPasswordMessage("Solicitacao de alteracao preparada para a integracao de conta.");
+  }
+
+  function toggleGoogleLink() {
+    const nextAccount = { ...account, googleLinked: !account.googleLinked };
+    setAccount(saveProfileAccount(nextAccount));
+    setAccountMessage(
+      nextAccount.googleLinked
+        ? "Conta marcada como vinculada ao Google."
+        : "Vinculo com Google removido neste dispositivo."
+    );
+  }
+
+  function confirmPlanChange() {
+    if (account.paymentMethod === "novo") {
+      setAccountMessage("Adicione ou selecione um cartao salvo antes de confirmar a alteracao do plano.");
+      return;
+    }
+
+    const nextAccount = {
+      ...account,
+      activePlan: pendingPlan,
+      billingCycle: pendingBillingCycle,
+    };
+
+    setAccount(saveProfileAccount(nextAccount));
+    setAccountMessage(
+      `Plano ${getPlanById(pendingPlan).name} confirmado no pagamento ${
+        pendingBillingCycle === "annual" ? "anual" : "mensal"
+      } usando ${selectedPaymentMethod.label}.`
+    );
   }
 
   function updateEquipmentSelection(nextIds) {
@@ -216,6 +331,251 @@ export default function ProfilePage() {
           </label>
         </aside>
       </header>
+
+      <section className="profile-section glass-panel">
+        <div className="profile-section__heading">
+          <div>
+            <span>Conta e acesso</span>
+            <h2>Nome, senha, Google e pagamento</h2>
+            <p>
+              Atualize as informacoes principais do perfil e deixe o acesso preparado para vincular
+              com Gmail ou conta Google. O cartao escolhido fica salvo como preferencia de pagamento.
+            </p>
+          </div>
+          <aside>
+            <strong>{account.googleLinked ? "Google" : "Local"}</strong>
+            <span>{account.googleLinked ? "conta vinculada" : "sem vinculo externo"}</span>
+            <small>{account.email || "email nao informado"}</small>
+          </aside>
+        </div>
+
+        <div className="profile-account-grid">
+          <form className="profile-account-card" onSubmit={handleAccountSubmit}>
+            <div className="profile-account-card__heading">
+              <strong>Dados do usuario</strong>
+              <small>Nome publico e identificadores</small>
+            </div>
+
+            <label className="profile-field">
+              <span>Nome completo</span>
+              <input
+                type="text"
+                name="fullName"
+                value={account.fullName}
+                onChange={handleAccountChange}
+                placeholder="Ex.: Jonatas Silva"
+              />
+            </label>
+
+            <label className="profile-field">
+              <span>Nome de usuario</span>
+              <input
+                type="text"
+                name="username"
+                value={account.username}
+                onChange={handleAccountChange}
+                placeholder="Ex.: jonatas.silva"
+              />
+            </label>
+
+            <label className="profile-field">
+              <span>Email / Gmail</span>
+              <input
+                type="email"
+                name="email"
+                value={account.email}
+                onChange={handleAccountChange}
+                placeholder="usuario@gmail.com"
+              />
+            </label>
+
+            <button type="submit" className="primary-button">
+              Salvar dados
+            </button>
+              {accountMessage ? <small className="profile-form-message">{accountMessage}</small> : null}
+          </form>
+
+          <form className="profile-account-card" onSubmit={handlePasswordSubmit}>
+            <div className="profile-account-card__heading">
+              <strong>Alterar senha</strong>
+              <small>Validacao local ate conectar backend</small>
+            </div>
+
+            <label className="profile-field">
+              <span>Senha atual</span>
+              <input
+                type="password"
+                name="currentPassword"
+                value={passwordForm.currentPassword}
+                onChange={handlePasswordChange}
+                placeholder="Digite a senha atual"
+              />
+            </label>
+
+            <label className="profile-field">
+              <span>Nova senha</span>
+              <input
+                type="password"
+                name="newPassword"
+                value={passwordForm.newPassword}
+                onChange={handlePasswordChange}
+                placeholder="Minimo de 8 caracteres"
+              />
+            </label>
+
+            <label className="profile-field">
+              <span>Confirmar nova senha</span>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={passwordForm.confirmPassword}
+                onChange={handlePasswordChange}
+                placeholder="Repita a nova senha"
+              />
+            </label>
+
+            <button type="submit" className="primary-button">
+              Atualizar senha
+            </button>
+            {passwordMessage ? <small className="profile-form-message">{passwordMessage}</small> : null}
+          </form>
+
+          <article className={`profile-account-card profile-google-card ${account.googleLinked ? "is-linked" : ""}`}>
+            <div className="profile-account-card__heading">
+              <strong>Conta Google</strong>
+              <small>Gmail, login social e sincronizacao futura</small>
+            </div>
+
+            <div className="profile-google-card__badge">
+              <span>G</span>
+              <div>
+                <strong>{account.googleLinked ? "Vinculada ao Google" : "Vincular Gmail / Google"}</strong>
+                <small>
+                  {account.googleLinked
+                    ? account.email || "Conta Google conectada"
+                    : "Use para facilitar login e recuperacao de acesso"}
+                </small>
+              </div>
+            </div>
+
+            <button type="button" className="ghost-button" onClick={toggleGoogleLink}>
+              {account.googleLinked ? "Desvincular Google" : "Vincular Google"}
+            </button>
+          </article>
+
+          <article className="profile-account-card profile-payment-card">
+            <div className="profile-account-card__heading">
+              <strong>Dados de pagamento</strong>
+              <small>Cartao usado para renovar o plano</small>
+            </div>
+
+            <div className="payment-methods">
+              {[
+                ...paymentMethods,
+              ].map((method) => (
+                <button
+                  key={method.id}
+                  type="button"
+                  className={`payment-method ${account.paymentMethod === method.id ? "is-selected" : ""}`}
+                  onClick={() => {
+                    const nextAccount = { ...account, paymentMethod: method.id };
+                    setAccount(saveProfileAccount(nextAccount));
+                    setAccountMessage("Metodo de pagamento preferencial atualizado.");
+                  }}
+                >
+                  <span>{method.brand}</span>
+                  <div>
+                    <strong>{method.label}</strong>
+                    <small>
+                      {method.id === "novo" ? "preparado para checkout" : `final ${method.ending}`}
+                    </small>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <button type="button" className="ghost-button">
+              Gerenciar cartoes
+            </button>
+          </article>
+
+          <article className="profile-account-card profile-plan-card">
+            <div className="profile-account-card__heading">
+              <strong>Plano ativo</strong>
+              <small>Assinatura atual e limites de uso</small>
+            </div>
+
+            <div className="profile-plan-card__current">
+              <span>{activePlan.name}</span>
+              <strong>{activePlan.tokens}</strong>
+              <small>
+                {activePlan.workouts} | {account.billingCycle === "annual" ? "Anual" : "Mensal"}
+              </small>
+            </div>
+
+            <label className="profile-field">
+              <span>Novo plano</span>
+              <select
+                value={pendingPlan}
+                onChange={(event) => setPendingPlan(event.target.value)}
+              >
+                {subscriptionPlans.map((plan) => (
+                  <option key={plan.id} value={plan.id}>
+                    {plan.name} - {formatCurrency(plan.monthlyPrice)}/mes
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="profile-plan-card__billing">
+              <button
+                type="button"
+                className={pendingBillingCycle === "monthly" ? "is-selected" : ""}
+                onClick={() => setPendingBillingCycle("monthly")}
+              >
+                <strong>Mensal</strong>
+                <small>{formatCurrency(selectedPlan.monthlyPrice)} recorrente</small>
+              </button>
+              <button
+                type="button"
+                className={pendingBillingCycle === "annual" ? "is-selected" : ""}
+                onClick={() => setPendingBillingCycle("annual")}
+              >
+                <strong>Anual</strong>
+                <small>{formatCurrency(getAnnualPrice(selectedPlan))} com 20% off</small>
+              </button>
+            </div>
+
+            <div className="profile-plan-card__confirm">
+              <span>Confirmacao</span>
+              <strong>{formatCurrency(selectedPlanPrice)}</strong>
+              <small>
+                Cobrar no {selectedPaymentMethod.label}
+                {selectedPaymentMethod.id !== "novo" ? ` final ${selectedPaymentMethod.ending}` : ""}.
+              </small>
+            </div>
+
+            <button type="button" className="primary-button" onClick={confirmPlanChange}>
+              Confirmar alteracao do plano
+            </button>
+
+            <small className="profile-form-message">
+              A cobranca real sera feita pelo gateway quando o backend de pagamentos for conectado.
+            </small>
+          </article>
+
+          <article className="profile-account-card profile-logout-card">
+            <div className="profile-account-card__heading">
+              <strong>Sair da conta</strong>
+              <small>Voltar para a pagina inicial e encerrar a sessao visual.</small>
+            </div>
+
+            <Link to="/" className="profile-logout-button">
+              Sair / deslogar
+            </Link>
+          </article>
+        </div>
+      </section>
 
       <section className="profile-section glass-panel">
         <div className="profile-section__heading">

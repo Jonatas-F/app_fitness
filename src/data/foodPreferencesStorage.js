@@ -14,11 +14,21 @@ function getValidItemIds() {
   return allFoodPreferenceItems.map((item) => item.id);
 }
 
+function createDefaultFoodPreferences() {
+  return Object.fromEntries(
+    allFoodPreferenceItems
+      .filter((item) => item.allowedMarks.includes("quero_incluir"))
+      .map((item) => [item.id, "quero_incluir"])
+  );
+}
+
 export function loadFoodPreferences() {
   const raw = localStorage.getItem(FOOD_PREFERENCES_KEY);
 
   if (!raw) {
-    return {};
+    const defaults = createDefaultFoodPreferences();
+    localStorage.setItem(FOOD_PREFERENCES_KEY, JSON.stringify(defaults));
+    return defaults;
   }
 
   const parsed = safeParse(raw, {});
