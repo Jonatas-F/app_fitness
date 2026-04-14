@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import logo from "../../../assets/logo.svg";
 import { foodMarkOptions, foodPreferencesCatalog } from "../../../data/foodPreferencesCatalog";
 import {
@@ -15,6 +15,9 @@ import {
   saveGymEquipmentSelection,
 } from "../../../data/gymEquipmentStorage";
 import { formatCurrency, getAnnualPrice, getPlanById, subscriptionPlans } from "../../../data/plans";
+import { signOut } from "../../../services/authService";
+import { loadRemoteProfile, saveRemoteProfile, uploadProfileAvatar } from "../../../services/profileService";
+import { createStripePortalSession } from "../../../services/stripeService";
 import "./ProfilePage.css";
 
 const PROFILE_PHOTO_KEY = "shapeCertoProfilePhoto";
@@ -121,6 +124,7 @@ function FoodPreferenceCard({ item, selectedMark, onChange }) {
 }
 
 export default function ProfilePage() {
+  const navigate = useNavigate();
   const [profilePhoto, setProfilePhoto] = useState(() => loadProfilePhoto());
   const [account, setAccount] = useState(() => loadProfileAccount());
   const [passwordForm, setPasswordForm] = useState({
@@ -152,7 +156,47 @@ export default function ProfilePage() {
       ? getAnnualPrice(selectedPlan)
       : selectedPlan.monthlyPrice;
 
-  function handlePhotoUpload(event) {
+  useEffect(() => {
+    let ignore = false;
+
+    async function hydrateRemoteProfile() {
+      const result = await loadRemoteProfile();
+
+      if (ignore || result.skipped || result.error || !result.user) {
+        return;
+      }
+
+      const remoteAccount = {
+        ...loadProfileAccount(),
+        fullName: result.profile?.full_name || result.user.user_metadata?.full_name || "",
+        username: result.profile?.username || "",
+        email: result.user.email || "",
+        googleLinked: result.user.app_metadata?.provider === "google",
+        activePlan: result.profile?.active_plan || "intermediario",
+        billingCycle: result.profile?.billing_cycle || "monthly",
+      };
+
+      setAccount(saveProfileAccount(remoteAccount));
+      setPendingPlan(remoteAccount.activePlan);
+      setPendingBillingCycle(remoteAccount.billingCycle);
+
+      if (result.profile?.avatar_path) {
+        setProfilePhoto((current) => ({
+          ...current,
+          name: current?.name || "Foto do perfil",
+          avatarPath: result.profile.avatar_path,
+        }));
+      }
+    }
+
+    hydrateRemoteProfile();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  async function handlePhotoUpload(event) {
     const file = event.target.files?.[0];
 
     if (!file) {
@@ -164,6 +208,18 @@ export default function ProfilePage() {
       setProfilePhoto(saveProfilePhoto({ name: file.name, dataUrl: reader.result }));
     };
     reader.readAsDataURL(file);
+
+    const upload = await uploadProfileAvatar(file);
+
+    if (upload.error) {
+      setAccountMessage(upload.error.message);
+      return;
+    }
+
+    if (!upload.skipped && upload.signedUrl) {
+      setProfilePhoto(saveProfilePhoto({ name: file.name, dataUrl: upload.signedUrl, avatarPath: upload.path }));
+      setAccountMessage("Foto enviada para o Supabase Storage.");
+    }
   }
 
   function handleAccountChange(event) {
@@ -172,10 +228,21 @@ export default function ProfilePage() {
     setAccount((current) => ({ ...current, [name]: value }));
   }
 
-  function handleAccountSubmit(event) {
+  async function handleAccountSubmit(event) {
     event.preventDefault();
     setAccount(saveProfileAccount(account));
-    setAccountMessage("Dados de perfil salvos neste dispositivo.");
+    const result = await saveRemoteProfile(account);
+
+    if (result.error) {
+      setAccountMessage(`Dados salvos localmente. Supabase: ${result.error.message}`);
+      return;
+    }
+
+    setAccountMessage(
+      result.skipped
+        ? "Dados de perfil salvos neste dispositivo."
+        : "Dados de perfil salvos no Supabase."
+    );
   }
 
   function handlePasswordChange(event) {
@@ -211,7 +278,7 @@ export default function ProfilePage() {
     );
   }
 
-  function confirmPlanChange() {
+  async function confirmPlanChange() {
     if (account.paymentMethod === "novo") {
       setAccountMessage("Adicione ou selecione um cartao salvo antes de confirmar a alteracao do plano.");
       return;
@@ -224,11 +291,39 @@ export default function ProfilePage() {
     };
 
     setAccount(saveProfileAccount(nextAccount));
+    const result = await saveRemoteProfile(nextAccount);
+
+    if (result.error) {
+      setAccountMessage(`Plano salvo localmente. Supabase: ${result.error.message}`);
+      return;
+    }
+
     setAccountMessage(
       `Plano ${getPlanById(pendingPlan).name} confirmado no pagamento ${
         pendingBillingCycle === "annual" ? "anual" : "mensal"
       } usando ${selectedPaymentMethod.label}.`
     );
+  }
+
+  async function openStripePortal() {
+    setAccountMessage("Abrindo portal seguro do Stripe...");
+    const result = await createStripePortalSession();
+
+    if (result.error || !result.url) {
+      setAccountMessage(
+        `Nao foi possivel abrir o portal Stripe. ${
+          result.error?.message || "Finalize uma assinatura pelo checkout primeiro."
+        }`
+      );
+      return;
+    }
+
+    window.location.href = result.url;
+  }
+
+  async function handleLogout() {
+    await signOut();
+    navigate("/");
   }
 
   function updateEquipmentSelection(nextIds) {
@@ -466,7 +561,7 @@ export default function ProfilePage() {
           <article className="profile-account-card profile-payment-card">
             <div className="profile-account-card__heading">
               <strong>Dados de pagamento</strong>
-              <small>Cartao usado para renovar o plano</small>
+              <small>Cartao e cobranca gerenciados pelo Stripe</small>
             </div>
 
             <div className="payment-methods">
@@ -494,8 +589,8 @@ export default function ProfilePage() {
               ))}
             </div>
 
-            <button type="button" className="ghost-button">
-              Gerenciar cartoes
+            <button type="button" className="ghost-button" onClick={openStripePortal}>
+              Gerenciar pagamento no Stripe
             </button>
           </article>
 
@@ -570,9 +665,9 @@ export default function ProfilePage() {
               <small>Voltar para a pagina inicial e encerrar a sessao visual.</small>
             </div>
 
-            <Link to="/" className="profile-logout-button">
+            <button type="button" className="profile-logout-button" onClick={handleLogout}>
               Sair / deslogar
-            </Link>
+            </button>
           </article>
         </div>
       </section>

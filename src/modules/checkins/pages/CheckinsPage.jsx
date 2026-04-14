@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import costasNormalSilhouette from "../../../assets/costasnormal.svg";
 import duploBicepsSilhouette from "../../../assets/duplobiceps.svg";
 import duploBicepsCostasSilhouette from "../../../assets/duplobicepscostas.svg";
@@ -13,11 +13,17 @@ import {
   getMonthlyReevaluation,
   getWeeklyAiDataset,
   loadCheckins,
+  persistCheckins,
   resetCheckins,
   saveCheckin,
   saveMissedCheckin,
   validateCheckinForm,
 } from "../../../data/checkinStorage";
+import {
+  deleteRemoteCheckins,
+  loadRemoteCheckins,
+  saveRemoteCheckin,
+} from "../../../services/checkinService";
 import "./CheckinsPage.css";
 
 const goalOptions = [
@@ -151,6 +157,19 @@ function getCalendarDays(monthDate) {
     date.setDate(start.getDate() + index);
     return date;
   });
+}
+
+function syncSavedCheckin(localCheckins, localCheckin, remoteCheckin) {
+  if (!remoteCheckin) {
+    return localCheckins;
+  }
+
+  const synced = [
+    remoteCheckin,
+    ...localCheckins.filter((item) => item.id !== localCheckin.id),
+  ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  return persistCheckins(synced);
 }
 
 function CheckinCalendar({
@@ -320,6 +339,8 @@ export default function CheckinsPage() {
   const [photoUploads, setPhotoUploads] = useState({});
   const [checkins, setCheckins] = useState(() => loadCheckins());
   const [feedback, setFeedback] = useState("");
+  const [syncStatus, setSyncStatus] = useState("");
+  const [toast, setToast] = useState(null);
 
   const metrics = useMemo(() => getCheckinMetrics(checkins), [checkins]);
   const cadenceSummary = useMemo(
@@ -334,6 +355,45 @@ export default function CheckinsPage() {
   );
   const latestCheckin = checkins.find((item) => item.status !== "missed");
   const intro = getCadenceIntro(activeCadence);
+
+  function showToast(message, type = "success") {
+    setToast({ message, type, id: Date.now() });
+  }
+
+  useEffect(() => {
+    if (!toast) {
+      return undefined;
+    }
+
+    const timeout = window.setTimeout(() => setToast(null), 2000);
+    return () => window.clearTimeout(timeout);
+  }, [toast]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function hydrateCheckins() {
+      const result = await loadRemoteCheckins();
+
+      if (ignore || result.skipped) {
+        return;
+      }
+
+      if (result.error) {
+        setSyncStatus(`Supabase: ${result.error.message}`);
+        return;
+      }
+
+      setCheckins(result.checkins);
+      setSyncStatus("Historico sincronizado com Supabase.");
+    }
+
+    hydrateCheckins();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   function handleCadenceChange(cadence) {
     setActiveCadence(cadence);
@@ -354,7 +414,7 @@ export default function CheckinsPage() {
     }));
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
 
     const selectedPhotos = photoPoseSlots
@@ -362,6 +422,7 @@ export default function CheckinsPage() {
         id: slot.id,
         title: slot.title,
         fileName: photoUploads[slot.id]?.fileName || "",
+        pose: slot.pose,
         selected: Boolean(photoUploads[slot.id]?.fileName),
       }))
       .filter((photo) => photo.selected);
@@ -376,27 +437,66 @@ export default function CheckinsPage() {
 
     const updated = saveCheckin(payload, { createdAt: `${selectedDateKey}T12:00:00` });
     setCheckins(updated);
+    const localCheckin = updated[0];
+    const remote = await saveRemoteCheckin(localCheckin, photoUploads);
+
+    if (remote.data) {
+      setCheckins(syncSavedCheckin(updated, localCheckin, remote.data));
+    }
+
     setFormData({ ...defaultCheckinForm, cadence: activeCadence });
     setPhotoUploads({});
     setFeedback(
       `${checkinCadences[activeCadence].label} salvo em ${formatDateKey(selectedDateKey)}. O historico foi atualizado sem regenerar treino ou dieta automaticamente.`
     );
+    showToast(`${checkinCadences[activeCadence].label} salvo com sucesso.`);
+    setSyncStatus(
+      remote.error
+        ? `Salvo localmente. Supabase: ${remote.error.message}`
+        : remote.skipped
+          ? "Salvo localmente. Entre com Supabase para sincronizar."
+          : "Check-in salvo no Supabase."
+    );
   }
 
-  function handleMissedCheckin() {
+  async function handleMissedCheckin() {
     const updated = saveMissedCheckin(activeCadence, "", {
       createdAt: `${selectedDateKey}T12:00:00`,
     });
     setCheckins(updated);
+    const localCheckin = updated[0];
+    const remote = await saveRemoteCheckin(localCheckin);
+
+    if (remote.data) {
+      setCheckins(syncSavedCheckin(updated, localCheckin, remote.data));
+    }
+
     setFeedback(
       `${checkinCadences[activeCadence].label} marcado como nao realizado em ${formatDateKey(selectedDateKey)}. A IA vai considerar apenas os check-ins preenchidos.`
     );
+    showToast("Ausencia registrada no historico.", "warning");
+    setSyncStatus(
+      remote.error
+        ? `Ausencia salva localmente. Supabase: ${remote.error.message}`
+        : remote.skipped
+          ? "Ausencia salva localmente. Entre com Supabase para sincronizar."
+          : "Ausencia salva no Supabase."
+    );
   }
 
-  function handleReset() {
+  async function handleReset() {
     const resetData = resetCheckins();
     setCheckins(resetData);
     setFeedback("Historico de check-ins resetado.");
+    showToast("Historico de check-ins resetado.", "warning");
+    const remote = await deleteRemoteCheckins();
+    setSyncStatus(
+      remote.error
+        ? `Historico local resetado. Supabase: ${remote.error.message}`
+        : remote.skipped
+          ? "Historico local resetado."
+          : "Historico local e Supabase resetados."
+    );
   }
 
   function handlePhotoChange(slot, file) {
@@ -409,6 +509,7 @@ export default function CheckinsPage() {
       [slot.id]: {
         title: slot.title,
         fileName: file.name,
+        file,
         type: file.type,
       },
     }));
@@ -435,6 +536,15 @@ export default function CheckinsPage() {
 
   return (
     <section className="checkins-page">
+      {toast ? (
+        <div className={`checkins-toast checkins-toast--${toast.type}`} role="status">
+          <span>{toast.message}</span>
+          <button type="button" onClick={() => setToast(null)} aria-label="Fechar aviso">
+            x
+          </button>
+        </div>
+      ) : null}
+
       <header className="checkins-hero glass-panel">
         <div>
           <span className="checkins-hero__eyebrow">Check-in inteligente</span>
@@ -499,6 +609,7 @@ export default function CheckinsPage() {
       </section>
 
       {feedback ? <p className="checkins-feedback">{feedback}</p> : null}
+      {syncStatus ? <p className="checkins-sync-status">{syncStatus}</p> : null}
 
       <section className="checkins-metrics">
         {metrics.map((item) => (
@@ -844,7 +955,7 @@ export default function CheckinsPage() {
           >
             <div className="checkins-grid checkins-grid--three">
               {showWeekly ? (
-                <Field label="Peso da semana" required>
+                <Field label="Peso da semana">
                   <input
                     name="weight"
                     value={formData.weight}
@@ -855,7 +966,7 @@ export default function CheckinsPage() {
                 </Field>
               ) : null}
 
-              <Field label="Energia" required>
+              <Field label="Energia" required={showMonthly}>
                 <select name="energy" value={formData.energy} onChange={handleChange}>
                   {Array.from({ length: 10 }, (_, index) => String(index + 1)).map((value) => (
                     <option key={value} value={value}>
@@ -865,7 +976,7 @@ export default function CheckinsPage() {
                 </select>
               </Field>
 
-              <Field label={showDaily ? "Sono de hoje" : "Sono medio"} required>
+              <Field label={showDaily ? "Sono de hoje" : "Sono medio"} required={showMonthly}>
                 <input
                   name="sleep"
                   value={formData.sleep}
@@ -875,7 +986,7 @@ export default function CheckinsPage() {
                 />
               </Field>
 
-              <Field label="Aderencia ao plano" required>
+              <Field label="Aderencia ao plano" required={showMonthly}>
                 <select name="adherence" value={formData.adherence} onChange={handleChange}>
                   {["50", "60", "70", "80", "85", "90", "95", "100"].map((value) => (
                     <option key={value} value={value}>

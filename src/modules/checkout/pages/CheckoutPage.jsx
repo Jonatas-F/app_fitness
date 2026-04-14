@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import logo from "../../../assets/logo.svg";
 import { formatCurrency, getAnnualPrice, getPlanById, subscriptionPlans } from "../../../data/plans";
+import { createStripeCheckoutSession } from "../../../services/stripeService";
 import "./CheckoutPage.css";
 
 export default function CheckoutPage() {
@@ -11,6 +12,7 @@ export default function CheckoutPage() {
   const [billingCycle, setBillingCycle] = useState("annual");
   const [installments, setInstallments] = useState("12");
   const [message, setMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedPlan = useMemo(() => getPlanById(selectedPlanId), [selectedPlanId]);
   const annualTotal = getAnnualPrice(selectedPlan);
@@ -23,10 +25,29 @@ export default function CheckoutPage() {
     setMessage("");
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
-    setMessage("Compra preparada. Quando o gateway for conectado, este fluxo finaliza a assinatura.");
-    window.setTimeout(() => navigate("/dashboard"), 700);
+    setIsSubmitting(true);
+    setMessage("Abrindo checkout seguro do Stripe...");
+
+    const result = await createStripeCheckoutSession({
+      planId: selectedPlan.id,
+      billingCycle,
+      installments,
+    });
+
+    setIsSubmitting(false);
+
+    if (result.error || !result.url) {
+      setMessage(
+        `Nao foi possivel abrir o Stripe agora. ${
+          result.error?.message || "Verifique se a Function create-checkout-session foi publicada."
+        }`
+      );
+      return;
+    }
+
+    window.location.href = result.url;
   }
 
   return (
@@ -92,28 +113,8 @@ export default function CheckoutPage() {
           <form className="checkout-form" onSubmit={handleSubmit}>
             <div className="checkout-form__grid">
               <label>
-                <span>Nome impresso no cartao</span>
+                <span>Nome para cobranca</span>
                 <input placeholder="Nome completo" />
-              </label>
-
-              <label>
-                <span>Numero do cartao</span>
-                <input inputMode="numeric" placeholder="0000 0000 0000 0000" />
-              </label>
-
-              <label>
-                <span>Validade</span>
-                <input inputMode="numeric" placeholder="MM/AA" />
-              </label>
-
-              <label>
-                <span>CVV</span>
-                <input inputMode="numeric" placeholder="000" />
-              </label>
-
-              <label>
-                <span>CPF do titular</span>
-                <input inputMode="numeric" placeholder="000.000.000-00" />
               </label>
 
               <label>
@@ -135,8 +136,16 @@ export default function CheckoutPage() {
               ) : null}
             </div>
 
+            <p className="checkout-secure-note">
+              Os dados do cartao serao preenchidos diretamente no Stripe. O Shape Certo
+              recebe apenas o status da assinatura e o plano aprovado.
+            </p>
+
             <button type="submit" className="primary-button">
-              Finalizar assinatura
+              {isSubmitting ? "Abrindo Stripe..." : "Finalizar assinatura"}
+            </button>
+            <button type="button" className="ghost-button" onClick={() => navigate("/dashboard")}>
+              Entrar sem finalizar agora
             </button>
             {message ? <small className="checkout-message">{message}</small> : null}
           </form>

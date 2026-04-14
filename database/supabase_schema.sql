@@ -26,6 +26,16 @@ create table if not exists public.payment_profiles (
   updated_at timestamptz not null default now()
 );
 
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'payment_profiles_user_gateway_key'
+  ) then
+    alter table public.payment_profiles
+      add constraint payment_profiles_user_gateway_key unique (user_id, gateway);
+  end if;
+end $$;
+
 create table if not exists public.subscriptions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -40,6 +50,16 @@ create table if not exists public.subscriptions (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'subscriptions_gateway_subscription_id_key'
+  ) then
+    alter table public.subscriptions
+      add constraint subscriptions_gateway_subscription_id_key unique (gateway_subscription_id);
+  end if;
+end $$;
 
 create table if not exists public.token_usage (
   id uuid primary key default gen_random_uuid(),

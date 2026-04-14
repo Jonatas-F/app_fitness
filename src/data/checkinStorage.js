@@ -71,9 +71,9 @@ export const defaultCheckinForm = {
 };
 
 const requiredFieldsByCadence = {
-  daily: ["energy", "sleep", "adherence"],
-  weekly: ["weight", "energy", "sleep", "adherence"],
-  monthly: ["goal", "weight", "height", "energy", "sleep", "adherence"],
+  daily: [],
+  weekly: [],
+  monthly: ["goal", "weight", "height"],
 };
 
 const checkinFieldLabels = {
@@ -160,6 +160,16 @@ function getCreatedAtFromOptions(options) {
   }
 
   return date.toISOString();
+}
+
+function getCheckinDateKey(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return getTodayDate().slice(0, 10);
+  }
+
+  return date.toISOString().slice(0, 10);
 }
 
 function hasValue(value) {
@@ -304,15 +314,23 @@ export function loadCheckins() {
   return Array.isArray(parsed) ? parsed : [];
 }
 
+export function persistCheckins(checkins) {
+  const safeCheckins = Array.isArray(checkins) ? checkins : [];
+  localStorage.setItem(CHECKINS_STORAGE_KEY, JSON.stringify(safeCheckins));
+  return safeCheckins;
+}
+
 export function saveCheckin(checkinData, options = {}) {
   const current = loadCheckins();
   const cadence = normalizeCadence(checkinData.cadence);
   const status = options.status || "completed";
+  const createdAt = getCreatedAtFromOptions(options);
+  const checkinDateKey = getCheckinDateKey(createdAt);
   const completeness =
     status === "missed" ? 0 : calculateCheckinCompleteness({ ...checkinData, cadence });
 
   const newCheckin = {
-    id: `checkin-${cadence}-${Date.now()}`,
+    id: `checkin-${cadence}-${checkinDateKey}-${Date.now()}`,
     cadence,
     status,
     goal: checkinData.goal || "",
@@ -368,14 +386,20 @@ export function saveCheckin(checkinData, options = {}) {
     photos: Array.isArray(checkinData.photos) ? checkinData.photos : [],
     completeness,
     aiContext: buildAiContext({ ...checkinData, cadence }, completeness, status),
-    createdAt: getCreatedAtFromOptions(options),
+    createdAt,
   };
 
-  const updated = [newCheckin, ...current].sort(
+  const currentWithoutSameDayAndType = current.filter(
+    (item) =>
+      !(
+        normalizeCadence(item.cadence) === cadence &&
+        getCheckinDateKey(item.createdAt) === checkinDateKey
+      )
+  );
+  const updated = [newCheckin, ...currentWithoutSameDayAndType].sort(
     (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
   );
-  localStorage.setItem(CHECKINS_STORAGE_KEY, JSON.stringify(updated));
-  return updated;
+  return persistCheckins(updated);
 }
 
 export function saveMissedCheckin(cadence, reason = "", options = {}) {
