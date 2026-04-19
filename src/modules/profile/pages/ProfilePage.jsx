@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import PaymentCard3D from "../../../components/ui/PaymentCard3D";
 import logo from "../../../assets/logo.svg";
 import { foodMarkOptions, foodPreferencesCatalog } from "../../../data/foodPreferencesCatalog";
 import {
@@ -22,6 +23,7 @@ import "./ProfilePage.css";
 
 const PROFILE_PHOTO_KEY = "shapeCertoProfilePhoto";
 const PROFILE_ACCOUNT_KEY = "shapeCertoProfileAccount";
+const PROFILE_PAYMENT_METHODS_KEY = "shapeCertoPaymentMethods";
 
 const defaultAccount = {
   fullName: "",
@@ -33,11 +35,31 @@ const defaultAccount = {
   billingCycle: "monthly",
 };
 
-const paymentMethods = [
-  { id: "principal", brand: "Visa", ending: "2847", label: "Cartao principal" },
-  { id: "reserva", brand: "Mastercard", ending: "9132", label: "Cartao reserva" },
-  { id: "novo", brand: "+", ending: "novo", label: "Adicionar novo cartao" },
+const defaultPaymentMethods = [
+  {
+    id: "principal",
+    brand: "Visa",
+    ending: "2847",
+    label: "Cartao principal",
+    holder: "Jonatas Ferreira",
+    expires: "12/29",
+  },
+  {
+    id: "reserva",
+    brand: "Mastercard",
+    ending: "9132",
+    label: "Cartao reserva",
+    holder: "Jonatas Ferreira",
+    expires: "08/28",
+  },
 ];
+
+const addPaymentMethodOption = {
+  id: "novo",
+  brand: "+",
+  ending: "novo",
+  label: "Adicionar novo cartao",
+};
 
 function loadProfilePhoto() {
   try {
@@ -63,6 +85,44 @@ function loadProfileAccount() {
 function saveProfileAccount(account) {
   localStorage.setItem(PROFILE_ACCOUNT_KEY, JSON.stringify(account));
   return account;
+}
+
+function normalizePaymentMethod(method) {
+  return {
+    id: method.id,
+    brand: method.brand === "Mastercard" ? "Mastercard" : "Visa",
+    ending: String(method.ending || "").replace(/\D/g, "").slice(-4),
+    label: method.label || "Cartao salvo",
+    holder: method.holder || "Titular nao informado",
+    expires: method.expires || "--/--",
+  };
+}
+
+function loadPaymentMethods() {
+  try {
+    const storedMethods = localStorage.getItem(PROFILE_PAYMENT_METHODS_KEY);
+
+    if (!storedMethods) {
+      return defaultPaymentMethods;
+    }
+
+    const parsedMethods = JSON.parse(storedMethods);
+
+    if (!Array.isArray(parsedMethods)) {
+      return defaultPaymentMethods;
+    }
+
+    return parsedMethods
+      .map(normalizePaymentMethod)
+      .filter((method) => method.id && method.ending.length === 4);
+  } catch (error) {
+    return defaultPaymentMethods;
+  }
+}
+
+function savePaymentMethods(methods) {
+  localStorage.setItem(PROFILE_PAYMENT_METHODS_KEY, JSON.stringify(methods));
+  return methods;
 }
 
 function EquipmentCard({ item, selected, onToggle }) {
@@ -127,6 +187,15 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const [profilePhoto, setProfilePhoto] = useState(() => loadProfilePhoto());
   const [account, setAccount] = useState(() => loadProfileAccount());
+  const [savedPaymentMethods, setSavedPaymentMethods] = useState(() => loadPaymentMethods());
+  const [showAddPaymentForm, setShowAddPaymentForm] = useState(false);
+  const [newPaymentMethod, setNewPaymentMethod] = useState({
+    label: "",
+    brand: "Visa",
+    ending: "",
+    holder: "",
+    expires: "",
+  });
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -149,8 +218,14 @@ export default function ProfilePage() {
   const foodContext = useMemo(() => buildFoodPreferencesContext(foodPreferences), [foodPreferences]);
   const activePlan = getPlanById(account.activePlan);
   const selectedPlan = getPlanById(pendingPlan);
+  const paymentMethodOptions = useMemo(
+    () => [...savedPaymentMethods, addPaymentMethodOption],
+    [savedPaymentMethods]
+  );
   const selectedPaymentMethod =
-    paymentMethods.find((method) => method.id === account.paymentMethod) || paymentMethods[0];
+    savedPaymentMethods.find((method) => method.id === account.paymentMethod) ||
+    savedPaymentMethods[0] ||
+    addPaymentMethodOption;
   const selectedPlanPrice =
     pendingBillingCycle === "annual"
       ? getAnnualPrice(selectedPlan)
@@ -278,8 +353,79 @@ export default function ProfilePage() {
     );
   }
 
+  function handlePaymentMethodSelect(method) {
+    if (method.id === "novo") {
+      setShowAddPaymentForm(true);
+      setAccountMessage("Preencha os dados do novo cartao para deixar como metodo preferencial.");
+      return;
+    }
+
+    const nextAccount = { ...account, paymentMethod: method.id };
+    setAccount(saveProfileAccount(nextAccount));
+    setShowAddPaymentForm(false);
+    setAccountMessage("Metodo de pagamento preferencial atualizado.");
+  }
+
+  function handleNewPaymentChange(event) {
+    const { name, value } = event.target;
+    setAccountMessage("");
+    setNewPaymentMethod((current) => ({
+      ...current,
+      [name]: name === "ending" ? value.replace(/\D/g, "").slice(0, 4) : value,
+    }));
+  }
+
+  function handleAddPaymentMethod(event) {
+    event.preventDefault();
+
+    const ending = newPaymentMethod.ending.replace(/\D/g, "").slice(-4);
+
+    if (ending.length !== 4) {
+      setAccountMessage("Informe os 4 ultimos digitos do cartao.");
+      return;
+    }
+
+    const method = {
+      id: `card-${Date.now()}`,
+      brand: newPaymentMethod.brand,
+      ending,
+      label: newPaymentMethod.label || `${newPaymentMethod.brand} final ${ending}`,
+      holder: newPaymentMethod.holder || "Titular nao informado",
+      expires: newPaymentMethod.expires || "--/--",
+    };
+    const updatedMethods = savePaymentMethods([...savedPaymentMethods, method]);
+    const nextAccount = { ...account, paymentMethod: method.id };
+
+    setSavedPaymentMethods(updatedMethods);
+    setAccount(saveProfileAccount(nextAccount));
+    setNewPaymentMethod({
+      label: "",
+      brand: "Visa",
+      ending: "",
+      holder: "",
+      expires: "",
+    });
+    setShowAddPaymentForm(false);
+    setAccountMessage("Novo cartao adicionado e definido como metodo preferencial.");
+  }
+
+  function handleDeletePaymentMethod(methodId) {
+    const updatedMethods = savePaymentMethods(savedPaymentMethods.filter((method) => method.id !== methodId));
+    const nextSelectedMethod = updatedMethods[0]?.id || "novo";
+
+    setSavedPaymentMethods(updatedMethods);
+
+    if (account.paymentMethod === methodId) {
+      setAccount(saveProfileAccount({ ...account, paymentMethod: nextSelectedMethod }));
+    }
+
+    setAccountMessage("Cartao removido dos metodos salvos.");
+  }
+
   async function confirmPlanChange() {
-    if (account.paymentMethod === "novo") {
+    const hasSavedPaymentMethod = savedPaymentMethods.some((method) => method.id === account.paymentMethod);
+
+    if (!hasSavedPaymentMethod) {
       setAccountMessage("Adicione ou selecione um cartao salvo antes de confirmar a alteracao do plano.");
       return;
     }
@@ -427,242 +573,338 @@ export default function ProfilePage() {
         </aside>
       </header>
 
-      <section className="profile-section glass-panel">
+      <section className="profile-section profile-account-section glass-panel">
         <div className="profile-section__heading">
           <div>
             <span>Conta e acesso</span>
-            <h2>Nome, senha, Google e pagamento</h2>
+            <h2>Perfil, acesso e cobranca</h2>
             <p>
-              Atualize as informacoes principais do perfil e deixe o acesso preparado para vincular
-              com Gmail ou conta Google. O cartao escolhido fica salvo como preferencia de pagamento.
+              Os dados ficam organizados em blocos recolhidos para reduzir a rolagem no celular.
             </p>
           </div>
           <aside>
-            <strong>{account.googleLinked ? "Google" : "Local"}</strong>
-            <span>{account.googleLinked ? "conta vinculada" : "sem vinculo externo"}</span>
+            <strong>{activePlan.name}</strong>
+            <span>{account.billingCycle === "annual" ? "pagamento anual" : "pagamento mensal"}</span>
             <small>{account.email || "email nao informado"}</small>
           </aside>
         </div>
 
-        <div className="profile-account-grid">
-          <form className="profile-account-card" onSubmit={handleAccountSubmit}>
-            <div className="profile-account-card__heading">
-              <strong>Dados do usuario</strong>
-              <small>Nome publico e identificadores</small>
-            </div>
+        <div className="profile-compact-stack">
+          <details className="profile-compact-panel">
+            <summary className="profile-compact-summary">
+              <span className="profile-compact-summary__icon">+</span>
+              <span>
+                <strong>Dados do usuario e senha</strong>
+                <small>{account.username || account.fullName || "Editar nome, email e acesso"}</small>
+              </span>
+              <em>Recolhido</em>
+            </summary>
 
-            <label className="profile-field">
-              <span>Nome completo</span>
-              <input
-                type="text"
-                name="fullName"
-                value={account.fullName}
-                onChange={handleAccountChange}
-                placeholder="Ex.: Jonatas Silva"
-              />
-            </label>
+            <div className="profile-compact-panel__body profile-dual-grid">
+              <form className="profile-account-card" onSubmit={handleAccountSubmit}>
+                <div className="profile-account-card__heading">
+                  <strong>Dados do usuario</strong>
+                  <small>Nome publico e identificadores</small>
+                </div>
 
-            <label className="profile-field">
-              <span>Nome de usuario</span>
-              <input
-                type="text"
-                name="username"
-                value={account.username}
-                onChange={handleAccountChange}
-                placeholder="Ex.: jonatas.silva"
-              />
-            </label>
+                <label className="profile-field">
+                  <span>Nome completo</span>
+                  <input
+                    type="text"
+                    name="fullName"
+                    value={account.fullName}
+                    onChange={handleAccountChange}
+                    placeholder="Ex.: Jonatas Silva"
+                  />
+                </label>
 
-            <label className="profile-field">
-              <span>Email / Gmail</span>
-              <input
-                type="email"
-                name="email"
-                value={account.email}
-                onChange={handleAccountChange}
-                placeholder="usuario@gmail.com"
-              />
-            </label>
+                <label className="profile-field">
+                  <span>Nome de usuario</span>
+                  <input
+                    type="text"
+                    name="username"
+                    value={account.username}
+                    onChange={handleAccountChange}
+                    placeholder="Ex.: jonatas.silva"
+                  />
+                </label>
 
-            <button type="submit" className="primary-button">
-              Salvar dados
-            </button>
-              {accountMessage ? <small className="profile-form-message">{accountMessage}</small> : null}
-          </form>
+                <label className="profile-field">
+                  <span>Email / Gmail</span>
+                  <input
+                    type="email"
+                    name="email"
+                    value={account.email}
+                    onChange={handleAccountChange}
+                    placeholder="usuario@gmail.com"
+                  />
+                </label>
 
-          <form className="profile-account-card" onSubmit={handlePasswordSubmit}>
-            <div className="profile-account-card__heading">
-              <strong>Alterar senha</strong>
-              <small>Validacao local ate conectar backend</small>
-            </div>
-
-            <label className="profile-field">
-              <span>Senha atual</span>
-              <input
-                type="password"
-                name="currentPassword"
-                value={passwordForm.currentPassword}
-                onChange={handlePasswordChange}
-                placeholder="Digite a senha atual"
-              />
-            </label>
-
-            <label className="profile-field">
-              <span>Nova senha</span>
-              <input
-                type="password"
-                name="newPassword"
-                value={passwordForm.newPassword}
-                onChange={handlePasswordChange}
-                placeholder="Minimo de 8 caracteres"
-              />
-            </label>
-
-            <label className="profile-field">
-              <span>Confirmar nova senha</span>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={passwordForm.confirmPassword}
-                onChange={handlePasswordChange}
-                placeholder="Repita a nova senha"
-              />
-            </label>
-
-            <button type="submit" className="primary-button">
-              Atualizar senha
-            </button>
-            {passwordMessage ? <small className="profile-form-message">{passwordMessage}</small> : null}
-          </form>
-
-          <article className={`profile-account-card profile-google-card ${account.googleLinked ? "is-linked" : ""}`}>
-            <div className="profile-account-card__heading">
-              <strong>Conta Google</strong>
-              <small>Gmail, login social e sincronizacao futura</small>
-            </div>
-
-            <div className="profile-google-card__badge">
-              <span>G</span>
-              <div>
-                <strong>{account.googleLinked ? "Vinculada ao Google" : "Vincular Gmail / Google"}</strong>
-                <small>
-                  {account.googleLinked
-                    ? account.email || "Conta Google conectada"
-                    : "Use para facilitar login e recuperacao de acesso"}
-                </small>
-              </div>
-            </div>
-
-            <button type="button" className="ghost-button" onClick={toggleGoogleLink}>
-              {account.googleLinked ? "Desvincular Google" : "Vincular Google"}
-            </button>
-          </article>
-
-          <article className="profile-account-card profile-payment-card">
-            <div className="profile-account-card__heading">
-              <strong>Dados de pagamento</strong>
-              <small>Cartao e cobranca gerenciados pelo Stripe</small>
-            </div>
-
-            <div className="payment-methods">
-              {[
-                ...paymentMethods,
-              ].map((method) => (
-                <button
-                  key={method.id}
-                  type="button"
-                  className={`payment-method ${account.paymentMethod === method.id ? "is-selected" : ""}`}
-                  onClick={() => {
-                    const nextAccount = { ...account, paymentMethod: method.id };
-                    setAccount(saveProfileAccount(nextAccount));
-                    setAccountMessage("Metodo de pagamento preferencial atualizado.");
-                  }}
-                >
-                  <span>{method.brand}</span>
-                  <div>
-                    <strong>{method.label}</strong>
-                    <small>
-                      {method.id === "novo" ? "preparado para checkout" : `final ${method.ending}`}
-                    </small>
-                  </div>
+                <button type="submit" className="primary-button">
+                  Salvar dados
                 </button>
-              ))}
+              </form>
+
+              <form className="profile-account-card" onSubmit={handlePasswordSubmit}>
+                <div className="profile-account-card__heading">
+                  <strong>Alterar senha</strong>
+                  <small>Validacao local ate conectar backend</small>
+                </div>
+
+                <label className="profile-field">
+                  <span>Senha atual</span>
+                  <input
+                    type="password"
+                    name="currentPassword"
+                    value={passwordForm.currentPassword}
+                    onChange={handlePasswordChange}
+                    placeholder="Digite a senha atual"
+                  />
+                </label>
+
+                <label className="profile-field">
+                  <span>Nova senha</span>
+                  <input
+                    type="password"
+                    name="newPassword"
+                    value={passwordForm.newPassword}
+                    onChange={handlePasswordChange}
+                    placeholder="Minimo de 8 caracteres"
+                  />
+                </label>
+
+                <label className="profile-field">
+                  <span>Confirmar nova senha</span>
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    value={passwordForm.confirmPassword}
+                    onChange={handlePasswordChange}
+                    placeholder="Repita a nova senha"
+                  />
+                </label>
+
+                <button type="submit" className="primary-button">
+                  Atualizar senha
+                </button>
+                {passwordMessage ? <small className="profile-form-message">{passwordMessage}</small> : null}
+              </form>
             </div>
+          </details>
 
-            <button type="button" className="ghost-button" onClick={openStripePortal}>
-              Gerenciar pagamento no Stripe
-            </button>
-          </article>
+          <details className={`profile-compact-panel profile-google-card ${account.googleLinked ? "is-linked" : ""}`}>
+            <summary className="profile-compact-summary">
+              <span className="profile-compact-summary__icon">+</span>
+              <span>
+                <strong>Vinculo de contas</strong>
+                <small>{account.googleLinked ? "Google conectado" : "Google nao vinculado"}</small>
+              </span>
+              <em>{account.googleLinked ? "Ativo" : "Opcional"}</em>
+            </summary>
 
-          <article className="profile-account-card profile-plan-card">
-            <div className="profile-account-card__heading">
-              <strong>Plano ativo</strong>
-              <small>Assinatura atual e limites de uso</small>
-            </div>
+            <div className="profile-compact-panel__body">
+              <div className="profile-google-card__badge">
+                <span>G</span>
+                <div>
+                  <strong>{account.googleLinked ? "Vinculada ao Google" : "Vincular Gmail / Google"}</strong>
+                  <small>
+                    {account.googleLinked
+                      ? account.email || "Conta Google conectada"
+                      : "Use para facilitar login e recuperacao de acesso"}
+                  </small>
+                </div>
+              </div>
 
-            <div className="profile-plan-card__current">
-              <span>{activePlan.name}</span>
-              <strong>{activePlan.tokens}</strong>
-              <small>
-                {activePlan.workouts} | {account.billingCycle === "annual" ? "Anual" : "Mensal"}
-              </small>
-            </div>
-
-            <label className="profile-field">
-              <span>Novo plano</span>
-              <select
-                value={pendingPlan}
-                onChange={(event) => setPendingPlan(event.target.value)}
-              >
-                {subscriptionPlans.map((plan) => (
-                  <option key={plan.id} value={plan.id}>
-                    {plan.name} - {formatCurrency(plan.monthlyPrice)}/mes
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <div className="profile-plan-card__billing">
-              <button
-                type="button"
-                className={pendingBillingCycle === "monthly" ? "is-selected" : ""}
-                onClick={() => setPendingBillingCycle("monthly")}
-              >
-                <strong>Mensal</strong>
-                <small>{formatCurrency(selectedPlan.monthlyPrice)} recorrente</small>
+              <button type="button" className="ghost-button" onClick={toggleGoogleLink}>
+                {account.googleLinked ? "Desvincular Google" : "Vincular Google"}
               </button>
-              <button
-                type="button"
-                className={pendingBillingCycle === "annual" ? "is-selected" : ""}
-                onClick={() => setPendingBillingCycle("annual")}
-              >
-                <strong>Anual</strong>
-                <small>{formatCurrency(getAnnualPrice(selectedPlan))} com 20% off</small>
-              </button>
             </div>
+          </details>
 
-            <div className="profile-plan-card__confirm">
-              <span>Confirmacao</span>
-              <strong>{formatCurrency(selectedPlanPrice)}</strong>
-              <small>
-                Cobrar no {selectedPaymentMethod.label}
-                {selectedPaymentMethod.id !== "novo" ? ` final ${selectedPaymentMethod.ending}` : ""}.
-              </small>
+          <details className="profile-compact-panel profile-plan-card">
+            <summary className="profile-compact-summary">
+              <span className="profile-compact-summary__icon">+</span>
+              <span>
+                <strong>Plano e pagamento</strong>
+                <small>
+                  {activePlan.name} | {selectedPaymentMethod.label}
+                </small>
+              </span>
+              <em>{account.billingCycle === "annual" ? "Anual" : "Mensal"}</em>
+            </summary>
+
+            <div className="profile-compact-panel__body profile-payment-plan-grid">
+              <article className="profile-account-card profile-payment-card">
+                <div className="profile-account-card__heading">
+                  <strong>Dados de pagamento</strong>
+                  <small>Cartao e cobranca gerenciados pelo Stripe</small>
+                </div>
+
+                <div className="payment-methods">
+                  {paymentMethodOptions.map((method) => (
+                    <PaymentCard3D
+                      key={method.id}
+                      method={method}
+                      selected={account.paymentMethod === method.id}
+                      canDelete={method.id !== "novo"}
+                      onSelect={handlePaymentMethodSelect}
+                      onDelete={handleDeletePaymentMethod}
+                    />
+                  ))}
+                </div>
+
+                {showAddPaymentForm ? (
+                  <form className="payment-add-form" onSubmit={handleAddPaymentMethod}>
+                    <div className="payment-add-form__heading">
+                      <strong>Novo metodo de pagamento</strong>
+                      <small>Use apenas os dados visuais por enquanto. A cobranca real fica no Stripe.</small>
+                    </div>
+
+                    <div className="payment-add-form__grid">
+                      <label className="profile-field">
+                        <span>Apelido do cartao</span>
+                        <input
+                          type="text"
+                          name="label"
+                          value={newPaymentMethod.label}
+                          onChange={handleNewPaymentChange}
+                          placeholder="Ex.: Cartao Nubank"
+                        />
+                      </label>
+
+                      <label className="profile-field">
+                        <span>Bandeira</span>
+                        <select
+                          name="brand"
+                          value={newPaymentMethod.brand}
+                          onChange={handleNewPaymentChange}
+                        >
+                          <option value="Visa">Visa</option>
+                          <option value="Mastercard">Mastercard</option>
+                        </select>
+                      </label>
+
+                      <label className="profile-field">
+                        <span>Ultimos 4 digitos</span>
+                        <input
+                          type="text"
+                          name="ending"
+                          inputMode="numeric"
+                          value={newPaymentMethod.ending}
+                          onChange={handleNewPaymentChange}
+                          placeholder="2847"
+                        />
+                      </label>
+
+                      <label className="profile-field">
+                        <span>Validade</span>
+                        <input
+                          type="text"
+                          name="expires"
+                          value={newPaymentMethod.expires}
+                          onChange={handleNewPaymentChange}
+                          placeholder="MM/AA"
+                        />
+                      </label>
+
+                      <label className="profile-field payment-add-form__wide">
+                        <span>Nome no cartao</span>
+                        <input
+                          type="text"
+                          name="holder"
+                          value={newPaymentMethod.holder}
+                          onChange={handleNewPaymentChange}
+                          placeholder="Nome do titular"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="payment-add-form__actions">
+                      <button type="submit" className="primary-button">
+                        Salvar cartao
+                      </button>
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        onClick={() => setShowAddPaymentForm(false)}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </form>
+                ) : null}
+
+                <button type="button" className="ghost-button" onClick={openStripePortal}>
+                  Gerenciar pagamento no Stripe
+                </button>
+              </article>
+
+              <article className="profile-account-card profile-plan-card__details">
+                <div className="profile-account-card__heading">
+                  <strong>Plano ativo</strong>
+                  <small>Assinatura atual e limites de uso</small>
+                </div>
+
+                <div className="profile-plan-card__current">
+                  <span>{activePlan.name}</span>
+                  <strong>{activePlan.tokens}</strong>
+                  <small>
+                    {activePlan.workouts} | {account.billingCycle === "annual" ? "Anual" : "Mensal"}
+                  </small>
+                </div>
+
+                <label className="profile-field">
+                  <span>Novo plano</span>
+                  <select value={pendingPlan} onChange={(event) => setPendingPlan(event.target.value)}>
+                    {subscriptionPlans.map((plan) => (
+                      <option key={plan.id} value={plan.id}>
+                        {plan.name} - {formatCurrency(plan.monthlyPrice)}/mes
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <div className="profile-plan-card__billing">
+                  <button
+                    type="button"
+                    className={pendingBillingCycle === "monthly" ? "is-selected" : ""}
+                    onClick={() => setPendingBillingCycle("monthly")}
+                  >
+                    <strong>Mensal</strong>
+                    <small>{formatCurrency(selectedPlan.monthlyPrice)} recorrente</small>
+                  </button>
+                  <button
+                    type="button"
+                    className={pendingBillingCycle === "annual" ? "is-selected" : ""}
+                    onClick={() => setPendingBillingCycle("annual")}
+                  >
+                    <strong>Anual</strong>
+                    <small>{formatCurrency(getAnnualPrice(selectedPlan))} com 20% off</small>
+                  </button>
+                </div>
+
+                <div className="profile-plan-card__confirm">
+                  <span>Confirmacao</span>
+                  <strong>{formatCurrency(selectedPlanPrice)}</strong>
+                  <small>
+                    Cobrar no {selectedPaymentMethod.label}
+                    {selectedPaymentMethod.id !== "novo" ? ` final ${selectedPaymentMethod.ending}` : ""}.
+                  </small>
+                </div>
+
+                <button type="button" className="primary-button" onClick={confirmPlanChange}>
+                  Confirmar alteracao do plano
+                </button>
+              </article>
             </div>
+          </details>
 
-            <button type="button" className="primary-button" onClick={confirmPlanChange}>
-              Confirmar alteracao do plano
-            </button>
+          {accountMessage ? <small className="profile-form-message profile-status-message">{accountMessage}</small> : null}
 
-            <small className="profile-form-message">
-              A cobranca real sera feita pelo gateway quando o backend de pagamentos for conectado.
-            </small>
-          </article>
-
-          <article className="profile-account-card profile-logout-card">
-            <div className="profile-account-card__heading">
+          <article className="profile-logout-card">
+            <div>
               <strong>Sair da conta</strong>
-              <small>Voltar para a pagina inicial e encerrar a sessao visual.</small>
+              <small>Encerra a sessao visual e volta para a home.</small>
             </div>
 
             <button type="button" className="profile-logout-button" onClick={handleLogout}>
@@ -672,162 +914,174 @@ export default function ProfilePage() {
         </div>
       </section>
 
-      <section className="profile-section glass-panel">
-        <div className="profile-section__heading">
-          <div>
-            <span>Academia do usuario</span>
-            <h2>Aparelhos disponiveis para montar o treino</h2>
-            <p>
-              Tudo comeca selecionado. Desmarque o que nao existe na academia para evitar exercicios
-              impossiveis no protocolo.
-            </p>
+      <details className="profile-section profile-collapsible-section glass-panel">
+        <summary className="profile-section-summary">
+          <span className="profile-compact-summary__icon">+</span>
+          <span>
+            <strong>Academia do usuario</strong>
+            <small>
+              {selectedEquipmentIds.length}/{allGymEquipment.length} aparelhos liberados
+            </small>
+          </span>
+          <em>{equipmentContext.unavailableEquipment.length} fora do treino</em>
+        </summary>
+
+        <div className="profile-collapsible-section__body">
+          <div className="profile-section__heading profile-section__heading--compact">
+            <div>
+              <span>Aparelhos</span>
+              <h2>Aparelhos disponiveis para montar o treino</h2>
+              <p>
+                Tudo comeca selecionado. Desmarque o que nao existe na academia para evitar exercicios
+                impossiveis no protocolo.
+              </p>
+            </div>
           </div>
-          <aside>
-            <strong>
-              {selectedEquipmentIds.length}/{allGymEquipment.length}
-            </strong>
-            <span>aparelhos liberados</span>
-            <small>{equipmentContext.unavailableEquipment.length} fora do treino</small>
-          </aside>
-        </div>
 
-        <div className="profile-actions">
-          <button type="button" className="primary-button" onClick={() => updateEquipmentSelection(getAllEquipmentIds())}>
-            Marcar todos
-          </button>
-          <button type="button" className="ghost-button" onClick={() => updateEquipmentSelection([])}>
-            Desmarcar todos
-          </button>
-        </div>
-
-        <div className="profile-categories">
-          {gymEquipmentCatalog.map((category) => {
-            const selectedInCategory = category.items.filter((item) =>
-              selectedEquipmentSet.has(item.id)
-            ).length;
-            const isOpen = openEquipmentGroups.includes(category.id);
-
-            return (
-              <section key={category.id} className={`profile-category ${isOpen ? "is-open" : ""}`}>
-                <div className="profile-category__header">
-                  <button
-                    type="button"
-                    className="profile-category__toggle"
-                    onClick={() => toggleEquipmentGroup(category.id)}
-                    aria-expanded={isOpen}
-                  >
-                    <span className="profile-category__chevron">{isOpen ? "-" : "+"}</span>
-                    <span>
-                      <strong>{category.title}</strong>
-                      <small>
-                        {selectedInCategory}/{category.items.length} disponiveis
-                      </small>
-                    </span>
-                  </button>
-
-                  <div className="profile-category__actions">
-                    <button type="button" onClick={() => selectEquipmentGroup(category)}>
-                      Marcar grupo
-                    </button>
-                    <button type="button" onClick={() => clearEquipmentGroup(category)}>
-                      Desmarcar grupo
-                    </button>
-                  </div>
-                </div>
-
-                {isOpen ? (
-                  <div className="profile-equipment-grid">
-                    {category.items.map((item) => (
-                      <EquipmentCard
-                        key={item.id}
-                        item={item}
-                        selected={selectedEquipmentSet.has(item.id)}
-                        onToggle={handleEquipmentToggle}
-                      />
-                    ))}
-                  </div>
-                ) : null}
-              </section>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="profile-section glass-panel">
-        <div className="profile-section__heading">
-          <div>
-            <span>Preferencias alimentares</span>
-            <h2>Gostos, restricoes e alimentos para priorizar</h2>
-            <p>
-              Marque alergias, intolerancias, itens evitados e alimentos favoritos. Esses dados ficam
-              prontos para alimentar a dieta personalizada.
-            </p>
+          <div className="profile-actions">
+            <button type="button" className="primary-button" onClick={() => updateEquipmentSelection(getAllEquipmentIds())}>
+              Marcar todos
+            </button>
+            <button type="button" className="ghost-button" onClick={() => updateEquipmentSelection([])}>
+              Desmarcar todos
+            </button>
           </div>
-          <aside>
-            <strong>{foodContext.selectedPreferences.length}</strong>
-            <span>marcacoes salvas</span>
-            <small>organizadas por grupo alimentar</small>
-          </aside>
-        </div>
 
-        <div className="profile-categories">
-          {foodPreferencesCatalog.map((group) => {
-            const groupItems = group.subgroups.flatMap((subgroup) => subgroup.items);
-            const markedInGroup = groupItems.filter((item) => foodPreferences[item.id]).length;
-            const isOpen = openFoodGroups.includes(group.id);
+          <div className="profile-categories">
+            {gymEquipmentCatalog.map((category) => {
+              const selectedInCategory = category.items.filter((item) =>
+                selectedEquipmentSet.has(item.id)
+              ).length;
+              const isOpen = openEquipmentGroups.includes(category.id);
 
-            return (
-              <section key={group.id} className={`profile-category ${isOpen ? "is-open" : ""}`}>
-                <div className="profile-category__header">
-                  <button
-                    type="button"
-                    className="profile-category__toggle"
-                    onClick={() => toggleFoodGroup(group.id)}
-                    aria-expanded={isOpen}
-                  >
-                    <span className="profile-category__chevron">{isOpen ? "-" : "+"}</span>
-                    <span>
-                      <strong>{group.title}</strong>
-                      <small>
-                        {markedInGroup}/{groupItems.length} marcados
-                      </small>
-                    </span>
-                  </button>
-
-                  <div className="profile-category__actions">
-                    <button type="button" onClick={() => markFoodGroup(group, "gosta")}>
-                      Gosto do grupo
+              return (
+                <section key={category.id} className={`profile-category ${isOpen ? "is-open" : ""}`}>
+                  <div className="profile-category__header">
+                    <button
+                      type="button"
+                      className="profile-category__toggle"
+                      onClick={() => toggleEquipmentGroup(category.id)}
+                      aria-expanded={isOpen}
+                    >
+                      <span className="profile-category__chevron">{isOpen ? "-" : "+"}</span>
+                      <span>
+                        <strong>{category.title}</strong>
+                        <small>
+                          {selectedInCategory}/{category.items.length} disponiveis
+                        </small>
+                      </span>
                     </button>
-                    <button type="button" onClick={() => clearFoodGroup(group)}>
-                      Limpar grupo
-                    </button>
-                  </div>
-                </div>
 
-                {isOpen ? (
-                  <div className="food-subgroups">
-                    {group.subgroups.map((subgroup) => (
-                      <section key={subgroup.title} className="food-subgroup">
-                        <h3>{subgroup.title}</h3>
-                        <div className="food-grid">
-                          {subgroup.items.map((item) => (
-                            <FoodPreferenceCard
-                              key={item.id}
-                              item={item}
-                              selectedMark={foodPreferences[item.id]}
-                              onChange={handleFoodMark}
-                            />
-                          ))}
-                        </div>
-                      </section>
-                    ))}
+                    <div className="profile-category__actions">
+                      <button type="button" onClick={() => selectEquipmentGroup(category)}>
+                        Marcar grupo
+                      </button>
+                      <button type="button" onClick={() => clearEquipmentGroup(category)}>
+                        Desmarcar grupo
+                      </button>
+                    </div>
                   </div>
-                ) : null}
-              </section>
-            );
-          })}
+
+                  {isOpen ? (
+                    <div className="profile-equipment-grid">
+                      {category.items.map((item) => (
+                        <EquipmentCard
+                          key={item.id}
+                          item={item}
+                          selected={selectedEquipmentSet.has(item.id)}
+                          onToggle={handleEquipmentToggle}
+                        />
+                      ))}
+                    </div>
+                  ) : null}
+                </section>
+              );
+            })}
+          </div>
         </div>
-      </section>
+      </details>
+
+      <details className="profile-section profile-collapsible-section glass-panel">
+        <summary className="profile-section-summary">
+          <span className="profile-compact-summary__icon">+</span>
+          <span>
+            <strong>Preferencias alimentares</strong>
+            <small>{foodContext.selectedPreferences.length} marcacoes salvas</small>
+          </span>
+          <em>{foodPreferencesCatalog.length} grupos</em>
+        </summary>
+
+        <div className="profile-collapsible-section__body">
+          <div className="profile-section__heading profile-section__heading--compact">
+            <div>
+              <span>Alimentacao</span>
+              <h2>Gostos, restricoes e alimentos para priorizar</h2>
+              <p>
+                Marque alergias, intolerancias, itens evitados e alimentos favoritos. Esses dados ficam
+                prontos para alimentar a dieta personalizada.
+              </p>
+            </div>
+          </div>
+
+          <div className="profile-categories">
+            {foodPreferencesCatalog.map((group) => {
+              const groupItems = group.subgroups.flatMap((subgroup) => subgroup.items);
+              const markedInGroup = groupItems.filter((item) => foodPreferences[item.id]).length;
+              const isOpen = openFoodGroups.includes(group.id);
+
+              return (
+                <section key={group.id} className={`profile-category ${isOpen ? "is-open" : ""}`}>
+                  <div className="profile-category__header">
+                    <button
+                      type="button"
+                      className="profile-category__toggle"
+                      onClick={() => toggleFoodGroup(group.id)}
+                      aria-expanded={isOpen}
+                    >
+                      <span className="profile-category__chevron">{isOpen ? "-" : "+"}</span>
+                      <span>
+                        <strong>{group.title}</strong>
+                        <small>
+                          {markedInGroup}/{groupItems.length} marcados
+                        </small>
+                      </span>
+                    </button>
+
+                    <div className="profile-category__actions">
+                      <button type="button" onClick={() => markFoodGroup(group, "gosta")}>
+                        Gosto do grupo
+                      </button>
+                      <button type="button" onClick={() => clearFoodGroup(group)}>
+                        Limpar grupo
+                      </button>
+                    </div>
+                  </div>
+
+                  {isOpen ? (
+                    <div className="food-subgroups">
+                      {group.subgroups.map((subgroup) => (
+                        <section key={subgroup.title} className="food-subgroup">
+                          <h3>{subgroup.title}</h3>
+                          <div className="food-grid">
+                            {subgroup.items.map((item) => (
+                              <FoodPreferenceCard
+                                key={item.id}
+                                item={item}
+                                selectedMark={foodPreferences[item.id]}
+                                onChange={handleFoodMark}
+                              />
+                            ))}
+                          </div>
+                        </section>
+                      ))}
+                    </div>
+                  ) : null}
+                </section>
+              );
+            })}
+          </div>
+        </div>
+      </details>
     </section>
   );
 }

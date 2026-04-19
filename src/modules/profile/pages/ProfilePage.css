@@ -154,6 +154,116 @@
   gap: 14px;
 }
 
+.profile-account-section {
+  gap: 14px;
+}
+
+.profile-account-section .profile-section__heading {
+  align-items: center;
+}
+
+.profile-account-section .profile-section__heading h2 {
+  margin-bottom: 6px;
+}
+
+.profile-account-section .profile-section__heading p {
+  max-width: 680px;
+}
+
+.profile-compact-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.profile-compact-panel {
+  display: grid;
+  overflow: hidden;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.profile-compact-panel[open] {
+  background:
+    linear-gradient(135deg, rgba(255, 46, 46, 0.08), rgba(255, 255, 255, 0.04));
+  border-color: rgba(255, 46, 46, 0.26);
+}
+
+.profile-compact-summary {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 10px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.profile-compact-summary::-webkit-details-marker {
+  display: none;
+}
+
+.profile-compact-summary__icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.profile-compact-panel[open] .profile-compact-summary__icon {
+  background: rgba(255, 46, 46, 0.18);
+  border-color: rgba(255, 46, 46, 0.3);
+  transform: rotate(45deg);
+}
+
+.profile-compact-summary > span:nth-child(2) {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.profile-compact-summary strong {
+  line-height: 1.2;
+}
+
+.profile-compact-summary small,
+.profile-compact-summary em {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.8rem;
+  font-style: normal;
+  line-height: 1.3;
+}
+
+.profile-compact-summary em {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-weight: 800;
+}
+
+.profile-compact-panel__body {
+  display: grid;
+  gap: 12px;
+  padding: 0 12px 12px;
+}
+
+.profile-dual-grid,
+.profile-payment-plan-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .profile-account-card {
   display: grid;
   align-content: start;
@@ -235,13 +345,13 @@
 }
 
 .profile-google-card.is-linked {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.14), rgba(255, 255, 255, 0.045));
-  border-color: rgba(34, 197, 94, 0.3);
+  background: linear-gradient(135deg, rgba(255, 46, 46, 0.14), rgba(255, 255, 255, 0.045));
+  border-color: rgba(255, 46, 46, 0.3);
 }
 
 .profile-plan-card {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(255, 255, 255, 0.045));
-  border-color: rgba(34, 197, 94, 0.24);
+  background: linear-gradient(135deg, rgba(255, 46, 46, 0.12), rgba(255, 255, 255, 0.045));
+  border-color: rgba(255, 46, 46, 0.24);
 }
 
 .profile-plan-card__current {
@@ -260,9 +370,9 @@
   align-items: center;
   padding: 0 10px;
   border-radius: 999px;
-  color: #dcffe8;
-  background: rgba(34, 197, 94, 0.18);
-  border: 1px solid rgba(34, 197, 94, 0.26);
+  color: #ffd7d7;
+  background: rgba(255, 46, 46, 0.18);
+  border: 1px solid rgba(255, 46, 46, 0.26);
   font-size: 0.76rem;
   font-weight: 900;
 }
@@ -288,14 +398,14 @@
   padding: 12px;
   border-radius: 8px;
   color: #fff;
-  background: rgba(37, 99, 235, 0.14);
-  border: 1px solid rgba(96, 165, 250, 0.22);
+  background: rgba(148, 163, 184, 0.14);
+  border: 1px solid rgba(148, 163, 184, 0.22);
   text-align: left;
 }
 
 .profile-plan-card__billing button.is-selected {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.18), rgba(255, 255, 255, 0.045));
-  border-color: rgba(34, 197, 94, 0.38);
+  background: linear-gradient(135deg, rgba(255, 46, 46, 0.18), rgba(255, 255, 255, 0.045));
+  border-color: rgba(255, 46, 46, 0.38);
 }
 
 .profile-plan-card__billing small {
@@ -350,19 +460,38 @@
   font-weight: 900;
 }
 
-.profile-payment-card {
+.profile-payment-card,
+.profile-plan-card__details {
   gap: 12px;
 }
 
 .profile-logout-card {
-  background: linear-gradient(135deg, rgba(255, 46, 46, 0.14), rgba(255, 255, 255, 0.045));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(255, 46, 46, 0.1), rgba(255, 255, 255, 0.035));
   border-color: rgba(255, 46, 46, 0.24);
+  border: 1px solid rgba(255, 46, 46, 0.2);
+}
+
+.profile-logout-card div {
+  display: grid;
+  gap: 3px;
+}
+
+.profile-logout-card small {
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.35;
 }
 
 .profile-logout-button {
   display: inline-flex;
-  width: 100%;
-  min-height: 46px;
+  width: fit-content;
+  min-width: 136px;
+  min-height: 40px;
   align-items: center;
   justify-content: center;
   padding: 0 14px;
@@ -373,9 +502,124 @@
   font-weight: 900;
 }
 
+.profile-status-message {
+  padding: 0 4px;
+}
+
+.profile-collapsible-section {
+  overflow: hidden;
+  padding: 0;
+}
+
+.profile-collapsible-section[open] {
+  border-color: rgba(255, 46, 46, 0.2);
+}
+
+.profile-section-summary {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 14px 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.profile-section-summary::-webkit-details-marker {
+  display: none;
+}
+
+.profile-section-summary > span:nth-child(2) {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.profile-section-summary strong {
+  line-height: 1.2;
+}
+
+.profile-section-summary small,
+.profile-section-summary em {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.82rem;
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.profile-section-summary em {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.profile-collapsible-section[open] .profile-compact-summary__icon {
+  background: rgba(255, 46, 46, 0.18);
+  border-color: rgba(255, 46, 46, 0.3);
+  transform: rotate(45deg);
+}
+
+.profile-collapsible-section__body {
+  display: grid;
+  gap: 14px;
+  padding: 0 16px 16px;
+}
+
+.profile-section__heading--compact {
+  grid-template-columns: 1fr;
+}
+
+.profile-section__heading--compact h2 {
+  margin-bottom: 6px;
+}
+
 .payment-methods {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 10px;
+}
+
+.payment-add-form {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(255, 46, 46, 0.1), rgba(255, 255, 255, 0.045));
+  border: 1px solid rgba(255, 46, 46, 0.22);
+}
+
+.payment-add-form__heading {
+  display: grid;
+  gap: 4px;
+}
+
+.payment-add-form__heading small {
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.4;
+}
+
+.payment-add-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.payment-add-form__wide {
+  grid-column: 1 / -1;
+}
+
+.payment-add-form__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .payment-method {
@@ -387,17 +631,17 @@
   padding: 10px;
   border-radius: 8px;
   color: #fff;
-  background: rgba(37, 99, 235, 0.14);
-  border: 1px solid rgba(96, 165, 250, 0.22);
+  background: rgba(148, 163, 184, 0.14);
+  border: 1px solid rgba(148, 163, 184, 0.22);
   text-align: left;
 }
 
 .payment-method.is-selected {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.18), rgba(255, 255, 255, 0.045));
-  border-color: rgba(34, 197, 94, 0.38);
+  background: linear-gradient(135deg, rgba(255, 46, 46, 0.18), rgba(255, 255, 255, 0.045));
+  border-color: rgba(255, 46, 46, 0.38);
 }
 
-.payment-method > span {
+.payment-method__brand {
   display: grid;
   width: 44px;
   height: 44px;
@@ -411,9 +655,33 @@
   font-weight: 900;
 }
 
-.payment-method.is-selected > span {
-  background: rgba(34, 197, 94, 0.22);
-  border-color: rgba(34, 197, 94, 0.32);
+.payment-method.is-selected .payment-method__brand {
+  background: rgba(255, 46, 46, 0.22);
+  border-color: rgba(255, 46, 46, 0.32);
+}
+
+.payment-method__brand img {
+  display: block;
+  width: 32px;
+  max-height: 22px;
+  object-fit: contain;
+}
+
+.payment-method__brand svg {
+  width: 26px;
+  height: 26px;
+}
+
+.payment-method__brand--visa img {
+  width: 34px;
+}
+
+.payment-method__brand--mastercard img {
+  width: 34px;
+}
+
+.payment-method__brand--new {
+  color: #fff;
 }
 
 .payment-method div {
@@ -529,13 +797,13 @@
   min-height: 124px;
   overflow: hidden;
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(255, 255, 255, 0.045));
-  border: 1px solid rgba(96, 165, 250, 0.24);
+  background: linear-gradient(135deg, rgba(148, 163, 184, 0.18), rgba(255, 255, 255, 0.045));
+  border: 1px solid rgba(148, 163, 184, 0.24);
 }
 
 .profile-equipment-card.is-selected {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.18), rgba(255, 255, 255, 0.05));
-  border-color: rgba(34, 197, 94, 0.38);
+  background: linear-gradient(135deg, rgba(255, 46, 46, 0.18), rgba(255, 255, 255, 0.05));
+  border-color: rgba(255, 46, 46, 0.38);
 }
 
 .profile-equipment-card__control {
@@ -550,7 +818,7 @@
   width: 18px;
   height: 18px;
   margin-top: 2px;
-  accent-color: #22c55e;
+  accent-color: #ff2e2e;
 }
 
 .profile-equipment-card__control span {
@@ -567,17 +835,17 @@
   width: fit-content;
   padding: 4px 8px;
   border-radius: 999px;
-  color: #dbeafe;
-  background: rgba(37, 99, 235, 0.28);
-  border: 1px solid rgba(96, 165, 250, 0.24);
+  color: #f2f2f2;
+  background: rgba(148, 163, 184, 0.28);
+  border: 1px solid rgba(148, 163, 184, 0.24);
   font-size: 0.72rem;
   font-weight: 800;
 }
 
 .profile-equipment-card.is-selected .profile-equipment-card__control small {
-  color: #dcffe8;
-  background: rgba(34, 197, 94, 0.2);
-  border-color: rgba(34, 197, 94, 0.28);
+  color: #ffd7d7;
+  background: rgba(255, 46, 46, 0.2);
+  border-color: rgba(255, 46, 46, 0.28);
 }
 
 .profile-equipment-card__image {
@@ -587,14 +855,14 @@
   padding: 10px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)),
-    radial-gradient(circle at center, rgba(96, 165, 250, 0.16), transparent 65%);
+    radial-gradient(circle at center, rgba(148, 163, 184, 0.16), transparent 65%);
   border-left: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .profile-equipment-card.is-selected .profile-equipment-card__image {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)),
-    radial-gradient(circle at center, rgba(34, 197, 94, 0.16), transparent 65%);
+    radial-gradient(circle at center, rgba(255, 46, 46, 0.16), transparent 65%);
 }
 
 .profile-equipment-card__image div {
@@ -646,8 +914,8 @@
 }
 
 .food-card.is-positive {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.14), rgba(255, 255, 255, 0.045));
-  border-color: rgba(34, 197, 94, 0.3);
+  background: linear-gradient(135deg, rgba(255, 46, 46, 0.14), rgba(255, 255, 255, 0.045));
+  border-color: rgba(255, 46, 46, 0.3);
 }
 
 .food-card.is-negative,
@@ -662,8 +930,8 @@
 }
 
 .food-card.is-warning {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(255, 255, 255, 0.045));
-  border-color: rgba(245, 158, 11, 0.28);
+  background: linear-gradient(135deg, rgba(255, 46, 46, 0.18), rgba(255, 255, 255, 0.045));
+  border-color: rgba(255, 46, 46, 0.28);
 }
 
 .food-card__heading {
@@ -698,9 +966,9 @@
 }
 
 .food-mark.is-active.is-positive {
-  color: #dcffe8;
-  background: rgba(34, 197, 94, 0.25);
-  border-color: rgba(34, 197, 94, 0.38);
+  color: #ffd7d7;
+  background: rgba(255, 46, 46, 0.25);
+  border-color: rgba(255, 46, 46, 0.38);
 }
 
 .food-mark.is-active.is-danger {
@@ -710,9 +978,9 @@
 }
 
 .food-mark.is-active.is-warning {
-  color: #fff7ed;
-  background: rgba(245, 158, 11, 0.26);
-  border-color: rgba(245, 158, 11, 0.42);
+  color: #f2f2f2;
+  background: rgba(255, 46, 46, 0.26);
+  border-color: rgba(255, 46, 46, 0.42);
 }
 
 .food-mark.is-active.is-negative,
@@ -728,7 +996,9 @@
 }
 
 @media (max-width: 1120px) {
-  .profile-account-grid {
+  .profile-account-grid,
+  .profile-dual-grid,
+  .profile-payment-plan-grid {
     grid-template-columns: 1fr;
   }
 
@@ -747,6 +1017,43 @@
   .profile-hero,
   .profile-section {
     padding: 18px;
+  }
+
+  .profile-account-section {
+    padding: 16px;
+  }
+
+  .profile-compact-summary {
+    min-height: 56px;
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+
+  .profile-section-summary {
+    min-height: 56px;
+    grid-template-columns: 32px minmax(0, 1fr);
+    padding: 12px;
+  }
+
+  .profile-compact-summary em,
+  .profile-section-summary em {
+    grid-column: 2;
+    justify-self: start;
+    min-height: 24px;
+  }
+
+  .profile-compact-panel__body,
+  .profile-collapsible-section__body {
+    padding: 0 10px 10px;
+  }
+
+  .profile-account-card {
+    padding: 14px;
+  }
+
+  .payment-methods,
+  .payment-add-form__grid,
+  .payment-add-form__actions {
+    grid-template-columns: 1fr;
   }
 
   .profile-actions .primary-button,
@@ -776,5 +1083,14 @@
     min-height: 110px;
     border-left: none;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .profile-logout-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .profile-logout-button {
+    width: 100%;
   }
 }

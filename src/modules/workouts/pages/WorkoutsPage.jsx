@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import { workoutsViews } from "../../../data/appData";
 import {
@@ -16,14 +16,110 @@ function getWorkoutView(pathname, workoutId) {
   return "list";
 }
 
+function getInitialWorkoutState() {
+  const plan = loadWorkoutExecution();
+  const selectedWorkoutId =
+    plan.workouts.find((workout) => workout.enabled)?.id || plan.workouts[0]?.id || "";
+
+  return { plan, selectedWorkoutId };
+}
+
+function getDayPrefix(title) {
+  return title.slice(0, 3).toUpperCase();
+}
+
+function countCompletedExercises(workout) {
+  return workout.exercises.filter((exercise) =>
+    exercise.sets.some((set) => set.enabled !== false && (set.weight || set.reps))
+  ).length;
+}
+
+function getEstimatedVolume(workout) {
+  return workout.exercises.reduce(
+    (sum, exercise) => sum + exercise.sets.filter((set) => set.enabled !== false).length,
+    0
+  );
+}
+
+function getExerciseSetCount(exercise) {
+  return exercise.sets.filter((set) => set.enabled !== false).length;
+}
+
+function getExerciseRestSeconds(exercise) {
+  const seconds = Number(exercise?.restSeconds || 90);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : 90;
+}
+
+function formatTimer(totalSeconds) {
+  const safeSeconds = Math.max(Number(totalSeconds) || 0, 0);
+  const minutes = Math.floor(safeSeconds / 60);
+  const seconds = safeSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
 function WorkoutExecutionSection() {
-  const [plan, setPlan] = useState(() => loadWorkoutExecution());
-  const [openWorkouts, setOpenWorkouts] = useState([]);
+  const [workoutState, setWorkoutState] = useState(() => getInitialWorkoutState());
+  const [activeSessionWorkoutId, setActiveSessionWorkoutId] = useState("");
+  const [sessionStartedAt, setSessionStartedAt] = useState("");
+  const [expandedExerciseIndex, setExpandedExerciseIndex] = useState(null);
+  const [sessionExerciseIndex, setSessionExerciseIndex] = useState(0);
+  const [activeSetIndex, setActiveSetIndex] = useState(0);
+  const [sessionElapsedSeconds, setSessionElapsedSeconds] = useState(0);
+  const [restRemainingSeconds, setRestRemainingSeconds] = useState(0);
   const [activeVideo, setActiveVideo] = useState(null);
   const [feedback, setFeedback] = useState("");
+  const { plan, selectedWorkoutId } = workoutState;
+  const selectedWorkout =
+    plan.workouts.find((workout) => workout.id === selectedWorkoutId) ||
+    plan.workouts.find((workout) => workout.enabled) ||
+    plan.workouts[0];
+  const isSessionActive = activeSessionWorkoutId === selectedWorkout?.id;
+  const selectedExercise =
+    selectedWorkout?.exercises[sessionExerciseIndex] || selectedWorkout?.exercises[0];
+  const selectedSet = selectedExercise?.sets[activeSetIndex] || selectedExercise?.sets[0];
+  const previousSession = selectedWorkout ? getPreviousWorkoutSession(selectedWorkout.id) : null;
+  const completedExercises = selectedWorkout ? countCompletedExercises(selectedWorkout) : 0;
+  const estimatedVolume = selectedWorkout ? getEstimatedVolume(selectedWorkout) : 0;
+  const adherence = Math.round(
+    (completedExercises / Math.max(selectedWorkout?.exercises.length || 1, 1)) * 100
+  );
+
+  useEffect(() => {
+    if (!isSessionActive) return undefined;
+
+    const timerId = window.setInterval(() => {
+      setSessionElapsedSeconds((current) => current + 1);
+    }, 1000);
+
+    return () => window.clearInterval(timerId);
+  }, [isSessionActive]);
+
+  useEffect(() => {
+    if (!isSessionActive || restRemainingSeconds <= 0) return undefined;
+
+    const timerId = window.setInterval(() => {
+      setRestRemainingSeconds((current) => Math.max(current - 1, 0));
+    }, 1000);
+
+    return () => window.clearInterval(timerId);
+  }, [isSessionActive, restRemainingSeconds]);
 
   function updatePlan(nextPlan) {
-    setPlan(saveWorkoutExecution(nextPlan));
+    setWorkoutState((current) => ({
+      ...current,
+      plan: saveWorkoutExecution(nextPlan),
+    }));
+  }
+
+  function handleSelectWorkout(workout) {
+    if (!workout.enabled) return;
+    setWorkoutState((current) => ({
+      ...current,
+      selectedWorkoutId: workout.id,
+    }));
+    setExpandedExerciseIndex(null);
+    setSessionExerciseIndex(0);
+    setActiveSetIndex(0);
   }
 
   function handleExerciseChange(workoutId, exerciseId, field, value) {
@@ -65,28 +161,32 @@ function WorkoutExecutionSection() {
     });
   }
 
-  function toggleWorkout(workoutId) {
-    const targetWorkout = plan.workouts.find((workout) => workout.id === workoutId);
-
-    if (targetWorkout && !targetWorkout.enabled) {
-      return;
-    }
-
-    setOpenWorkouts((current) =>
-      current.includes(workoutId)
-        ? current.filter((id) => id !== workoutId)
-        : [...current, workoutId]
-    );
-  }
-
   function handleVideoUpload(workoutId, exerciseId, file) {
     if (!file) return;
     handleExerciseChange(workoutId, exerciseId, "userVideoFileName", file.name);
   }
 
-  function handleSaveWorkoutSession(workout) {
-    saveWorkoutSession(workout);
-    setFeedback(`${workout.title} salvo no historico de execucao.`);
+  function handleStartWorkoutSession() {
+    if (!selectedWorkout?.enabled) return;
+    setActiveSessionWorkoutId(selectedWorkout.id);
+    setSessionStartedAt(new Date().toISOString());
+    setSessionExerciseIndex(0);
+    setActiveSetIndex(0);
+    setSessionElapsedSeconds(0);
+    setRestRemainingSeconds(0);
+    setFeedback(`Sessao de ${selectedWorkout.title} iniciada.`);
+  }
+
+  function handleFinishWorkoutSession() {
+    if (!selectedWorkout) return;
+    saveWorkoutSession(selectedWorkout, { startedAt: sessionStartedAt });
+    setActiveSessionWorkoutId("");
+    setSessionStartedAt("");
+    setSessionElapsedSeconds(0);
+    setRestRemainingSeconds(0);
+    setFeedback(
+      `${selectedWorkout.title} finalizado. A sessao foi salva, alimentou o dashboard e criou o registro diario automatico.`
+    );
   }
 
   function handleRequestExerciseFeedback(workoutId, exerciseId, source) {
@@ -99,27 +199,49 @@ function WorkoutExecutionSection() {
     setFeedback(message);
   }
 
-  function renderPreviousSession(workout) {
-    const previous = getPreviousWorkoutSession(workout.id);
+  function handleCompleteCurrentSet() {
+    if (!selectedWorkout || !selectedExercise) return;
 
-    if (!previous) {
-      return (
-        <p className="previous-session-empty">
-          Sem registro anterior para este treino neste protocolo.
-        </p>
-      );
+    const nextSetIndex = selectedExercise.sets.findIndex(
+      (set, index) => index > activeSetIndex && set.enabled !== false
+    );
+    const shouldStartRest =
+      nextSetIndex >= 0 || sessionExerciseIndex + 1 < selectedWorkout.exercises.length;
+
+    if (nextSetIndex >= 0) {
+      setActiveSetIndex(nextSetIndex);
+      setRestRemainingSeconds(getExerciseRestSeconds(selectedExercise));
+      setFeedback("Serie encerrada. Descanso iniciado.");
+      return;
+    }
+
+    if (sessionExerciseIndex + 1 < selectedWorkout.exercises.length) {
+      setSessionExerciseIndex(sessionExerciseIndex + 1);
+      setActiveSetIndex(0);
+      setRestRemainingSeconds(shouldStartRest ? getExerciseRestSeconds(selectedExercise) : 0);
+      setFeedback("Exercicio concluido. Descanso iniciado antes do proximo exercicio.");
+      return;
+    }
+
+    handleFinishWorkoutSession();
+  }
+
+  function renderPreviousSession() {
+    if (!previousSession) {
+      return <p className="previous-session-empty">Sem registro anterior para este treino.</p>;
     }
 
     return (
       <div className="previous-session">
         <strong>
-          Ultimo registro: {new Date(previous.createdAt).toLocaleDateString("pt-BR")}
+          Ultimo registro: {new Date(previousSession.createdAt).toLocaleDateString("pt-BR")}
         </strong>
-        {previous.exercises.map((exercise) => (
+        {previousSession.exercises.slice(0, 3).map((exercise) => (
           <div key={exercise.id} className="previous-session__exercise">
             <span>{exercise.name}</span>
             <small>
               {exercise.sets
+                .filter((set) => set.enabled !== false)
                 .map((set) => `S${set.set}: ${set.weight || "--"}kg x ${set.reps || "--"}`)
                 .join(" | ")}
             </small>
@@ -129,98 +251,240 @@ function WorkoutExecutionSection() {
     );
   }
 
+  if (!selectedWorkout) {
+    return null;
+  }
+
   return (
     <section className="workout-execution glass-panel">
       <header className="workout-execution__header">
         <div>
-          <span>Plano e execucao</span>
-          <h2>Divisao do treino, videos, feedback e cargas</h2>
+          <span>Protocolo recomposicao 04</span>
+          <h2>{selectedWorkout.title}</h2>
           <p>
-            A divisao ABC/ABCD deve considerar dias por semana e turno informados
-            no check-in. Os registros abaixo alimentam evolucao de carga e
-            feedback tecnico.
+            Foco: {selectedWorkout.focus} - {plan.split}
           </p>
         </div>
 
-        <aside>
-          <strong>{plan.split}</strong>
-          <small>
-            {plan.weeklyTrainingDays} dia(s) | {plan.trainingShift || "turno nao informado"}
-          </small>
-        </aside>
+        <div className="workout-header-actions">
+          <button type="button" className="workout-edit-button">
+            Editar treino
+          </button>
+          <button
+            type="button"
+            className="workout-start-button"
+            disabled={!selectedWorkout.enabled}
+            onClick={isSessionActive ? handleFinishWorkoutSession : handleStartWorkoutSession}
+          >
+            {isSessionActive ? "Finalizar sessao" : "Iniciar sessao"}
+          </button>
+        </div>
       </header>
 
       {feedback ? <p className="workout-feedback">{feedback}</p> : null}
 
-      <div className="workout-source-note">
-        <strong>Disponibilidade vem do check-in mensal</strong>
-        <p>
-          Dias por semana, turno e tempo de treino devem ser atualizados no
-          check-in mensal. Aqui ficam a prescricao e a execucao dos treinos.
-        </p>
+      <div className="workout-protocol-stats">
+        <article>
+          <span>Volume estimado</span>
+          <strong>{estimatedVolume} series</strong>
+        </article>
+        <article>
+          <span>Duracao</span>
+          <strong>{Math.max(selectedWorkout.exercises.length, 1) * 8} min</strong>
+        </article>
+        <article>
+          <span>RPE alvo</span>
+          <strong>7 - 8.5</strong>
+        </article>
+        <article>
+          <span>Ultima sessao</span>
+          <strong>
+            {previousSession
+              ? new Date(previousSession.createdAt).toLocaleDateString("pt-BR")
+              : "--"}
+          </strong>
+        </article>
+        <article>
+          <span>Aderencia ciclo</span>
+          <strong>{adherence}%</strong>
+        </article>
       </div>
 
-      <div className="workout-days">
+      <nav className="workout-week-tabs" aria-label="Dias de treino">
         {plan.workouts.map((workout) => (
-          <article
+          <button
             key={workout.id}
-            className={`workout-day-card ${
-              openWorkouts.includes(workout.id) ? "is-open" : ""
-            } ${workout.enabled ? "is-enabled" : "is-disabled"}`}
+            type="button"
+            className={`${selectedWorkout.id === workout.id ? "is-selected" : ""} ${
+              workout.enabled ? "is-enabled" : "is-disabled"
+            }`}
+            disabled={!workout.enabled}
+            onClick={() => handleSelectWorkout(workout)}
           >
-            <div className="workout-day-card__header">
-              <button
-                type="button"
-                className="workout-day-card__toggle"
-                onClick={() => toggleWorkout(workout.id)}
-                aria-expanded={openWorkouts.includes(workout.id)}
-                disabled={!workout.enabled}
-              >
-                <span>{openWorkouts.includes(workout.id) ? "−" : "+"}</span>
-                <div>
-                  <h3>{workout.title}</h3>
-                  <p>{workout.focus}</p>
-                </div>
+            <strong>{getDayPrefix(workout.title)}</strong>
+            <span>{workout.focus}</span>
+          </button>
+        ))}
+      </nav>
+
+      {isSessionActive && selectedExercise ? (
+        <div className="live-session-overlay" role="dialog" aria-modal="true">
+          <section className="live-session-panel">
+            <div className="live-session-panel__top">
+              <span>Sessao ao vivo</span>
+              <button type="button" onClick={() => setActiveSessionWorkoutId("")}>
+                Fechar
               </button>
-              <div className="workout-day-card__meta">
-                <strong>{workout.exercises.length} exercicios</strong>
-                <em>{workout.enabled ? "Habilitado" : "Desabilitado"}</em>
-              </div>
             </div>
 
-            {openWorkouts.includes(workout.id) ? <div className="exercise-list">
-              <div className="workout-history-panel">
-                <div>
-                  <h4>Historico do {workout.title}</h4>
-                  <p>Consulte o desempenho anterior antes de registrar a proxima execucao.</p>
+            <div className="live-session-panel__exercise">
+              <small>
+                Exercicio atual - {sessionExerciseIndex + 1} de {selectedWorkout.exercises.length}
+              </small>
+              <h3>{selectedExercise.name}</h3>
+              <p>
+                {selectedExercise.suggestedSets} x {selectedExercise.suggestedReps} - descanso{" "}
+                {formatTimer(getExerciseRestSeconds(selectedExercise))}
+              </p>
+            </div>
+
+            <div className="live-session-timers">
+              <article>
+                <span>Cronometro</span>
+                <strong>{formatTimer(sessionElapsedSeconds)}</strong>
+              </article>
+              <article className={restRemainingSeconds > 0 ? "is-resting" : ""}>
+                <span>Descanso</span>
+                <strong>
+                  {restRemainingSeconds > 0
+                    ? formatTimer(restRemainingSeconds)
+                    : formatTimer(getExerciseRestSeconds(selectedExercise))}
+                </strong>
+              </article>
+            </div>
+
+            <div className="live-session-sets">
+              {selectedExercise.sets
+                .filter((set) => set.enabled !== false)
+                .map((set, index) => (
+                  <button
+                    key={set.set}
+                    type="button"
+                    className={activeSetIndex === index ? "is-selected" : ""}
+                    onClick={() => setActiveSetIndex(index)}
+                  >
+                    <strong>Serie {set.set}</strong>
+                    <span>{set.weight || "--"} kg</span>
+                  </button>
+                ))}
+            </div>
+
+            <div className="live-session-inputs">
+              <label>
+                Carga (kg)
+                <input
+                  value={selectedSet?.weight || ""}
+                  onChange={(event) =>
+                    handleSetChange(
+                      selectedWorkout.id,
+                      selectedExercise.id,
+                      activeSetIndex,
+                      "weight",
+                      event.target.value
+                    )
+                  }
+                  placeholder="Ex.: 72"
+                />
+              </label>
+              <label>
+                Repeticoes
+                <input
+                  value={selectedSet?.reps || ""}
+                  onChange={(event) =>
+                    handleSetChange(
+                      selectedWorkout.id,
+                      selectedExercise.id,
+                      activeSetIndex,
+                      "reps",
+                      event.target.value
+                    )
+                  }
+                  placeholder="Ex.: 10"
+                />
+              </label>
+            </div>
+
+            <div className="live-session-footer">
+              <span>RPE alvo 8</span>
+              <button type="button" onClick={handleCompleteCurrentSet}>
+                Encerrar serie
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      <article className="workout-protocol-panel">
+        <header>
+          <div>
+            <h3>Exercicios</h3>
+            <p>
+              {completedExercises}/{selectedWorkout.exercises.length} completos - marque conforme avanca
+            </p>
+          </div>
+          <button type="button">Adicionar exercicio</button>
+        </header>
+
+        <div className="exercise-list">
+          <div className="workout-history-panel">{renderPreviousSession()}</div>
+
+          {selectedWorkout.exercises.map((exercise, exerciseIndex) => (
+            <section
+              key={exercise.id}
+              className={`exercise-card ${
+                expandedExerciseIndex === exerciseIndex ? "is-selected" : ""
+              }`}
+            >
+              <div className="exercise-card__top">
+                <span className="exercise-card__index">{exerciseIndex + 1}</span>
+                <div className="exercise-card__main">
+                  <h4>{exercise.name}</h4>
+                  <span>
+                    {getExerciseSetCount(exercise)} series - {exercise.suggestedReps} reps
+                  </span>
+                  <small>Descanso ideal: {formatTimer(getExerciseRestSeconds(exercise))}</small>
                 </div>
-                <button type="button" onClick={() => handleSaveWorkoutSession(workout)}>
-                  Salvar execucao atual
-                </button>
-                {renderPreviousSession(workout)}
+                <div className="exercise-card__actions">
+                  <button
+                    type="button"
+                    className="exercise-select-button"
+                    onClick={() => {
+                      setExpandedExerciseIndex((current) =>
+                        current === exerciseIndex ? null : exerciseIndex
+                      );
+                    }}
+                  >
+                    {expandedExerciseIndex === exerciseIndex ? "Recolher" : "Ver detalhes"}
+                  </button>
+                  <label className="exercise-video-upload">
+                    Enviar video
+                    <input
+                      type="file"
+                      accept="video/*"
+                      onChange={(event) =>
+                        handleVideoUpload(
+                          selectedWorkout.id,
+                          exercise.id,
+                          event.target.files?.[0]
+                        )
+                      }
+                    />
+                  </label>
+                </div>
               </div>
 
-              {workout.exercises.map((exercise) => (
-                <section key={exercise.id} className="exercise-card">
-                  <div className="exercise-card__top">
-                    <div>
-                      <h4>{exercise.name}</h4>
-                      <span>
-                        Sugestao: {exercise.suggestedSets} series de {exercise.suggestedReps} reps
-                      </span>
-                    </div>
-                    <label className="exercise-video-upload">
-                      Enviar video
-                      <input
-                        type="file"
-                        accept="video/*"
-                        onChange={(event) =>
-                          handleVideoUpload(workout.id, exercise.id, event.target.files?.[0])
-                        }
-                      />
-                    </label>
-                  </div>
-
+              {expandedExerciseIndex === exerciseIndex ? (
+                <>
                   <div className="exercise-fields">
                     <div className="exercise-video-preview">
                       <button
@@ -237,6 +501,7 @@ function WorkoutExecutionSection() {
                       <span>Prescricao do Personal Virtual</span>
                       <strong>{exercise.suggestedSets} series</strong>
                       <strong>{exercise.suggestedReps} reps</strong>
+                      <strong>Descanso {formatTimer(getExerciseRestSeconds(exercise))}</strong>
                       <small>Somente o Personal Virtual altera series e repeticoes prescritas.</small>
                     </div>
 
@@ -245,7 +510,12 @@ function WorkoutExecutionSection() {
                       <input
                         value={exercise.executionVideoUrl}
                         onChange={(event) =>
-                          handleExerciseChange(workout.id, exercise.id, "executionVideoUrl", event.target.value)
+                          handleExerciseChange(
+                            selectedWorkout.id,
+                            exercise.id,
+                            "executionVideoUrl",
+                            event.target.value
+                          )
                         }
                         placeholder="URL do video de execucao"
                       />
@@ -255,7 +525,12 @@ function WorkoutExecutionSection() {
                       <textarea
                         value={exercise.aiFeedback}
                         onChange={(event) =>
-                          handleExerciseChange(workout.id, exercise.id, "aiFeedback", event.target.value)
+                          handleExerciseChange(
+                            selectedWorkout.id,
+                            exercise.id,
+                            "aiFeedback",
+                            event.target.value
+                          )
                         }
                         placeholder="Feedback tecnico gerado pelo Personal Virtual apos analisar o video ou as anotacoes"
                       />
@@ -263,7 +538,7 @@ function WorkoutExecutionSection() {
                         type="button"
                         className="feedback-request-button"
                         onClick={() =>
-                          handleRequestExerciseFeedback(workout.id, exercise.id, "video")
+                          handleRequestExerciseFeedback(selectedWorkout.id, exercise.id, "video")
                         }
                       >
                         Solicitar feedback do video
@@ -271,39 +546,23 @@ function WorkoutExecutionSection() {
                     </label>
                   </div>
 
-                  <div className="set-log-grid">
-                    {exercise.sets.map((set, index) => (
-                      <div
-                        key={set.set}
-                        className={`set-log-row ${set.enabled ? "is-enabled" : "is-disabled"}`}
-                      >
-                        <strong>Serie {set.set}</strong>
-                        <input
-                          value={set.weight}
-                          disabled={!set.enabled}
-                          onChange={(event) =>
-                            handleSetChange(workout.id, exercise.id, index, "weight", event.target.value)
-                          }
-                          placeholder="kg"
-                        />
-                        <input
-                          value={set.reps}
-                          disabled={!set.enabled}
-                          onChange={(event) =>
-                            handleSetChange(workout.id, exercise.id, index, "reps", event.target.value)
-                          }
-                          placeholder="reps"
-                        />
-                      </div>
-                    ))}
-                  </div>
+                  <p className="set-log-locked">
+                    {isSessionActive
+                      ? "Use o painel de sessao acima para registrar a serie atual."
+                      : "Clique em Iniciar sessao para registrar series, cargas e repeticoes."}
+                  </p>
 
                   <label className="exercise-notes">
                     Anotacoes
                     <textarea
                       value={exercise.notes}
                       onChange={(event) =>
-                        handleExerciseChange(workout.id, exercise.id, "notes", event.target.value)
+                        handleExerciseChange(
+                          selectedWorkout.id,
+                          exercise.id,
+                          "notes",
+                          event.target.value
+                        )
                       }
                       placeholder="Carga sentida, dor, RPE, ajuste de tecnica..."
                     />
@@ -311,18 +570,18 @@ function WorkoutExecutionSection() {
                       type="button"
                       className="feedback-request-button"
                       onClick={() =>
-                        handleRequestExerciseFeedback(workout.id, exercise.id, "notes")
+                        handleRequestExerciseFeedback(selectedWorkout.id, exercise.id, "notes")
                       }
                     >
                       Solicitar feedback das anotacoes
                     </button>
                   </label>
-                </section>
-              ))}
-            </div> : null}
-          </article>
-        ))}
-      </div>
+                </>
+              ) : null}
+            </section>
+          ))}
+        </div>
+      </article>
 
       {activeVideo ? (
         <div className="video-modal" role="dialog" aria-modal="true">
@@ -356,8 +615,8 @@ export default function WorkoutsPage() {
   const content = { ...workoutsViews[viewKey] };
 
   if (workoutId) {
-    content.title = `Treino ${workoutId}`;
-    content.footerNote = `Rota dinamica funcionando em /treinos/${workoutId}. Depois ela deve buscar o treino real pelo id no backend.`;
+    content.title = `Treino de ${workoutId}`;
+    content.footerNote = `Rota dinamica funcionando em /treinos/${workoutId}. Depois ela deve buscar o dia de treino real pelo id no backend.`;
   }
 
   return (
@@ -365,9 +624,7 @@ export default function WorkoutsPage() {
       <header className="workouts-clean-hero glass-panel">
         <span>{content.badge}</span>
         <h1>{content.title}</h1>
-        <p>
-          Plano de treino, execução, vídeos e histórico de cargas do protocolo atual.
-        </p>
+        <p>Plano de treino, execucao, videos e historico de cargas do protocolo atual.</p>
       </header>
       {["list", "generate"].includes(viewKey) ? <WorkoutExecutionSection /> : null}
     </div>

@@ -23,8 +23,8 @@
   --text-secondary: rgba(255, 255, 255, 0.74);
   --text-muted: rgba(255, 255, 255, 0.52);
 
-  --success: #22c55e;
-  --warning: #f59e0b;
+  --success: #ff2e2e;
+  --warning: #ff2e2e;
 
   --shadow-soft: 0 12px 35px rgba(0, 0, 0, 0.28);
   --shadow-strong: 0 16px 45px rgba(0, 0, 0, 0.4);
@@ -61,8 +61,8 @@ html {
 body {
   min-width: 320px;
   background:
-    radial-gradient(circle at top left, rgba(148, 163, 184, 0.12), transparent 30%),
-    radial-gradient(circle at top right, rgba(71, 85, 105, 0.12), transparent 28%),
+    radial-gradient(circle at top left, rgba(255, 46, 46, 0.12), transparent 30%),
+    radial-gradient(circle at top right, rgba(120, 24, 24, 0.12), transparent 28%),
     linear-gradient(180deg, #0b0b0d 0%, #050506 55%, #020203 100%);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
@@ -80,7 +80,7 @@ body::before {
       rgba(255, 255, 255, 0.03) 0%,
       transparent 30%,
       transparent 70%,
-      rgba(148, 163, 184, 0.05) 100%
+      rgba(255, 46, 46, 0.05) 100%
     );
   z-index: -2;
 }
@@ -471,7 +471,7 @@ ol {
 
 .metric-trend {
   margin-top: 8px;
-  color: #bdf6cc;
+  color: #ffd7d7;
   font-size: 0.86rem;
   font-weight: 600;
 }
@@ -495,15 +495,15 @@ ol {
 }
 
 .badge-success {
-  color: #ddffe8;
-  background: rgba(34, 197, 94, 0.16);
-  border-color: rgba(34, 197, 94, 0.26);
+  color: #ffd7d7;
+  background: rgba(255, 46, 46, 0.16);
+  border-color: rgba(255, 46, 46, 0.26);
 }
 
 .badge-warning {
-  color: #fff4da;
-  background: rgba(245, 158, 11, 0.14);
-  border-color: rgba(245, 158, 11, 0.22);
+  color: #f2f2f2;
+  background: rgba(255, 46, 46, 0.14);
+  border-color: rgba(255, 46, 46, 0.22);
 }
 
 .form-grid {
@@ -759,13 +759,13 @@ ol {
 
 /* Ativo: ícone recebe cor accent + glow suave */
 .sidebar__link--active .sidebar__link-icon svg {
-  stroke: #ff7a6a;
+  stroke: #ff5a4f;
   filter: drop-shadow(0 0 5px rgba(255, 77, 61, 0.70))
           drop-shadow(0 0 12px rgba(255, 77, 61, 0.35));
 }
 
 .bottom-nav__link--active .bottom-nav__icon svg {
-  stroke: #ff7a6a;
+  stroke: #ff5a4f;
   filter: drop-shadow(0 0 4px rgba(255, 77, 61, 0.65))
           drop-shadow(0 0 10px rgba(255, 77, 61, 0.30));
 }
@@ -783,7 +783,7 @@ ol {
   background: linear-gradient(
     135deg,
     rgba(255, 77,  61,  0.20) 0%,
-    rgba(40,  55,  110, 0.22) 60%,
+    rgba(255, 46, 46, 0.22) 60%,
     rgba(255, 255, 255, 0.05) 100%
   ) !important;
   border-color: rgba(255, 77, 61, 0.38) !important;
@@ -806,7 +806,7 @@ ol {
   height: 64%;
   width: 3px;
   border-radius: 0 3px 3px 0;
-  background: linear-gradient(180deg, #ff6b47, #ff3b3b);
+  background: linear-gradient(180deg, #ff2e2e, #ff3b3b);
   box-shadow:
     0 0 6px  rgba(255, 77, 61, 0.80),
     0 0 14px rgba(255, 77, 61, 0.50),
@@ -819,7 +819,7 @@ ol {
   background: linear-gradient(
     135deg,
     rgba(255, 77,  61,  0.22),
-    rgba(40,  55,  110, 0.18)
+    rgba(255, 46, 46, 0.18)
   ) !important;
   border-color: rgba(255, 77, 61, 0.35) !important;
   box-shadow:
@@ -843,10 +843,10 @@ ol {
 
 /* ── Hover nos stat/metric cards — glow border ──────────────── */
 .module-stat:hover {
-  border-color: rgba(148, 163, 210, 0.30) !important;
+  border-color: rgba(148, 148, 148, 0.30) !important;
   box-shadow:
     0 6px 24px rgba(10, 13, 22, 0.50),
-    0 0 0 1px rgba(148, 163, 210, 0.14),
+    0 0 0 1px rgba(148, 148, 148, 0.14),
     inset 0 1px 0 rgba(255,255,255,0.10) !important;
 }
 

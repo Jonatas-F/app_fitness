@@ -1,9 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import costasNormalSilhouette from "../../../assets/costasnormal.svg";
-import duploBicepsSilhouette from "../../../assets/duplobiceps.svg";
-import duploBicepsCostasSilhouette from "../../../assets/duplobicepscostas.svg";
-import frenteNormalSilhouette from "../../../assets/frentenormal.svg";
-import ladoSilhouette from "../../../assets/lado.svg";
 import {
   calculateCheckinCompleteness,
   checkinCadences,
@@ -64,35 +59,30 @@ const photoPoseSlots = [
     title: "Frente duplo biceps",
     instruction: "Corpo inteiro, camera na altura do peito, bracos flexionados.",
     pose: "double-front",
-    silhouette: duploBicepsSilhouette,
   },
   {
     id: "side-relaxed",
     title: "Lateral bracos caidos",
     instruction: "Corpo inteiro de lado, postura natural, bracos soltos.",
     pose: "side",
-    silhouette: ladoSilhouette,
   },
   {
     id: "back-double-biceps",
     title: "Costas duplo biceps",
     instruction: "Corpo inteiro de costas, bracos flexionados, mesma distancia.",
     pose: "double-back",
-    silhouette: duploBicepsCostasSilhouette,
   },
   {
     id: "front-relaxed",
     title: "Frente normal",
     instruction: "Corpo inteiro de frente, bracos relaxados, pes alinhados.",
     pose: "front",
-    silhouette: frenteNormalSilhouette,
   },
   {
     id: "back-relaxed",
     title: "Costas normal",
     instruction: "Corpo inteiro de costas, bracos relaxados, postura neutra.",
     pose: "back",
-    silhouette: costasNormalSilhouette,
   },
 ];
 
@@ -170,6 +160,69 @@ function syncSavedCheckin(localCheckins, localCheckin, remoteCheckin) {
   ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   return persistCheckins(synced);
+}
+
+function StickmanPose({ pose, title }) {
+  const isBack = pose === "back" || pose === "double-back";
+  const isDoubleBiceps = pose === "double-front" || pose === "double-back";
+  const isSide = pose === "side";
+
+  if (isSide) {
+    return (
+      <svg
+        className="photo-pose-card__stickman"
+        viewBox="0 0 120 112"
+        role="img"
+        aria-label={`Pose ${title}`}
+      >
+        <circle cx="60" cy="19" r="5" />
+        <path d="M60 25 L60 70" />
+        <path d="M58 31 L54 58" />
+        <path d="M62 31 L66 58" />
+        <path d="M60 70 L55 98" />
+        <path d="M60 70 L65 98" />
+        <path d="M52 98 H58" />
+        <path d="M62 98 H68" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg
+      className="photo-pose-card__stickman"
+      viewBox="0 0 120 112"
+      role="img"
+      aria-label={`Pose ${title}`}
+    >
+      <circle cx="60" cy="18" r="5" />
+      <path d="M54 27 L66 27" />
+      <path d="M55 27 L53 55" />
+      <path d="M65 27 L67 55" />
+      <path d="M53 55 H67" />
+      {isBack ? <path className="stickman-backline" d="M60 28 V55" /> : null}
+
+      {isDoubleBiceps ? (
+        <>
+          <path d="M54 28 L42 19" />
+          <path d="M42 19 L37 30" />
+          <path d="M66 28 L78 19" />
+          <path d="M78 19 L83 30" />
+          <circle className="stickman-joint" cx="37" cy="30" r="2" />
+          <circle className="stickman-joint" cx="83" cy="30" r="2" />
+        </>
+      ) : (
+        <>
+          <path d="M54 29 L50 61" />
+          <path d="M66 29 L70 61" />
+        </>
+      )}
+
+      <path d="M56 55 L51 98" />
+      <path d="M64 55 L69 98" />
+      <path d="M48 98 H54" />
+      <path d="M66 98 H72" />
+    </svg>
+  );
 }
 
 function CheckinCalendar({
@@ -283,7 +336,7 @@ function PhotoPoseCard({ slot, fileName, onChange }) {
   return (
     <article className="photo-pose-card">
       <div className={`photo-pose-card__silhouette photo-pose-card__silhouette--${slot.pose}`}>
-        <img src={slot.silhouette} alt={`Silhueta para ${slot.title}`} />
+        <StickmanPose pose={slot.pose} title={slot.title} />
       </div>
 
       <div className="photo-pose-card__content">
@@ -329,12 +382,12 @@ function getCadenceIntro(cadence) {
 
 export default function CheckinsPage() {
   const todayKey = toDateKey(new Date());
-  const [activeCadence, setActiveCadence] = useState("monthly");
+  const [activeCadence, setActiveCadence] = useState("weekly");
   const [selectedDateKey, setSelectedDateKey] = useState(todayKey);
   const [calendarMonth, setCalendarMonth] = useState(() => parseDateKey(todayKey));
   const [formData, setFormData] = useState({
     ...defaultCheckinForm,
-    cadence: "monthly",
+    cadence: "weekly",
   });
   const [photoUploads, setPhotoUploads] = useState({});
   const [checkins, setCheckins] = useState(() => loadCheckins());
@@ -344,7 +397,7 @@ export default function CheckinsPage() {
 
   const metrics = useMemo(() => getCheckinMetrics(checkins), [checkins]);
   const cadenceSummary = useMemo(
-    () => getCheckinCadenceSummary(checkins),
+    () => getCheckinCadenceSummary(checkins).filter((item) => item.cadence === "weekly"),
     [checkins]
   );
   const weeklyDataset = useMemo(() => getWeeklyAiDataset(checkins), [checkins]);
@@ -548,10 +601,10 @@ export default function CheckinsPage() {
       <header className="checkins-hero glass-panel">
         <div>
           <span className="checkins-hero__eyebrow">Check-in inteligente</span>
-          <h1>Diario, semanal e mensal trabalhando juntos.</h1>
+          <h1>Check-in semanal com sessoes de treino no dia a dia.</h1>
           <p>
-            Registre o que aconteceu, marque ausencias quando elas ocorrerem e
-            mantenha uma linha do tempo limpa para dashboard, treino, dieta e IA.
+            Use o fechamento semanal para revisar o ciclo. A presenca diaria,
+            cargas e series passam a vir da sessao iniciada na tela de treinos.
           </p>
         </div>
 
@@ -570,42 +623,18 @@ export default function CheckinsPage() {
 
       <section className="checkins-selector glass-panel">
         <div className="checkins-selector__header">
-          <span>Escolha o tipo de registro</span>
+          <span>Registro semanal</span>
           <h2>
-            Agora voce esta preenchendo:{" "}
+            Agora voce esta preenchendo apenas:{" "}
             <strong>{checkinCadences[activeCadence].label}</strong>
           </h2>
           <p>
-            Clique em Diario, Semanal ou Mensal para trocar o formulario antes
-            de salvar. Cada tipo fica salvo separadamente no historico.
+            O check-in manual fica concentrado no resumo semanal. O antigo
+            check-in diario foi substituido pela sessao de treino: ao finalizar
+            uma sessao, o app registra a execucao no historico e alimenta o
+            dashboard.
           </p>
         </div>
-
-      <nav className="checkins-tabs" aria-label="Tipo de check-in">
-        {Object.entries(checkinCadences).map(([cadence, config]) => (
-          <button
-            key={cadence}
-            type="button"
-            className={`checkins-tab checkins-tab--${cadence} ${
-              activeCadence === cadence ? "is-active" : ""
-            }`}
-            onClick={() => handleCadenceChange(cadence)}
-            aria-pressed={activeCadence === cadence}
-          >
-            <span className="checkins-tab__icon" aria-hidden="true">
-              {cadenceVisuals[cadence].icon}
-            </span>
-            <span className="checkins-tab__content">
-              <strong>{config.label}</strong>
-              <span>{config.description}</span>
-              <em>{cadenceVisuals[cadence].action}</em>
-            </span>
-            <span className="checkins-tab__state">
-              {activeCadence === cadence ? "Selecionado" : "Clique para usar"}
-            </span>
-          </button>
-        ))}
-      </nav>
       </section>
 
       {feedback ? <p className="checkins-feedback">{feedback}</p> : null}

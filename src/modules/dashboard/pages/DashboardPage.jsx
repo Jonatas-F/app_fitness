@@ -307,15 +307,15 @@ function buildWorkoutEvolution(workout, sessions) {
 }
 
 function WorkoutEvolutionPanel({ workouts, sessions }) {
-  const firstEnabledWorkout = workouts.find((workout) => workout.enabled)?.id || "A";
+  const firstEnabledWorkout = workouts.find((workout) => workout.enabled)?.id || "monday";
   const [openWorkoutId, setOpenWorkoutId] = useState(firstEnabledWorkout);
 
   return (
     <section className="dashboard-card glass-panel">
       <h2>Evolucao por treino do protocolo mensal</h2>
       <p>
-        Selecione o treino A, B, C, D ou E para comparar a evolucao de carga dos
-        exercicios registrados neste protocolo.
+        Selecione um dia da semana para comparar a evolucao de carga dos
+        exercicios registrados neste protocolo mensal.
       </p>
 
       <div className="workout-evolution-tabs">

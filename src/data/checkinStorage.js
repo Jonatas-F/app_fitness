@@ -5,8 +5,8 @@ const CHECKINS_STORAGE_KEY = "shapeCertoCheckins";
 
 export const checkinCadences = {
   daily: {
-    label: "Diario",
-    description: "Sinais rapidos de sono, energia, fome, estresse e aderencia.",
+    label: "Sessao de treino",
+    description: "Registro automatico criado ao finalizar uma sessao de treino.",
   },
   weekly: {
     label: "Semanal",
@@ -19,7 +19,7 @@ export const checkinCadences = {
 };
 
 export const defaultCheckinForm = {
-  cadence: "monthly",
+  cadence: "weekly",
   goal: "hipertrofia",
   sport: "",
   sex: "",
@@ -184,7 +184,7 @@ function daysBetween(dateA, dateB) {
 }
 
 function normalizeCadence(cadence) {
-  return checkinCadences[cadence] ? cadence : "monthly";
+  return checkinCadences[cadence] ? cadence : "weekly";
 }
 
 function completedOnly(checkins) {
@@ -389,13 +389,15 @@ export function saveCheckin(checkinData, options = {}) {
     createdAt,
   };
 
-  const currentWithoutSameDayAndType = current.filter(
-    (item) =>
-      !(
-        normalizeCadence(item.cadence) === cadence &&
-        getCheckinDateKey(item.createdAt) === checkinDateKey
-      )
-  );
+  const currentWithoutSameDayAndType = options.allowMultiplePerDay
+    ? current
+    : current.filter(
+        (item) =>
+          !(
+            normalizeCadence(item.cadence) === cadence &&
+            getCheckinDateKey(item.createdAt) === checkinDateKey
+          )
+      );
   const updated = [newCheckin, ...currentWithoutSameDayAndType].sort(
     (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
   );
@@ -513,7 +515,7 @@ export function getWeeklyAiDataset(checkins) {
       sleep: average(weeklySources, "sleep"),
       adherence: average(weeklySources, "adherence"),
     },
-    rule: "O Personal Virtual deve calcular tendencias somente com check-ins diarios e semanais realizados. Ausencias registradas explicam lacunas, mas nao viram zero.",
+    rule: "O Personal Virtual deve calcular tendencias com check-ins semanais e sessoes de treino finalizadas. Ausencias registradas explicam lacunas, mas nao viram zero.",
   };
 }
 

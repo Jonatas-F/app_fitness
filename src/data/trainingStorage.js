@@ -31,22 +31,22 @@ function getDefaultClosurePlan() {
 function getDefaultDivision() {
   return [
     {
-      id: "A",
-      title: "Treino A",
+      id: "monday",
+      title: "Segunda-feira",
       focus: "Peito, ombro e tríceps",
       exercises:
         "Supino reto — 4x10\nDesenvolvimento com halteres — 4x12\nTríceps corda — 3x15",
     },
     {
-      id: "B",
-      title: "Treino B",
+      id: "tuesday",
+      title: "Terca-feira",
       focus: "Costas e bíceps",
       exercises:
         "Puxada frontal — 4x10\nRemada baixa — 4x12\nRosca direta — 3x15",
     },
     {
-      id: "C",
-      title: "Treino C",
+      id: "wednesday",
+      title: "Quarta-feira",
       focus: "Pernas completas",
       exercises:
         "Agachamento livre — 4x10\nLeg press — 4x12\nMesa flexora — 3x15",
@@ -56,9 +56,13 @@ function getDefaultDivision() {
 
 function getBlankDivision() {
   return [
-    { id: "A", title: "Treino A", focus: "", exercises: "" },
-    { id: "B", title: "Treino B", focus: "", exercises: "" },
-    { id: "C", title: "Treino C", focus: "", exercises: "" },
+    { id: "monday", title: "Segunda-feira", focus: "", exercises: "" },
+    { id: "tuesday", title: "Terca-feira", focus: "", exercises: "" },
+    { id: "wednesday", title: "Quarta-feira", focus: "", exercises: "" },
+    { id: "thursday", title: "Quinta-feira", focus: "", exercises: "" },
+    { id: "friday", title: "Sexta-feira", focus: "", exercises: "" },
+    { id: "saturday", title: "Sabado", focus: "", exercises: "" },
+    { id: "sunday", title: "Domingo", focus: "", exercises: "" },
   ];
 }
 

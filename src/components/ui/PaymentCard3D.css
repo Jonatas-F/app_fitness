@@ -1,0 +1,262 @@
+.payment-card-3d {
+  width: 100%;
+}
+
+.payment-card-3d .atropos-inner {
+  border-radius: 8px;
+}
+
+.payment-card-3d__surface {
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-height: 176px;
+  gap: 16px;
+  overflow: hidden;
+  padding: 16px;
+  border-radius: 8px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 86% 12%, rgba(255, 46, 46, 0.28), transparent 34%),
+    linear-gradient(135deg, rgba(32, 15, 15, 0.98), rgba(9, 9, 10, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+  text-align: left;
+}
+
+.payment-card-3d__selector {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.payment-card-3d.is-selected .payment-card-3d__surface {
+  border-color: rgba(255, 46, 46, 0.52);
+  box-shadow:
+    0 18px 46px rgba(255, 46, 46, 0.14),
+    inset 0 0 0 1px rgba(255, 46, 46, 0.12);
+}
+
+.payment-card-3d__glow {
+  position: absolute;
+  inset: auto -26% -58% 36%;
+  height: 140px;
+  border-radius: 999px;
+  background: rgba(255, 46, 46, 0.16);
+  filter: blur(30px);
+  pointer-events: none;
+}
+
+.payment-card-3d__top,
+.payment-card-3d__meta,
+.payment-card-3d__status,
+.payment-card-3d__expanded span,
+.payment-card-3d__expanded div {
+  display: flex;
+  align-items: center;
+}
+
+.payment-card-3d__top {
+  position: relative;
+  z-index: 1;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.payment-card-3d__brand {
+  display: grid;
+  width: 54px;
+  height: 38px;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.payment-card-3d__brand img {
+  width: 38px;
+  max-height: 24px;
+  object-fit: contain;
+}
+
+.payment-card-3d__brand svg {
+  width: 24px;
+  height: 24px;
+}
+
+.payment-card-3d__status {
+  min-height: 30px;
+  gap: 6px;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.payment-card-3d__status.is-active {
+  color: #ffd7d7;
+  background: rgba(255, 46, 46, 0.18);
+  border-color: rgba(255, 46, 46, 0.3);
+}
+
+.payment-card-3d__status svg {
+  width: 16px;
+  height: 16px;
+}
+
+.payment-card-3d__number {
+  position: relative;
+  z-index: 1;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: clamp(1.05rem, 2vw, 1.32rem);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+.payment-card-3d__meta {
+  position: relative;
+  z-index: 1;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.payment-card-3d__meta > span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.payment-card-3d__meta small {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.payment-card-3d__meta strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.84rem;
+}
+
+.payment-card-3d__expanded {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
+  overflow: hidden;
+  padding-top: 4px;
+}
+
+.payment-card-3d__details,
+.payment-card-3d__details div,
+.payment-card-3d__expanded span {
+  display: flex;
+  align-items: center;
+}
+
+.payment-card-3d__details {
+  align-items: stretch;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.payment-card-3d__details div {
+  gap: 7px;
+  color: rgba(255, 255, 255, 0.64);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.payment-card-3d__expanded svg {
+  width: 16px;
+  height: 16px;
+  color: #ff5a4f;
+  flex-shrink: 0;
+}
+
+.payment-card-3d__miniature {
+  min-height: 58px;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 88% 10%, rgba(255, 46, 46, 0.24), transparent 40%),
+    linear-gradient(145deg, rgba(255, 46, 46, 0.14), rgba(255, 255, 255, 0.055));
+  border: 1px solid rgba(255, 46, 46, 0.24);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.payment-card-3d__miniature > span:last-child {
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.payment-card-3d__miniature-brand {
+  display: grid;
+  width: 46px;
+  height: 32px;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.payment-card-3d__miniature-brand img {
+  width: 32px;
+  max-height: 20px;
+  object-fit: contain;
+}
+
+.payment-card-3d__miniature-brand svg {
+  width: 20px;
+  height: 20px;
+}
+
+.payment-card-3d__delete {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 11px;
+  border-radius: 8px;
+  color: #ffd7d7;
+  background: rgba(255, 46, 46, 0.14);
+  border: 1px solid rgba(255, 46, 46, 0.28);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.payment-card-3d__delete svg {
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 760px) {
+  .payment-card-3d__surface {
+    min-height: 156px;
+    padding: 14px;
+  }
+
+  .payment-card-3d__meta {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
