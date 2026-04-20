@@ -251,19 +251,19 @@ function DietPage() {
         </div>
       </section>
 
-      <section className="diet-meals-grid">
+      <section className="diet-meals-grid" aria-label="Refeicoes do protocolo por dia">
         <article className="glass-card card-padding diet-day-panel">
           <div className="card-header">
             <div>
-              <h3 className="card-title">Protocolo por dia da semana</h3>
+              <h3 className="card-title">Refeicoes do protocolo</h3>
               <p className="card-subtitle">
-                Cada dia pode ter refeicoes e ingredientes diferentes conforme a variacao definida no check-in.
+                Selecione o dia para consultar a dieta. A IA pode repetir pratos ou variar ingredientes conforme a variacao escolhida no check-in.
               </p>
             </div>
             <span className="badge badge-primary">{activeDayMeals} ativas</span>
           </div>
 
-          <div className="diet-day-tabs" role="tablist" aria-label="Dias da dieta">
+          <nav className="diet-week-tabs" role="tablist" aria-label="Dias da dieta">
             {dietDays.map((day) => {
               const dayPlan = diet.dayPlans?.find((item) => item.id === day.id);
               const enabledMeals = (dayPlan?.meals || []).filter((meal) => meal.enabled).length;
@@ -281,6 +281,17 @@ function DietPage() {
                 </button>
               );
             })}
+          </nav>
+
+          <div className="diet-selected-day-summary">
+            <div>
+              <span>Dia selecionado</span>
+              <strong>Dieta de {selectedDayPlan.name}</strong>
+            </div>
+            <div>
+              <span>Refeicoes ativas</span>
+              <strong>{activeDayMeals}/{selectedDayPlan.meals.length}</strong>
+            </div>
           </div>
         </article>
 
@@ -293,7 +304,7 @@ function DietPage() {
               <div>
                 <h3 className="card-title">{meal.name}</h3>
                 <p className="card-subtitle">
-                  Estrutura da refeição dentro do plano atual.
+                  {selectedDayPlan.name} | estrutura da refeicao dentro do plano atual.
                 </p>
               </div>
               <button

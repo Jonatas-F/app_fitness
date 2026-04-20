@@ -13,35 +13,94 @@
   grid-column: 1 / -1;
 }
 
-.diet-day-tabs {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.diet-day-tabs button {
-  display: grid;
-  gap: 5px;
-  min-height: 78px;
-  padding: 12px;
+.diet-week-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 6px;
   border-radius: 8px;
-  color: #fff;
-  background: rgba(148, 163, 184, 0.12);
-  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.diet-week-tabs button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 3px 8px;
+  min-width: 154px;
+  min-height: 54px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  background: transparent;
+  border: 1px solid transparent;
   text-align: left;
+  white-space: nowrap;
 }
 
-.diet-day-tabs button.is-selected {
-  background: linear-gradient(135deg, rgba(255, 46, 46, 0.2), rgba(255, 255, 255, 0.045));
-  border-color: rgba(255, 46, 46, 0.4);
-  box-shadow: 0 12px 26px rgba(255, 46, 46, 0.12);
+.diet-week-tabs button::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #ff2e2e;
+  box-shadow: 0 0 14px rgba(255, 46, 46, 0.45);
 }
 
-.diet-day-tabs span,
-.diet-day-tabs em {
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 0.78rem;
+.diet-week-tabs button:hover,
+.diet-week-tabs button.is-selected {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.085);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.diet-week-tabs button.is-selected {
+  box-shadow: inset 0 0 0 1px rgba(255, 46, 46, 0.28);
+}
+
+.diet-week-tabs strong {
+  font-size: 0.86rem;
+}
+
+.diet-week-tabs span {
+  overflow: hidden;
+  color: inherit;
+  text-overflow: ellipsis;
+}
+
+.diet-week-tabs em {
+  grid-column: 2;
+  color: rgba(255, 255, 255, 0.52);
+  font-size: 0.72rem;
   font-style: normal;
+}
+
+.diet-selected-day-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.diet-selected-day-summary div {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.diet-selected-day-summary span {
+  color: rgba(255, 255, 255, 0.54);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.diet-selected-day-summary strong {
+  color: #fff;
 }
 
 .diet-meal-card {
@@ -152,8 +211,8 @@
     grid-template-columns: 1fr;
   }
 
-  .diet-day-tabs {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .diet-week-tabs button {
+    min-width: 142px;
   }
 
   .diet-macro-grid {
@@ -163,7 +222,7 @@
 
 @media (max-width: 760px) {
   .diet-history-grid,
-  .diet-day-tabs,
+  .diet-selected-day-summary,
   .diet-macro-grid {
     grid-template-columns: 1fr;
   }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { loadCheckins } from "../../../data/checkinStorage";
 import {
+  dietDays,
   getDietMetrics,
   loadDietHistory,
   loadDietProtocol,
@@ -80,9 +81,18 @@ function NutritionCollapsible({ eyebrow, title, summary, badge, children }) {
 export default function NutritionPage() {
   const [diet, setDiet] = useState(() => loadDietProtocol());
   const [feedback, setFeedback] = useState("");
+  const [selectedDayId, setSelectedDayId] = useState("segunda");
   const [openMeals, setOpenMeals] = useState([]);
   const metrics = getDietMetrics(diet, loadDietHistory());
   const waterRecommendation = getWaterRecommendation(getLatestCompletedCheckin());
+  const selectedDayPlan =
+    diet.dayPlans?.find((day) => day.id === selectedDayId) ||
+    diet.dayPlans?.[0] || {
+      id: "segunda",
+      name: "Segunda",
+      meals: diet.meals || [],
+    };
+  const selectedDayActiveMeals = selectedDayPlan.meals.filter((meal) => meal.enabled).length;
   const nutritionMetrics = [
     metrics[0],
     {
@@ -102,12 +112,28 @@ export default function NutritionPage() {
     updateDiet({ ...diet, [field]: value });
   }
 
-  function handleMealField(mealId, field, value) {
+  function handleMealField(dayId, mealId, field, value) {
+    const nextDayPlans = (diet.dayPlans || dietDays).map((day) =>
+      day.id === dayId
+        ? {
+            ...day,
+            meals: (day.meals || []).map((meal) =>
+              meal.id === mealId
+                ? {
+                    ...meal,
+                    [field]: value,
+                    ...(field === "foods" ? { description: value } : {}),
+                  }
+                : meal
+            ),
+          }
+        : day
+    );
+
     updateDiet({
       ...diet,
-      meals: diet.meals.map((meal) =>
-        meal.id === mealId ? { ...meal, [field]: value } : meal
-      ),
+      dayPlans: nextDayPlans,
+      meals: nextDayPlans.find((day) => day.id === selectedDayId)?.meals || diet.meals,
     });
   }
 
@@ -224,13 +250,57 @@ export default function NutritionPage() {
       <NutritionCollapsible
         eyebrow="Refeicoes"
         title="Refeicoes do protocolo"
-        summary="Abra somente a refeicao que deseja consultar ou ajustar."
-        badge={`${diet.meals.filter((meal) => meal.enabled).length} ativas`}
+        summary="Selecione o dia da semana e abra somente a refeicao que deseja consultar ou ajustar."
+        badge={`${selectedDayActiveMeals} ativas`}
       >
+      <section className="nutrition-week-panel">
+        <div>
+          <h2>Dietas por dia da semana</h2>
+          <p>
+            A IA usa a variacao definida no check-in para decidir se repete pratos
+            ao longo da semana ou cria mais diversidade entre os dias.
+          </p>
+        </div>
+
+        <nav className="nutrition-week-tabs" role="tablist" aria-label="Dias da dieta">
+          {dietDays.map((day) => {
+            const dayPlan = diet.dayPlans?.find((item) => item.id === day.id);
+            const enabledMeals = (dayPlan?.meals || []).filter((meal) => meal.enabled).length;
+
+            return (
+              <button
+                key={day.id}
+                type="button"
+                className={selectedDayId === day.id ? "is-selected" : ""}
+                onClick={() => {
+                  setSelectedDayId(day.id);
+                  setOpenMeals([]);
+                }}
+              >
+                <strong>{day.short}</strong>
+                <span>{day.name}</span>
+                <em>{enabledMeals} refeicoes</em>
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="nutrition-selected-day">
+          <div>
+            <span>Dia selecionado</span>
+            <strong>Dieta de {selectedDayPlan.name}</strong>
+          </div>
+          <div>
+            <span>Refeicoes ativas</span>
+            <strong>{selectedDayActiveMeals}/{selectedDayPlan.meals.length}</strong>
+          </div>
+        </div>
+      </section>
+
       <section className="meal-grid">
-        {diet.meals.map((meal) => (
+        {selectedDayPlan.meals.map((meal) => (
           <article
-            key={meal.id}
+            key={`${selectedDayPlan.id}-${meal.id}`}
             className={`meal-card glass-panel ${meal.enabled ? "is-enabled" : "is-disabled"} ${
               openMeals.includes(meal.id) ? "is-open" : ""
             }`}
@@ -260,7 +330,9 @@ export default function NutritionPage() {
                     <input
                       disabled={!meal.enabled}
                       value={meal.calories}
-                      onChange={(event) => handleMealField(meal.id, "calories", event.target.value)}
+                      onChange={(event) =>
+                        handleMealField(selectedDayPlan.id, meal.id, "calories", event.target.value)
+                      }
                       placeholder="kcal"
                     />
                   </label>
@@ -269,7 +341,9 @@ export default function NutritionPage() {
                     <input
                       disabled={!meal.enabled}
                       value={meal.protein}
-                      onChange={(event) => handleMealField(meal.id, "protein", event.target.value)}
+                      onChange={(event) =>
+                        handleMealField(selectedDayPlan.id, meal.id, "protein", event.target.value)
+                      }
                       placeholder="g"
                     />
                   </label>
@@ -278,7 +352,9 @@ export default function NutritionPage() {
                     <input
                       disabled={!meal.enabled}
                       value={meal.carbs}
-                      onChange={(event) => handleMealField(meal.id, "carbs", event.target.value)}
+                      onChange={(event) =>
+                        handleMealField(selectedDayPlan.id, meal.id, "carbs", event.target.value)
+                      }
                       placeholder="g"
                     />
                   </label>
@@ -287,7 +363,9 @@ export default function NutritionPage() {
                     <input
                       disabled={!meal.enabled}
                       value={meal.fats}
-                      onChange={(event) => handleMealField(meal.id, "fats", event.target.value)}
+                      onChange={(event) =>
+                        handleMealField(selectedDayPlan.id, meal.id, "fats", event.target.value)
+                      }
                       placeholder="g"
                     />
                   </label>
@@ -298,7 +376,9 @@ export default function NutritionPage() {
                   <textarea
                     disabled={!meal.enabled}
                     value={meal.foods}
-                    onChange={(event) => handleMealField(meal.id, "foods", event.target.value)}
+                    onChange={(event) =>
+                      handleMealField(selectedDayPlan.id, meal.id, "foods", event.target.value)
+                    }
                     placeholder="O Personal Virtual preencherá os alimentos desta refeição."
                   />
                 </label>
@@ -308,7 +388,9 @@ export default function NutritionPage() {
                   <textarea
                     disabled={!meal.enabled}
                     value={meal.notes}
-                    onChange={(event) => handleMealField(meal.id, "notes", event.target.value)}
+                    onChange={(event) =>
+                      handleMealField(selectedDayPlan.id, meal.id, "notes", event.target.value)
+                    }
                     placeholder="Substituições, horários, preparo..."
                   />
                 </label>
