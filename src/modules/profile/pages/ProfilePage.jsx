@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { useNavigate } from "react-router-dom";
 import PaymentCard3D from "../../../components/ui/PaymentCard3D";
 import logo from "../../../assets/logo.svg";
@@ -17,6 +18,7 @@ import {
 } from "../../../data/gymEquipmentStorage";
 import { formatCurrency, getAnnualPrice, getPlanById, subscriptionPlans } from "../../../data/plans";
 import { signOut } from "../../../services/authService";
+import { savePlanChangeAcceptance } from "../../../services/planAcceptanceService";
 import { loadRemoteProfile, saveRemoteProfile, uploadProfileAvatar } from "../../../services/profileService";
 import { createStripePortalSession } from "../../../services/stripeService";
 import "./ProfilePage.css";
@@ -59,6 +61,15 @@ const addPaymentMethodOption = {
   brand: "+",
   ending: "novo",
   label: "Adicionar novo cartao",
+};
+
+const emptyPaymentMethodDraft = {
+  id: "",
+  label: "",
+  brand: "Visa",
+  ending: "",
+  holder: "",
+  expires: "",
 };
 
 function loadProfilePhoto() {
@@ -125,6 +136,14 @@ function savePaymentMethods(methods) {
   return methods;
 }
 
+function createPaymentDraft(method = {}) {
+  return {
+    ...emptyPaymentMethodDraft,
+    ...method,
+    ending: method.ending && method.ending !== "novo" ? String(method.ending).replace(/\D/g, "").slice(-4) : "",
+  };
+}
+
 function EquipmentCard({ item, selected, onToggle }) {
   return (
     <article className={`profile-equipment-card ${selected ? "is-selected" : ""}`}>
@@ -188,14 +207,10 @@ export default function ProfilePage() {
   const [profilePhoto, setProfilePhoto] = useState(() => loadProfilePhoto());
   const [account, setAccount] = useState(() => loadProfileAccount());
   const [savedPaymentMethods, setSavedPaymentMethods] = useState(() => loadPaymentMethods());
-  const [showAddPaymentForm, setShowAddPaymentForm] = useState(false);
-  const [newPaymentMethod, setNewPaymentMethod] = useState({
-    label: "",
-    brand: "Visa",
-    ending: "",
-    holder: "",
-    expires: "",
-  });
+  const [paymentModalMode, setPaymentModalMode] = useState(null);
+  const [paymentDraft, setPaymentDraft] = useState(() => createPaymentDraft());
+  const [planConfirmOpen, setPlanConfirmOpen] = useState(false);
+  const [planTermsAccepted, setPlanTermsAccepted] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -355,30 +370,42 @@ export default function ProfilePage() {
 
   function handlePaymentMethodSelect(method) {
     if (method.id === "novo") {
-      setShowAddPaymentForm(true);
-      setAccountMessage("Preencha os dados do novo cartao para deixar como metodo preferencial.");
+      setPaymentDraft(createPaymentDraft());
+      setPaymentModalMode("add");
+      setAccountMessage("");
       return;
     }
 
-    const nextAccount = { ...account, paymentMethod: method.id };
-    setAccount(saveProfileAccount(nextAccount));
-    setShowAddPaymentForm(false);
-    setAccountMessage("Metodo de pagamento preferencial atualizado.");
+    if (account.paymentMethod === method.id) {
+      setPaymentDraft(createPaymentDraft(method));
+      setPaymentModalMode("edit");
+      setAccountMessage("");
+      return;
+    }
+
+    setAccount(saveProfileAccount({ ...account, paymentMethod: method.id }));
+    setPaymentModalMode(null);
+    setAccountMessage(`${method.label} selecionado para cobrancas.`);
   }
 
-  function handleNewPaymentChange(event) {
+  function closePaymentModal() {
+    setPaymentModalMode(null);
+    setPaymentDraft(createPaymentDraft());
+  }
+
+  function handlePaymentDraftChange(event) {
     const { name, value } = event.target;
     setAccountMessage("");
-    setNewPaymentMethod((current) => ({
+    setPaymentDraft((current) => ({
       ...current,
       [name]: name === "ending" ? value.replace(/\D/g, "").slice(0, 4) : value,
     }));
   }
 
-  function handleAddPaymentMethod(event) {
+  function handlePaymentDraftSubmit(event) {
     event.preventDefault();
 
-    const ending = newPaymentMethod.ending.replace(/\D/g, "").slice(-4);
+    const ending = paymentDraft.ending.replace(/\D/g, "").slice(-4);
 
     if (ending.length !== 4) {
       setAccountMessage("Informe os 4 ultimos digitos do cartao.");
@@ -386,30 +413,37 @@ export default function ProfilePage() {
     }
 
     const method = {
-      id: `card-${Date.now()}`,
-      brand: newPaymentMethod.brand,
+      id: paymentModalMode === "edit" ? paymentDraft.id : `card-${Date.now()}`,
+      brand: paymentDraft.brand,
       ending,
-      label: newPaymentMethod.label || `${newPaymentMethod.brand} final ${ending}`,
-      holder: newPaymentMethod.holder || "Titular nao informado",
-      expires: newPaymentMethod.expires || "--/--",
+      label: paymentDraft.label || `${paymentDraft.brand} final ${ending}`,
+      holder: paymentDraft.holder || "Titular nao informado",
+      expires: paymentDraft.expires || "--/--",
     };
-    const updatedMethods = savePaymentMethods([...savedPaymentMethods, method]);
+    const updatedMethods =
+      paymentModalMode === "edit"
+        ? savedPaymentMethods.map((savedMethod) => (savedMethod.id === method.id ? method : savedMethod))
+        : [...savedPaymentMethods, method];
     const nextAccount = { ...account, paymentMethod: method.id };
 
-    setSavedPaymentMethods(updatedMethods);
+    setSavedPaymentMethods(savePaymentMethods(updatedMethods));
     setAccount(saveProfileAccount(nextAccount));
-    setNewPaymentMethod({
-      label: "",
-      brand: "Visa",
-      ending: "",
-      holder: "",
-      expires: "",
-    });
-    setShowAddPaymentForm(false);
-    setAccountMessage("Novo cartao adicionado e definido como metodo preferencial.");
+    closePaymentModal();
+    setAccountMessage(
+      paymentModalMode === "edit"
+        ? "Dados do cartao atualizados."
+        : "Novo cartao adicionado e definido como metodo preferencial."
+    );
   }
 
-  function handleDeletePaymentMethod(methodId) {
+  function handleDeletePaymentMethod() {
+    const methodId = paymentDraft.id;
+
+    if (!methodId) {
+      closePaymentModal();
+      return;
+    }
+
     const updatedMethods = savePaymentMethods(savedPaymentMethods.filter((method) => method.id !== methodId));
     const nextSelectedMethod = updatedMethods[0]?.id || "novo";
 
@@ -419,10 +453,11 @@ export default function ProfilePage() {
       setAccount(saveProfileAccount({ ...account, paymentMethod: nextSelectedMethod }));
     }
 
+    closePaymentModal();
     setAccountMessage("Cartao removido dos metodos salvos.");
   }
 
-  async function confirmPlanChange() {
+  function openPlanChangeConfirmation() {
     const hasSavedPaymentMethod = savedPaymentMethods.some((method) => method.id === account.paymentMethod);
 
     if (!hasSavedPaymentMethod) {
@@ -430,14 +465,43 @@ export default function ProfilePage() {
       return;
     }
 
+    setPlanTermsAccepted(false);
+    setPlanConfirmOpen(true);
+  }
+
+  async function confirmPlanChange() {
+    if (!planTermsAccepted) {
+      setAccountMessage("Aceite os termos da alteracao do plano para continuar.");
+      return;
+    }
+
+    const acceptedTermsText =
+      "Li e aceito que a alteracao do plano pode mudar valores, recorrencia, limites de tokens e acessos disponiveis na plataforma.";
+    const acceptanceRecord = {
+      previousPlan: account.activePlan,
+      previousBillingCycle: account.billingCycle,
+      nextPlan: pendingPlan,
+      nextBillingCycle: pendingBillingCycle,
+      paymentMethodLabel: selectedPaymentMethod.label,
+      paymentMethodLast4: selectedPaymentMethod.id !== "novo" ? selectedPaymentMethod.ending : null,
+      acceptedTermsText,
+      acceptedAt: new Date().toISOString(),
+      metadata: {
+        previousPlanName: activePlan.name,
+        nextPlanName: selectedPlan.name,
+        selectedPlanPrice,
+      },
+    };
     const nextAccount = {
       ...account,
       activePlan: pendingPlan,
       billingCycle: pendingBillingCycle,
     };
 
+    const acceptanceResult = await savePlanChangeAcceptance(acceptanceRecord);
     setAccount(saveProfileAccount(nextAccount));
     const result = await saveRemoteProfile(nextAccount);
+    setPlanConfirmOpen(false);
 
     if (result.error) {
       setAccountMessage(`Plano salvo localmente. Supabase: ${result.error.message}`);
@@ -447,7 +511,9 @@ export default function ProfilePage() {
     setAccountMessage(
       `Plano ${getPlanById(pendingPlan).name} confirmado no pagamento ${
         pendingBillingCycle === "annual" ? "anual" : "mensal"
-      } usando ${selectedPaymentMethod.label}.`
+      } usando ${selectedPaymentMethod.label}.${
+        acceptanceResult.error ? ` Historico local salvo; Supabase: ${acceptanceResult.error.message}` : ""
+      }`
     );
   }
 
@@ -746,93 +812,10 @@ export default function ProfilePage() {
                       key={method.id}
                       method={method}
                       selected={account.paymentMethod === method.id}
-                      canDelete={method.id !== "novo"}
                       onSelect={handlePaymentMethodSelect}
-                      onDelete={handleDeletePaymentMethod}
                     />
                   ))}
                 </div>
-
-                {showAddPaymentForm ? (
-                  <form className="payment-add-form" onSubmit={handleAddPaymentMethod}>
-                    <div className="payment-add-form__heading">
-                      <strong>Novo metodo de pagamento</strong>
-                      <small>Use apenas os dados visuais por enquanto. A cobranca real fica no Stripe.</small>
-                    </div>
-
-                    <div className="payment-add-form__grid">
-                      <label className="profile-field">
-                        <span>Apelido do cartao</span>
-                        <input
-                          type="text"
-                          name="label"
-                          value={newPaymentMethod.label}
-                          onChange={handleNewPaymentChange}
-                          placeholder="Ex.: Cartao Nubank"
-                        />
-                      </label>
-
-                      <label className="profile-field">
-                        <span>Bandeira</span>
-                        <select
-                          name="brand"
-                          value={newPaymentMethod.brand}
-                          onChange={handleNewPaymentChange}
-                        >
-                          <option value="Visa">Visa</option>
-                          <option value="Mastercard">Mastercard</option>
-                        </select>
-                      </label>
-
-                      <label className="profile-field">
-                        <span>Ultimos 4 digitos</span>
-                        <input
-                          type="text"
-                          name="ending"
-                          inputMode="numeric"
-                          value={newPaymentMethod.ending}
-                          onChange={handleNewPaymentChange}
-                          placeholder="2847"
-                        />
-                      </label>
-
-                      <label className="profile-field">
-                        <span>Validade</span>
-                        <input
-                          type="text"
-                          name="expires"
-                          value={newPaymentMethod.expires}
-                          onChange={handleNewPaymentChange}
-                          placeholder="MM/AA"
-                        />
-                      </label>
-
-                      <label className="profile-field payment-add-form__wide">
-                        <span>Nome no cartao</span>
-                        <input
-                          type="text"
-                          name="holder"
-                          value={newPaymentMethod.holder}
-                          onChange={handleNewPaymentChange}
-                          placeholder="Nome do titular"
-                        />
-                      </label>
-                    </div>
-
-                    <div className="payment-add-form__actions">
-                      <button type="submit" className="primary-button">
-                        Salvar cartao
-                      </button>
-                      <button
-                        type="button"
-                        className="ghost-button"
-                        onClick={() => setShowAddPaymentForm(false)}
-                      >
-                        Cancelar
-                      </button>
-                    </div>
-                  </form>
-                ) : null}
 
                 <button type="button" className="ghost-button" onClick={openStripePortal}>
                   Gerenciar pagamento no Stripe
@@ -892,7 +875,7 @@ export default function ProfilePage() {
                   </small>
                 </div>
 
-                <button type="button" className="primary-button" onClick={confirmPlanChange}>
+                <button type="button" className="primary-button" onClick={openPlanChangeConfirmation}>
                   Confirmar alteracao do plano
                 </button>
               </article>
@@ -1082,6 +1065,201 @@ export default function ProfilePage() {
           </div>
         </div>
       </details>
+
+      <AnimatePresence>
+        {paymentModalMode ? (
+          <motion.div
+            className="profile-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={closePaymentModal}
+          >
+            <motion.form
+              className="profile-modal payment-modal"
+              onSubmit={handlePaymentDraftSubmit}
+              initial={{ opacity: 0, y: 18, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 18, scale: 0.98 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="profile-modal__heading">
+                <div>
+                  <span>{paymentModalMode === "edit" ? "Cartao selecionado" : "Novo metodo"}</span>
+                  <h2>
+                    {paymentModalMode === "edit" ? "Alterar dados do cartao" : "Adicionar novo cartao"}
+                  </h2>
+                  <p>
+                    A cobranca real deve continuar no Stripe. Aqui ficam apenas os dados visuais usados no
+                    perfil.
+                  </p>
+                </div>
+                <button type="button" className="profile-modal__close" onClick={closePaymentModal}>
+                  x
+                </button>
+              </div>
+
+              <div className="payment-modal__preview" aria-hidden="true">
+                <span>{paymentDraft.brand}</span>
+                <strong>{paymentDraft.ending ? `**** **** **** ${paymentDraft.ending}` : "**** **** **** ----"}</strong>
+                <small>{paymentDraft.holder || "Nome do titular"}</small>
+              </div>
+
+              <div className="payment-add-form__grid">
+                <label className="profile-field">
+                  <span>Apelido do cartao</span>
+                  <input
+                    type="text"
+                    name="label"
+                    value={paymentDraft.label}
+                    onChange={handlePaymentDraftChange}
+                    placeholder="Ex.: Cartao principal"
+                  />
+                </label>
+
+                <label className="profile-field">
+                  <span>Bandeira</span>
+                  <select name="brand" value={paymentDraft.brand} onChange={handlePaymentDraftChange}>
+                    <option value="Visa">Visa</option>
+                    <option value="Mastercard">Mastercard</option>
+                  </select>
+                </label>
+
+                <label className="profile-field">
+                  <span>Ultimos 4 digitos</span>
+                  <input
+                    type="text"
+                    name="ending"
+                    inputMode="numeric"
+                    value={paymentDraft.ending}
+                    onChange={handlePaymentDraftChange}
+                    placeholder="2847"
+                  />
+                </label>
+
+                <label className="profile-field">
+                  <span>Validade</span>
+                  <input
+                    type="text"
+                    name="expires"
+                    value={paymentDraft.expires}
+                    onChange={handlePaymentDraftChange}
+                    placeholder="MM/AA"
+                  />
+                </label>
+
+                <label className="profile-field payment-add-form__wide">
+                  <span>Nome no cartao</span>
+                  <input
+                    type="text"
+                    name="holder"
+                    value={paymentDraft.holder}
+                    onChange={handlePaymentDraftChange}
+                    placeholder="Nome do titular"
+                  />
+                </label>
+              </div>
+
+              <div className="profile-modal__actions">
+                {paymentModalMode === "edit" ? (
+                  <button type="button" className="profile-modal__danger" onClick={handleDeletePaymentMethod}>
+                    Excluir cartao
+                  </button>
+                ) : null}
+                <button type="button" className="ghost-button" onClick={closePaymentModal}>
+                  Cancelar
+                </button>
+                <button type="submit" className="primary-button">
+                  {paymentModalMode === "edit" ? "Salvar alteracoes" : "Adicionar cartao"}
+                </button>
+              </div>
+            </motion.form>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {planConfirmOpen ? (
+          <motion.div
+            className="profile-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setPlanConfirmOpen(false)}
+          >
+            <motion.div
+              className="profile-modal plan-confirm-modal"
+              initial={{ opacity: 0, y: 18, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 18, scale: 0.98 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="profile-modal__heading">
+                <div>
+                  <span>Confirmacao do plano</span>
+                  <h2>Confirmar alteracao da assinatura</h2>
+                  <p>
+                    Revise a mudanca antes de aplicar. A assinatura sera atualizada usando o cartao
+                    selecionado.
+                  </p>
+                </div>
+                <button type="button" className="profile-modal__close" onClick={() => setPlanConfirmOpen(false)}>
+                  x
+                </button>
+              </div>
+
+              <div className="plan-confirm-modal__summary">
+                <div>
+                  <small>Plano atual</small>
+                  <strong>{activePlan.name}</strong>
+                  <span>{account.billingCycle === "annual" ? "Anual" : "Mensal"}</span>
+                </div>
+                <div>
+                  <small>Novo plano</small>
+                  <strong>{selectedPlan.name}</strong>
+                  <span>{pendingBillingCycle === "annual" ? "Anual" : "Mensal"}</span>
+                </div>
+                <div>
+                  <small>Cobranca</small>
+                  <strong>{formatCurrency(selectedPlanPrice)}</strong>
+                  <span>
+                    {selectedPaymentMethod.label}
+                    {selectedPaymentMethod.id !== "novo" ? ` final ${selectedPaymentMethod.ending}` : ""}
+                  </span>
+                </div>
+              </div>
+
+              <label className="plan-confirm-modal__terms">
+                <input
+                  type="checkbox"
+                  checked={planTermsAccepted}
+                  onChange={(event) => setPlanTermsAccepted(event.target.checked)}
+                />
+                <span>
+                  Li e aceito que a alteracao do plano pode mudar valores, recorrencia, limites de tokens e
+                  acessos disponiveis na plataforma.
+                </span>
+              </label>
+
+              <div className="profile-modal__actions">
+                <button type="button" className="ghost-button" onClick={() => setPlanConfirmOpen(false)}>
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="primary-button"
+                  disabled={!planTermsAccepted}
+                  onClick={confirmPlanChange}
+                >
+                  Confirmar mudanca
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </section>
   );
 }

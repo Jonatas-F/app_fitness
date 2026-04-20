@@ -60,6 +60,23 @@ function getWaterRecommendation(checkin) {
   };
 }
 
+function NutritionCollapsible({ eyebrow, title, summary, badge, children }) {
+  return (
+    <details className="nutrition-collapsible glass-panel">
+      <summary className="nutrition-collapsible__summary">
+        <span className="nutrition-collapsible__icon">+</span>
+        <span>
+          {eyebrow ? <small>{eyebrow}</small> : null}
+          <strong>{title}</strong>
+          {summary ? <em>{summary}</em> : null}
+        </span>
+        {badge ? <mark>{badge}</mark> : null}
+      </summary>
+      <div className="nutrition-collapsible__body">{children}</div>
+    </details>
+  );
+}
+
 export default function NutritionPage() {
   const [diet, setDiet] = useState(() => loadDietProtocol());
   const [feedback, setFeedback] = useState("");
@@ -139,7 +156,13 @@ export default function NutritionPage() {
         ))}
       </section>
 
-      <section className="nutrition-config glass-panel">
+      <NutritionCollapsible
+        eyebrow="Config"
+        title="Agenda alimentar e restricoes"
+        summary="Disponibilidade de refeicoes, restricoes e preferencias."
+        badge={`${diet.userAvailableMeals || "--"} refeicoes`}
+      >
+      <section className="nutrition-config">
         <div>
           <h2>Agenda alimentar e restrições</h2>
           <p>
@@ -196,7 +219,14 @@ export default function NutritionPage() {
           Solicitar ajuste do Personal Virtual
         </button>
       </section>
+      </NutritionCollapsible>
 
+      <NutritionCollapsible
+        eyebrow="Refeicoes"
+        title="Refeicoes do protocolo"
+        summary="Abra somente a refeicao que deseja consultar ou ajustar."
+        badge={`${diet.meals.filter((meal) => meal.enabled).length} ativas`}
+      >
       <section className="meal-grid">
         {diet.meals.map((meal) => (
           <article
@@ -287,6 +317,7 @@ export default function NutritionPage() {
           </article>
         ))}
       </section>
+      </NutritionCollapsible>
     </section>
   );
 }

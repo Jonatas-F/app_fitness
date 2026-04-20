@@ -1,12 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { Children, isValidElement, useEffect, useMemo, useState } from "react";
 import {
-  calculateCheckinCompleteness,
   checkinCadences,
   defaultCheckinForm,
-  getCheckinCadenceSummary,
-  getCheckinMetrics,
-  getMonthlyReevaluation,
-  getWeeklyAiDataset,
   loadCheckins,
   persistCheckins,
   resetCheckins,
@@ -19,14 +14,18 @@ import {
   loadRemoteCheckins,
   saveRemoteCheckin,
 } from "../../../services/checkinService";
+import { loadDietProtocol } from "../../../data/dietStorage";
+import { loadWorkoutSessionHistory } from "../../../data/workoutExecutionStorage";
 import "./CheckinsPage.css";
 
 const goalOptions = [
   { value: "hipertrofia", label: "Hipertrofia" },
   { value: "emagrecimento", label: "Emagrecimento" },
   { value: "recomposicao", label: "Recomposicao corporal" },
-  { value: "performance", label: "Performance esportiva" },
-  { value: "saude", label: "Saude e condicionamento" },
+  { value: "cutting", label: "Cutting" },
+  { value: "condicionamento", label: "Condicionamento" },
+  { value: "performance", label: "Esporte especifico" },
+  { value: "saude", label: "Saude geral" },
 ];
 
 const experienceOptions = [
@@ -37,6 +36,87 @@ const experienceOptions = [
 ];
 
 const weeklyTrainingDayOptions = ["1", "2", "3", "4", "5", "6", "7"];
+
+const availableTrainingTimeOptions = [
+  { value: "", label: "Selecione" },
+  { value: "30", label: "30 min" },
+  { value: "45", label: "45 min" },
+  { value: "60", label: "60 min" },
+  { value: "75", label: "75 min" },
+  { value: "90", label: "90 min" },
+  { value: "120", label: "120 min ou mais" },
+];
+
+const trainingAgeOptions = [
+  { value: "", label: "Selecione" },
+  { value: "nunca", label: "Nunca treinou" },
+  { value: "menos-6-meses", label: "Menos de 6 meses" },
+  { value: "6-12-meses", label: "6 a 12 meses" },
+  { value: "1-2-anos", label: "1 a 2 anos" },
+  { value: "2-5-anos", label: "2 a 5 anos" },
+  { value: "mais-5-anos", label: "Mais de 5 anos" },
+];
+
+const sleepQualityOptions = [
+  { value: "", label: "Selecione" },
+  { value: "ruim", label: "Ruim" },
+  { value: "regular", label: "Regular" },
+  { value: "boa", label: "Boa" },
+  { value: "excelente", label: "Excelente" },
+];
+
+const requiredCheckinFieldsByCadence = {
+  weekly: [
+    "height",
+    "weight",
+    "hunger",
+    "stress",
+    "digestion",
+    "sleepQuality",
+    "fatigueLevel",
+    "trainingPerformance",
+    "protocolAction",
+    "notes",
+    "photos",
+  ],
+  monthly: [
+    "height",
+    "weight",
+    "hunger",
+    "stress",
+    "digestion",
+    "sleepQuality",
+    "fatigueLevel",
+    "trainingPerformance",
+    "protocolAction",
+    "notes",
+    "photos",
+  ],
+};
+
+const optionalBioimpedanceFields = [
+  "totalBodyWeight",
+  "bioimpedanceBodyFat",
+  "fatMass",
+  "muscleMass",
+  "skeletalMuscleMass",
+  "totalBodyWater",
+  "boneMass",
+  "basalMetabolicRate",
+  "rightArmMuscleMass",
+  "leftArmMuscleMass",
+  "rightLegMuscleMass",
+  "leftLegMuscleMass",
+  "trunkMuscleMass",
+  "rightArmFat",
+  "leftArmFat",
+  "rightLegFat",
+  "leftLegFat",
+  "trunkFat",
+  "metabolicAge",
+  "visceralFat",
+  "bmi",
+];
 
 const cadenceVisuals = {
   daily: {
@@ -86,14 +166,47 @@ const photoPoseSlots = [
   },
 ];
 
-function Field({ label, required = false, hint, children }) {
+function getChildrenValue(children) {
+  let value = "";
+
+  Children.forEach(children, (child) => {
+    if (!isValidElement(child)) {
+      return;
+    }
+
+    if (child.props.value !== undefined) {
+      value = child.props.value;
+      return;
+    }
+
+    if (child.props.children) {
+      const nestedValue = getChildrenValue(child.props.children);
+
+      if (nestedValue !== "") {
+        value = nestedValue;
+      }
+    }
+  });
+
+  return value;
+}
+
+function Field({ label, required = false, hint, children, className = "" }) {
+  const fieldValue = getChildrenValue(children);
+  const isFilled = Array.isArray(fieldValue)
+    ? fieldValue.length > 0
+    : String(fieldValue ?? "").trim().length > 0;
+
   return (
-    <label className="checkin-field">
+    <label className={`checkin-field ${className} ${isFilled ? "is-filled" : ""}`.trim()}>
       <span className="checkin-field__label">
         {label}
         {required ? <strong>Obrigatorio</strong> : <em>Opcional</em>}
       </span>
-      {children}
+      <span className="checkin-field__control">
+        {children}
+        {isFilled ? <span className="checkin-field__check" aria-hidden="true">✓</span> : null}
+      </span>
       {hint ? <small>{hint}</small> : null}
     </label>
   );
@@ -101,14 +214,17 @@ function Field({ label, required = false, hint, children }) {
 
 function Section({ eyebrow, title, description, children }) {
   return (
-    <section className="checkin-section glass-panel">
-      <div className="checkin-section__header">
-        <span>{eyebrow}</span>
-        <h2>{title}</h2>
-        {description ? <p>{description}</p> : null}
-      </div>
-      {children}
-    </section>
+    <details className="checkin-section checkins-collapsible glass-panel">
+      <summary className="checkins-collapsible__summary">
+        <span className="checkins-collapsible__icon">+</span>
+        <span>
+          <small>{eyebrow}</small>
+          <strong>{title}</strong>
+          {description ? <em>{description}</em> : null}
+        </span>
+      </summary>
+      <div className="checkins-collapsible__body">{children}</div>
+    </details>
   );
 }
 
@@ -133,6 +249,144 @@ function formatDateKey(dateKey) {
     month: "long",
     year: "numeric",
   });
+}
+
+function getCheckinDateKey(checkin) {
+  return (checkin?.createdAt || checkin?.date || "").slice(0, 10);
+}
+
+function getLatestCompletedCheckin(checkins, cadence) {
+  return [...(Array.isArray(checkins) ? checkins : [])]
+    .filter((item) => item.status !== "missed" && (!cadence || item.cadence === cadence))
+    .sort((a, b) => new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0))[0];
+}
+
+function addDaysToDateKey(dateKey, days) {
+  const date = parseDateKey(dateKey);
+  date.setDate(date.getDate() + days);
+  return toDateKey(date);
+}
+
+function hasValue(value) {
+  return String(value ?? "").trim().length > 0;
+}
+
+function countCompletedFields(data, fields) {
+  return fields.filter((field) => hasValue(data[field])).length;
+}
+
+function getRequiredFields(cadence) {
+  return requiredCheckinFieldsByCadence[cadence] || requiredCheckinFieldsByCadence.weekly;
+}
+
+function clampPercent(value) {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+
+  return Math.min(100, Math.max(0, Math.round(value)));
+}
+
+function parseStoredArray(key) {
+  try {
+    const raw = window.localStorage.getItem(key);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function getWeekWindow(dateKey) {
+  const selected = parseDateKey(dateKey);
+  const day = selected.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  const start = new Date(selected);
+  start.setDate(selected.getDate() + mondayOffset);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+
+  return { start, end };
+}
+
+function isWithinRange(value, start, end) {
+  const date = new Date(value);
+  return !Number.isNaN(date.getTime()) && date >= start && date <= end;
+}
+
+function getWeeklyOperationalSummary(dateKey, formData) {
+  const { start, end } = getWeekWindow(dateKey);
+  const plannedWorkouts = Number(formData.weeklyTrainingDays || 0);
+  const sessions = loadWorkoutSessionHistory().filter((session) =>
+    isWithinRange(session.createdAt || session.startedAt, start, end)
+  );
+  const workoutAdherence = plannedWorkouts
+    ? clampPercent((sessions.length / plannedWorkouts) * 100)
+    : 0;
+
+  const diet = loadDietProtocol();
+  const activeMeals = (diet.meals || []).filter((meal) => meal.enabled).length;
+  const mealCompletions = parseStoredArray("shapeCertoDietMealCompletions").filter((entry) =>
+    isWithinRange(entry.createdAt || entry.date, start, end)
+  );
+  const plannedMeals = activeMeals ? activeMeals * 7 : 0;
+  const dietAdherence = plannedMeals
+    ? clampPercent((mealCompletions.length / plannedMeals) * 100)
+    : 0;
+
+  return {
+    weekLabel: `${start.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} a ${end.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`,
+    plannedWorkouts,
+    completedWorkouts: sessions.length,
+    workoutAdherence,
+    activeMeals,
+    plannedMeals,
+    completedMeals: mealCompletions.length,
+    dietAdherence,
+    dietTrackingReady: mealCompletions.length > 0,
+  };
+}
+
+function getMonthlyOperationalSummary(dateKey, formData, checkins) {
+  const selected = parseDateKey(dateKey);
+  const start = new Date(selected.getFullYear(), selected.getMonth(), 1);
+  const end = new Date(selected.getFullYear(), selected.getMonth() + 1, 0, 23, 59, 59, 999);
+  const sessions = loadWorkoutSessionHistory().filter((session) =>
+    isWithinRange(session.createdAt || session.startedAt, start, end)
+  );
+  const plannedWorkouts = Number(formData.weeklyTrainingDays || 0) * 4;
+  const workoutAdherence = plannedWorkouts
+    ? clampPercent((sessions.length / plannedWorkouts) * 100)
+    : 0;
+  const monthCheckins = (Array.isArray(checkins) ? checkins : []).filter((item) =>
+    isWithinRange(item.createdAt, start, end)
+  );
+
+  const diet = loadDietProtocol();
+  const activeMeals = (diet.meals || []).filter((meal) => meal.enabled).length;
+  const mealCompletions = parseStoredArray("shapeCertoDietMealCompletions").filter((entry) =>
+    isWithinRange(entry.createdAt || entry.date, start, end)
+  );
+  const plannedMeals = activeMeals ? activeMeals * end.getDate() : 0;
+  const dietAdherence = plannedMeals
+    ? clampPercent((mealCompletions.length / plannedMeals) * 100)
+    : 0;
+
+  return {
+    monthLabel: selected.toLocaleDateString("pt-BR", { month: "long", year: "numeric" }),
+    plannedWorkouts,
+    completedWorkouts: sessions.length,
+    workoutAdherence,
+    registeredCheckins: monthCheckins.length,
+    completedCheckins: monthCheckins.filter((item) => item.status !== "missed").length,
+    plannedMeals,
+    completedMeals: mealCompletions.length,
+    dietAdherence,
+    dietTrackingReady: mealCompletions.length > 0,
+  };
 }
 
 function getCalendarDays(monthDate) {
@@ -249,16 +503,19 @@ function CheckinCalendar({
   const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 
   return (
-    <section className="checkins-calendar glass-panel">
+    <details className="checkins-calendar checkins-collapsible glass-panel" open>
+      <summary className="checkins-collapsible__summary">
+        <span className="checkins-collapsible__icon">+</span>
+        <span>
+          <small>Calendario</small>
+          <strong>Consultar ou lancar data retroativa</strong>
+          <em>Selecione um dia para ver registros anteriores ou salvar o proximo check-in nessa data.</em>
+        </span>
+        <mark>{formatDateKey(selectedDateKey)}</mark>
+      </summary>
+
+      <div className="checkins-collapsible__body">
       <div className="checkins-calendar__header">
-        <div>
-          <span>Calendario</span>
-          <h2>Consultar ou lancar data retroativa</h2>
-          <p>
-            Selecione um dia para ver registros anteriores ou salvar o proximo
-            check-in nessa data.
-          </p>
-        </div>
 
         <div className="checkins-calendar__controls">
           <button type="button" onClick={() => onChangeMonth(-1)}>
@@ -328,15 +585,17 @@ function CheckinCalendar({
           )}
         </aside>
       </div>
-    </section>
+      </div>
+    </details>
   );
 }
 
 function PhotoPoseCard({ slot, fileName, onChange }) {
   return (
-    <article className="photo-pose-card">
+    <article className={`photo-pose-card ${fileName ? "is-uploaded" : ""}`}>
       <div className={`photo-pose-card__silhouette photo-pose-card__silhouette--${slot.pose}`}>
         <StickmanPose pose={slot.pose} title={slot.title} />
+        {fileName ? <span className="photo-pose-card__check" aria-hidden="true">✓</span> : null}
       </div>
 
       <div className="photo-pose-card__content">
@@ -394,20 +653,41 @@ export default function CheckinsPage() {
   const [feedback, setFeedback] = useState("");
   const [syncStatus, setSyncStatus] = useState("");
   const [toast, setToast] = useState(null);
+  const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
+  const [pendingPayload, setPendingPayload] = useState(null);
 
-  const metrics = useMemo(() => getCheckinMetrics(checkins), [checkins]);
-  const cadenceSummary = useMemo(
-    () => getCheckinCadenceSummary(checkins).filter((item) => item.cadence === "weekly"),
-    [checkins]
+  const checkinSchedule = useMemo(() => {
+    const latestAny = getLatestCompletedCheckin(checkins);
+    const latestWeekly = getLatestCompletedCheckin(checkins, "weekly");
+    const latestMonthly = getLatestCompletedCheckin(checkins, "monthly");
+    const weeklyBase = getCheckinDateKey(latestWeekly) || selectedDateKey || todayKey;
+    const monthlyBase = getCheckinDateKey(latestMonthly) || selectedDateKey || todayKey;
+
+    return {
+      latestLabel: latestAny ? formatDateKey(getCheckinDateKey(latestAny)) : "Sem registro",
+      latestDetail: latestAny
+        ? checkinCadences[latestAny.cadence || "weekly"]?.label || "Check-in"
+        : "Primeiro registro pendente",
+      weeklyDateKey: addDaysToDateKey(weeklyBase, 7),
+      monthlyDateKey: addDaysToDateKey(monthlyBase, 30),
+    };
+  }, [checkins, selectedDateKey, todayKey]);
+  const requiredFields = getRequiredFields(activeCadence);
+  const selectedPhotoCount = Object.keys(photoUploads).length;
+  const progressFormData = {
+    ...formData,
+    photos: selectedPhotoCount ? Array.from({ length: selectedPhotoCount }, (_, index) => index) : [],
+  };
+  const requiredCompleted = countCompletedFields(progressFormData, requiredFields);
+  const optionalBioCompleted = countCompletedFields(formData, optionalBioimpedanceFields);
+  const requiredPercent = clampPercent((requiredCompleted / requiredFields.length) * 100);
+  const optionalBioPercent = clampPercent(
+    (optionalBioCompleted / optionalBioimpedanceFields.length) * 100
   );
-  const weeklyDataset = useMemo(() => getWeeklyAiDataset(checkins), [checkins]);
-  const reevaluation = useMemo(() => getMonthlyReevaluation(), [checkins]);
-  const completeness = useMemo(
-    () => calculateCheckinCompleteness(formData),
-    [formData]
+  const weeklyOperationalSummary = useMemo(
+    () => getWeeklyOperationalSummary(selectedDateKey, formData),
+    [selectedDateKey, formData.weeklyTrainingDays]
   );
-  const latestCheckin = checkins.find((item) => item.status !== "missed");
-  const intro = getCadenceIntro(activeCadence);
 
   function showToast(message, type = "success") {
     setToast({ message, type, id: Date.now() });
@@ -467,9 +747,7 @@ export default function CheckinsPage() {
     }));
   }
 
-  async function handleSubmit(event) {
-    event.preventDefault();
-
+  function buildCheckinPayload() {
     const selectedPhotos = photoPoseSlots
       .map((slot) => ({
         id: slot.id,
@@ -480,7 +758,29 @@ export default function CheckinsPage() {
       }))
       .filter((photo) => photo.selected);
 
-    const payload = { ...formData, cadence: activeCadence, photos: selectedPhotos };
+    const formDataForValidation = {
+      ...formData,
+      photos: selectedPhotos,
+    };
+    const payload = {
+      ...formDataForValidation,
+      cadence: activeCadence,
+      weeklyWorkoutsPlanned: String(weeklyOperationalSummary.plannedWorkouts || ""),
+      weeklyWorkoutsCompleted: String(weeklyOperationalSummary.completedWorkouts || ""),
+      workoutAdherence: weeklyOperationalSummary.plannedWorkouts
+        ? String(weeklyOperationalSummary.workoutAdherence)
+        : "",
+      dietMealsPlanned: String(weeklyOperationalSummary.plannedMeals || ""),
+      dietMealsCompleted: String(weeklyOperationalSummary.completedMeals || ""),
+      dietAdherence: weeklyOperationalSummary.dietTrackingReady
+        ? String(weeklyOperationalSummary.dietAdherence)
+        : "",
+    };
+
+    return payload;
+  }
+
+  async function savePreparedCheckin(payload) {
     const validation = validateCheckinForm(payload);
 
     if (!validation.isValid) {
@@ -510,6 +810,30 @@ export default function CheckinsPage() {
           ? "Salvo localmente. Entre com Supabase para sincronizar."
           : "Check-in salvo no Supabase."
     );
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    const payload = buildCheckinPayload();
+    const validation = validateCheckinForm(payload);
+
+    if (!validation.isValid) {
+      setFeedback(validation.message);
+      return;
+    }
+
+    setPendingPayload(payload);
+    setSaveConfirmOpen(true);
+  }
+
+  async function handleConfirmSave() {
+    if (!pendingPayload) {
+      return;
+    }
+
+    setSaveConfirmOpen(false);
+    await savePreparedCheckin(pendingPayload);
+    setPendingPayload(null);
   }
 
   async function handleMissedCheckin() {
@@ -566,11 +890,6 @@ export default function CheckinsPage() {
         type: file.type,
       },
     }));
-
-    setFormData((current) => ({
-      ...current,
-      photoNote: "Fotos de progresso selecionadas",
-    }));
   }
 
   function handleCalendarMonthChange(direction) {
@@ -586,6 +905,8 @@ export default function CheckinsPage() {
   const showDaily = activeCadence === "daily";
   const showWeekly = activeCadence === "weekly";
   const showMonthly = activeCadence === "monthly";
+  const showProtocolBase = showMonthly;
+  const showBodyComposition = showMonthly;
 
   return (
     <section className="checkins-page">
@@ -595,6 +916,49 @@ export default function CheckinsPage() {
           <button type="button" onClick={() => setToast(null)} aria-label="Fechar aviso">
             x
           </button>
+        </div>
+      ) : null}
+
+      {saveConfirmOpen ? (
+        <div className="checkins-modal" role="dialog" aria-modal="true" aria-labelledby="checkin-save-title">
+          <div className="checkins-modal__panel glass-panel">
+            <div className="checkins-modal__header">
+              <div>
+                <span>Confirmar data</span>
+                <h2 id="checkin-save-title">Salvar {checkinCadences[activeCadence].label.toLowerCase()}</h2>
+                <p>
+                  Escolha se este check-in entra em hoje ou em uma data retroativa.
+                  Data selecionada: <strong>{formatDateKey(selectedDateKey)}</strong>.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="checkins-modal__close"
+                onClick={() => setSaveConfirmOpen(false)}
+                aria-label="Fechar"
+              >
+                x
+              </button>
+            </div>
+
+            <CheckinCalendar
+              checkins={checkins}
+              selectedDateKey={selectedDateKey}
+              calendarMonth={calendarMonth}
+              onSelectDate={setSelectedDateKey}
+              onChangeMonth={handleCalendarMonthChange}
+              onToday={handleCalendarToday}
+            />
+
+            <div className="checkins-modal__actions">
+              <button type="button" className="ghost-button" onClick={() => setSaveConfirmOpen(false)}>
+                Cancelar
+              </button>
+              <button type="button" className="primary-button" onClick={handleConfirmSave}>
+                Confirmar e salvar
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
 
@@ -609,109 +973,152 @@ export default function CheckinsPage() {
         </div>
 
         <aside className="checkins-readiness">
-          <span>Qualidade do check-in atual</span>
-          <strong>{completeness}%</strong>
+          <span>Obrigatorios preenchidos</span>
+          <strong>{requiredPercent}%</strong>
           <div className="checkins-progress">
-            <span style={{ width: `${completeness}%` }} />
+            <span style={{ width: `${requiredPercent}%` }} />
           </div>
           <small>
-            Ausencias ficam registradas como gap. Elas explicam o historico, mas
-            nao entram como zero nas medias.
+            {requiredCompleted}/{requiredFields.length} campos obrigatorios.
+            {showMonthly
+              ? "Antropometria e bioimpedancia ficam editaveis e opcionais."
+              : "Semanal foca em aderencia, fotos e decisao sobre o protocolo."}
           </small>
         </aside>
       </header>
 
       <section className="checkins-selector glass-panel">
         <div className="checkins-selector__header">
-          <span>Registro semanal</span>
+          <span>Tipo de check-in</span>
           <h2>
-            Agora voce esta preenchendo apenas:{" "}
+            Voce esta preenchendo:{" "}
             <strong>{checkinCadences[activeCadence].label}</strong>
           </h2>
           <p>
-            O check-in manual fica concentrado no resumo semanal. O antigo
-            check-in diario foi substituido pela sessao de treino: ao finalizar
-            uma sessao, o app registra a execucao no historico e alimenta o
-            dashboard.
+            Escolha semanal para acompanhar aderencia e feedback rapido. Escolha mensal
+            para revisar medidas, bioimpedancia, fotos e o acumulado do mes.
           </p>
+        </div>
+        <div className="checkins-tabs checkins-tabs--compact" role="tablist" aria-label="Tipo de check-in">
+          {["weekly", "monthly"].map((cadence) => (
+            <button
+              key={cadence}
+              type="button"
+              className={`checkins-tab checkins-tab--${cadence} ${activeCadence === cadence ? "is-active" : ""}`}
+              onClick={() => handleCadenceChange(cadence)}
+              aria-pressed={activeCadence === cadence}
+            >
+              <span className="checkins-tab__icon">{cadence === "weekly" ? "S" : "M"}</span>
+              <span className="checkins-tab__content">
+                <strong>{checkinCadences[cadence].label}</strong>
+                <span>{checkinCadences[cadence].description}</span>
+                <em>{cadence === "weekly" ? "Aderencia e feedback" : "Dados completos do mes"}</em>
+              </span>
+              <span className="checkins-tab__state">
+                {activeCadence === cadence ? "Selecionado" : "Selecionar"}
+              </span>
+            </button>
+          ))}
+        </div>
+        <div className="checkins-progress-stack">
+          <div className="checkins-progress-row">
+            <div>
+              <strong>Obrigatorios</strong>
+              <span>{requiredCompleted}/{requiredFields.length}</span>
+            </div>
+            <div className="checkins-progress">
+              <span style={{ width: `${requiredPercent}%` }} />
+            </div>
+          </div>
+          <div className="checkins-progress-row checkins-progress-row--optional">
+            <div>
+              <strong>Opcionais de bioimpedancia</strong>
+              <span>{optionalBioCompleted}/{optionalBioimpedanceFields.length}</span>
+            </div>
+            <div className="checkins-progress">
+              <span style={{ width: `${optionalBioPercent}%` }} />
+            </div>
+          </div>
+        </div>
+        <div className="checkins-schedule-grid" aria-label="Datas dos check-ins">
+          <article>
+            <span>Ultimo check-in</span>
+            <strong>{checkinSchedule.latestLabel}</strong>
+            <small>{checkinSchedule.latestDetail}</small>
+          </article>
+          <article>
+            <span>Reavaliacao semanal</span>
+            <strong>{formatDateKey(checkinSchedule.weeklyDateKey)}</strong>
+            <small>Proximo fechamento semanal previsto</small>
+          </article>
+          <article>
+            <span>Reavaliacao mensal</span>
+            <strong>{formatDateKey(checkinSchedule.monthlyDateKey)}</strong>
+            <small>Proxima revisao completa prevista</small>
+          </article>
+          <article>
+            <span>Data selecionada</span>
+            <strong>{formatDateKey(selectedDateKey)}</strong>
+            <small>Usada para salvar hoje ou retroativo</small>
+          </article>
         </div>
       </section>
 
       {feedback ? <p className="checkins-feedback">{feedback}</p> : null}
       {syncStatus ? <p className="checkins-sync-status">{syncStatus}</p> : null}
 
-      <section className="checkins-metrics">
-        {metrics.map((item) => (
-          <article key={item.label} className="module-stat glass-panel">
-            <span className="module-stat__label">{item.label}</span>
-            <strong className="module-stat__value">{item.value}</strong>
-            <span className="module-stat__helper">{item.trend}</span>
-          </article>
-        ))}
-      </section>
-
-      <section className="checkins-cadence-summary">
-        {cadenceSummary.map((item) => (
-          <article key={item.cadence} className="glass-panel">
-            <div>
-              <span>{item.label}</span>
-              <strong>
-                {item.completed}/{item.total}
-              </strong>
-            </div>
-            <p>{item.missed} ausencia(s) registradas</p>
-            <small>
-              Energia {item.energyAverage} | Sono {item.sleepAverage}h |
-              Aderencia {item.adherenceAverage}%
-            </small>
-          </article>
-        ))}
-      </section>
-
-      <CheckinCalendar
-        checkins={checkins}
-        selectedDateKey={selectedDateKey}
-        calendarMonth={calendarMonth}
-        onSelectDate={setSelectedDateKey}
-        onChangeMonth={handleCalendarMonthChange}
-        onToday={handleCalendarToday}
-      />
-
       <form className="checkins-form" onSubmit={handleSubmit}>
         <div className="checkins-form__main">
-          <Section eyebrow="01" title={intro.title} description={intro.description}>
-            <div className="checkins-mode-note">
-              <strong>Regra da IA</strong>
-              <p>
-                Usar somente dados informados. Check-ins nao realizados ficam no
-                historico, mas sao ignorados nas medias e tendencias.
-              </p>
-            </div>
-          </Section>
+          <CheckinCalendar
+            checkins={checkins}
+            selectedDateKey={selectedDateKey}
+            calendarMonth={calendarMonth}
+            onSelectDate={setSelectedDateKey}
+            onChangeMonth={handleCalendarMonthChange}
+            onToday={handleCalendarToday}
+          />
 
-          {showMonthly ? (
+          {showProtocolBase ? (
             <Section
               eyebrow="02"
-              title="Objetivo e base mensal"
-              description="Esses dados definem o ciclo principal do usuario."
+              title={showMonthly ? "Dados gerais do ciclo" : "Dados basicos do check-in semanal"}
+              description={
+                showMonthly
+                  ? "Base editavel para o ciclo mensal. Apenas altura e peso travam o envio."
+                  : "Semanal fica enxuto: altura, peso, aderencia e feedback sobre o protocolo."
+              }
             >
               <div className="checkins-grid checkins-grid--two">
-                <Field label="Objetivo principal" required>
-                  <select name="goal" value={formData.goal} onChange={handleChange}>
-                    {goalOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
+                {showMonthly ? (
+                <Field label="Idade">
+                  <input
+                    name="age"
+                    value={formData.age}
+                    onChange={handleChange}
+                    inputMode="numeric"
+                    placeholder="Ex.: 29"
+                  />
+                </Field>
+                ) : null}
+
+                {showMonthly ? (
+                <Field label="Sexo biologico">
+                  <select name="sex" value={formData.sex} onChange={handleChange}>
+                    <option value="">Selecione</option>
+                    <option value="feminino">Feminino</option>
+                    <option value="masculino">Masculino</option>
+                    <option value="outro">Outro / prefiro nao informar</option>
                   </select>
                 </Field>
+                ) : null}
 
-                <Field label="Esporte especifico">
+                <Field label="Altura" required>
                   <input
-                    name="sport"
-                    value={formData.sport}
+                    name="height"
+                    value={formData.height}
                     onChange={handleChange}
-                    placeholder="Ex.: corrida de 10 km"
+                    inputMode="decimal"
+                    placeholder="Ex.: 178 cm"
                   />
                 </Field>
 
@@ -725,50 +1132,265 @@ export default function CheckinsPage() {
                   />
                 </Field>
 
-                <Field label="Altura" required>
-                  <input
-                    name="height"
-                    value={formData.height}
-                    onChange={handleChange}
-                    inputMode="decimal"
-                    placeholder="Ex.: 1.78 m"
-                  />
-                </Field>
-
-                <Field label="Sexo biologico">
-                  <select name="sex" value={formData.sex} onChange={handleChange}>
-                    <option value="">Selecione</option>
-                    <option value="feminino">Feminino</option>
-                    <option value="masculino">Masculino</option>
-                    <option value="outro">Outro / prefiro nao informar</option>
+                {showMonthly ? (
+                <Field label="Objetivo principal">
+                  <select name="goal" value={formData.goal} onChange={handleChange}>
+                    {goalOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
                 </Field>
+                ) : null}
 
-                <Field label="Idade">
+                {showMonthly ? (
+                <Field label="Esporte especifico">
                   <input
-                    name="age"
-                    value={formData.age}
+                    name="sport"
+                    value={formData.sport}
                     onChange={handleChange}
-                    inputMode="numeric"
-                    placeholder="Ex.: 32"
+                    placeholder="Ex.: corrida de 10 km"
                   />
+                </Field>
+                ) : null}
+
+                {showMonthly ? (
+                <Field label="Nivel de energia">
+                  <select name="energy" value={formData.energy} onChange={handleChange}>
+                    <option value="">Selecione</option>
+                    {Array.from({ length: 10 }, (_, index) => String(index + 1)).map((value) => (
+                      <option key={value} value={value}>
+                        {value}/10
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                ) : null}
+
+                {showMonthly ? (
+                <Field label="Sono medio">
+                  <input
+                    name="sleep"
+                    value={formData.sleep}
+                    onChange={handleChange}
+                    inputMode="decimal"
+                    placeholder="Ex.: 7.2 h"
+                  />
+                </Field>
+                ) : null}
+
+                {showMonthly ? (
+                <Field label="Nivel de treino">
+                  <select
+                    name="trainingExperience"
+                    value={formData.trainingExperience}
+                    onChange={handleChange}
+                  >
+                    {experienceOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                ) : null}
+
+                {showMonthly ? (
+                <Field label="Frequencia semanal disponivel">
+                  <select
+                    name="weeklyTrainingDays"
+                    value={formData.weeklyTrainingDays}
+                    onChange={handleChange}
+                  >
+                    <option value="">Selecione</option>
+                    {weeklyTrainingDayOptions.map((value) => (
+                      <option key={value} value={value}>
+                        {value} dia{value === "1" ? "" : "s"} por semana
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                ) : null}
+
+                {showMonthly ? (
+                <Field label="Tempo disponivel por treino">
+                  <select
+                    name="availableMinutes"
+                    value={formData.availableMinutes}
+                    onChange={handleChange}
+                  >
+                    {availableTrainingTimeOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                ) : null}
+
+                {showMonthly ? (
+                <Field label="Tempo de treino">
+                  <select
+                    name="trainingAge"
+                    value={formData.trainingAge}
+                    onChange={handleChange}
+                  >
+                    {trainingAgeOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                ) : null}
+
+                {showMonthly ? (
+                <Field label="Refeicoes por dia">
+                  <input
+                    name="mealsPerDay"
+                    value={formData.mealsPerDay}
+                    onChange={handleChange}
+                    placeholder="Ex.: 4"
+                  />
+                </Field>
+                ) : null}
+
+                {showMonthly ? (
+                <Field label="Turno usual do treino">
+                  <select
+                    name="trainingShift"
+                    value={formData.trainingShift}
+                    onChange={handleChange}
+                  >
+                    <option value="">Selecione</option>
+                    <option value="manha">Manha</option>
+                    <option value="tarde">Tarde</option>
+                    <option value="noite">Noite</option>
+                    <option value="variavel">Variavel</option>
+                  </select>
+                </Field>
+                ) : null}
+
+                {showMonthly ? (
+                <Field label="Restricoes alimentares">
+                  <input
+                    name="dietaryRestrictions"
+                    value={formData.dietaryRestrictions}
+                    onChange={handleChange}
+                    placeholder="Ex.: lactose, gluten, vegetariano"
+                  />
+                </Field>
+                ) : null}
+
+                {showMonthly ? (
+                <Field label="Lesoes ou limitacoes fisicas" className="checkin-field--full">
+                  <textarea
+                    name="injuries"
+                    value={formData.injuries}
+                    onChange={handleChange}
+                    placeholder="Ex.: estresse leve no joelho direito ao agachar, dor lombar em terra pesado."
+                  />
+                </Field>
+                ) : null}
+
+                {showMonthly ? (
+                <Field label="Experiencia previa com treino" className="checkin-field--full">
+                  <textarea
+                    name="trainingBackground"
+                    value={formData.trainingBackground}
+                    onChange={handleChange}
+                    placeholder="Ex.: musculacao desde 2020, ja fez crossfit por 1 ano, pouca experiencia com agachamento livre."
+                  />
+                </Field>
+                ) : null}
+              </div>
+            </Section>
+          ) : null}
+
+          {showBodyComposition ? (
+            <Section
+              eyebrow="03"
+              title="Antropometria editavel"
+              description="Medidas do mes para comparar evolucao. Todos os campos desta area sao opcionais."
+            >
+              <div className="checkins-grid checkins-grid--two">
+                <Field label="Cintura">
+                  <input name="waist" value={formData.waist} onChange={handleChange} placeholder="Ex.: 84 cm" />
+                </Field>
+                <Field label="Abdomen">
+                  <input name="abdomen" value={formData.abdomen} onChange={handleChange} placeholder="Ex.: 87 cm" />
+                </Field>
+                <Field label="Quadril">
+                  <input name="hip" value={formData.hip} onChange={handleChange} placeholder="Ex.: 98 cm" />
+                </Field>
+                <Field label="Peito">
+                  <input name="chestMeasure" value={formData.chestMeasure} onChange={handleChange} placeholder="Ex.: 104 cm" />
+                </Field>
+                <Field label="Braco relaxado direito">
+                  <input name="rightArmMeasure" value={formData.rightArmMeasure} onChange={handleChange} placeholder="Ex.: 37 cm" />
+                </Field>
+                <Field label="Braco relaxado esquerdo">
+                  <input name="leftArmMeasure" value={formData.leftArmMeasure} onChange={handleChange} placeholder="Ex.: 36.5 cm" />
+                </Field>
+                <Field label="Braco contraido direito">
+                  <input name="rightFlexedArmMeasure" value={formData.rightFlexedArmMeasure} onChange={handleChange} placeholder="Ex.: 40 cm" />
+                </Field>
+                <Field label="Braco contraido esquerdo">
+                  <input name="leftFlexedArmMeasure" value={formData.leftFlexedArmMeasure} onChange={handleChange} placeholder="Ex.: 39.5 cm" />
+                </Field>
+                <Field label="Coxa direita">
+                  <input name="rightThighMeasure" value={formData.rightThighMeasure} onChange={handleChange} placeholder="Ex.: 60 cm" />
+                </Field>
+                <Field label="Coxa esquerda">
+                  <input name="leftThighMeasure" value={formData.leftThighMeasure} onChange={handleChange} placeholder="Ex.: 59.5 cm" />
+                </Field>
+                <Field label="Panturrilha direita">
+                  <input name="rightCalfMeasure" value={formData.rightCalfMeasure} onChange={handleChange} placeholder="Ex.: 39 cm" />
+                </Field>
+                <Field label="Panturrilha esquerda">
+                  <input name="leftCalfMeasure" value={formData.leftCalfMeasure} onChange={handleChange} placeholder="Ex.: 38.5 cm" />
+                </Field>
+                <Field label="% gordura corporal estimada">
+                  <input name="bodyFat" value={formData.bodyFat} onChange={handleChange} placeholder="Ex.: 14.2%" />
+                </Field>
+                <Field label="Massa magra estimada">
+                  <input name="leanMass" value={formData.leanMass} onChange={handleChange} placeholder="Ex.: 72.6 kg" />
                 </Field>
               </div>
             </Section>
           ) : null}
 
-          {showMonthly ? (
+          {showBodyComposition ? (
             <Section
-              eyebrow="03"
-              title="Bioimpedancia e medidas"
-              description="Quanto mais dados corporais, melhor a leitura de calorias, macros e volume de treino."
+              eyebrow="04"
+              title="Bioimpedancia opcional"
+              description="Dados da balanca InBody, Tanita ou similar. Quanto mais completo, melhor a analise."
             >
               <div className="checkins-grid checkins-grid--three">
-                <Field label="Gordura corporal">
-                  <input name="bodyFat" value={formData.bodyFat} onChange={handleChange} placeholder="Ex.: 18%" />
+                <Field label="Peso corporal total">
+                  <input name="totalBodyWeight" value={formData.totalBodyWeight} onChange={handleChange} placeholder="Ex.: 84.6 kg" />
                 </Field>
-                <Field label="Massa magra">
-                  <input name="leanMass" value={formData.leanMass} onChange={handleChange} placeholder="Ex.: 62 kg" />
+                <Field label="% gordura bioimp.">
+                  <input name="bioimpedanceBodyFat" value={formData.bioimpedanceBodyFat} onChange={handleChange} placeholder="Ex.: 14.2%" />
+                </Field>
+                <Field label="Massa muscular esqueletica">
+                  <input name="skeletalMuscleMass" value={formData.skeletalMuscleMass} onChange={handleChange} placeholder="Ex.: 38 kg" />
+                </Field>
+                <Field label="Agua corporal total">
+                  <input name="totalBodyWater" value={formData.totalBodyWater} onChange={handleChange} placeholder="Ex.: 57%" />
+                </Field>
+                <Field label="Massa ossea">
+                  <input name="boneMass" value={formData.boneMass} onChange={handleChange} placeholder="Ex.: 3.4 kg" />
+                </Field>
+                <Field label="Taxa metabolica basal">
+                  <input name="basalMetabolicRate" value={formData.basalMetabolicRate} onChange={handleChange} placeholder="Ex.: 1840 kcal" />
+                </Field>
+                <Field label="Idade metabolica">
+                  <input name="metabolicAge" value={formData.metabolicAge} onChange={handleChange} placeholder="Ex.: 31 anos" />
+                </Field>
+                <Field label="IMC">
+                  <input name="bmi" value={formData.bmi} onChange={handleChange} placeholder="Ex.: 26.7" />
                 </Field>
                 <Field label="Massa gorda">
                   <input name="fatMass" value={formData.fatMass} onChange={handleChange} placeholder="Ex.: 15 kg" />
@@ -806,29 +1428,8 @@ export default function CheckinsPage() {
                 <Field label="Gordura tronco">
                   <input name="trunkFat" value={formData.trunkFat} onChange={handleChange} placeholder="Ex.: 22%" />
                 </Field>
-                <Field label="Braço direito">
-                  <input name="rightArmMeasure" value={formData.rightArmMeasure} onChange={handleChange} placeholder="Ex.: 38 cm" />
-                </Field>
-                <Field label="Braço esquerdo">
-                  <input name="leftArmMeasure" value={formData.leftArmMeasure} onChange={handleChange} placeholder="Ex.: 37.5 cm" />
-                </Field>
-                <Field label="Coxa direita">
-                  <input name="rightThighMeasure" value={formData.rightThighMeasure} onChange={handleChange} placeholder="Ex.: 61 cm" />
-                </Field>
-                <Field label="Coxa esquerda">
-                  <input name="leftThighMeasure" value={formData.leftThighMeasure} onChange={handleChange} placeholder="Ex.: 60 cm" />
-                </Field>
                 <Field label="Gordura visceral">
                   <input name="visceralFat" value={formData.visceralFat} onChange={handleChange} placeholder="Ex.: 8" />
-                </Field>
-                <Field label="Cintura">
-                  <input name="waist" value={formData.waist} onChange={handleChange} placeholder="Ex.: 86 cm" />
-                </Field>
-                <Field label="Abdomen">
-                  <input name="abdomen" value={formData.abdomen} onChange={handleChange} placeholder="Ex.: 92 cm" />
-                </Field>
-                <Field label="Quadril">
-                  <input name="hip" value={formData.hip} onChange={handleChange} placeholder="Ex.: 101 cm" />
                 </Field>
                 <Field label="Frequencia cardiaca repouso">
                   <input name="restingHeartRate" value={formData.restingHeartRate} onChange={handleChange} placeholder="Ex.: 62 bpm" />
@@ -837,195 +1438,37 @@ export default function CheckinsPage() {
             </Section>
           ) : null}
 
-          {showMonthly ? (
-            <Section
-              eyebrow="04"
-              title="Disponibilidade para treino"
-              description="Esses dados orientam se a IA deve montar ABC, ABCD ou outra divisao."
-            >
-              <div className="checkins-grid checkins-grid--two">
-                <Field label="Experiencia de treino">
-                  <select
-                    name="trainingExperience"
-                    value={formData.trainingExperience}
-                    onChange={handleChange}
-                  >
-                    {experienceOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-
-                <Field label="Dias treinados / disponiveis">
-                  <select
-                    name="weeklyTrainingDays"
-                    value={formData.weeklyTrainingDays}
-                    onChange={handleChange}
-                  >
-                    <option value="">Selecione</option>
-                    {weeklyTrainingDayOptions.map((value) => (
-                      <option key={value} value={value}>
-                        {value} dia{value === "1" ? "" : "s"} por semana
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-
-                <Field label="Turno usual do treino">
-                  <select
-                    name="trainingShift"
-                    value={formData.trainingShift}
-                    onChange={handleChange}
-                  >
-                    <option value="">Selecione</option>
-                    <option value="manha">Manha</option>
-                    <option value="tarde">Tarde</option>
-                    <option value="noite">Noite</option>
-                    <option value="variavel">Variavel</option>
-                  </select>
-                </Field>
-
-                <Field label="Tempo por treino">
-                  <input
-                    name="availableMinutes"
-                    value={formData.availableMinutes}
-                    onChange={handleChange}
-                    placeholder="Ex.: 60 min"
-                  />
-                </Field>
-
-                <Field label="Refeicoes por dia">
-                  <input
-                    name="mealsPerDay"
-                    value={formData.mealsPerDay}
-                    onChange={handleChange}
-                    placeholder="Ex.: 4"
-                  />
-                </Field>
-
-                <Field label="Restricoes alimentares">
-                  <input
-                    name="dietaryRestrictions"
-                    value={formData.dietaryRestrictions}
-                    onChange={handleChange}
-                    placeholder="Ex.: lactose, gluten, vegetariano"
-                  />
-                </Field>
-
-                <Field label="Preferencias alimentares">
-                  <input
-                    name="foodPreferences"
-                    value={formData.foodPreferences}
-                    onChange={handleChange}
-                    placeholder="Ex.: arroz, ovos, frango, frutas"
-                  />
-                </Field>
-
-                <Field label="Lesoes ou limitacoes">
-                  <input
-                    name="injuries"
-                    value={formData.injuries}
-                    onChange={handleChange}
-                    placeholder="Ex.: lombar, joelho, ombro"
-                  />
-                </Field>
-              </div>
-            </Section>
-          ) : null}
-
-          {showWeekly ? (
-            <Section
-              eyebrow="02"
-              title="Resumo semanal do treino"
-              description="Feche a semana sem alterar os dados fixos do ciclo mensal."
-            >
-              <div className="checkins-grid checkins-grid--two">
-                <Field label="Dias treinados nesta semana">
-                  <select
-                    name="weeklyTrainingDays"
-                    value={formData.weeklyTrainingDays}
-                    onChange={handleChange}
-                  >
-                    <option value="">Selecione</option>
-                    {weeklyTrainingDayOptions.map((value) => (
-                      <option key={value} value={value}>
-                        {value} dia{value === "1" ? "" : "s"}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-
-                <Field label="Performance geral">
-                  <select
-                    name="trainingPerformance"
-                    value={formData.trainingPerformance}
-                    onChange={handleChange}
-                  >
-                    <option value="">Selecione</option>
-                    <option value="abaixo">Abaixo do esperado</option>
-                    <option value="normal">Normal</option>
-                    <option value="acima">Acima do esperado</option>
-                  </select>
-                </Field>
-              </div>
-            </Section>
-          ) : null}
-
           <Section
-            eyebrow={showDaily ? "02" : showWeekly ? "03" : "05"}
-            title={showDaily ? "Sinais do dia" : "Sinais da semana"}
+            eyebrow="06"
+            title={showMonthly ? "Check-in mensal" : "Check-in semanal"}
             description={
-              showDaily
-                ? "Sono, energia e aderencia de hoje alimentam a tendencia semanal."
-                : "Fechamento semanal para analisar ajustes sem regenerar plano automaticamente."
+              showMonthly
+                ? "Preencha altura, peso, sinais, fotos e feedback do mes antes de salvar."
+                : "Preencha altura, peso, aderencia percebida, fotos e feedback da semana."
             }
           >
             <div className="checkins-grid checkins-grid--three">
-              {showWeekly ? (
-                <Field label="Peso da semana">
-                  <input
-                    name="weight"
-                    value={formData.weight}
-                    onChange={handleChange}
-                    inputMode="decimal"
-                    placeholder="Ex.: 84.1 kg"
-                  />
-                </Field>
-              ) : null}
-
-              <Field label="Energia" required={showMonthly}>
-                <select name="energy" value={formData.energy} onChange={handleChange}>
-                  {Array.from({ length: 10 }, (_, index) => String(index + 1)).map((value) => (
-                    <option key={value} value={value}>
-                      {value}/10
-                    </option>
-                  ))}
-                </select>
-              </Field>
-
-              <Field label={showDaily ? "Sono de hoje" : "Sono medio"} required={showMonthly}>
+              <Field label="Altura" required>
                 <input
-                  name="sleep"
-                  value={formData.sleep}
+                  name="height"
+                  value={formData.height}
                   onChange={handleChange}
                   inputMode="decimal"
-                  placeholder="Ex.: 7.5 h"
+                  placeholder="Ex.: 178 cm"
                 />
               </Field>
 
-              <Field label="Aderencia ao plano" required={showMonthly}>
-                <select name="adherence" value={formData.adherence} onChange={handleChange}>
-                  {["50", "60", "70", "80", "85", "90", "95", "100"].map((value) => (
-                    <option key={value} value={value}>
-                      {value}%
-                    </option>
-                  ))}
-                </select>
+              <Field label="Peso atual" required>
+                <input
+                  name="weight"
+                  value={formData.weight}
+                  onChange={handleChange}
+                  inputMode="decimal"
+                  placeholder="Ex.: 84.6 kg"
+                />
               </Field>
 
-              <Field label="Fome">
+              <Field label="Fome" required>
                 <select name="hunger" value={formData.hunger} onChange={handleChange}>
                   <option value="">Selecione</option>
                   <option value="baixa">Baixa</option>
@@ -1034,7 +1477,7 @@ export default function CheckinsPage() {
                 </select>
               </Field>
 
-              <Field label="Estresse">
+              <Field label="Estresse" required>
                 <select name="stress" value={formData.stress} onChange={handleChange}>
                   <option value="">Selecione</option>
                   <option value="baixo">Baixo</option>
@@ -1043,7 +1486,7 @@ export default function CheckinsPage() {
                 </select>
               </Field>
 
-              <Field label="Digestao">
+              <Field label="Digestao" required>
                 <select name="digestion" value={formData.digestion} onChange={handleChange}>
                   <option value="">Selecione</option>
                   <option value="boa">Boa</option>
@@ -1052,7 +1495,28 @@ export default function CheckinsPage() {
                 </select>
               </Field>
 
-              <Field label="Performance no treino">
+              <Field label="Qualidade do sono" required>
+                <select name="sleepQuality" value={formData.sleepQuality} onChange={handleChange}>
+                  {sleepQualityOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="Nivel de fadiga" required>
+                <select name="fatigueLevel" value={formData.fatigueLevel} onChange={handleChange}>
+                  <option value="">Selecione</option>
+                  {Array.from({ length: 10 }, (_, index) => String(index + 1)).map((value) => (
+                    <option key={value} value={value}>
+                      {value}/10
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="Performance no treino" required>
                 <select
                   name="trainingPerformance"
                   value={formData.trainingPerformance}
@@ -1065,13 +1529,15 @@ export default function CheckinsPage() {
                 </select>
               </Field>
 
-              <Field label="Fotos">
-                <input
-                  name="photoNote"
-                  value={formData.photoNote}
-                  onChange={handleChange}
-                  placeholder="Ex.: frontal e lateral enviadas"
-                />
+              <Field
+                label="Variacao da dieta"
+                hint="Baixa variacao usa menos ingredientes e pratos ao longo da semana. Alta variacao permite mais diversidade entre alimentos e refeicoes."
+              >
+                <select name="dietVariety" value={formData.dietVariety} onChange={handleChange}>
+                  <option value="baixa">Pequena variacao</option>
+                  <option value="media">Media variacao</option>
+                  <option value="alta">Alta variacao</option>
+                </select>
               </Field>
             </div>
 
@@ -1079,6 +1545,7 @@ export default function CheckinsPage() {
               <div className="checkins-grid checkins-grid--two">
                 <Field
                   label="Acao sobre protocolo"
+                  required
                   hint="Sinaliza necessidade, mas nao gera dieta ou treino automaticamente."
                 >
                   <select
@@ -1094,7 +1561,7 @@ export default function CheckinsPage() {
               </div>
             ) : null}
 
-            <Field label="Observacoes gerais">
+            <Field label="Feedback da semana" required>
               <textarea
                 name="notes"
                 value={formData.notes}
@@ -1106,14 +1573,14 @@ export default function CheckinsPage() {
             <div className="photo-checkin-panel">
               <div className="photo-checkin-panel__header">
                 <div>
-                  <h3>Fotos de progresso</h3>
+                  <h3>Fotos de progresso obrigatorias</h3>
                   <p>
                     Envie ate cinco fotos de corpo inteiro seguindo as poses
                     marcadas. Use o mesmo local, luz e distancia sempre que
                     possivel.
                   </p>
                 </div>
-                <span>{Object.keys(photoUploads).length}/5 fotos</span>
+                <span>{selectedPhotoCount}/5 fotos</span>
               </div>
 
               <div className="photo-pose-grid">
@@ -1127,75 +1594,35 @@ export default function CheckinsPage() {
                 ))}
               </div>
             </div>
+
+            <div className="checkins-inline-actions">
+              <div>
+                <strong>Salvar em {formatDateKey(selectedDateKey)}</strong>
+                <span>Ao salvar, voce pode confirmar hoje ou escolher uma data retroativa.</span>
+              </div>
+              <button type="submit" className="primary-button">
+                Salvar check-in
+              </button>
+              <button type="button" className="ghost-button" onClick={handleReset}>
+                Reiniciar check-in
+              </button>
+            </div>
           </Section>
         </div>
-
-        <aside className="checkins-sidebar">
-          <article className="checkins-actions glass-panel">
-            <h2>Registrar {checkinCadences[activeCadence].label.toLowerCase()}</h2>
-            <p>
-              Salvar registra dados reais em {formatDateKey(selectedDateKey)}.
-              Marcar como nao realizado preserva o gap sem distorcer medias.
-            </p>
-            <button type="submit" className="primary-button">
-              Salvar check-in
-            </button>
-            <button type="button" className="secondary-button" onClick={handleMissedCheckin}>
-              Marcar como nao realizado
-            </button>
-            <button type="button" className="ghost-button" onClick={handleReset}>
-              Resetar historico
-            </button>
-          </article>
-
-          <article className="checkins-actions glass-panel">
-            <h2>Base semanal da IA</h2>
-            <div className="checkins-payload">
-              <span>Entradas usadas: {weeklyDataset.usableEntries}</span>
-              <span>Gaps ignorados: {weeklyDataset.ignoredGaps}</span>
-              <span>Energia media: {weeklyDataset.averages.energy}</span>
-              <span>Sono medio: {weeklyDataset.averages.sleep}h</span>
-              <span>Aderencia media: {weeklyDataset.averages.adherence}%</span>
-            </div>
-          </article>
-
-          <article className="checkins-actions glass-panel">
-            <h2>Reavaliacao mensal</h2>
-            <span
-              className={`checkins-status checkins-status--${
-                reevaluation.reevaluationNeeded ? "warning" : "success"
-              }`}
-            >
-              {reevaluation.reevaluationNeeded ? "Atencao" : "Em dia"}
-            </span>
-            <p>{reevaluation.training.cycle.detail}</p>
-            <p>{reevaluation.diet.cycle.detail}</p>
-          </article>
-
-          <article className="checkins-actions glass-panel">
-            <h2>Ultimo payload valido</h2>
-            {latestCheckin ? (
-              <div className="checkins-payload">
-                <span>Tipo: {checkinCadences[latestCheckin.cadence || "monthly"].label}</span>
-                <span>Objetivo: {latestCheckin.goal || "--"}</span>
-                <span>Prontidao IA: {latestCheckin.aiContext?.readiness || "basica"}</span>
-                <span>Completude: {latestCheckin.completeness ?? "--"}%</span>
-              </div>
-            ) : (
-              <p>Nenhum check-in realizado ainda.</p>
-            )}
-          </article>
-        </aside>
       </form>
 
-      <section className="checkins-history glass-panel">
-        <div className="checkins-history__header">
-          <div>
-            <span>Historico</span>
-            <h2>Check-ins registrados</h2>
-          </div>
-          <strong>{checkins.length}</strong>
-        </div>
+      <details className="checkins-history checkins-collapsible glass-panel">
+        <summary className="checkins-collapsible__summary">
+          <span className="checkins-collapsible__icon">+</span>
+          <span>
+            <small>Historico</small>
+            <strong>Check-ins registrados</strong>
+            <em>Linha do tempo de realizados, gaps e payloads salvos.</em>
+          </span>
+          <mark>{checkins.length}</mark>
+        </summary>
+
+        <div className="checkins-collapsible__body">
 
         {checkins.length === 0 ? (
           <p className="checkins-empty">
@@ -1263,7 +1690,8 @@ export default function CheckinsPage() {
             })}
           </div>
         )}
-      </section>
+        </div>
+      </details>
     </section>
   );
 }

@@ -7,6 +7,7 @@ import {
   closeDietProtocol,
   resetDietState,
   getDietMetrics,
+  dietDays,
 } from "../../data/dietStorage";
 import "./diet.css";
 
@@ -14,8 +15,16 @@ function DietPage() {
   const [diet, setDiet] = useState(() => loadDietProtocol());
   const [history, setHistory] = useState(() => loadDietHistory());
   const [feedback, setFeedback] = useState("");
+  const [selectedDayId, setSelectedDayId] = useState("segunda");
 
   const metrics = useMemo(() => getDietMetrics(diet, history), [diet, history]);
+  const selectedDayPlan =
+    diet.dayPlans?.find((day) => day.id === selectedDayId) || diet.dayPlans?.[0] || {
+      id: "segunda",
+      name: "Segunda",
+      meals: diet.meals || [],
+    };
+  const activeDayMeals = selectedDayPlan.meals.filter((meal) => meal.enabled).length;
 
   function updateDietField(field, value) {
     setDiet((current) => ({
@@ -24,16 +33,40 @@ function DietPage() {
     }));
   }
 
-  function updateMealField(index, field, value) {
+  function updateMealField(dayId, mealId, field, value) {
     setDiet((current) => ({
       ...current,
-      meals: current.meals.map((meal, mealIndex) =>
-        mealIndex === index
+      dayPlans: (current.dayPlans || []).map((day) =>
+        day.id === dayId
           ? {
-              ...meal,
-              [field]: value,
+              ...day,
+              meals: (day.meals || []).map((meal) =>
+                meal.id === mealId
+                  ? {
+                      ...meal,
+                      [field]: value,
+                      ...(field === "description" ? { foods: value } : {}),
+                    }
+                  : meal
+              ),
             }
-          : meal
+          : day
+      ),
+    }));
+  }
+
+  function toggleMeal(dayId, mealId) {
+    setDiet((current) => ({
+      ...current,
+      dayPlans: (current.dayPlans || []).map((day) =>
+        day.id === dayId
+          ? {
+              ...day,
+              meals: (day.meals || []).map((meal) =>
+                meal.id === mealId ? { ...meal, enabled: !meal.enabled } : meal
+              ),
+            }
+          : day
       ),
     }));
   }
@@ -219,8 +252,43 @@ function DietPage() {
       </section>
 
       <section className="diet-meals-grid">
-        {diet.meals.map((meal, index) => (
-          <article key={meal.id} className="glass-card card-padding">
+        <article className="glass-card card-padding diet-day-panel">
+          <div className="card-header">
+            <div>
+              <h3 className="card-title">Protocolo por dia da semana</h3>
+              <p className="card-subtitle">
+                Cada dia pode ter refeicoes e ingredientes diferentes conforme a variacao definida no check-in.
+              </p>
+            </div>
+            <span className="badge badge-primary">{activeDayMeals} ativas</span>
+          </div>
+
+          <div className="diet-day-tabs" role="tablist" aria-label="Dias da dieta">
+            {dietDays.map((day) => {
+              const dayPlan = diet.dayPlans?.find((item) => item.id === day.id);
+              const enabledMeals = (dayPlan?.meals || []).filter((meal) => meal.enabled).length;
+
+              return (
+                <button
+                  key={day.id}
+                  type="button"
+                  className={selectedDayId === day.id ? "is-selected" : ""}
+                  onClick={() => setSelectedDayId(day.id)}
+                >
+                  <strong>{day.short}</strong>
+                  <span>{day.name}</span>
+                  <em>{enabledMeals} refeicoes</em>
+                </button>
+              );
+            })}
+          </div>
+        </article>
+
+        {selectedDayPlan.meals.map((meal, index) => (
+          <article
+            key={`${selectedDayPlan.id}-${meal.id}`}
+            className={`glass-card card-padding diet-meal-card ${meal.enabled ? "is-enabled" : "is-disabled"}`}
+          >
             <div className="card-header">
               <div>
                 <h3 className="card-title">{meal.name}</h3>
@@ -228,7 +296,13 @@ function DietPage() {
                   Estrutura da refeição dentro do plano atual.
                 </p>
               </div>
-              <span className="badge badge-success">{index + 1}</span>
+              <button
+                type="button"
+                className="diet-meal-toggle"
+                onClick={() => toggleMeal(selectedDayPlan.id, meal.id)}
+              >
+                {meal.enabled ? "Habilitada" : "Desabilitada"}
+              </button>
             </div>
 
             <div className="form-grid">
@@ -239,7 +313,7 @@ function DietPage() {
                   type="text"
                   value={meal.name}
                   onChange={(event) =>
-                    updateMealField(index, "name", event.target.value)
+                    updateMealField(selectedDayPlan.id, meal.id, "name", event.target.value)
                   }
                 />
               </div>
@@ -251,9 +325,56 @@ function DietPage() {
                   placeholder="Ex.: Frango, arroz, legumes e fruta."
                   value={meal.description}
                   onChange={(event) =>
-                    updateMealField(index, "description", event.target.value)
+                    updateMealField(selectedDayPlan.id, meal.id, "description", event.target.value)
                   }
                 />
+              </div>
+
+              <div className="diet-macro-grid">
+                <div className="input-group">
+                  <label className="input-label">Calorias</label>
+                  <input
+                    className="input-field"
+                    value={meal.calories}
+                    onChange={(event) =>
+                      updateMealField(selectedDayPlan.id, meal.id, "calories", event.target.value)
+                    }
+                    placeholder="kcal"
+                  />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Proteina</label>
+                  <input
+                    className="input-field"
+                    value={meal.protein}
+                    onChange={(event) =>
+                      updateMealField(selectedDayPlan.id, meal.id, "protein", event.target.value)
+                    }
+                    placeholder="g"
+                  />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Carbo</label>
+                  <input
+                    className="input-field"
+                    value={meal.carbs}
+                    onChange={(event) =>
+                      updateMealField(selectedDayPlan.id, meal.id, "carbs", event.target.value)
+                    }
+                    placeholder="g"
+                  />
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Gorduras</label>
+                  <input
+                    className="input-field"
+                    value={meal.fats}
+                    onChange={(event) =>
+                      updateMealField(selectedDayPlan.id, meal.id, "fats", event.target.value)
+                    }
+                    placeholder="g"
+                  />
+                </div>
               </div>
             </div>
           </article>

@@ -9,6 +9,75 @@
   gap: 20px;
 }
 
+.diet-day-panel {
+  grid-column: 1 / -1;
+}
+
+.diet-day-tabs {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.diet-day-tabs button {
+  display: grid;
+  gap: 5px;
+  min-height: 78px;
+  padding: 12px;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  text-align: left;
+}
+
+.diet-day-tabs button.is-selected {
+  background: linear-gradient(135deg, rgba(255, 46, 46, 0.2), rgba(255, 255, 255, 0.045));
+  border-color: rgba(255, 46, 46, 0.4);
+  box-shadow: 0 12px 26px rgba(255, 46, 46, 0.12);
+}
+
+.diet-day-tabs span,
+.diet-day-tabs em {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.78rem;
+  font-style: normal;
+}
+
+.diet-meal-card {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.diet-meal-card.is-enabled {
+  border-color: rgba(255, 46, 46, 0.26);
+}
+
+.diet-meal-card.is-disabled {
+  opacity: 0.58;
+}
+
+.diet-meal-toggle {
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 46, 46, 0.16);
+  border: 1px solid rgba(255, 46, 46, 0.28);
+  font-weight: 800;
+}
+
+.diet-meal-card.is-disabled .diet-meal-toggle {
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.16);
+}
+
+.diet-macro-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .diet-meal-description {
   min-height: 180px;
 }
@@ -82,10 +151,20 @@
   .diet-meals-grid {
     grid-template-columns: 1fr;
   }
+
+  .diet-day-tabs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .diet-macro-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 760px) {
-  .diet-history-grid {
+  .diet-history-grid,
+  .diet-day-tabs,
+  .diet-macro-grid {
     grid-template-columns: 1fr;
   }
 

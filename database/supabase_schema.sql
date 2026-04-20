@@ -61,6 +61,21 @@ begin
   end if;
 end $$;
 
+create table if not exists public.plan_change_acceptances (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  previous_plan text not null check (previous_plan in ('basico', 'intermediario', 'avancado')),
+  previous_billing_cycle text not null check (previous_billing_cycle in ('monthly', 'annual')),
+  next_plan text not null check (next_plan in ('basico', 'intermediario', 'avancado')),
+  next_billing_cycle text not null check (next_billing_cycle in ('monthly', 'annual')),
+  payment_method_label text,
+  payment_method_last4 text,
+  accepted_terms_text text not null,
+  metadata jsonb not null default '{}'::jsonb,
+  accepted_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+
 create table if not exists public.token_usage (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -151,6 +166,7 @@ create table if not exists public.gym_equipment_preferences (
 alter table public.profiles enable row level security;
 alter table public.payment_profiles enable row level security;
 alter table public.subscriptions enable row level security;
+alter table public.plan_change_acceptances enable row level security;
 alter table public.token_usage enable row level security;
 alter table public.checkins enable row level security;
 alter table public.checkin_files enable row level security;
@@ -166,6 +182,7 @@ create policy "profiles_insert_own" on public.profiles for insert with check (au
 
 create policy "payment_profiles_own" on public.payment_profiles for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "subscriptions_own" on public.subscriptions for select using (auth.uid() = user_id);
+create policy "plan_change_acceptances_own" on public.plan_change_acceptances for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "token_usage_own" on public.token_usage for select using (auth.uid() = user_id);
 create policy "checkins_own" on public.checkins for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "checkin_files_own" on public.checkin_files for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

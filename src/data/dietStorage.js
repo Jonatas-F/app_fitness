@@ -1,6 +1,16 @@
 const DIET_CURRENT_KEY = "shapeCertoDietCurrent";
 const DIET_HISTORY_KEY = "shapeCertoDietHistory";
 
+export const dietDays = [
+  { id: "segunda", short: "SEG", name: "Segunda" },
+  { id: "terca", short: "TER", name: "Terca" },
+  { id: "quarta", short: "QUA", name: "Quarta" },
+  { id: "quinta", short: "QUI", name: "Quinta" },
+  { id: "sexta", short: "SEX", name: "Sexta" },
+  { id: "sabado", short: "SAB", name: "Sabado" },
+  { id: "domingo", short: "DOM", name: "Domingo" },
+];
+
 export const mealSlots = [
   { id: "desjejum", name: "Desjejum" },
   { id: "cafe-manha", name: "Café da manhã" },
@@ -42,12 +52,47 @@ function getDefaultMeals() {
     carbs: "",
     fats: "",
     foods: "",
+    description: "",
     notes: "",
+  }));
+}
+
+function normalizeMeals(meals) {
+  const existingMeals = new Map((Array.isArray(meals) ? meals : []).map((meal) => [meal.id, meal]));
+
+  return mealSlots.map((meal) => {
+    const existing = existingMeals.get(meal.id) || {};
+
+    return {
+      ...meal,
+      ...existing,
+      enabled:
+        typeof existing.enabled === "boolean"
+          ? existing.enabled
+          : ["cafe-manha", "almoco", "cafe-tarde", "janta"].includes(meal.id),
+      calories: existing.calories || "",
+      protein: existing.protein || "",
+      carbs: existing.carbs || "",
+      fats: existing.fats || "",
+      foods: existing.foods || "",
+      description: existing.description || existing.foods || "",
+      notes: existing.notes || "",
+    };
+  });
+}
+
+function getDefaultDayPlans(sourceMeals) {
+  const meals = normalizeMeals(sourceMeals || getDefaultMeals());
+
+  return dietDays.map((day) => ({
+    ...day,
+    meals: meals.map((meal) => ({ ...meal })),
   }));
 }
 
 export function createExampleDietProtocol() {
   const now = new Date();
+  const meals = getDefaultMeals();
 
   return {
     id: `diet-${Date.now()}`,
@@ -61,7 +106,8 @@ export function createExampleDietProtocol() {
     preferenceNotes: "",
     guidance:
       "Se o usuário informar poucas refeições disponíveis, o Personal Virtual deve respeitar a agenda e sinalizar a quantidade recomendada.",
-    meals: getDefaultMeals(),
+    meals,
+    dayPlans: getDefaultDayPlans(meals),
     metadata: {
       createdAt: null,
       updatedAt: null,
@@ -84,24 +130,25 @@ export function createNewDietProtocolTemplate() {
 
 function normalizeDietProtocol(protocol) {
   const base = createNewDietProtocolTemplate();
-  const existingMeals = new Map((protocol?.meals || []).map((meal) => [meal.id, meal]));
+  const baseMeals = normalizeMeals(protocol?.meals || base.meals);
+  const existingDayPlans = new Map(
+    (Array.isArray(protocol?.dayPlans) ? protocol.dayPlans : []).map((day) => [day.id, day])
+  );
+  const dayPlans = dietDays.map((day) => {
+    const existingDay = existingDayPlans.get(day.id);
+
+    return {
+      ...day,
+      ...existingDay,
+      meals: normalizeMeals(existingDay?.meals || baseMeals),
+    };
+  });
 
   return {
     ...base,
     ...protocol,
-    meals: mealSlots.map((meal, index) => ({
-      ...meal,
-      enabled:
-        typeof existingMeals.get(meal.id)?.enabled === "boolean"
-          ? existingMeals.get(meal.id).enabled
-        : ["cafe-manha", "almoco", "cafe-tarde", "janta"].includes(meal.id),
-      calories: existingMeals.get(meal.id)?.calories || "",
-      protein: existingMeals.get(meal.id)?.protein || "",
-      carbs: existingMeals.get(meal.id)?.carbs || "",
-      fats: existingMeals.get(meal.id)?.fats || "",
-      foods: existingMeals.get(meal.id)?.foods || "",
-      notes: existingMeals.get(meal.id)?.notes || "",
-    })),
+    meals: dayPlans[0]?.meals || baseMeals,
+    dayPlans,
     metadata: {
       createdAt: protocol?.metadata?.createdAt || null,
       updatedAt: protocol?.metadata?.updatedAt || null,

@@ -34,6 +34,10 @@ function average(items, field) {
   return (values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1);
 }
 
+function adherencePercent(done, total) {
+  return total ? `${Math.min(100, Math.round((done / total) * 100))}%` : "--";
+}
+
 function completedCheckins(allCheckins) {
   return allCheckins.filter((item) => item.status !== "missed");
 }
@@ -254,6 +258,23 @@ function BodyLineChart({ title, fields, checkins }) {
   );
 }
 
+function DashboardCollapsible({ eyebrow, title, summary, badge, children }) {
+  return (
+    <details className="dashboard-collapsible glass-panel">
+      <summary className="dashboard-collapsible__summary">
+        <span className="dashboard-collapsible__icon">+</span>
+        <span>
+          {eyebrow ? <small>{eyebrow}</small> : null}
+          <strong>{title}</strong>
+          {summary ? <em>{summary}</em> : null}
+        </span>
+        {badge ? <mark>{badge}</mark> : null}
+      </summary>
+      <div className="dashboard-collapsible__body">{children}</div>
+    </details>
+  );
+}
+
 function getExerciseVolume(exercise) {
   return exercise.sets.reduce((sum, set) => {
     const weight = numberValue(set.weight) || 0;
@@ -311,91 +332,97 @@ function WorkoutEvolutionPanel({ workouts, sessions }) {
   const [openWorkoutId, setOpenWorkoutId] = useState(firstEnabledWorkout);
 
   return (
-    <section className="dashboard-card glass-panel">
-      <h2>Evolucao por treino do protocolo mensal</h2>
-      <p>
-        Selecione um dia da semana para comparar a evolucao de carga dos
-        exercicios registrados neste protocolo mensal.
-      </p>
+    <DashboardCollapsible
+      eyebrow="Treinos"
+      title="Evolucao por treino do protocolo mensal"
+      summary="Comparativo de carga por dia da semana."
+      badge={`${workouts.filter((workout) => workout.enabled).length} ativos`}
+    >
+      <div className="dashboard-card dashboard-card--nested">
+        <p>
+          Selecione um dia da semana para comparar a evolucao de carga dos
+          exercicios registrados neste protocolo mensal.
+        </p>
 
-      <div className="workout-evolution-tabs">
-        {workouts.map((workout) => (
-          <button
-            key={workout.id}
-            type="button"
-            className={`${openWorkoutId === workout.id ? "is-selected" : ""} ${
-              workout.enabled ? "is-enabled" : "is-disabled"
-            }`}
-            disabled={!workout.enabled}
-            onClick={() => setOpenWorkoutId((current) => (current === workout.id ? "" : workout.id))}
-          >
-            <strong>{workout.title}</strong>
-            <span>{workout.enabled ? "Habilitado" : "Desabilitado"}</span>
-          </button>
-        ))}
+        <div className="workout-evolution-tabs">
+          {workouts.map((workout) => (
+            <button
+              key={workout.id}
+              type="button"
+              className={`${openWorkoutId === workout.id ? "is-selected" : ""} ${
+                workout.enabled ? "is-enabled" : "is-disabled"
+              }`}
+              disabled={!workout.enabled}
+              onClick={() => setOpenWorkoutId((current) => (current === workout.id ? "" : workout.id))}
+            >
+              <strong>{workout.title}</strong>
+              <span>{workout.enabled ? "Habilitado" : "Desabilitado"}</span>
+            </button>
+          ))}
+        </div>
+
+        {workouts.map((workout) => {
+          if (workout.id !== openWorkoutId || !workout.enabled) {
+            return null;
+          }
+
+          const evolution = buildWorkoutEvolution(workout, sessions);
+
+          return (
+            <article key={workout.id} className="workout-evolution-panel">
+              <header>
+                <div>
+                  <h3>{workout.title}</h3>
+                  <p>{workout.focus}</p>
+                </div>
+                <span>{evolution.sessionCount} registro(s) no mes</span>
+              </header>
+
+              {evolution.sessionCount ? (
+                <>
+                  <div className="workout-evolution-labels">
+                    {evolution.labels.map((label) => (
+                      <span key={label}>{label}</span>
+                    ))}
+                  </div>
+
+                  <div className="workout-evolution-list">
+                    {evolution.exerciseRows.map((exercise) => (
+                      <section key={exercise.id} className="workout-evolution-exercise">
+                        <div className="workout-evolution-exercise__heading">
+                          <strong>{exercise.name}</strong>
+                          <small>
+                            {exercise.latest || "--"} kg/reps volume |{" "}
+                            {exercise.diff > 0 ? "+" : ""}
+                            {exercise.diff}
+                          </small>
+                        </div>
+                        <div className="workout-evolution-bars">
+                          {exercise.values.map((value, index) => (
+                            <span key={`${exercise.id}-${index}`}>
+                              <i
+                                style={{
+                                  height: `${evolution.maxValue ? Math.max(6, (value / evolution.maxValue) * 100) : 0}%`,
+                                }}
+                              />
+                            </span>
+                          ))}
+                        </div>
+                      </section>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p>
+                  Salve execucoes desse treino na aba Treinos para gerar os
+                  comparativos de carga por exercicio.
+                </p>
+              )}
+            </article>
+          );
+        })}
       </div>
-
-      {workouts.map((workout) => {
-        if (workout.id !== openWorkoutId || !workout.enabled) {
-          return null;
-        }
-
-        const evolution = buildWorkoutEvolution(workout, sessions);
-
-        return (
-          <article key={workout.id} className="workout-evolution-panel">
-            <header>
-              <div>
-                <h3>{workout.title}</h3>
-                <p>{workout.focus}</p>
-              </div>
-              <span>{evolution.sessionCount} registro(s) no mes</span>
-            </header>
-
-            {evolution.sessionCount ? (
-              <>
-                <div className="workout-evolution-labels">
-                  {evolution.labels.map((label) => (
-                    <span key={label}>{label}</span>
-                  ))}
-                </div>
-
-                <div className="workout-evolution-list">
-                  {evolution.exerciseRows.map((exercise) => (
-                    <section key={exercise.id} className="workout-evolution-exercise">
-                      <div className="workout-evolution-exercise__heading">
-                        <strong>{exercise.name}</strong>
-                        <small>
-                          {exercise.latest || "--"} kg/reps volume |{" "}
-                          {exercise.diff > 0 ? "+" : ""}
-                          {exercise.diff}
-                        </small>
-                      </div>
-                      <div className="workout-evolution-bars">
-                        {exercise.values.map((value, index) => (
-                          <span key={`${exercise.id}-${index}`}>
-                            <i
-                              style={{
-                                height: `${evolution.maxValue ? Math.max(6, (value / evolution.maxValue) * 100) : 0}%`,
-                              }}
-                            />
-                          </span>
-                        ))}
-                      </div>
-                    </section>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <p>
-                Salve execucoes desse treino na aba Treinos para gerar os
-                comparativos de carga por exercicio.
-              </p>
-            )}
-          </article>
-        );
-      })}
-    </section>
+    </DashboardCollapsible>
   );
 }
 
@@ -413,6 +440,10 @@ export default function DashboardPage() {
   const yearSessions = sessions.filter((session) => within(session.createdAt, daysAgo(365)));
   const weeklyCheckins = checkins.filter((checkin) => within(checkin.createdAt, daysAgo(7)));
   const monthlyCheckins = checkins.filter((checkin) => within(checkin.createdAt, daysAgo(30)));
+  const weeklyMissedCheckins = missedCheckins.filter((checkin) => within(checkin.createdAt, daysAgo(7)));
+  const monthlyMissedCheckins = missedCheckins.filter((checkin) => within(checkin.createdAt, daysAgo(30)));
+  const weeklyCheckinTotal = weeklyCheckins.length + weeklyMissedCheckins.length;
+  const monthlyCheckinTotal = monthlyCheckins.length + monthlyMissedCheckins.length;
   const calendarDays = buildCalendar(allCheckins, sessions);
   const { loadsByDate, maxLoad } = summarizeLoads(sessions.slice(0, 8).reverse());
   const feedbacks = makeFeedbacks({
@@ -470,49 +501,78 @@ export default function DashboardPage() {
         ))}
       </section>
 
-      <section className="dashboard-grid">
-        <article className="dashboard-card glass-panel">
-          <h2>Comparacao corporal</h2>
-          <p>{comparison.message}</p>
-          <div className="dashboard-comparison">
-            <div>
-              <span>Peso</span>
-              <strong>{comparison.weight} kg</strong>
+      <DashboardCollapsible
+        eyebrow="Resumo"
+        title="Comparacao corporal e qualidade da semana"
+        summary="Peso, gordura, massa muscular, check-ins, sono e aderencia."
+        badge={`${weeklyCheckins.length} check-ins`}
+      >
+        <section className="dashboard-grid dashboard-grid--nested">
+          <article className="dashboard-card dashboard-card--nested">
+            <h2>Comparacao corporal</h2>
+            <p>{comparison.message}</p>
+            <div className="dashboard-comparison">
+              <div>
+                <span>Peso</span>
+                <strong>{comparison.weight} kg</strong>
+              </div>
+              <div>
+                <span>Gordura</span>
+                <strong>{comparison.bodyFat}%</strong>
+              </div>
+              <div>
+                <span>Massa muscular</span>
+                <strong>{comparison.muscleMass} kg</strong>
+              </div>
             </div>
-            <div>
-              <span>Gordura</span>
-              <strong>{comparison.bodyFat}%</strong>
-            </div>
-            <div>
-              <span>Massa muscular</span>
-              <strong>{comparison.muscleMass} kg</strong>
-            </div>
-          </div>
-        </article>
+          </article>
 
-        <article className="dashboard-card glass-panel">
-          <h2>Check-ins e qualidade da semana</h2>
-          <p>Leitura com base nos registros recentes.</p>
-          <div className="dashboard-comparison">
-            <div>
-              <span>Check-ins semanais</span>
-              <strong>{weeklyCheckins.length}</strong>
+          <article className="dashboard-card dashboard-card--nested">
+            <h2>Check-ins e qualidade da semana</h2>
+            <p>Leitura com base nos registros recentes.</p>
+            <div className="dashboard-comparison">
+              <div>
+                <span>Check-ins semanais</span>
+                <strong>{weeklyCheckins.length}</strong>
+              </div>
+              <div>
+                <span>Sono medio</span>
+                <strong>{average(weeklyCheckins, "sleep")}h</strong>
+              </div>
+              <div>
+                <span>Aderencia</span>
+                <strong>{average(weeklyCheckins, "adherence")}%</strong>
+              </div>
             </div>
-            <div>
-              <span>Sono medio</span>
-              <strong>{average(weeklyCheckins, "sleep")}h</strong>
-            </div>
-            <div>
-              <span>Aderencia</span>
-              <strong>{average(weeklyCheckins, "adherence")}%</strong>
-            </div>
-          </div>
-        </article>
-      </section>
+          </article>
 
-      <section className="dashboard-card glass-panel">
-        <h2>Bioimpedância e medidas</h2>
-        <p>Gráficos de linha com os últimos registros do check-in mensal.</p>
+          <article className="dashboard-card dashboard-card--nested">
+            <h2>Aderencia aos check-ins</h2>
+            <p>Realizados e gaps registrados ficam concentrados aqui para consulta.</p>
+            <div className="dashboard-comparison">
+              <div>
+                <span>Semana</span>
+                <strong>{adherencePercent(weeklyCheckins.length, weeklyCheckinTotal)}</strong>
+              </div>
+              <div>
+                <span>Gaps semanais</span>
+                <strong>{weeklyMissedCheckins.length}</strong>
+              </div>
+              <div>
+                <span>Mes</span>
+                <strong>{adherencePercent(monthlyCheckins.length, monthlyCheckinTotal)}</strong>
+              </div>
+            </div>
+          </article>
+        </section>
+      </DashboardCollapsible>
+
+      <DashboardCollapsible
+        eyebrow="Corpo"
+        title="Bioimpedancia e medidas"
+        summary="Graficos de linha com os ultimos registros do check-in mensal."
+        badge={`${checkins.length} check-ins`}
+      >
         <div className="body-chart-grid">
           {bodyChartGroups.map((group) => (
             <BodyLineChart
@@ -523,80 +583,98 @@ export default function DashboardPage() {
             />
           ))}
         </div>
-      </section>
+      </DashboardCollapsible>
 
-      <section className="dashboard-grid dashboard-grid--wide">
-        <article className="dashboard-card glass-panel">
-          <h2>Evolucao de cargas</h2>
-          <p>Volume estimado por sessoes salvas: peso x repeticoes.</p>
-          <div className="load-chart">
-            {loadsByDate.length ? (
-              loadsByDate.map((item) => (
-                <div key={`${item.date}-${item.workoutTitle}`} className="load-chart__bar">
-                  <span style={{ height: `${maxLoad ? Math.max(8, (item.totalLoad / maxLoad) * 100) : 0}%` }} />
-                  <small>{item.label}</small>
-                </div>
-              ))
-            ) : (
-              <p>Salve execucoes de treino para montar o grafico de carga.</p>
-            )}
-          </div>
-        </article>
+      <DashboardCollapsible
+        eyebrow="Calendario e cargas"
+        title="Evolucao de cargas e calendario do mes"
+        summary="Volume por sessoes salvas, treinos realizados, check-ins e faltas."
+        badge={`${monthSessions.length} treinos`}
+      >
+        <section className="dashboard-grid dashboard-grid--wide dashboard-grid--nested">
+          <article className="dashboard-card dashboard-card--nested">
+            <h2>Evolucao de cargas</h2>
+            <p>Volume estimado por sessoes salvas: peso x repeticoes.</p>
+            <div className="load-chart">
+              {loadsByDate.length ? (
+                loadsByDate.map((item) => (
+                  <div key={`${item.date}-${item.workoutTitle}`} className="load-chart__bar">
+                    <span style={{ height: `${maxLoad ? Math.max(8, (item.totalLoad / maxLoad) * 100) : 0}%` }} />
+                    <small>{item.label}</small>
+                  </div>
+                ))
+              ) : (
+                <p>Salve execucoes de treino para montar o grafico de carga.</p>
+              )}
+            </div>
+          </article>
 
-        <article className="dashboard-card glass-panel">
-          <h2>Calendario do mes</h2>
-          <p>Treino realizado, check-in preenchido e ausencia registrada.</p>
-          <div className="training-calendar">
-            {calendarDays.map((item) => (
-              <span key={item.day} className={`calendar-day calendar-day--${item.status}`}>
-                {item.day}
-              </span>
-            ))}
-          </div>
-          <div className="calendar-legend">
-            <span className="calendar-day--trained">Treino</span>
-            <span className="calendar-day--checkin">Check-in</span>
-            <span className="calendar-day--missed">Falta</span>
-          </div>
-        </article>
-      </section>
+          <article className="dashboard-card dashboard-card--nested">
+            <h2>Calendario do mes</h2>
+            <p>Treino realizado, check-in preenchido e ausencia registrada.</p>
+            <div className="training-calendar">
+              {calendarDays.map((item) => (
+                <span key={item.day} className={`calendar-day calendar-day--${item.status}`}>
+                  {item.day}
+                </span>
+              ))}
+            </div>
+            <div className="calendar-legend">
+              <span className="calendar-day--trained">Treino</span>
+              <span className="calendar-day--checkin">Check-in</span>
+              <span className="calendar-day--missed">Falta</span>
+            </div>
+          </article>
+        </section>
+      </DashboardCollapsible>
 
       <WorkoutEvolutionPanel workouts={workoutPlan.workouts} sessions={sessions} />
 
-      <section className="dashboard-grid">
-        <article className="dashboard-card glass-panel">
-          <h2>Evolucao mensal</h2>
-          <div className="dashboard-comparison">
-            <div>
-              <span>Check-ins no mes</span>
-              <strong>{monthlyCheckins.length}</strong>
-            </div>
-            <div>
-              <span>Peso medio</span>
-              <strong>{average(monthlyCheckins, "weight")} kg</strong>
-            </div>
-            <div>
-              <span>Gordura media</span>
-              <strong>{average(monthlyCheckins, "bodyFat")}%</strong>
-            </div>
-          </div>
-        </article>
-
-        <article className="dashboard-card glass-panel">
-          <h2>Protocolos de treino</h2>
-          <div className="dashboard-workout-list">
-            {workoutPlan.workouts.map((workout) => (
-              <div key={workout.id}>
-                <strong>{workout.title}</strong>
-                <span>{workout.enabled ? "Habilitado" : "Desabilitado"} | {workout.exercises.length} exercicios</span>
+      <DashboardCollapsible
+        eyebrow="Mensal"
+        title="Evolucao mensal e protocolos de treino"
+        summary="Medias do mes e divisao atual do protocolo."
+        badge={`${monthlyCheckins.length} registros`}
+      >
+        <section className="dashboard-grid dashboard-grid--nested">
+          <article className="dashboard-card dashboard-card--nested">
+            <h2>Evolucao mensal</h2>
+            <div className="dashboard-comparison">
+              <div>
+                <span>Check-ins no mes</span>
+                <strong>{monthlyCheckins.length}</strong>
               </div>
-            ))}
-          </div>
-        </article>
-      </section>
+              <div>
+                <span>Peso medio</span>
+                <strong>{average(monthlyCheckins, "weight")} kg</strong>
+              </div>
+              <div>
+                <span>Gordura media</span>
+                <strong>{average(monthlyCheckins, "bodyFat")}%</strong>
+              </div>
+            </div>
+          </article>
 
-      <section className="dashboard-card glass-panel">
-        <h2>Feedbacks do Personal Virtual</h2>
+          <article className="dashboard-card dashboard-card--nested">
+            <h2>Protocolos de treino</h2>
+            <div className="dashboard-workout-list">
+              {workoutPlan.workouts.map((workout) => (
+                <div key={workout.id}>
+                  <strong>{workout.title}</strong>
+                  <span>{workout.enabled ? "Habilitado" : "Desabilitado"} | {workout.exercises.length} exercicios</span>
+                </div>
+              ))}
+            </div>
+          </article>
+        </section>
+      </DashboardCollapsible>
+
+      <DashboardCollapsible
+        eyebrow="Feedback"
+        title="Feedbacks do Personal Virtual"
+        summary="Leituras de sono, alimentacao, protocolo e evolucao corporal."
+        badge={`${feedbacks.length} alertas`}
+      >
         <div className="virtual-feedback-grid">
           {feedbacks.map((item) => (
             <article key={item.title}>
@@ -605,7 +683,7 @@ export default function DashboardPage() {
             </article>
           ))}
         </div>
-      </section>
+      </DashboardCollapsible>
     </section>
   );
 }

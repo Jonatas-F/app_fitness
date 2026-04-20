@@ -622,6 +622,202 @@
   gap: 8px;
 }
 
+.profile-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(12px);
+}
+
+.profile-modal {
+  display: grid;
+  width: min(100%, 680px);
+  max-height: calc(100vh - 36px);
+  gap: 16px;
+  overflow: auto;
+  padding: 18px;
+  border-radius: 8px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 94% 0%, rgba(255, 46, 46, 0.18), transparent 34%),
+    linear-gradient(145deg, rgba(21, 21, 22, 0.98), rgba(6, 6, 7, 0.98));
+  border: 1px solid rgba(255, 46, 46, 0.28);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+}
+
+.profile-modal__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.profile-modal__heading div {
+  display: grid;
+  gap: 6px;
+}
+
+.profile-modal__heading span {
+  width: fit-content;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: #ffd7d7;
+  background: rgba(255, 46, 46, 0.16);
+  border: 1px solid rgba(255, 46, 46, 0.26);
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.profile-modal__heading h2 {
+  margin: 0;
+  font-size: clamp(1.3rem, 2.5vw, 1.9rem);
+}
+
+.profile-modal__heading p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.66);
+}
+
+.profile-modal__close {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.payment-modal__preview {
+  display: grid;
+  min-height: 142px;
+  align-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 90% 8%, rgba(255, 46, 46, 0.3), transparent 36%),
+    linear-gradient(135deg, rgba(35, 15, 15, 0.98), rgba(10, 10, 11, 0.98));
+  border: 1px solid rgba(255, 46, 46, 0.28);
+  box-shadow:
+    0 18px 44px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.payment-modal__preview span {
+  width: fit-content;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.payment-modal__preview strong {
+  font-size: clamp(1.1rem, 4vw, 1.6rem);
+  letter-spacing: 0.04em;
+}
+
+.payment-modal__preview small {
+  color: rgba(255, 255, 255, 0.68);
+  font-weight: 800;
+}
+
+.profile-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.profile-modal__actions .primary-button,
+.profile-modal__actions .ghost-button,
+.profile-modal__danger {
+  width: fit-content;
+  min-width: 150px;
+  border-radius: 8px;
+}
+
+.profile-modal__actions .primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  box-shadow: none;
+}
+
+.profile-modal__danger {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  color: #ffd7d7;
+  background: rgba(255, 46, 46, 0.12);
+  border: 1px solid rgba(255, 46, 46, 0.28);
+  font-weight: 900;
+}
+
+.plan-confirm-modal__summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.plan-confirm-modal__summary div {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.plan-confirm-modal__summary small,
+.plan-confirm-modal__summary span {
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.35;
+}
+
+.plan-confirm-modal__summary small {
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.plan-confirm-modal__terms {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(255, 46, 46, 0.1);
+  border: 1px solid rgba(255, 46, 46, 0.2);
+  color: rgba(255, 255, 255, 0.74);
+  line-height: 1.45;
+}
+
+.plan-confirm-modal__terms input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: #ff2e2e;
+  flex-shrink: 0;
+}
+
 .payment-method {
   display: flex;
   gap: 12px;
@@ -1052,8 +1248,27 @@
 
   .payment-methods,
   .payment-add-form__grid,
-  .payment-add-form__actions {
+  .payment-add-form__actions,
+  .plan-confirm-modal__summary {
     grid-template-columns: 1fr;
+  }
+
+  .profile-modal {
+    padding: 14px;
+  }
+
+  .profile-modal__heading {
+    align-items: stretch;
+  }
+
+  .profile-modal__actions {
+    flex-direction: column;
+  }
+
+  .profile-modal__actions .primary-button,
+  .profile-modal__actions .ghost-button,
+  .profile-modal__danger {
+    width: 100%;
   }
 
   .profile-actions .primary-button,

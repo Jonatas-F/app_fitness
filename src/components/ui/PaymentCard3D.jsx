@@ -1,6 +1,5 @@
-import { useState } from "react";
 import Atropos from "atropos/react";
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import { Icon } from "@iconify/react";
 import mastercardLogo from "simple-icons/icons/mastercard.svg";
 import visaLogo from "simple-icons/icons/visa.svg";
@@ -28,51 +27,42 @@ function getCardBrand(method) {
   };
 }
 
-export default function PaymentCard3D({
-  method,
-  selected = false,
-  canDelete = false,
-  onSelect,
-  onDelete,
-}) {
-  const [expanded, setExpanded] = useState(false);
+export default function PaymentCard3D({ method, selected = false, onSelect }) {
   const brand = getCardBrand(method);
   const isNewCard = method.id === "novo";
 
-  function handleCardClick() {
+  function handleSelect(event) {
+    event.preventDefault();
     onSelect?.(method);
-    setExpanded((current) => !current);
   }
 
-  function handleDelete(event) {
-    event.stopPropagation();
-    onDelete?.(method.id);
+  function handleKeyDown(event) {
+    if (event.key === "Enter" || event.key === " ") {
+      handleSelect(event);
+    }
   }
 
   return (
-    <Atropos
+    <motion.div
+      role="button"
+      tabIndex={0}
       className={`payment-card-3d ${selected ? "is-selected" : ""}`}
-      activeOffset={18}
-      rotateXMax={8}
-      rotateYMax={10}
-      shadow={false}
-      highlight
+      onClickCapture={handleSelect}
+      onKeyDown={handleKeyDown}
+      whileTap={{ scale: 0.985 }}
+      transition={{ type: "spring", stiffness: 420, damping: 34 }}
     >
-      <motion.article
-        className="payment-card-3d__surface"
-        layout
-        transition={{ type: "spring", stiffness: 420, damping: 34 }}
+      <Atropos
+        className="payment-card-3d__tilt"
+        activeOffset={18}
+        rotateXMax={8}
+        rotateYMax={10}
+        shadow={false}
+        highlight
       >
-        <span className="payment-card-3d__glow" aria-hidden="true" />
+        <span className="payment-card-3d__surface">
+          <span className="payment-card-3d__glow" aria-hidden="true" />
 
-        <motion.button
-          type="button"
-          className="payment-card-3d__selector"
-          onClick={handleCardClick}
-          aria-expanded={expanded}
-          whileTap={{ scale: 0.985 }}
-          transition={{ type: "spring", stiffness: 420, damping: 34 }}
-        >
           <span className="payment-card-3d__top">
             <span className="payment-card-3d__brand">
               {brand.logo ? (
@@ -101,56 +91,18 @@ export default function PaymentCard3D({
               <strong>{method.label}</strong>
             </span>
             <span>
-              <small>Seguranca</small>
+              <small>{isNewCard ? "Acao" : "Seguranca"}</small>
               <strong>
-                <Icon icon="material-symbols:lock-outline-rounded" aria-hidden="true" />
-                Stripe
+                <Icon
+                  icon={isNewCard ? "material-symbols:add-card-outline" : "material-symbols:lock-outline-rounded"}
+                  aria-hidden="true"
+                />
+                {isNewCard ? "Adicionar" : "Stripe"}
               </strong>
             </span>
           </span>
-        </motion.button>
-
-        <AnimatePresence initial={false}>
-          {expanded ? (
-            <motion.div
-              className="payment-card-3d__expanded"
-              initial={{ opacity: 0, height: 0, y: -6 }}
-              animate={{ opacity: 1, height: "auto", y: 0 }}
-              exit={{ opacity: 0, height: 0, y: -6 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-            >
-              <div className="payment-card-3d__miniature" aria-hidden="true">
-                <span className="payment-card-3d__miniature-brand">
-                  {brand.logo ? <img src={brand.logo} alt="" /> : <Icon icon={brand.icon} />}
-                </span>
-                <span>{isNewCard ? "Adicionar metodo" : `Final ${method.ending}`}</span>
-              </div>
-
-              <div className="payment-card-3d__details">
-                <div>
-                  <Icon icon="material-symbols:person-outline-rounded" aria-hidden="true" />
-                  {isNewCard ? "Novo metodo seguro" : method.holder || "Titular nao informado"}
-                </div>
-                <div>
-                  <Icon icon="material-symbols:event-outline-rounded" aria-hidden="true" />
-                  {isNewCard ? "Cadastro pelo Stripe" : `Validade ${method.expires || "--/--"}`}
-                </div>
-                <div>
-                  <Icon icon="material-symbols:credit-score-outline-rounded" aria-hidden="true" />
-                  {isNewCard ? "Preencha os dados abaixo." : "Pronto para cobrancas do plano."}
-                </div>
-              </div>
-
-              {canDelete ? (
-                <button type="button" className="payment-card-3d__delete" onClick={handleDelete}>
-                  <Icon icon="material-symbols:delete-outline-rounded" aria-hidden="true" />
-                  Excluir cartao
-                </button>
-              ) : null}
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-      </motion.article>
-    </Atropos>
+        </span>
+      </Atropos>
+    </motion.div>
   );
 }

@@ -68,6 +68,99 @@
   gap: 16px;
 }
 
+.nutrition-collapsible {
+  overflow: hidden;
+}
+
+.nutrition-collapsible[open] {
+  border-color: rgba(255, 46, 46, 0.22);
+}
+
+.nutrition-collapsible__summary {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 68px;
+  padding: 14px 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.nutrition-collapsible__summary::-webkit-details-marker {
+  display: none;
+}
+
+.nutrition-collapsible__icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.nutrition-collapsible[open] .nutrition-collapsible__icon {
+  background: rgba(255, 46, 46, 0.18);
+  border-color: rgba(255, 46, 46, 0.3);
+  transform: rotate(45deg);
+}
+
+.nutrition-collapsible__summary > span:nth-child(2) {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.nutrition-collapsible__summary small {
+  width: fit-content;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 9px;
+  border-radius: 999px;
+  color: #ffd7d7;
+  background: rgba(255, 46, 46, 0.14);
+  border: 1px solid rgba(255, 46, 46, 0.22);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.nutrition-collapsible__summary strong {
+  line-height: 1.25;
+}
+
+.nutrition-collapsible__summary em,
+.nutrition-collapsible__summary mark {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.82rem;
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.nutrition-collapsible__summary mark {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.nutrition-collapsible__body {
+  display: grid;
+  gap: 16px;
+  padding: 0 16px 16px;
+}
+
 .nutrition-config__grid,
 .meal-card__macros {
   display: grid;
@@ -243,5 +336,14 @@
   .meal-card__macros,
   .meal-grid {
     grid-template-columns: 1fr;
+  }
+
+  .nutrition-collapsible__summary {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+
+  .nutrition-collapsible__summary mark {
+    grid-column: 2;
+    justify-self: start;
   }
 }
