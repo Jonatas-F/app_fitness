@@ -2,7 +2,7 @@ export const subscriptionPlans = [
   {
     id: "basico",
     name: "Basico",
-    monthlyPrice: 39,
+    monthlyPrice: 6,
     tokens: "25.000 tokens",
     workouts: "1 treino mensal",
     meals: "1 dieta mensal",

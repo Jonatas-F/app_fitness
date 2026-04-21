@@ -8,7 +8,7 @@ const stripe = process.env.STRIPE_SECRET_KEY
   : null;
 
 const plans = {
-  basico: { name: "Basico", monthlyPrice: 39, tokenLimit: 25000 },
+  basico: { name: "Basico", monthlyPrice: 6, tokenLimit: 25000 },
   intermediario: { name: "Intermediario", monthlyPrice: 79, tokenLimit: 90000 },
   avancado: { name: "Avancado", monthlyPrice: 149, tokenLimit: 250000 },
 };
