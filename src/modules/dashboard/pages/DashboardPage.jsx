@@ -1,13 +1,30 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { loadCheckins } from "../../../data/checkinStorage";
 import { loadTrainingHistory } from "../../../data/trainingStorage";
 import {
   getWorkoutDashboardSummary,
+  hydrateWorkoutExecutionFromApi,
+  hydrateWorkoutSessionsFromApi,
   loadWorkoutExecution,
   loadWorkoutSessionHistory,
 } from "../../../data/workoutExecutionStorage";
 import logoMark from "../../../assets/logo.svg";
 import "./DashboardPage.css";
+
+const chartPalette = ["#ff2e2e", "#ff6b6b", "#f2f2f2", "#d1d1d1", "#a8a8a8", "#b8b8b8", "#ffffff"];
+const chartAxisStyle = { fill: "rgba(255, 255, 255, 0.58)", fontSize: 12 };
 
 function numberValue(value) {
   const parsed = Number(String(value || "").replace(",", ".").replace(/[^\d.-]/g, ""));
@@ -32,6 +49,22 @@ function average(items, field) {
 
   if (!values.length) return "--";
   return (values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1);
+}
+
+function slugify(value) {
+  return String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "")
+    .toLowerCase();
+}
+
+function formatShortDate(value) {
+  return new Date(value).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+  });
 }
 
 function adherencePercent(done, total) {
@@ -94,9 +127,7 @@ function summarizeLoads(sessions) {
     };
   });
 
-  const maxLoad = loadsByDate.reduce((max, item) => Math.max(max, item.totalLoad), 0);
-
-  return { loadsByDate, maxLoad };
+  return { loadsByDate };
 }
 
 function buildCalendar(allCheckins, sessions) {
@@ -216,45 +247,121 @@ const bodyChartGroups = [
   },
 ];
 
-function BodyLineChart({ title, fields, checkins }) {
-  const points = checkins.slice(0, 6).reverse();
-  const values = points.flatMap((item) =>
-    fields.map((field) => numberValue(item[field.key])).filter((value) => value !== null)
-  );
-  const min = values.length ? Math.min(...values) : 0;
-  const max = values.length ? Math.max(...values) : 1;
-  const range = max - min || 1;
+function makeBodyChartData(checkins, fields) {
+  return checkins.slice(0, 8).reverse().map((item) => {
+    const row = {
+      id: item.id,
+      label: formatShortDate(item.createdAt),
+    };
+
+    fields.forEach((field) => {
+      const value = numberValue(item[field.key]);
+      if (value !== null) {
+        row[field.key] = value;
+      }
+    });
+
+    return row;
+  });
+}
+
+function DashboardTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) {
+    return null;
+  }
 
   return (
-    <article className="body-chart">
-      <h3>{title}</h3>
-      <div className="body-chart__plot">
-        {fields.map((field, fieldIndex) => (
-          <div key={field.key} className={`body-chart__line body-chart__line--${fieldIndex + 1}`}>
-            {points.map((item, index) => {
-              const value = numberValue(item[field.key]);
-              const left = points.length <= 1 ? 0 : (index / (points.length - 1)) * 100;
-              const bottom = value === null ? 0 : ((value - min) / range) * 86 + 7;
-
-              return value === null ? null : (
-                <span
-                  key={`${field.key}-${item.id}`}
-                  style={{ left: `${left}%`, bottom: `${bottom}%` }}
-                  title={`${field.label}: ${value}`}
-                />
-              );
-            })}
-          </div>
-        ))}
-      </div>
-      <div className="body-chart__legend">
-        {fields.map((field, index) => (
-          <span key={field.key} className={`body-chart__legend-item body-chart__legend-item--${index + 1}`}>
-            {field.label}
+    <div className="dashboard-chart-tooltip">
+      <strong>{label}</strong>
+      {payload
+        .filter((item) => item.value !== undefined && item.value !== null)
+        .map((item) => (
+          <span key={item.dataKey}>
+            <i style={{ background: item.color || item.fill }} />
+            {item.name}: {item.value}
           </span>
         ))}
-      </div>
+    </div>
+  );
+}
+
+function BodyLineChart({ title, fields, checkins }) {
+  const data = makeBodyChartData(checkins, fields);
+  const hasData = data.some((item) => fields.some((field) => typeof item[field.key] === "number"));
+  const chartId = slugify(title);
+
+  return (
+    <article className="body-chart dashboard-chart-shell">
+      <header className="dashboard-chart-header">
+        <h3>{title}</h3>
+        <span>{hasData ? `${data.length} registros` : "sem dados"}</span>
+      </header>
+
+      {hasData ? (
+        <div className="dashboard-chart-area">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
+              <defs>
+                {fields.map((field, index) => (
+                  <linearGradient key={field.key} id={`body-${chartId}-${field.key}`} x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="5%" stopColor={chartPalette[index % chartPalette.length]} stopOpacity={0.26} />
+                    <stop offset="95%" stopColor={chartPalette[index % chartPalette.length]} stopOpacity={0.02} />
+                  </linearGradient>
+                ))}
+              </defs>
+              <CartesianGrid stroke="rgba(255, 255, 255, 0.07)" vertical={false} />
+              <XAxis dataKey="label" tick={chartAxisStyle} axisLine={false} tickLine={false} />
+              <YAxis tick={chartAxisStyle} axisLine={false} tickLine={false} width={40} />
+              <Tooltip content={<DashboardTooltip />} />
+              <Legend iconType="circle" wrapperStyle={{ color: "rgba(255, 255, 255, 0.72)", fontSize: 12 }} />
+              {fields.map((field, index) => (
+                <Area
+                  key={field.key}
+                  type="monotone"
+                  dataKey={field.key}
+                  name={field.label}
+                  stroke={chartPalette[index % chartPalette.length]}
+                  fill={`url(#body-${chartId}-${field.key})`}
+                  strokeWidth={2.2}
+                  dot={{ r: 3, strokeWidth: 0, fill: chartPalette[index % chartPalette.length] }}
+                  activeDot={{ r: 5, strokeWidth: 0, fill: chartPalette[index % chartPalette.length] }}
+                  connectNulls
+                  isAnimationActive={false}
+                />
+              ))}
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <p className="dashboard-chart-empty">Salve check-ins com esses dados para montar o grafico.</p>
+      )}
     </article>
+  );
+}
+
+function LoadBarChart({ data }) {
+  if (!data.length) {
+    return <p className="dashboard-chart-empty">Salve execucoes de treino para montar o grafico de carga.</p>;
+  }
+
+  return (
+    <div className="load-chart dashboard-chart-area">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+          <CartesianGrid stroke="rgba(255, 255, 255, 0.07)" vertical={false} />
+          <XAxis dataKey="label" tick={chartAxisStyle} axisLine={false} tickLine={false} />
+          <YAxis tick={chartAxisStyle} axisLine={false} tickLine={false} width={48} />
+          <Tooltip content={<DashboardTooltip />} />
+          <Bar
+            dataKey="totalLoad"
+            name="Volume"
+            fill="#ff2e2e"
+            radius={[8, 8, 3, 3]}
+            isAnimationActive={false}
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 
@@ -327,6 +434,33 @@ function buildWorkoutEvolution(workout, sessions) {
   };
 }
 
+function ExerciseVolumeChart({ exercise, labels }) {
+  const data = exercise.values.map((value, index) => ({
+    label: labels[index] || `S${index + 1}`,
+    value,
+  }));
+
+  return (
+    <div className="workout-evolution-chart">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} margin={{ top: 6, right: 8, left: -14, bottom: 0 }}>
+          <CartesianGrid stroke="rgba(255, 255, 255, 0.07)" vertical={false} />
+          <XAxis dataKey="label" tick={chartAxisStyle} axisLine={false} tickLine={false} />
+          <YAxis tick={chartAxisStyle} axisLine={false} tickLine={false} width={44} />
+          <Tooltip content={<DashboardTooltip />} />
+          <Bar
+            dataKey="value"
+            name="Volume"
+            fill="#ff2e2e"
+            radius={[8, 8, 3, 3]}
+            isAnimationActive={false}
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 function WorkoutEvolutionPanel({ workouts, sessions }) {
   const firstEnabledWorkout = workouts.find((workout) => workout.enabled)?.id || "monday";
   const [openWorkoutId, setOpenWorkoutId] = useState(firstEnabledWorkout);
@@ -380,12 +514,6 @@ function WorkoutEvolutionPanel({ workouts, sessions }) {
 
               {evolution.sessionCount ? (
                 <>
-                  <div className="workout-evolution-labels">
-                    {evolution.labels.map((label) => (
-                      <span key={label}>{label}</span>
-                    ))}
-                  </div>
-
                   <div className="workout-evolution-list">
                     {evolution.exerciseRows.map((exercise) => (
                       <section key={exercise.id} className="workout-evolution-exercise">
@@ -397,17 +525,7 @@ function WorkoutEvolutionPanel({ workouts, sessions }) {
                             {exercise.diff}
                           </small>
                         </div>
-                        <div className="workout-evolution-bars">
-                          {exercise.values.map((value, index) => (
-                            <span key={`${exercise.id}-${index}`}>
-                              <i
-                                style={{
-                                  height: `${evolution.maxValue ? Math.max(6, (value / evolution.maxValue) * 100) : 0}%`,
-                                }}
-                              />
-                            </span>
-                          ))}
-                        </div>
+                        <ExerciseVolumeChart exercise={exercise} labels={evolution.labels} />
                       </section>
                     ))}
                   </div>
@@ -427,6 +545,7 @@ function WorkoutEvolutionPanel({ workouts, sessions }) {
 }
 
 export default function DashboardPage() {
+  const [, setRemoteRefresh] = useState(0);
   const allCheckins = loadCheckins();
   const checkins = completedCheckins(allCheckins);
   const missedCheckins = allCheckins.filter((item) => item.status === "missed");
@@ -445,13 +564,32 @@ export default function DashboardPage() {
   const weeklyCheckinTotal = weeklyCheckins.length + weeklyMissedCheckins.length;
   const monthlyCheckinTotal = monthlyCheckins.length + monthlyMissedCheckins.length;
   const calendarDays = buildCalendar(allCheckins, sessions);
-  const { loadsByDate, maxLoad } = summarizeLoads(sessions.slice(0, 8).reverse());
+  const { loadsByDate } = summarizeLoads(sessions.slice(0, 8).reverse());
   const feedbacks = makeFeedbacks({
     weekSessions,
     monthSessions,
     checkins,
     trainingHistory,
   });
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function hydrateDashboardWorkouts() {
+      await hydrateWorkoutExecutionFromApi();
+      await hydrateWorkoutSessionsFromApi();
+
+      if (!ignore) {
+        setRemoteRefresh((current) => current + 1);
+      }
+    }
+
+    hydrateDashboardWorkouts();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const metrics = [
     {
@@ -595,18 +733,7 @@ export default function DashboardPage() {
           <article className="dashboard-card dashboard-card--nested">
             <h2>Evolucao de cargas</h2>
             <p>Volume estimado por sessoes salvas: peso x repeticoes.</p>
-            <div className="load-chart">
-              {loadsByDate.length ? (
-                loadsByDate.map((item) => (
-                  <div key={`${item.date}-${item.workoutTitle}`} className="load-chart__bar">
-                    <span style={{ height: `${maxLoad ? Math.max(8, (item.totalLoad / maxLoad) * 100) : 0}%` }} />
-                    <small>{item.label}</small>
-                  </div>
-                ))
-              ) : (
-                <p>Salve execucoes de treino para montar o grafico de carga.</p>
-              )}
-            </div>
+            <LoadBarChart data={loadsByDate} />
           </article>
 
           <article className="dashboard-card dashboard-card--nested">

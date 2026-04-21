@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { loadCheckins } from "../../../data/checkinStorage";
 import {
   dietDays,
   getDietMetrics,
+  hydrateDietHistoryFromApi,
+  hydrateDietProtocolFromApi,
   loadDietHistory,
   loadDietProtocol,
   saveDietProtocol,
@@ -103,6 +105,25 @@ export default function NutritionPage() {
     },
     ...metrics.slice(1),
   ];
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function hydrateDiet() {
+      const result = await hydrateDietProtocolFromApi();
+      await hydrateDietHistoryFromApi();
+
+      if (!ignore && !result.error) {
+        setDiet(result.diet);
+      }
+    }
+
+    hydrateDiet();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   function updateDiet(nextDiet) {
     setDiet(saveDietProtocol(nextDiet));

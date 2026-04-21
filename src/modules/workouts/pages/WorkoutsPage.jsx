@@ -3,6 +3,8 @@ import { useLocation, useParams } from "react-router-dom";
 import { workoutsViews } from "../../../data/appData";
 import {
   getPreviousWorkoutSession,
+  hydrateWorkoutExecutionFromApi,
+  hydrateWorkoutSessionsFromApi,
   loadWorkoutExecution,
   saveWorkoutSession,
   saveWorkoutExecution,
@@ -83,6 +85,36 @@ function WorkoutExecutionSection() {
   const adherence = Math.round(
     (completedExercises / Math.max(selectedWorkout?.exercises.length || 1, 1)) * 100
   );
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function hydrateWorkouts() {
+      const result = await hydrateWorkoutExecutionFromApi();
+      await hydrateWorkoutSessionsFromApi();
+
+      if (ignore || result.error) {
+        return;
+      }
+
+      const nextPlan = result.plan;
+      const selectedId =
+        nextPlan.workouts.find((workout) => workout.enabled)?.id ||
+        nextPlan.workouts[0]?.id ||
+        "";
+
+      setWorkoutState({
+        plan: nextPlan,
+        selectedWorkoutId: selectedId,
+      });
+    }
+
+    hydrateWorkouts();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!isSessionActive) return undefined;

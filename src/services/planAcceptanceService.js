@@ -1,9 +1,29 @@
 import { savePlanAcceptanceLocally } from "../data/planAcceptanceStorage";
 import { getCurrentUser } from "./profileService";
 import { isSupabaseConfigured, requireSupabase } from "./supabaseClient";
+import { apiEndpoints } from "./api/endpoints";
+import { apiRequest, getApiToken, isLocalApiConfigured } from "./api/client";
 
 export async function savePlanChangeAcceptance(record) {
   const localRecord = savePlanAcceptanceLocally(record);
+
+  if (isLocalApiConfigured && getApiToken()) {
+    try {
+      const result = await apiRequest(apiEndpoints.planChangeAcceptances, {
+        method: "POST",
+        body: JSON.stringify(record),
+      });
+
+      return {
+        data: result.data || localRecord,
+        error: null,
+        skipped: false,
+        provider: "postgres",
+      };
+    } catch (error) {
+      return { data: localRecord, error, skipped: false, provider: "postgres" };
+    }
+  }
 
   if (!isSupabaseConfigured) {
     return { data: localRecord, error: null, skipped: true };

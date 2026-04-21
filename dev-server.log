@@ -1,0 +1,13 @@
+
+> app-fitness@0.0.1 dev
+> vite --host 127.0.0.1
+
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m285[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5173[22m/[39m
+[2m19:47:47[22m [36m[1m[vite][22m[39m [32m✨ new dependencies optimized: [33mrecharts[32m[39m
+[2m19:47:47[22m [36m[1m[vite][22m[39m [32m✨ optimized dependencies changed. reloading[39m
+[2m19:48:18[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/modules/dashboard/pages/DashboardPage.css[22m
+[2m19:48:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/modules/dashboard/pages/DashboardPage.jsx[22m
+Deseja finalizar o arquivo em lotes (S/N)? 

@@ -6,6 +6,7 @@ import logo from "../../../assets/logo.svg";
 import { foodMarkOptions, foodPreferencesCatalog } from "../../../data/foodPreferencesCatalog";
 import {
   buildFoodPreferencesContext,
+  hydrateFoodPreferencesFromApi,
   loadFoodPreferences,
   saveFoodPreferences,
 } from "../../../data/foodPreferencesStorage";
@@ -13,6 +14,7 @@ import { allGymEquipment, gymEquipmentCatalog } from "../../../data/gymEquipment
 import {
   buildEquipmentAiContext,
   getAllEquipmentIds,
+  hydrateGymEquipmentSelectionFromApi,
   loadGymEquipmentSelection,
   saveGymEquipmentSelection,
 } from "../../../data/gymEquipmentStorage";
@@ -250,7 +252,19 @@ export default function ProfilePage() {
     let ignore = false;
 
     async function hydrateRemoteProfile() {
-      const result = await loadRemoteProfile();
+      const [result, equipmentResult, foodResult] = await Promise.all([
+        loadRemoteProfile(),
+        hydrateGymEquipmentSelectionFromApi(),
+        hydrateFoodPreferencesFromApi(),
+      ]);
+
+      if (!ignore && !equipmentResult.error) {
+        setSelectedEquipmentIds(equipmentResult.selectedIds);
+      }
+
+      if (!ignore && !foodResult.error) {
+        setFoodPreferences(foodResult.preferences);
+      }
 
       if (ignore || result.skipped || result.error || !result.user) {
         return;

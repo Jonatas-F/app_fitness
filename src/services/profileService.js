@@ -1,7 +1,19 @@
 import { isSupabaseConfigured, requireSupabase } from "./supabaseClient";
 import { getSignedFileUrl, uploadUserFile } from "./storageService";
+import { apiEndpoints } from "./api/endpoints";
+import { apiRequest, getApiToken, getStoredApiUser, isLocalApiConfigured } from "./api/client";
 
 export async function getCurrentUser() {
+  if (isLocalApiConfigured && getApiToken()) {
+    try {
+      const data = await apiRequest(apiEndpoints.me);
+      return { user: data.user, error: null, skipped: false, provider: "postgres" };
+    } catch (error) {
+      const storedUser = getStoredApiUser();
+      return { user: storedUser, error, skipped: !storedUser, provider: "postgres" };
+    }
+  }
+
   if (!isSupabaseConfigured) {
     return { user: null, error: null, skipped: true };
   }
@@ -11,6 +23,23 @@ export async function getCurrentUser() {
 }
 
 export async function loadRemoteProfile() {
+  if (isLocalApiConfigured && getApiToken()) {
+    try {
+      const data = await apiRequest(apiEndpoints.profile);
+      const userData = await apiRequest(apiEndpoints.me);
+
+      return {
+        profile: data.profile,
+        user: userData.user,
+        error: null,
+        skipped: false,
+        provider: "postgres",
+      };
+    } catch (error) {
+      return { profile: null, user: getStoredApiUser(), error, skipped: false, provider: "postgres" };
+    }
+  }
+
   const { user, error: userError, skipped } = await getCurrentUser();
 
   if (skipped || userError || !user) {
@@ -31,6 +60,26 @@ export async function loadRemoteProfile() {
 }
 
 export async function saveRemoteProfile(account) {
+  if (isLocalApiConfigured && getApiToken()) {
+    try {
+      const data = await apiRequest(apiEndpoints.profile, {
+        method: "PUT",
+        body: JSON.stringify(account),
+      });
+      const userData = await apiRequest(apiEndpoints.me);
+
+      return {
+        profile: data.profile,
+        user: userData.user,
+        error: null,
+        skipped: false,
+        provider: "postgres",
+      };
+    } catch (error) {
+      return { profile: null, user: getStoredApiUser(), error, skipped: false, provider: "postgres" };
+    }
+  }
+
   const { user, error: userError, skipped } = await getCurrentUser();
 
   if (skipped || userError || !user) {

@@ -2,6 +2,8 @@ import { persistCheckins } from "../data/checkinStorage";
 import { getCurrentUser } from "./profileService";
 import { uploadUserFile } from "./storageService";
 import { isSupabaseConfigured, requireSupabase } from "./supabaseClient";
+import { apiEndpoints } from "./api/endpoints";
+import { apiRequest, getApiToken, isLocalApiConfigured } from "./api/client";
 
 function toLocalCheckin(row) {
   const payload = row.payload || {};
@@ -100,6 +102,18 @@ async function uploadRemoteCheckinPhotos({ userId, checkinId, photoUploads }) {
 }
 
 export async function loadRemoteCheckins() {
+  if (isLocalApiConfigured && getApiToken()) {
+    try {
+      const data = await apiRequest(apiEndpoints.checkins);
+      const checkins = (data.checkins || []).map(toLocalCheckin);
+      persistCheckins(checkins);
+
+      return { checkins, error: null, skipped: false, provider: "postgres" };
+    } catch (error) {
+      return { checkins: [], error, skipped: false, provider: "postgres" };
+    }
+  }
+
   if (!isSupabaseConfigured) {
     return { checkins: [], error: null, skipped: true };
   }
@@ -127,6 +141,30 @@ export async function loadRemoteCheckins() {
 }
 
 export async function saveRemoteCheckin(checkin, photoUploads = {}) {
+  if (isLocalApiConfigured && getApiToken()) {
+    try {
+      const payload = {
+        ...checkin,
+        photos: Array.isArray(checkin.photos)
+          ? checkin.photos.map(({ file, previewUrl, dataUrl, ...photo }) => photo)
+          : checkin.photos,
+      };
+      const data = await apiRequest(apiEndpoints.checkins, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      return {
+        data: toLocalCheckin(data.checkin),
+        error: null,
+        skipped: false,
+        provider: "postgres",
+      };
+    } catch (error) {
+      return { data: null, error, skipped: false, provider: "postgres" };
+    }
+  }
+
   if (!isSupabaseConfigured) {
     return { data: null, error: null, skipped: true };
   }
@@ -212,6 +250,15 @@ export async function saveRemoteCheckin(checkin, photoUploads = {}) {
 }
 
 export async function deleteRemoteCheckins() {
+  if (isLocalApiConfigured && getApiToken()) {
+    try {
+      await apiRequest(apiEndpoints.checkins, { method: "DELETE" });
+      return { error: null, skipped: false, provider: "postgres" };
+    } catch (error) {
+      return { error, skipped: false, provider: "postgres" };
+    }
+  }
+
   if (!isSupabaseConfigured) {
     return { error: null, skipped: true };
   }

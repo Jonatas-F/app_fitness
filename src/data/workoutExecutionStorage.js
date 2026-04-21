@@ -1,4 +1,6 @@
 import { loadCheckins, saveCheckin } from "./checkinStorage";
+import { apiEndpoints } from "../services/api/endpoints";
+import { apiRequest, getApiToken, isLocalApiConfigured } from "../services/api/client";
 
 const WORKOUT_EXECUTION_KEY = "shapeCertoWorkoutExecution";
 const WORKOUT_SESSION_HISTORY_KEY = "shapeCertoWorkoutSessionHistory";
@@ -188,6 +190,7 @@ export function saveWorkoutExecution(plan) {
   };
 
   localStorage.setItem(WORKOUT_EXECUTION_KEY, JSON.stringify(next));
+  syncWorkoutPlanToApi(next);
   return next;
 }
 
@@ -220,6 +223,7 @@ export function saveWorkoutSession(workout, options = {}) {
 
   const updated = [session, ...history];
   localStorage.setItem(WORKOUT_SESSION_HISTORY_KEY, JSON.stringify(updated));
+  syncWorkoutSessionToApi(session);
   saveCheckin(
     {
       cadence: "daily",
@@ -260,4 +264,72 @@ export function getWorkoutDashboardSummary(plan = loadWorkoutExecution()) {
     completedSets: completedSets.length,
     maxWeight: weights.length ? Math.max(...weights) : 0,
   };
+}
+
+export async function hydrateWorkoutExecutionFromApi() {
+  if (!isLocalApiConfigured || !getApiToken()) {
+    return { plan: loadWorkoutExecution(), skipped: true, error: null };
+  }
+
+  try {
+    const data = await apiRequest(apiEndpoints.activeWorkout);
+
+    if (data.protocol?.payload) {
+      const plan = saveWorkoutExecution(data.protocol.payload);
+      return { plan, skipped: false, error: null };
+    }
+
+    const plan = loadWorkoutExecution();
+    await syncWorkoutPlanToApi(plan);
+
+    return { plan, skipped: false, error: null };
+  } catch (error) {
+    return { plan: loadWorkoutExecution(), skipped: false, error };
+  }
+}
+
+export async function hydrateWorkoutSessionsFromApi() {
+  if (!isLocalApiConfigured || !getApiToken()) {
+    return { sessions: loadWorkoutSessionHistory(), skipped: true, error: null };
+  }
+
+  try {
+    const data = await apiRequest(apiEndpoints.workoutSessions);
+    const sessions = Array.isArray(data.sessions) ? data.sessions : [];
+    localStorage.setItem(WORKOUT_SESSION_HISTORY_KEY, JSON.stringify(sessions));
+
+    return { sessions, skipped: false, error: null };
+  } catch (error) {
+    return { sessions: loadWorkoutSessionHistory(), skipped: false, error };
+  }
+}
+
+async function syncWorkoutPlanToApi(plan) {
+  if (!isLocalApiConfigured || !getApiToken()) {
+    return;
+  }
+
+  try {
+    await apiRequest(apiEndpoints.activeWorkout, {
+      method: "PUT",
+      body: JSON.stringify(plan),
+    });
+  } catch (error) {
+    console.warn("Nao foi possivel sincronizar o protocolo de treino.", error);
+  }
+}
+
+async function syncWorkoutSessionToApi(session) {
+  if (!isLocalApiConfigured || !getApiToken()) {
+    return;
+  }
+
+  try {
+    await apiRequest(apiEndpoints.workoutSessions, {
+      method: "POST",
+      body: JSON.stringify(session),
+    });
+  } catch (error) {
+    console.warn("Nao foi possivel sincronizar a sessao de treino.", error);
+  }
 }

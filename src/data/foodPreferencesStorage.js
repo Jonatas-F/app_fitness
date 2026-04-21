@@ -1,4 +1,6 @@
 import { allFoodPreferenceItems, foodMarkOptions } from "./foodPreferencesCatalog";
+import { apiEndpoints } from "../services/api/endpoints";
+import { apiRequest, getApiToken, isLocalApiConfigured } from "../services/api/client";
 
 const FOOD_PREFERENCES_KEY = "shapeCertoFoodPreferences";
 
@@ -52,6 +54,7 @@ export function saveFoodPreferences(preferences) {
   );
 
   localStorage.setItem(FOOD_PREFERENCES_KEY, JSON.stringify(cleaned));
+  syncFoodPreferencesToApi(cleaned);
   return cleaned;
 }
 
@@ -71,4 +74,41 @@ export function buildFoodPreferencesContext(preferences) {
     rule:
       "O Personal Virtual deve respeitar alergias, intolerancias e itens evitados. Itens marcados como gosto ou quero incluir podem ser priorizados quando fizerem sentido para o objetivo.",
   };
+}
+
+export async function hydrateFoodPreferencesFromApi() {
+  if (!isLocalApiConfigured || !getApiToken()) {
+    return { preferences: loadFoodPreferences(), skipped: true, error: null };
+  }
+
+  try {
+    const data = await apiRequest(apiEndpoints.foodPreferences);
+    const remotePreferences = data.preferences || {};
+
+    if (Object.keys(remotePreferences).length) {
+      return { preferences: saveFoodPreferences(remotePreferences), skipped: false, error: null };
+    }
+
+    const preferences = loadFoodPreferences();
+    await syncFoodPreferencesToApi(preferences);
+
+    return { preferences, skipped: false, error: null };
+  } catch (error) {
+    return { preferences: loadFoodPreferences(), skipped: false, error };
+  }
+}
+
+async function syncFoodPreferencesToApi(preferences) {
+  if (!isLocalApiConfigured || !getApiToken()) {
+    return;
+  }
+
+  try {
+    await apiRequest(apiEndpoints.foodPreferences, {
+      method: "PUT",
+      body: JSON.stringify({ preferences }),
+    });
+  } catch (error) {
+    console.warn("Nao foi possivel sincronizar preferencias alimentares.", error);
+  }
 }

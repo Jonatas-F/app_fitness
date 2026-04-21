@@ -1,3 +1,6 @@
+import { apiEndpoints } from "../services/api/endpoints";
+import { apiRequest, getApiToken, isLocalApiConfigured } from "../services/api/client";
+
 const DIET_CURRENT_KEY = "shapeCertoDietCurrent";
 const DIET_HISTORY_KEY = "shapeCertoDietHistory";
 
@@ -183,6 +186,7 @@ export function saveDietProtocol(protocol) {
   };
 
   localStorage.setItem(DIET_CURRENT_KEY, JSON.stringify(finalProtocol));
+  syncDietProtocolToApi(finalProtocol);
   return finalProtocol;
 }
 
@@ -221,4 +225,57 @@ export function getDietMetrics(protocol, history) {
     { label: "Recomendado", value: current.recommendedMeals || "--", trend: "Sugestão do Personal Virtual" },
     { label: "Histórico", value: `${Array.isArray(history) ? history.length : 0}`, trend: "Dietas anteriores salvas" },
   ];
+}
+
+export async function hydrateDietProtocolFromApi() {
+  if (!isLocalApiConfigured || !getApiToken()) {
+    return { diet: loadDietProtocol(), skipped: true, error: null };
+  }
+
+  try {
+    const data = await apiRequest(apiEndpoints.activeDiet);
+
+    if (data.protocol?.payload) {
+      const diet = saveDietProtocol(data.protocol.payload);
+      return { diet, skipped: false, error: null };
+    }
+
+    const diet = loadDietProtocol();
+    await syncDietProtocolToApi(diet);
+
+    return { diet, skipped: false, error: null };
+  } catch (error) {
+    return { diet: loadDietProtocol(), skipped: false, error };
+  }
+}
+
+export async function hydrateDietHistoryFromApi() {
+  if (!isLocalApiConfigured || !getApiToken()) {
+    return { history: loadDietHistory(), skipped: true, error: null };
+  }
+
+  try {
+    const data = await apiRequest(apiEndpoints.dietHistory);
+    const history = (data.history || []).map((item) => item.payload).filter(Boolean);
+    localStorage.setItem(DIET_HISTORY_KEY, JSON.stringify(history));
+
+    return { history, skipped: false, error: null };
+  } catch (error) {
+    return { history: loadDietHistory(), skipped: false, error };
+  }
+}
+
+async function syncDietProtocolToApi(protocol) {
+  if (!isLocalApiConfigured || !getApiToken()) {
+    return;
+  }
+
+  try {
+    await apiRequest(apiEndpoints.activeDiet, {
+      method: "PUT",
+      body: JSON.stringify(protocol),
+    });
+  } catch (error) {
+    console.warn("Nao foi possivel sincronizar o protocolo alimentar.", error);
+  }
 }
