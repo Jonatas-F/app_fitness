@@ -1541,6 +1541,63 @@ export default function CheckinsPage() {
               </Field>
             </div>
 
+            <div className="checkins-routine-block">
+              <div>
+                <h3>{showMonthly ? "Cronograma do mes" : "Cronograma da semana"}</h3>
+                <p>
+                  Esses horarios orientam dieta, lembretes de refeicao, agua, treino e janelas de
+                  notificacao sem precisar configurar isso manualmente depois.
+                </p>
+              </div>
+
+              <div className="checkins-grid checkins-grid--three">
+                <Field label="Horario que acorda">
+                  <input
+                    type="time"
+                    name="wakeTime"
+                    value={formData.wakeTime}
+                    onChange={handleChange}
+                  />
+                </Field>
+
+                <Field label="Horario que vai dormir">
+                  <input
+                    type="time"
+                    name="sleepTime"
+                    value={formData.sleepTime}
+                    onChange={handleChange}
+                  />
+                </Field>
+
+                <Field label="Horario previsto do treino">
+                  <input
+                    type="time"
+                    name="plannedTrainingTime"
+                    value={formData.plannedTrainingTime}
+                    onChange={handleChange}
+                  />
+                </Field>
+
+                <Field label="Primeira refeicao do dia">
+                  <input
+                    type="time"
+                    name="firstMealTime"
+                    value={formData.firstMealTime}
+                    onChange={handleChange}
+                  />
+                </Field>
+
+                <Field label="Ultima refeicao do dia">
+                  <input
+                    type="time"
+                    name="lastMealTime"
+                    value={formData.lastMealTime}
+                    onChange={handleChange}
+                  />
+                </Field>
+              </div>
+            </div>
+
             {(showWeekly || showMonthly) ? (
               <div className="checkins-grid checkins-grid--two">
                 <Field

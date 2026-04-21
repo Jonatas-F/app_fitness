@@ -16,4 +16,5 @@ export const apiEndpoints = {
   dietHistory: "/diets/history",
   foodPreferences: "/preferences/foods",
   gymEquipment: "/preferences/gym-equipment",
+  assistantContext: "/assistant/context",
 };

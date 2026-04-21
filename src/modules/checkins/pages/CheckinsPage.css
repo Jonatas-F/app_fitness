@@ -923,6 +923,26 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.checkins-routine-block {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.checkins-routine-block h3 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.checkins-routine-block p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.66);
+  line-height: 1.5;
+}
+
 .checkins-inline-actions div {
   display: grid;
   gap: 4px;

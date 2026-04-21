@@ -8,6 +8,7 @@ import {
 } from "./api/client";
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3333";
+const GOOGLE_RETURN_KEY = "shapeCertoGoogleReturnTo";
 
 export async function signInWithEmail({ email, password }) {
   if (isLocalApiConfigured) {
@@ -73,8 +74,12 @@ export async function signUpWithEmail({ email, password, fullName, plan }) {
 
 export async function signInWithGoogle() {
   if (isLocalApiConfigured) {
+    const returnTo = `${window.location.pathname}${window.location.search}`;
+    sessionStorage.setItem(GOOGLE_RETURN_KEY, returnTo);
+
     const url = new URL(`${apiUrl}${apiEndpoints.google}`);
     url.searchParams.set("app_origin", window.location.origin);
+    url.searchParams.set("return_to", returnTo);
     window.location.href = url.toString();
     return { data: null, error: null, skipped: false, provider: "postgres" };
   }

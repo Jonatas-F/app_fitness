@@ -3,6 +3,8 @@ import { RouterProvider } from 'react-router-dom';
 import { router } from './routes/router';
 import { saveApiSession } from './services/api/client';
 
+const GOOGLE_RETURN_KEY = "shapeCertoGoogleReturnTo";
+
 export default function App() {
   useEffect(() => {
     const hash = window.location.hash.startsWith("#")
@@ -17,7 +19,22 @@ export default function App() {
 
     try {
       saveApiSession(JSON.parse(localSession));
-      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      const pendingReturnTo = sessionStorage.getItem(GOOGLE_RETURN_KEY);
+      sessionStorage.removeItem(GOOGLE_RETURN_KEY);
+
+      const nextPath =
+        pendingReturnTo && pendingReturnTo.startsWith("/") && !pendingReturnTo.startsWith("//")
+          ? pendingReturnTo
+          : `${window.location.pathname}${window.location.search}`;
+
+      const currentPath = `${window.location.pathname}${window.location.search}`;
+
+      if (nextPath !== currentPath) {
+        window.location.replace(nextPath);
+        return;
+      }
+
+      window.history.replaceState(null, "", nextPath);
     } catch (error) {
       console.warn("Nao foi possivel restaurar a sessao Google local.", error);
     }

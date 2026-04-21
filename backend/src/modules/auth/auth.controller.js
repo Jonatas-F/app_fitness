@@ -27,6 +27,17 @@ function isAllowedAppOrigin(origin) {
   return ["http://localhost:5173", "http://127.0.0.1:5173"].includes(origin);
 }
 
+function sanitizeReturnTo(value) {
+  const fallback = "/dashboard";
+  const returnTo = String(value || fallback);
+
+  if (!returnTo.startsWith("/") || returnTo.startsWith("//")) {
+    return fallback;
+  }
+
+  return returnTo;
+}
+
 function encodeState(state) {
   return Buffer.from(JSON.stringify(state)).toString("base64url");
 }
@@ -77,6 +88,7 @@ export async function handleGoogleStart(req, res, next) {
     const appOrigin = isAllowedAppOrigin(requestedOrigin)
       ? requestedOrigin
       : getGoogleConfig().appOrigin;
+    const returnTo = sanitizeReturnTo(req.query.return_to);
 
     if (!clientId) {
       return redirectWithError(res, "Google Client ID nao configurado.");
@@ -89,7 +101,7 @@ export async function handleGoogleStart(req, res, next) {
     url.searchParams.set("scope", googleScopes.join(" "));
     url.searchParams.set("access_type", "offline");
     url.searchParams.set("prompt", "select_account");
-    url.searchParams.set("state", encodeState({ appOrigin }));
+    url.searchParams.set("state", encodeState({ appOrigin, returnTo }));
 
     return res.redirect(url.toString());
   } catch (error) {
@@ -103,6 +115,7 @@ export async function handleGoogleCallback(req, res, next) {
     const { clientId, clientSecret, redirectUri, appOrigin: defaultAppOrigin } = getGoogleConfig();
     const state = decodeState(req.query.state);
     const appOrigin = isAllowedAppOrigin(state.appOrigin) ? state.appOrigin : defaultAppOrigin;
+    const returnTo = sanitizeReturnTo(state.returnTo);
 
     if (googleError) {
       return redirectWithError(res, `Google: ${googleError}`);
@@ -141,7 +154,7 @@ export async function handleGoogleCallback(req, res, next) {
     }
 
     const data = await signInWithGoogleProfile(profile);
-    const redirectUrl = new URL("/dashboard", appOrigin);
+    const redirectUrl = new URL(returnTo, appOrigin);
     redirectUrl.hash = new URLSearchParams({
       local_session: JSON.stringify(data),
     }).toString();

@@ -1,6 +1,6 @@
-import { verifyToken } from "../modules/auth/auth.service.js";
+import { validateAuthSession, verifyToken } from "../modules/auth/auth.service.js";
 
-export function requireAuth(req, res, next) {
+export async function requireAuth(req, res, next) {
   const header = req.headers.authorization || "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : null;
 
@@ -9,7 +9,7 @@ export function requireAuth(req, res, next) {
   }
 
   try {
-    req.auth = verifyToken(token);
+    req.auth = await validateAuthSession(verifyToken(token));
     return next();
   } catch (error) {
     return res.status(401).json({ error: "Sessao invalida ou expirada." });

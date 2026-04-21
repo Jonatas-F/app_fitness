@@ -50,6 +50,9 @@ import {
   handleSaveGymEquipment,
 } from "./modules/preferences/preferences.controller.js";
 import { ensureLocalPreferenceTables } from "./modules/preferences/preferences.service.js";
+import { handleGoogleRiscEvent } from "./modules/security/googleRisc.controller.js";
+import { ensureGoogleRiscTables } from "./modules/security/googleRisc.service.js";
+import { handleLoadAssistantContext } from "./modules/assistant/assistant.controller.js";
 
 const app = express();
 const allowedOrigins = new Set([
@@ -71,6 +74,14 @@ app.use(
   })
 );
 app.post("/billing/stripe/webhook", express.raw({ type: "application/json" }), handleStripeWebhook);
+app.post(
+  "/security/google-risc/events",
+  express.raw({
+    type: ["application/secevent+jwt", "text/plain", "application/jwt"],
+    limit: "256kb",
+  }),
+  handleGoogleRiscEvent
+);
 app.use(express.json({ limit: "2mb" }));
 
 app.get("/health", async (req, res, next) => {
@@ -131,6 +142,7 @@ app.get("/preferences/foods", requireAuth, handleLoadFoodPreferences);
 app.put("/preferences/foods", requireAuth, handleSaveFoodPreferences);
 app.get("/preferences/gym-equipment", requireAuth, handleLoadGymEquipment);
 app.put("/preferences/gym-equipment", requireAuth, handleSaveGymEquipment);
+app.get("/assistant/context", requireAuth, handleLoadAssistantContext);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
@@ -141,6 +153,7 @@ await ensureLocalBillingTables();
 await ensureLocalWorkoutTables();
 await ensureLocalDietTables();
 await ensureLocalPreferenceTables();
+await ensureGoogleRiscTables();
 
 app.listen(appConfig.port, () => {
   console.log(`Shape Certo API running on http://localhost:${appConfig.port}`);

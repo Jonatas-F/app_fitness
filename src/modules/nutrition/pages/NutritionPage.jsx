@@ -56,10 +56,76 @@ function getWaterRecommendation(checkin) {
 
   return {
     value: `${rounded.toLocaleString("pt-BR", { minimumFractionDigits: 1 })} L`,
+    liters: rounded,
     trend: "Estimativa pelo ultimo check-in",
     detail: `Base: ${checkin.weight || "--"} kg${checkin.bodyFat ? `, gordura ${checkin.bodyFat}` : ""}${
       checkin.muscleMass ? `, massa muscular ${checkin.muscleMass}` : ""
     }.`,
+  };
+}
+
+function timeToMinutes(value) {
+  const [hours, minutes] = String(value || "").split(":").map(Number);
+
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+    return null;
+  }
+
+  return hours * 60 + minutes;
+}
+
+function minutesToTime(value) {
+  const normalized = ((Math.round(value) % 1440) + 1440) % 1440;
+  const hours = String(Math.floor(normalized / 60)).padStart(2, "0");
+  const minutes = String(normalized % 60).padStart(2, "0");
+
+  return `${hours}:${minutes}`;
+}
+
+function getMealSchedule(meals, checkin) {
+  const enabledMeals = (meals || []).filter((meal) => meal.enabled);
+  const firstMealMinutes = timeToMinutes(checkin?.firstMealTime);
+  const lastMealMinutes = timeToMinutes(checkin?.lastMealTime);
+
+  if (!enabledMeals.length || firstMealMinutes === null || lastMealMinutes === null) {
+    return {};
+  }
+
+  const windowMinutes =
+    lastMealMinutes >= firstMealMinutes
+      ? lastMealMinutes - firstMealMinutes
+      : lastMealMinutes + 1440 - firstMealMinutes;
+  const step = enabledMeals.length > 1 ? windowMinutes / (enabledMeals.length - 1) : 0;
+
+  return enabledMeals.reduce((acc, meal, index) => {
+    acc[meal.id] = minutesToTime(firstMealMinutes + step * index);
+    return acc;
+  }, {});
+}
+
+function getWaterSchedule(waterRecommendation, checkin) {
+  const wakeMinutes = timeToMinutes(checkin?.wakeTime);
+  const sleepMinutes = timeToMinutes(checkin?.sleepTime);
+
+  if (!waterRecommendation.liters || wakeMinutes === null || sleepMinutes === null) {
+    return {
+      portions: "--",
+      window: "Preencha acordar e dormir no check-in.",
+      detail: "As notificacoes de agua usam essa janela quando estiver preenchida.",
+    };
+  }
+
+  const totalMl = Math.round(waterRecommendation.liters * 1000);
+  const portionMl = 400;
+  const portions = Math.max(3, Math.ceil(totalMl / portionMl));
+  const windowMinutes =
+    sleepMinutes >= wakeMinutes ? sleepMinutes - wakeMinutes : sleepMinutes + 1440 - wakeMinutes;
+  const interval = portions > 1 ? Math.round(windowMinutes / (portions - 1)) : windowMinutes;
+
+  return {
+    portions: `${portions} lembretes`,
+    window: `${minutesToTime(wakeMinutes)} ate ${minutesToTime(sleepMinutes)}`,
+    detail: `Aproximadamente ${Math.round(totalMl / portions)} ml a cada ${interval} min.`,
   };
 }
 
@@ -86,7 +152,8 @@ export default function NutritionPage() {
   const [selectedDayId, setSelectedDayId] = useState("segunda");
   const [openMeals, setOpenMeals] = useState([]);
   const metrics = getDietMetrics(diet, loadDietHistory());
-  const waterRecommendation = getWaterRecommendation(getLatestCompletedCheckin());
+  const latestCheckin = getLatestCompletedCheckin();
+  const waterRecommendation = getWaterRecommendation(latestCheckin);
   const selectedDayPlan =
     diet.dayPlans?.find((day) => day.id === selectedDayId) ||
     diet.dayPlans?.[0] || {
@@ -95,6 +162,8 @@ export default function NutritionPage() {
       meals: diet.meals || [],
     };
   const selectedDayActiveMeals = selectedDayPlan.meals.filter((meal) => meal.enabled).length;
+  const mealSchedule = getMealSchedule(selectedDayPlan.meals, latestCheckin);
+  const waterSchedule = getWaterSchedule(waterRecommendation, latestCheckin);
   const nutritionMetrics = [
     metrics[0],
     {
@@ -316,6 +385,30 @@ export default function NutritionPage() {
             <strong>{selectedDayActiveMeals}/{selectedDayPlan.meals.length}</strong>
           </div>
         </div>
+
+        <div className="nutrition-schedule-summary">
+          <article>
+            <span>Janela alimentar</span>
+            <strong>
+              {latestCheckin?.firstMealTime && latestCheckin?.lastMealTime
+                ? `${latestCheckin.firstMealTime} ate ${latestCheckin.lastMealTime}`
+                : "Falta preencher"}
+            </strong>
+            <p>Usada para distribuir os horarios das refeicoes ativas.</p>
+          </article>
+          <article>
+            <span>Agua no dia</span>
+            <strong>{waterRecommendation.value}</strong>
+            <p>
+              {waterSchedule.portions} · {waterSchedule.window}
+            </p>
+          </article>
+          <article>
+            <span>Espacamento</span>
+            <strong>{waterSchedule.detail}</strong>
+            <p>Esses horarios alimentam as notificacoes configuradas.</p>
+          </article>
+        </div>
       </section>
 
       <section className="meal-grid">
@@ -338,6 +431,13 @@ export default function NutritionPage() {
                 <div>
                   <h2>{meal.name}</h2>
                   <p>{meal.enabled ? "Habilitada no plano" : "Desabilitada neste protocolo"}</p>
+                  <small>
+                    {meal.enabled
+                      ? mealSchedule[meal.id]
+                        ? `Horario sugerido: ${mealSchedule[meal.id]}`
+                        : "Horario pendente no check-in"
+                      : "Sem horario neste protocolo"}
+                  </small>
                 </div>
               </button>
               <span>{meal.enabled ? "Ativa" : "Inativa"}</span>

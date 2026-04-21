@@ -1,7 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Icon } from "@iconify/react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import logo from "../../../assets/logo.svg";
 import { formatCurrency, getAnnualPrice, getPlanById, subscriptionPlans } from "../../../data/plans";
+import { signInWithEmail, signInWithGoogle, signUpWithEmail } from "../../../services/authService";
+import { getApiToken, getStoredApiUser } from "../../../services/api/client";
 import { createStripeCheckoutSession } from "../../../services/stripeService";
 import "./CheckoutPage.css";
 
@@ -9,10 +12,24 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedPlanId = searchParams.get("plan") || "intermediario";
+  const checkoutStatus = searchParams.get("checkout");
   const [billingCycle, setBillingCycle] = useState("annual");
   const [installments, setInstallments] = useState("12");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(getApiToken()));
+  const [connectedUser, setConnectedUser] = useState(() => getStoredApiUser());
+  const [authMode, setAuthMode] = useState("");
+  const [authForm, setAuthForm] = useState({
+    fullName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [authMessage, setAuthMessage] = useState("");
+  const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const selectedPlan = useMemo(() => getPlanById(selectedPlanId), [selectedPlanId]);
   const annualTotal = getAnnualPrice(selectedPlan);
@@ -20,13 +37,93 @@ export default function CheckoutPage() {
   const currentTotal = billingCycle === "annual" ? annualTotal : monthlyTotal;
   const installmentValue = annualTotal / Number(installments || 1);
 
+  useEffect(() => {
+    function syncAuthState() {
+      const hasToken = Boolean(getApiToken());
+      setIsAuthenticated(hasToken);
+      setConnectedUser(hasToken ? getStoredApiUser() : null);
+    }
+
+    syncAuthState();
+    window.addEventListener("shape-certo-auth-updated", syncAuthState);
+
+    return () => {
+      window.removeEventListener("shape-certo-auth-updated", syncAuthState);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (checkoutStatus !== "success") {
+      return undefined;
+    }
+
+    const timerId = window.setTimeout(() => {
+      navigate("/dashboard");
+    }, 3500);
+
+    return () => window.clearTimeout(timerId);
+  }, [checkoutStatus, navigate]);
+
   function handlePlanChange(planId) {
     setSearchParams({ plan: planId });
     setMessage("");
   }
 
+  function handleAuthChange(event) {
+    const { name, value } = event.target;
+    setAuthMessage("");
+    setAuthForm((current) => ({ ...current, [name]: value }));
+  }
+
+  async function handleAuthSubmit(event) {
+    event.preventDefault();
+
+    if (authMode === "signup" && authForm.password !== authForm.confirmPassword) {
+      setAuthMessage("A confirmacao da senha precisa ser igual a senha escolhida.");
+      return;
+    }
+
+    setIsAuthSubmitting(true);
+    setAuthMessage(authMode === "signup" ? "Criando sua conta..." : "Entrando na sua conta...");
+
+    const result =
+      authMode === "signup"
+        ? await signUpWithEmail({
+            email: authForm.email,
+            password: authForm.password,
+            fullName: authForm.fullName,
+            plan: selectedPlan.id,
+          })
+        : await signInWithEmail({
+            email: authForm.email,
+            password: authForm.password,
+          });
+
+    setIsAuthSubmitting(false);
+
+    if (result.error) {
+      setAuthMessage(result.error.message);
+      return;
+    }
+
+    setIsAuthenticated(true);
+    setConnectedUser(result.data?.user || getStoredApiUser());
+    setAuthMessage("Conta conectada. Agora finalize a assinatura com seguranca.");
+    setMessage("");
+  }
+
+  const connectedName = connectedUser?.user_metadata?.full_name || "Conta conectada";
+  const connectedEmail = connectedUser?.email || "Usuario autenticado";
+
   async function handleSubmit(event) {
     event.preventDefault();
+
+    if (!isAuthenticated && !getApiToken()) {
+      setMessage("Antes de finalizar, crie sua conta ou entre com Google/e-mail para vincular o plano.");
+      setAuthMessage("Escolha uma forma de acesso para continuar com este plano.");
+      return;
+    }
+
     setIsSubmitting(true);
     setMessage("Abrindo checkout seguro do Stripe...");
 
@@ -69,6 +166,21 @@ export default function CheckoutPage() {
 
       <section className="checkout-shell">
         <div className="checkout-main glass-panel">
+          {checkoutStatus === "success" ? (
+            <section className="checkout-success-panel">
+              <span>Pagamento confirmado</span>
+              <h1>Assinatura recebida com sucesso.</h1>
+              <p>
+                Estamos vinculando o plano ao seu perfil. Voce sera levado para o app em instantes.
+              </p>
+              <button type="button" className="primary-button" onClick={() => navigate("/dashboard")}>
+                Entrar no app agora
+              </button>
+            </section>
+          ) : null}
+
+          {checkoutStatus === "success" ? null : (
+            <>
           <span className="checkout-eyebrow">Assinatura</span>
           <h1>Escolha o plano e finalize com o cartao.</h1>
           <p>
@@ -111,17 +223,148 @@ export default function CheckoutPage() {
           </div>
 
           <form className="checkout-form" onSubmit={handleSubmit}>
+            {!isAuthenticated ? (
+              <section className="checkout-auth-card">
+                <div className="checkout-auth-card__intro">
+                  <div>
+                    <span className="checkout-auth-card__eyebrow">Acesso</span>
+                    <h2>Crie sua conta para vincular este plano.</h2>
+                  </div>
+                  <p>Pagamento associado ao seu perfil, check-ins, treinos e dieta.</p>
+                </div>
+
+                <div className="checkout-auth-card__tabs">
+                  <button
+                    type="button"
+                    className={authMode === "signup" ? "is-selected" : ""}
+                    onClick={() => {
+                      setAuthMode((current) => (current === "signup" ? "" : "signup"));
+                      setAuthMessage("");
+                    }}
+                    aria-expanded={authMode === "signup"}
+                  >
+                    Criar conta
+                  </button>
+                  <button
+                    type="button"
+                    className={authMode === "login" ? "is-selected" : ""}
+                    onClick={() => {
+                      setAuthMode((current) => (current === "login" ? "" : "login"));
+                      setAuthMessage("");
+                    }}
+                    aria-expanded={authMode === "login"}
+                  >
+                    Ja tenho conta
+                  </button>
+                </div>
+
+                <button type="button" className="checkout-google-button" onClick={signInWithGoogle}>
+                  <Icon icon="logos:google-icon" aria-hidden="true" />
+                  Entrar com Google e continuar
+                </button>
+
+                {authMode ? (
+                  <>
+                    <div className="checkout-auth-divider">
+                      <span>{authMode === "signup" ? "criar com e-mail" : "entrar com e-mail"}</span>
+                    </div>
+
+                    <div className="checkout-auth-fields">
+                      {authMode === "signup" ? (
+                        <label>
+                          <span>Nome completo</span>
+                          <input
+                            name="fullName"
+                            value={authForm.fullName}
+                            onChange={handleAuthChange}
+                            placeholder="Seu nome"
+                          />
+                        </label>
+                      ) : null}
+
+                      <label>
+                        <span>E-mail</span>
+                        <input
+                          type="email"
+                          name="email"
+                          value={authForm.email}
+                          onChange={handleAuthChange}
+                          placeholder="usuario@gmail.com"
+                        />
+                      </label>
+
+                      <label>
+                        <span>Senha</span>
+                        <div className="checkout-password-field">
+                          <input
+                            type={showPassword ? "text" : "password"}
+                            name="password"
+                            value={authForm.password}
+                            onChange={handleAuthChange}
+                            placeholder="Minimo 8 caracteres"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword((current) => !current)}
+                            aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                          >
+                            <Icon icon={showPassword ? "solar:eye-closed-bold" : "solar:eye-bold"} />
+                          </button>
+                        </div>
+                      </label>
+
+                      {authMode === "signup" ? (
+                        <label>
+                          <span>Confirmar senha</span>
+                          <div className="checkout-password-field">
+                            <input
+                              type={showConfirmPassword ? "text" : "password"}
+                              name="confirmPassword"
+                              value={authForm.confirmPassword}
+                              onChange={handleAuthChange}
+                              placeholder="Repita a senha"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowConfirmPassword((current) => !current)}
+                              aria-label={showConfirmPassword ? "Ocultar confirmacao" : "Mostrar confirmacao"}
+                            >
+                              <Icon icon={showConfirmPassword ? "solar:eye-closed-bold" : "solar:eye-bold"} />
+                            </button>
+                          </div>
+                        </label>
+                      ) : null}
+                    </div>
+
+                    <button
+                      type="button"
+                      className="secondary-button checkout-auth-submit"
+                      onClick={handleAuthSubmit}
+                      disabled={isAuthSubmitting}
+                    >
+                      {isAuthSubmitting
+                        ? "Conectando..."
+                        : authMode === "signup"
+                          ? "Criar conta e continuar"
+                          : "Entrar e continuar"}
+                    </button>
+                  </>
+                ) : null}
+
+                {authMessage ? <small className="checkout-auth-message">{authMessage}</small> : null}
+              </section>
+            ) : (
+              <section className="checkout-auth-ready" aria-live="polite">
+                <span className="checkout-auth-card__eyebrow">Acesso liberado</span>
+                <div>
+                  <strong>{connectedName}</strong>
+                  <small>{connectedEmail}</small>
+                </div>
+                <p>Permaneça nesta pagina para finalizar a assinatura. O plano sera vinculado a esta conta.</p>
+              </section>
+            )}
+
             <div className="checkout-form__grid">
-              <label>
-                <span>Nome para cobranca</span>
-                <input placeholder="Nome completo" />
-              </label>
-
-              <label>
-                <span>Email de cobranca</span>
-                <input type="email" placeholder="usuario@gmail.com" />
-              </label>
-
               {billingCycle === "annual" ? (
                 <label>
                   <span>Parcelamento do anual</span>
@@ -138,7 +381,7 @@ export default function CheckoutPage() {
 
             <p className="checkout-secure-note">
               Os dados do cartao serao preenchidos diretamente no Stripe. O Shape Certo
-              recebe apenas o status da assinatura e o plano aprovado.
+              usa os dados da conta conectada para vincular assinatura e plano aprovado.
             </p>
 
             <button type="submit" className="primary-button">
@@ -149,6 +392,8 @@ export default function CheckoutPage() {
             </button>
             {message ? <small className="checkout-message">{message}</small> : null}
           </form>
+            </>
+          )}
         </div>
 
         <aside className="checkout-summary glass-panel">

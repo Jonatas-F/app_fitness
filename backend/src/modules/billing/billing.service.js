@@ -34,6 +34,12 @@ function getPlanAmount(planId, billingCycle) {
   return Math.round(amount * 100);
 }
 
+function resolveAppOrigin(origin) {
+  return ["http://localhost:5173", "http://127.0.0.1:5173"].includes(origin)
+    ? origin
+    : process.env.STRIPE_SUCCESS_URL?.replace(/\/dashboard$/, "") || "http://localhost:5173";
+}
+
 export async function ensureLocalBillingTables() {
   await pool.query(`
     create table if not exists payment_profiles (
@@ -202,14 +208,15 @@ async function getOrCreateStripeCustomer(accountId) {
   return customer.id;
 }
 
-export async function createCheckoutSession(accountId, { planId, billingCycle, installments }) {
+export async function createCheckoutSession(accountId, { planId, billingCycle, installments, appOrigin: requestedAppOrigin }) {
   const safePlanId = plans[planId] ? planId : "intermediario";
   const safeBillingCycle = billingCycle === "annual" ? "annual" : "monthly";
   const plan = getPlan(safePlanId);
   const customerId = await getOrCreateStripeCustomer(accountId);
   const client = requireStripe();
-  const successUrl = process.env.STRIPE_SUCCESS_URL || "http://localhost:5173/dashboard";
-  const cancelUrl = process.env.STRIPE_CANCEL_URL || "http://localhost:5173/checkout";
+  const appOrigin = resolveAppOrigin(requestedAppOrigin);
+  const successUrl = `${appOrigin}/checkout?checkout=success&plan=${safePlanId}`;
+  const cancelUrl = `${appOrigin}/checkout?checkout=cancelled&plan=${safePlanId}`;
   const session = await client.checkout.sessions.create({
     mode: "subscription",
     customer: customerId,

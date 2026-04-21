@@ -15,6 +15,7 @@ export async function createStripeCheckoutSession({
           planId,
           billingCycle,
           installments: Number(installments) || 1,
+          appOrigin: window.location.origin,
         }),
       });
 

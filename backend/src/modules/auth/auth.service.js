@@ -57,6 +57,7 @@ export function toAuthResponse(account, profile = null) {
   const token = signPayload({
     sub: String(account.id),
     email: account.email,
+    sv: Number(account.auth_session_version || 1),
     iat: now,
     exp: now + tokenTtlSeconds,
   });
@@ -99,6 +100,15 @@ export async function ensureLocalAuthColumns() {
   await pool.query(`
     alter table accounts
       add column if not exists billing_cycle varchar(20) not null default 'monthly';
+
+    alter table accounts
+      add column if not exists google_subject text,
+      add column if not exists google_signin_disabled boolean not null default false,
+      add column if not exists auth_session_version integer not null default 1;
+
+    create unique index if not exists idx_accounts_google_subject
+      on accounts (google_subject)
+      where google_subject is not null;
   `);
 }
 
@@ -161,6 +171,12 @@ export async function signInWithEmail({ email, password }) {
     throw error;
   }
 
+  if (account.account_status === "blocked") {
+    const error = new Error("Conta em revisao de seguranca. Redefina o acesso antes de continuar.");
+    error.status = 403;
+    throw error;
+  }
+
   await pool.query("update accounts set last_login_at = current_timestamp where id = $1;", [account.id]);
 
   const profileResult = await pool.query("select * from user_profiles where account_id = $1 limit 1;", [account.id]);
@@ -186,27 +202,34 @@ export async function signInWithGoogleProfile(profile) {
     let account = existing.rows[0];
 
     if (account) {
+      if (account.google_signin_disabled || account.account_status === "blocked") {
+        const error = new Error("Login com Google temporariamente bloqueado por protecao da conta.");
+        error.status = 403;
+        throw error;
+      }
+
       const updated = await client.query(
         `
           update accounts
           set auth_provider = 'google',
+              google_subject = coalesce($2, google_subject),
               account_status = 'active',
               last_login_at = current_timestamp,
               updated_at = current_timestamp
           where id = $1
           returning *;
         `,
-        [account.id]
+        [account.id, profile.sub || null]
       );
       account = updated.rows[0];
     } else {
       const created = await client.query(
         `
-          insert into accounts (email, auth_provider, account_status, plan_type, last_login_at)
-          values ($1, 'google', 'active', 'intermediario', current_timestamp)
+          insert into accounts (email, auth_provider, google_subject, account_status, plan_type, last_login_at)
+          values ($1, 'google', $2, 'active', 'intermediario', current_timestamp)
           returning *;
         `,
-        [email]
+        [email, profile.sub || null]
       );
       account = created.rows[0];
     }
@@ -252,4 +275,31 @@ export async function getCurrentUser(accountId) {
     profile: profileResult.rows[0] || null,
     account,
   };
+}
+
+export async function validateAuthSession(payload) {
+  const result = await pool.query(
+    `
+      select id, account_status, auth_session_version
+      from accounts
+      where id = $1
+      limit 1;
+    `,
+    [payload.sub]
+  );
+  const account = result.rows[0];
+
+  if (!account) {
+    throw new Error("Usuario nao encontrado.");
+  }
+
+  if (account.account_status === "blocked") {
+    throw new Error("Conta em revisao de seguranca.");
+  }
+
+  if (Number(payload.sv || 1) !== Number(account.auth_session_version || 1)) {
+    throw new Error("Sessao revogada.");
+  }
+
+  return payload;
 }

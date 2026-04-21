@@ -26,6 +26,8 @@ export function saveApiSession(data) {
   if (data?.user) {
     localStorage.setItem(API_USER_KEY, JSON.stringify(data.user));
   }
+
+  window.dispatchEvent(new CustomEvent("shape-certo-auth-updated"));
 }
 
 export function clearApiSession() {
