@@ -19,6 +19,7 @@ export const apiEndpoints = {
   workoutSessions: "/workout-sessions",
   activeDiet: "/diets/active",
   dietHistory: "/diets/history",
+  dietMealLogs: "/diets/meal-logs",
   foodPreferences: "/preferences/foods",
   gymEquipment: "/preferences/gym-equipment",
   assistantContext: "/assistant/context",

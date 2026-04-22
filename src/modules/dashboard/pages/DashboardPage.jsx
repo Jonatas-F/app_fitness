@@ -6,6 +6,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  LabelList,
   Legend,
   Pie,
   PieChart,
@@ -31,7 +32,12 @@ const chartAxisStyle = { fill: "rgba(255, 255, 255, 0.58)", fontSize: 12 };
 const donutColors = ["#ff2e2e", "rgba(255, 255, 255, 0.13)"];
 
 function numberValue(value) {
-  const parsed = Number(String(value || "").replace(",", ".").replace(/[^\d.-]/g, ""));
+  if (value === null || value === undefined) return null;
+
+  const normalized = String(value).trim();
+  if (!normalized) return null;
+
+  const parsed = Number(normalized.replace(",", ".").replace(/[^\d.-]/g, ""));
   return Number.isFinite(parsed) ? parsed : null;
 }
 
@@ -68,6 +74,46 @@ function formatShortDate(value) {
   return new Date(value).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
+  });
+}
+
+function formatDateInputValue(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
+}
+
+function getTrendPercent(currentValue, previousValue) {
+  const current = numberValue(currentValue);
+  const previous = numberValue(previousValue);
+
+  if (current === null || previous === null || previous === 0) {
+    return null;
+  }
+
+  return ((current - previous) / Math.abs(previous)) * 100;
+}
+
+function addTrendDeltas(data, keys) {
+  const previousValues = {};
+
+  return data.map((item) => {
+    const next = { ...item };
+
+    keys.forEach((key) => {
+      const current = numberValue(item[key]);
+      const trend = current !== null ? getTrendPercent(current, previousValues[key]) : null;
+
+      if (trend !== null) {
+        next[`${key}TrendPercent`] = trend;
+      }
+
+      if (current !== null) {
+        previousValues[key] = current;
+      }
+    });
+
+    return next;
   });
 }
 
@@ -137,13 +183,13 @@ function summarizeLoads(sessions) {
     };
   });
 
-  return { loadsByDate };
+  return { loadsByDate: addTrendDeltas(loadsByDate, ["totalLoad"]) };
 }
 
 function buildMonthlyActivityData(sessions, checkins) {
   const today = new Date();
 
-  return Array.from({ length: 6 }, (_, index) => {
+  const data = Array.from({ length: 6 }, (_, index) => {
     const date = new Date(today.getFullYear(), today.getMonth() - (5 - index), 1);
     const month = date.getMonth();
     const year = date.getFullYear();
@@ -160,6 +206,8 @@ function buildMonthlyActivityData(sessions, checkins) {
       }).length,
     };
   });
+
+  return addTrendDeltas(data, ["treinos", "checkins"]);
 }
 
 function makeDonutData(done, total) {
@@ -294,21 +342,118 @@ const bodyChartGroups = [
 ];
 
 function makeBodyChartData(checkins, fields) {
-  return checkins.slice(0, 8).reverse().map((item) => {
-    const row = {
-      id: item.id,
-      label: formatShortDate(item.createdAt),
-    };
+  const rowsByDate = [...checkins]
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+    .reduce((groups, item) => {
+      const date = formatDateInputValue(item.createdAt);
+      if (!date) return groups;
 
-    fields.forEach((field) => {
-      const value = numberValue(item[field.key]);
-      if (value !== null) {
-        row[field.key] = value;
-      }
-    });
+      const row = groups.get(date) || {
+        id: date,
+        date,
+        label: formatShortDate(item.createdAt),
+      };
 
-    return row;
-  });
+      fields.forEach((field) => {
+        const value = numberValue(item[field.key]);
+        if (value !== null) {
+          row[field.key] = value;
+        }
+      });
+
+      groups.set(date, row);
+      return groups;
+    }, new Map());
+
+  const rows = Array.from(rowsByDate.values());
+
+  return addTrendDeltas(rows, fields.map((field) => field.key));
+}
+
+function formatChartValueLabel(value) {
+  if (value === undefined || value === null || value === "") return "";
+  const number = Number(value);
+  if (!Number.isFinite(number)) return value;
+  return number.toFixed(number % 1 === 0 ? 0 : 1);
+}
+
+function formatTrendPercent(value) {
+  const trend = Number(value);
+  if (!Number.isFinite(trend)) return "";
+  const arrow = trend >= 0 ? "↑" : "↓";
+  return `${arrow} ${Math.abs(trend).toFixed(1)}%`;
+}
+
+function getTrendClass(value) {
+  const trend = Number(value);
+  if (!Number.isFinite(trend) || trend === 0) return "is-neutral";
+  return trend > 0 ? "is-positive" : "is-negative";
+}
+
+function ChartValueLabel({ x, y, width, value, index, dataKey, data }) {
+  if (x === undefined || y === undefined || value === undefined || value === null) {
+    return null;
+  }
+
+  const trend = data?.[index]?.[`${dataKey}TrendPercent`];
+  const trendLabel = formatTrendPercent(trend);
+  const trendClass = getTrendClass(trend);
+  const labelX = typeof width === "number" ? x + width / 2 : x;
+
+  return (
+    <text className="dashboard-chart-point-label" x={labelX} y={y - 12} textAnchor="middle">
+      <tspan>{formatChartValueLabel(value)}</tspan>
+      {trendLabel ? <tspan className={trendClass} dx="4">{trendLabel}</tspan> : null}
+    </text>
+  );
+}
+
+function ChartXAxisTick({ x, y, payload, missingLabels }) {
+  const isMissing = missingLabels?.has(payload?.value);
+
+  return (
+    <text
+      className={`dashboard-chart-x-tick${isMissing ? " is-missing" : ""}`}
+      x={x}
+      y={y + 14}
+      textAnchor="middle"
+    >
+      {payload?.value}
+    </text>
+  );
+}
+
+function getChartRange(data, fields) {
+  const values = data.flatMap((item) =>
+    fields.map((field) => item[field.key]).filter((value) => typeof value === "number")
+  );
+
+  if (!values.length) {
+    return null;
+  }
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = Math.max(max - min, Math.abs(max) * 0.025, 1);
+
+  return { min, max, range };
+}
+
+function getChartDomain(data, fields, zoomLevel = 1) {
+  const rangeInfo = getChartRange(data, fields);
+
+  if (!rangeInfo) {
+    return ["auto", "auto"];
+  }
+
+  const { min, max, range } = rangeInfo;
+  const safeZoom = Math.min(2.6, Math.max(0.55, zoomLevel));
+  const padding = (range * 0.48) / safeZoom;
+
+  return [
+    Number((min - padding).toFixed(2)),
+    Number((max + padding).toFixed(2)),
+  ];
 }
 
 function DashboardTooltip({ active, payload, label }) {
@@ -321,63 +466,209 @@ function DashboardTooltip({ active, payload, label }) {
       <strong>{label}</strong>
       {payload
         .filter((item) => item.value !== undefined && item.value !== null)
-        .map((item) => (
-          <span key={item.dataKey}>
-            <i style={{ background: item.color || item.fill }} />
-            {item.name}: {item.value}
-          </span>
-        ))}
+        .map((item) => {
+          const trend = item.payload?.[`${item.dataKey}TrendPercent`];
+          const trendLabel = formatTrendPercent(trend);
+          const trendClass = getTrendClass(trend);
+
+          return (
+            <span key={item.dataKey}>
+              <i style={{ background: item.color || item.fill }} />
+              <b>{item.name}: {formatChartValueLabel(item.value)}</b>
+              {trendLabel ? <em className={trendClass}>{trendLabel}</em> : null}
+            </span>
+          );
+        })}
     </div>
   );
 }
 
 function BodyLineChart({ title, fields, checkins }) {
+  const [activeFieldKeys, setActiveFieldKeys] = useState(() => fields.map((field) => field.key));
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [yZoomLevel, setYZoomLevel] = useState(1);
   const data = makeBodyChartData(checkins, fields);
   const hasData = data.some((item) => fields.some((field) => typeof item[field.key] === "number"));
+  const activeFields = fields.filter((field) => activeFieldKeys.includes(field.key));
   const chartId = slugify(title);
+  const visibleFields = activeFields.length ? activeFields : fields;
+  const firstDate = data[0]?.date || "";
+  const lastDate = data[data.length - 1]?.date || "";
+  const selectedStartDate = startDate || firstDate;
+  const selectedEndDate = endDate || lastDate;
+  const chartData = data.filter((item) => {
+    if (!item.date) return false;
+    if (selectedStartDate && item.date < selectedStartDate) return false;
+    if (selectedEndDate && item.date > selectedEndDate) return false;
+    return true;
+  });
+  const labelDataStatus = chartData.reduce((status, item) => {
+    const hasVisibleData = visibleFields.some((field) => typeof item[field.key] === "number");
+    status[item.label] = Boolean(status[item.label] || hasVisibleData);
+    return status;
+  }, {});
+  const missingLabels = new Set(
+    Object.entries(labelDataStatus)
+      .filter(([, hasVisibleData]) => !hasVisibleData)
+      .map(([label]) => label)
+  );
+  const domain = getChartDomain(chartData, visibleFields, yZoomLevel);
+
+  useEffect(() => {
+    if (!data.length) return;
+    setStartDate((current) => current || data[0].date);
+    setEndDate((current) => current || data[data.length - 1].date);
+  }, [firstDate, lastDate]);
+
+  function handleFieldClick(fieldKey) {
+    setActiveFieldKeys((current) => {
+      if (current.length === 1 && current[0] === fieldKey) {
+        return fields.map((field) => field.key);
+      }
+
+      return [fieldKey];
+    });
+    setYZoomLevel(1);
+  }
+
+  function handleZoomReset() {
+    setStartDate(firstDate);
+    setEndDate(lastDate);
+    setYZoomLevel(1);
+  }
 
   return (
     <article className="body-chart dashboard-chart-shell">
       <header className="dashboard-chart-header">
         <h3>{title}</h3>
-        <span>{hasData ? `${data.length} registros` : "sem dados"}</span>
+        <span>{hasData ? `${chartData.length}/${data.length} registros` : "sem dados"}</span>
       </header>
 
       {hasData ? (
-        <div className="dashboard-chart-area">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
-              <defs>
-                {fields.map((field, index) => (
-                  <linearGradient key={field.key} id={`body-${chartId}-${field.key}`} x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="5%" stopColor={chartPalette[index % chartPalette.length]} stopOpacity={0.26} />
-                    <stop offset="95%" stopColor={chartPalette[index % chartPalette.length]} stopOpacity={0.02} />
-                  </linearGradient>
-                ))}
-              </defs>
-              <CartesianGrid stroke="rgba(255, 255, 255, 0.07)" vertical={false} />
-              <XAxis dataKey="label" tick={chartAxisStyle} axisLine={false} tickLine={false} />
-              <YAxis tick={chartAxisStyle} axisLine={false} tickLine={false} width={40} />
-              <Tooltip content={<DashboardTooltip />} />
-              <Legend iconType="circle" wrapperStyle={{ color: "rgba(255, 255, 255, 0.72)", fontSize: 12 }} />
-              {fields.map((field, index) => (
-                <Area
-                  key={field.key}
-                  type="monotone"
-                  dataKey={field.key}
-                  name={field.label}
-                  stroke={chartPalette[index % chartPalette.length]}
-                  fill={`url(#body-${chartId}-${field.key})`}
-                  strokeWidth={2.2}
-                  dot={{ r: 3, strokeWidth: 0, fill: chartPalette[index % chartPalette.length] }}
-                  activeDot={{ r: 5, strokeWidth: 0, fill: chartPalette[index % chartPalette.length] }}
-                  connectNulls
-                  isAnimationActive={false}
+        <>
+          <div className="dashboard-chart-controls" aria-label={`Zoom da escala de ${title}`}>
+            <label className="dashboard-chart-date-control">
+              <span className="dashboard-chart-scale">Data inicial</span>
+              <input
+                type="date"
+                min={firstDate}
+                max={selectedEndDate || lastDate}
+                value={selectedStartDate}
+                onChange={(event) => setStartDate(event.target.value)}
+              />
+            </label>
+            <label className="dashboard-chart-date-control">
+              <span className="dashboard-chart-scale">Data final</span>
+              <input
+                type="date"
+                min={selectedStartDate || firstDate}
+                max={lastDate}
+                value={selectedEndDate}
+                onChange={(event) => setEndDate(event.target.value)}
+              />
+            </label>
+            <label className="dashboard-chart-zoom-slider dashboard-chart-y-slider">
+              <span className="dashboard-chart-scale">Eixo Y {Math.round(yZoomLevel * 100)}%</span>
+              <input
+                type="range"
+                min="0.55"
+                max="2.6"
+                step="0.05"
+                value={yZoomLevel}
+                onChange={(event) => setYZoomLevel(Number(event.target.value))}
+              />
+              <span className="dashboard-chart-zoom-hint">
+                <small>mais aberto</small>
+                <small>mais fechado</small>
+              </span>
+            </label>
+            <button type="button" onClick={handleZoomReset}>
+              Resetar
+            </button>
+          </div>
+          <div className="dashboard-chart-area">
+            {chartData.length ? null : (
+              <p className="dashboard-chart-empty">Nao ha registros no periodo selecionado.</p>
+            )}
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
+                <defs>
+                  {fields.map((field, index) => (
+                    <linearGradient key={field.key} id={`body-${chartId}-${field.key}`} x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="5%" stopColor={chartPalette[index % chartPalette.length]} stopOpacity={0.26} />
+                      <stop offset="95%" stopColor={chartPalette[index % chartPalette.length]} stopOpacity={0.02} />
+                    </linearGradient>
+                  ))}
+                </defs>
+                <CartesianGrid stroke="rgba(255, 255, 255, 0.07)" vertical={false} />
+                <XAxis
+                  dataKey="label"
+                  tick={(props) => <ChartXAxisTick {...props} missingLabels={missingLabels} />}
+                  axisLine={false}
+                  tickLine={false}
                 />
-              ))}
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+                <YAxis
+                  tick={chartAxisStyle}
+                  axisLine={false}
+                  tickLine={false}
+                  width={48}
+                  domain={domain}
+                  allowDataOverflow={false}
+                  tickFormatter={(value) => Number(value).toFixed(Number(value) % 1 === 0 ? 0 : 1)}
+                />
+                <Tooltip content={<DashboardTooltip />} />
+                {fields.map((field, index) =>
+                  activeFieldKeys.includes(field.key) ? (
+                    <Area
+                      key={field.key}
+                      type="monotone"
+                      dataKey={field.key}
+                      name={field.label}
+                      stroke={chartPalette[index % chartPalette.length]}
+                      fill={`url(#body-${chartId}-${field.key})`}
+                      strokeWidth={activeFieldKeys.length === 1 ? 3 : 2.2}
+                      dot={{ r: activeFieldKeys.length === 1 ? 4 : 3, strokeWidth: 0, fill: chartPalette[index % chartPalette.length] }}
+                      activeDot={{ r: 6, strokeWidth: 0, fill: chartPalette[index % chartPalette.length] }}
+                      connectNulls
+                      isAnimationActive={false}
+                    >
+                      <LabelList
+                        dataKey={field.key}
+                        position="top"
+                        content={(props) => (
+                          <ChartValueLabel
+                            {...props}
+                            dataKey={field.key}
+                            data={chartData}
+                          />
+                        )}
+                      />
+                    </Area>
+                  ) : null
+                )}
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="dashboard-chart-legend" aria-label={`Selecionar linhas de ${title}`}>
+            {fields.map((field, index) => {
+              const isActive = activeFieldKeys.includes(field.key);
+
+              return (
+                <button
+                  key={field.key}
+                  type="button"
+                  className={isActive ? "is-active" : ""}
+                  onClick={() => handleFieldClick(field.key)}
+                  title={isActive && activeFieldKeys.length === 1 ? "Mostrar todos novamente" : `Isolar ${field.label}`}
+                >
+                  <i style={{ background: chartPalette[index % chartPalette.length] }} />
+                  {field.label}
+                </button>
+              );
+            })}
+          </div>
+        </>
       ) : (
         <p className="dashboard-chart-empty">Salve check-ins com esses dados para montar o grafico.</p>
       )}
@@ -404,7 +695,13 @@ function LoadBarChart({ data }) {
             fill="#ff2e2e"
             radius={[8, 8, 3, 3]}
             isAnimationActive={false}
-          />
+          >
+            <LabelList
+              dataKey="totalLoad"
+              position="top"
+              content={(props) => <ChartValueLabel {...props} dataKey="totalLoad" data={data} />}
+            />
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -467,8 +764,20 @@ function MonthlyActivityChart({ data }) {
             <YAxis tick={chartAxisStyle} axisLine={false} tickLine={false} width={44} />
             <Tooltip content={<DashboardTooltip />} />
             <Legend iconType="circle" wrapperStyle={{ color: "rgba(255, 255, 255, 0.72)", fontSize: 12 }} />
-            <Bar dataKey="treinos" name="Treinos" fill="#ff2e2e" radius={[8, 8, 3, 3]} isAnimationActive={false} />
-            <Bar dataKey="checkins" name="Check-ins" fill="#f2f2f2" radius={[8, 8, 3, 3]} isAnimationActive={false} />
+            <Bar dataKey="treinos" name="Treinos" fill="#ff2e2e" radius={[8, 8, 3, 3]} isAnimationActive={false}>
+              <LabelList
+                dataKey="treinos"
+                position="top"
+                content={(props) => <ChartValueLabel {...props} dataKey="treinos" data={data} />}
+              />
+            </Bar>
+            <Bar dataKey="checkins" name="Check-ins" fill="#f2f2f2" radius={[8, 8, 3, 3]} isAnimationActive={false}>
+              <LabelList
+                dataKey="checkins"
+                position="top"
+                content={(props) => <ChartValueLabel {...props} dataKey="checkins" data={data} />}
+              />
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -501,11 +810,40 @@ function getExerciseVolume(exercise) {
   }, 0);
 }
 
+function getSetWeight(set) {
+  return numberValue(set?.weight) || 0;
+}
+
+function getSetReps(set) {
+  return numberValue(set?.reps) || 0;
+}
+
+function getAverageExerciseWeight(exercise) {
+  const sets = (exercise?.sets || []).filter((set) => getSetWeight(set) > 0);
+
+  if (!sets.length) {
+    return 0;
+  }
+
+  return sets.reduce((sum, set) => sum + getSetWeight(set), 0) / sets.length;
+}
+
+function formatSigned(value, suffix = "") {
+  if (!Number.isFinite(value)) {
+    return "--";
+  }
+
+  const rounded = Number(value.toFixed(1));
+  return `${rounded > 0 ? "+" : ""}${rounded}${suffix}`;
+}
+
 function buildWorkoutEvolution(workout, sessions) {
   const monthlySessions = sessions
     .filter((session) => session.workoutId === workout.id && within(session.createdAt, daysAgo(30)))
     .slice(0, 6)
     .reverse();
+  const latestSession = monthlySessions[monthlySessions.length - 1];
+  const previousSession = monthlySessions[monthlySessions.length - 2];
 
   const exerciseRows = workout.exercises.map((exercise) => {
     const sessionValues = monthlySessions.map((session) => {
@@ -516,6 +854,37 @@ function buildWorkoutEvolution(workout, sessions) {
     });
     const first = sessionValues.find((value) => value > 0) || 0;
     const latest = [...sessionValues].reverse().find((value) => value > 0) || 0;
+    const latestExercise = latestSession?.exercises.find(
+      (item) => item.id === exercise.id || item.name === exercise.name
+    );
+    const previousExercise = previousSession?.exercises.find(
+      (item) => item.id === exercise.id || item.name === exercise.name
+    );
+    const latestAverageWeight = getAverageExerciseWeight(latestExercise);
+    const previousAverageWeight = getAverageExerciseWeight(previousExercise);
+    const maxSetCount = Math.max(
+      latestExercise?.sets?.length || 0,
+      previousExercise?.sets?.length || 0,
+      exercise.sets?.filter((set) => set.enabled !== false).length || 0
+    );
+    const setRows = Array.from({ length: maxSetCount }, (_, index) => {
+      const latestSet = latestExercise?.sets?.[index];
+      const previousSet = previousExercise?.sets?.[index];
+      const latestWeight = getSetWeight(latestSet);
+      const previousWeight = getSetWeight(previousSet);
+      const latestReps = getSetReps(latestSet);
+      const previousReps = getSetReps(previousSet);
+
+      return {
+        set: index + 1,
+        latestWeight,
+        previousWeight,
+        weightDiff: latestWeight - previousWeight,
+        latestReps,
+        previousReps,
+        repsDiff: latestReps - previousReps,
+      };
+    });
 
     return {
       id: exercise.id,
@@ -524,6 +893,12 @@ function buildWorkoutEvolution(workout, sessions) {
       first,
       latest,
       diff: latest - first,
+      previousSessionVolume: previousSession ? sessionValues[sessionValues.length - 2] || 0 : 0,
+      sessionVolumeDiff: latest - (previousSession ? sessionValues[sessionValues.length - 2] || 0 : latest),
+      latestAverageWeight,
+      previousAverageWeight,
+      averageWeightDiff: latestAverageWeight - previousAverageWeight,
+      setRows,
     };
   });
 
@@ -540,16 +915,22 @@ function buildWorkoutEvolution(workout, sessions) {
         month: "2-digit",
       })
     ),
+    latestLabel: latestSession
+      ? new Date(latestSession.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })
+      : "--",
+    previousLabel: previousSession
+      ? new Date(previousSession.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })
+      : "--",
     exerciseRows,
     maxValue,
   };
 }
 
 function ExerciseVolumeChart({ exercise, labels }) {
-  const data = exercise.values.map((value, index) => ({
+  const data = addTrendDeltas(exercise.values.map((value, index) => ({
     label: labels[index] || `S${index + 1}`,
     value,
-  }));
+  })), ["value"]);
 
   return (
     <div className="workout-evolution-chart">
@@ -565,7 +946,13 @@ function ExerciseVolumeChart({ exercise, labels }) {
             fill="#ff2e2e"
             radius={[8, 8, 3, 3]}
             isAnimationActive={false}
-          />
+          >
+            <LabelList
+              dataKey="value"
+              position="top"
+              content={(props) => <ChartValueLabel {...props} dataKey="value" data={data} />}
+            />
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -620,7 +1007,9 @@ function WorkoutEvolutionPanel({ workouts, sessions }) {
                   <h3>{workout.title}</h3>
                   <p>{workout.focus}</p>
                 </div>
-                <span>{evolution.sessionCount} registro(s) no mes</span>
+                <span>
+                  {evolution.sessionCount} registro(s) | {evolution.previousLabel} para {evolution.latestLabel}
+                </span>
               </header>
 
               {evolution.sessionCount ? (
@@ -635,8 +1024,33 @@ function WorkoutEvolutionPanel({ workouts, sessions }) {
                             {exercise.diff > 0 ? "+" : ""}
                             {exercise.diff}
                           </small>
+                          <div className="workout-evolution-deltas">
+                            <span>Media carga {formatSigned(exercise.averageWeightDiff, " kg")}</span>
+                            <span>Ultimo treino {formatSigned(exercise.sessionVolumeDiff)}</span>
+                          </div>
                         </div>
-                        <ExerciseVolumeChart exercise={exercise} labels={evolution.labels} />
+                        <div className="workout-evolution-detail">
+                          <ExerciseVolumeChart exercise={exercise} labels={evolution.labels} />
+                          <div className="workout-set-diff-table" aria-label={`Diferenca por serie de ${exercise.name}`}>
+                            <div>
+                              <strong>Serie</strong>
+                              <strong>Anterior</strong>
+                              <strong>Atual</strong>
+                              <strong>Delta</strong>
+                            </div>
+                            {exercise.setRows.map((set) => (
+                              <div key={set.set}>
+                                <span>{set.set}</span>
+                                <span>{set.previousWeight || "--"} kg x {set.previousReps || "--"}</span>
+                                <span>{set.latestWeight || "--"} kg x {set.latestReps || "--"}</span>
+                                <span className={set.weightDiff >= 0 ? "is-positive" : "is-negative"}>
+                                  {formatSigned(set.weightDiff, " kg")}
+                                  {set.repsDiff ? ` / ${formatSigned(set.repsDiff, " rep")}` : ""}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </section>
                     ))}
                   </div>

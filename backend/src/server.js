@@ -42,8 +42,10 @@ import {
 } from "./modules/workouts/workouts.controller.js";
 import { ensureLocalWorkoutTables } from "./modules/workouts/workouts.service.js";
 import {
+  handleListDietMealLogs,
   handleListDietHistory,
   handleLoadDietPlan,
+  handleSaveDietMealLog,
   handleSaveDietPlan,
 } from "./modules/diets/diets.controller.js";
 import { ensureLocalDietTables } from "./modules/diets/diets.service.js";
@@ -150,6 +152,8 @@ app.post("/workout-sessions", requireAuth, handleSaveWorkoutSession);
 app.get("/diets/active", requireAuth, handleLoadDietPlan);
 app.put("/diets/active", requireAuth, handleSaveDietPlan);
 app.get("/diets/history", requireAuth, handleListDietHistory);
+app.get("/diets/meal-logs", requireAuth, handleListDietMealLogs);
+app.post("/diets/meal-logs", requireAuth, handleSaveDietMealLog);
 app.get("/preferences/foods", requireAuth, handleLoadFoodPreferences);
 app.put("/preferences/foods", requireAuth, handleSaveFoodPreferences);
 app.get("/preferences/gym-equipment", requireAuth, handleLoadGymEquipment);

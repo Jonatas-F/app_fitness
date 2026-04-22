@@ -41,7 +41,7 @@ export async function handleCreateStripeCheckoutSession(req, res, next) {
 
 export async function handleCreateStripePortalSession(req, res, next) {
   try {
-    const data = await createPortalSession(req.auth.sub);
+    const data = await createPortalSession(req.auth.sub, req.body);
     res.json(data);
   } catch (error) {
     next(error);

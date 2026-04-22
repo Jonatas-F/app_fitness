@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import logo from "../../../assets/logo.svg";
@@ -6,6 +6,14 @@ import { formatCurrency, getAnnualPrice, getPlanById, subscriptionPlans } from "
 import { signInWithEmail, signInWithGoogle, signUpWithEmail } from "../../../services/authService";
 import { getApiToken, getStoredApiUser } from "../../../services/api/client";
 import { createStripeCheckoutSession } from "../../../services/stripeService";
+import {
+  closeStripePopup,
+  isStripePopupMessage,
+  notifyStripePopupResult,
+  openPendingStripePopup,
+  redirectStripePopup,
+  watchStripePopupClose,
+} from "../../../utils/stripePopup";
 import "./CheckoutPage.css";
 
 export default function CheckoutPage() {
@@ -13,6 +21,7 @@ export default function CheckoutPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedPlanId = searchParams.get("plan") || "intermediario";
   const checkoutStatus = searchParams.get("checkout");
+  const isStripePopupReturn = searchParams.get("stripe_popup") === "1";
   const [billingCycle, setBillingCycle] = useState("annual");
   const [installments, setInstallments] = useState("12");
   const [message, setMessage] = useState("");
@@ -31,6 +40,7 @@ export default function CheckoutPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [checkoutTermsAccepted, setCheckoutTermsAccepted] = useState(false);
+  const stripePopupCompletedRef = useRef(false);
 
   const selectedPlan = useMemo(() => getPlanById(selectedPlanId), [selectedPlanId]);
   const annualTotal = getAnnualPrice(selectedPlan);
@@ -54,6 +64,15 @@ export default function CheckoutPage() {
   }, []);
 
   useEffect(() => {
+    if (isStripePopupReturn && checkoutStatus) {
+      notifyStripePopupResult({
+        area: "checkout",
+        status: checkoutStatus,
+        plan: selectedPlanId,
+      });
+      return undefined;
+    }
+
     if (checkoutStatus !== "success") {
       return undefined;
     }
@@ -63,7 +82,35 @@ export default function CheckoutPage() {
     }, 3500);
 
     return () => window.clearTimeout(timerId);
-  }, [checkoutStatus, navigate]);
+  }, [checkoutStatus, isStripePopupReturn, navigate, selectedPlanId]);
+
+  useEffect(() => {
+    function handleStripePopupMessage(event) {
+      if (!isStripePopupMessage(event)) {
+        return;
+      }
+
+      const payload = event.data.payload || {};
+
+      if (payload.area !== "checkout") {
+        return;
+      }
+
+      if (payload.status === "success") {
+        stripePopupCompletedRef.current = true;
+        setMessage("Pagamento confirmado. Entrando no app...");
+        window.setTimeout(() => navigate("/dashboard"), 1200);
+        return;
+      }
+
+      stripePopupCompletedRef.current = true;
+      setMessage("Pagamento cancelado antes de concluir na Stripe.");
+    }
+
+    window.addEventListener("message", handleStripePopupMessage);
+
+    return () => window.removeEventListener("message", handleStripePopupMessage);
+  }, [navigate]);
 
   function handlePlanChange(planId) {
     setSearchParams({ plan: planId });
@@ -135,17 +182,37 @@ export default function CheckoutPage() {
     }
 
     setIsSubmitting(true);
-    setMessage("Abrindo checkout seguro do Stripe...");
+    setMessage("Abrindo checkout seguro do Stripe em uma janela popup...");
+    stripePopupCompletedRef.current = false;
+    const stripePopup = openPendingStripePopup();
+
+    if (!stripePopup) {
+      setIsSubmitting(false);
+      setMessage("O navegador bloqueou o popup da Stripe. Libere popups para continuar o pagamento.");
+      return;
+    }
+
+    const stopWatchingPopup = watchStripePopupClose(stripePopup, () => {
+      if (stripePopupCompletedRef.current) {
+        return;
+      }
+
+      setIsSubmitting(false);
+      setMessage("Janela da Stripe fechada. Se o pagamento foi concluido, a assinatura sera atualizada pelo webhook.");
+    });
 
     const result = await createStripeCheckoutSession({
       planId: selectedPlan.id,
       billingCycle,
       installments,
+      returnMode: "popup",
     });
 
     setIsSubmitting(false);
 
     if (result.error || !result.url) {
+      stopWatchingPopup();
+      closeStripePopup(stripePopup);
       setMessage(
         `Nao foi possivel abrir o Stripe agora. ${
           result.error?.message || "Verifique se a Function create-checkout-session foi publicada."
@@ -154,7 +221,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    window.location.href = result.url;
+    redirectStripePopup(stripePopup, result.url);
   }
 
   return (

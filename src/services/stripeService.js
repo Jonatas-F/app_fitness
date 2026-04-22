@@ -6,6 +6,7 @@ export async function createStripeCheckoutSession({
   planId,
   billingCycle,
   installments = 1,
+  returnMode = "redirect",
 }) {
   if (isLocalApiConfigured && getApiToken()) {
     try {
@@ -16,6 +17,7 @@ export async function createStripeCheckoutSession({
           billingCycle,
           installments: Number(installments) || 1,
           appOrigin: window.location.origin,
+          returnMode,
         }),
       });
 
@@ -55,6 +57,10 @@ export async function createStripePortalSession() {
     try {
       const data = await apiRequest(apiEndpoints.stripePortalSession, {
         method: "POST",
+        body: JSON.stringify({
+          appOrigin: window.location.origin,
+          returnMode: "popup",
+        }),
       });
 
       return { url: data?.url || null, error: null };
@@ -78,6 +84,7 @@ export async function createStripeSubscriptionChangeSession({
   planId,
   billingCycle,
   prorationEstimate,
+  returnMode = "redirect",
 }) {
   if (isLocalApiConfigured && getApiToken()) {
     try {
@@ -88,6 +95,7 @@ export async function createStripeSubscriptionChangeSession({
           billingCycle,
           prorationEstimate,
           appOrigin: window.location.origin,
+          returnMode,
         }),
       });
 
@@ -119,6 +127,7 @@ export async function createStripePaymentMethodSession() {
         method: "POST",
         body: JSON.stringify({
           appOrigin: window.location.origin,
+          returnMode: "popup",
         }),
       });
 

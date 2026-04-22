@@ -346,6 +346,86 @@
   gap: 12px;
 }
 
+.nutrition-history-panel {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.nutrition-history-panel h2,
+.nutrition-history-panel h3 {
+  margin: 0 0 6px;
+}
+
+.nutrition-history-panel p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.66);
+  line-height: 1.5;
+}
+
+.nutrition-meal-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.nutrition-meal-calendar__day {
+  display: grid;
+  gap: 5px;
+  min-height: 82px;
+  align-content: center;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.nutrition-meal-calendar__day.has-meals {
+  background: rgba(255, 46, 46, 0.11);
+  border-color: rgba(255, 46, 46, 0.26);
+}
+
+.nutrition-meal-calendar__day.is-empty {
+  opacity: 0.72;
+}
+
+.nutrition-meal-calendar__day span,
+.nutrition-meal-calendar__day small {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.nutrition-meal-calendar__day strong {
+  color: #fff;
+  font-size: 1.35rem;
+}
+
+.nutrition-history-list {
+  display: grid;
+  gap: 10px;
+}
+
+.nutrition-history-list article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.nutrition-history-list span {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
 .nutrition-schedule-summary p {
   margin: 0;
   color: rgba(255, 255, 255, 0.62);
@@ -361,6 +441,11 @@
 .meal-card.is-enabled {
   border-color: rgba(255, 46, 46, 0.26);
   background: linear-gradient(135deg, rgba(255, 46, 46, 0.1), rgba(255, 255, 255, 0.05));
+}
+
+.meal-card.is-completed {
+  border-color: rgba(53, 208, 127, 0.34);
+  background: linear-gradient(135deg, rgba(53, 208, 127, 0.1), rgba(255, 46, 46, 0.07));
 }
 
 .meal-card.is-disabled {
@@ -435,10 +520,12 @@
   border-color: rgba(255, 255, 255, 0.08);
 }
 
-.meal-card__header span {
+.meal-card__header > span,
+.meal-card__status {
   min-height: 30px;
   display: inline-flex;
   align-items: center;
+  gap: 7px;
   padding: 0 10px;
   border-radius: 999px;
   color: #fff;
@@ -446,6 +533,171 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 0.78rem;
   font-weight: 800;
+}
+
+.meal-card__status.is-done {
+  color: #eafff3;
+  background: rgba(53, 208, 127, 0.14);
+  border-color: rgba(53, 208, 127, 0.3);
+}
+
+.nutrition-check-icon {
+  display: inline-grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 999px;
+  color: #07130d;
+  background: #35d07f;
+  font-size: 0.72rem;
+  font-weight: 950;
+}
+
+.meal-card__tracking {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.meal-card__tracking article {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.meal-card__tracking article span {
+  min-height: auto;
+  padding: 0;
+  color: rgba(255, 255, 255, 0.56);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.meal-card__tracking article strong {
+  color: #fff;
+}
+
+.meal-card__tracking button {
+  min-height: 100%;
+  align-self: stretch;
+}
+
+.nutrition-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.nutrition-modal {
+  width: min(100%, 520px);
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+  border-color: rgba(255, 46, 46, 0.28);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+}
+
+.nutrition-modal header,
+.nutrition-modal footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nutrition-modal header span {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: #ffd7d7;
+  background: rgba(255, 46, 46, 0.16);
+  border: 1px solid rgba(255, 46, 46, 0.26);
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.nutrition-modal header button {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-weight: 900;
+}
+
+.nutrition-modal__content {
+  display: grid;
+  gap: 14px;
+}
+
+.nutrition-modal h2 {
+  margin: 0 0 6px;
+}
+
+.nutrition-modal p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.68);
+  line-height: 1.45;
+}
+
+.nutrition-modal__notice {
+  padding: 12px;
+  border-radius: 8px;
+  color: #ffd7d7;
+  background: rgba(255, 46, 46, 0.11);
+  border: 1px solid rgba(255, 46, 46, 0.22);
+  font-weight: 800;
+}
+
+.nutrition-modal label {
+  display: grid;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.nutrition-modal input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: #fff;
+  color-scheme: dark;
+  background: rgba(255, 46, 46, 0.1);
+  border: 1px solid rgba(255, 46, 46, 0.32);
+  outline: none;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.nutrition-modal input:focus {
+  border-color: rgba(255, 46, 46, 0.72);
+  box-shadow: 0 0 0 3px rgba(255, 46, 46, 0.14);
+}
+
+.nutrition-modal footer {
+  justify-content: flex-end;
+}
+
+.nutrition-modal footer button {
+  min-height: 42px;
+  padding: 0 16px;
 }
 
 .meal-card input:disabled,
@@ -460,6 +712,14 @@
   .meal-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .nutrition-meal-calendar {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .meal-card__tracking {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {
@@ -473,6 +733,7 @@
   .nutrition-config__grid,
   .nutrition-selected-day,
   .nutrition-schedule-summary,
+  .nutrition-meal-calendar,
   .meal-card__macros,
   .meal-grid {
     grid-template-columns: 1fr;

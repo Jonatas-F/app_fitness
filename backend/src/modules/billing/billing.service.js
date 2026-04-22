@@ -237,15 +237,31 @@ async function getOrCreateStripeCustomer(accountId) {
   return customer.id;
 }
 
-export async function createCheckoutSession(accountId, { planId, billingCycle, installments, appOrigin: requestedAppOrigin }) {
+function appendPopupFlag(url, returnMode) {
+  if (returnMode !== "popup") {
+    return url;
+  }
+
+  const nextUrl = new URL(url);
+  nextUrl.searchParams.set("stripe_popup", "1");
+  return nextUrl.toString();
+}
+
+export async function createCheckoutSession(
+  accountId,
+  { planId, billingCycle, installments, appOrigin: requestedAppOrigin, returnMode }
+) {
   const safePlanId = plans[planId] ? planId : "intermediario";
   const safeBillingCycle = billingCycle === "annual" ? "annual" : "monthly";
   const plan = getPlan(safePlanId);
   const customerId = await getOrCreateStripeCustomer(accountId);
   const client = requireStripe();
   const appOrigin = resolveAppOrigin(requestedAppOrigin);
-  const successUrl = `${appOrigin}/checkout?checkout=success&plan=${safePlanId}&session_id={CHECKOUT_SESSION_ID}`;
-  const cancelUrl = `${appOrigin}/checkout?checkout=cancelled&plan=${safePlanId}`;
+  const successUrl = appendPopupFlag(
+    `${appOrigin}/checkout?checkout=success&plan=${safePlanId}&session_id={CHECKOUT_SESSION_ID}`,
+    returnMode
+  );
+  const cancelUrl = appendPopupFlag(`${appOrigin}/checkout?checkout=cancelled&plan=${safePlanId}`, returnMode);
   const session = await client.checkout.sessions.create({
     mode: "subscription",
     customer: customerId,
@@ -290,10 +306,11 @@ export async function createCheckoutSession(accountId, { planId, billingCycle, i
   return { url: session.url, id: session.id };
 }
 
-export async function createPortalSession(accountId) {
+export async function createPortalSession(accountId, { appOrigin: requestedAppOrigin, returnMode } = {}) {
   const customerId = await getOrCreateStripeCustomer(accountId);
   const client = requireStripe();
-  const returnUrl = process.env.STRIPE_SUCCESS_URL || "http://localhost:5173/dashboard";
+  const appOrigin = resolveAppOrigin(requestedAppOrigin);
+  const returnUrl = appendPopupFlag(`${appOrigin}/perfil?stripe_portal=returned`, returnMode);
   const session = await client.billingPortal.sessions.create({
     customer: customerId,
     return_url: returnUrl,
@@ -302,12 +319,15 @@ export async function createPortalSession(accountId) {
   return { url: session.url, id: session.id };
 }
 
-export async function createPaymentMethodSession(accountId, { appOrigin: requestedAppOrigin } = {}) {
+export async function createPaymentMethodSession(accountId, { appOrigin: requestedAppOrigin, returnMode } = {}) {
   const customerId = await getOrCreateStripeCustomer(accountId);
   const client = requireStripe();
   const appOrigin = resolveAppOrigin(requestedAppOrigin);
-  const successUrl = `${appOrigin}/perfil?payment_method=success&session_id={CHECKOUT_SESSION_ID}`;
-  const cancelUrl = `${appOrigin}/perfil?payment_method=cancelled`;
+  const successUrl = appendPopupFlag(
+    `${appOrigin}/perfil?payment_method=success&session_id={CHECKOUT_SESSION_ID}`,
+    returnMode
+  );
+  const cancelUrl = appendPopupFlag(`${appOrigin}/perfil?payment_method=cancelled`, returnMode);
   const session = await client.checkout.sessions.create({
     mode: "setup",
     customer: customerId,
@@ -447,7 +467,7 @@ async function createRecurringPrice(accountId, planId, billingCycle) {
 
 export async function createSubscriptionChangeSession(
   accountId,
-  { planId, billingCycle, appOrigin: requestedAppOrigin }
+  { planId, billingCycle, appOrigin: requestedAppOrigin, returnMode }
 ) {
   const safePlanId = plans[planId] ? planId : "intermediario";
   const safeBillingCycle = billingCycle === "annual" ? "annual" : "monthly";
@@ -459,6 +479,7 @@ export async function createSubscriptionChangeSession(
       billingCycle: safeBillingCycle,
       installments: 1,
       appOrigin: requestedAppOrigin,
+      returnMode,
     });
   }
 
@@ -544,7 +565,7 @@ export async function createSubscriptionChangeSession(
 
   const portal = await client.billingPortal.sessions.create({
     customer: typeof subscription.customer === "string" ? subscription.customer : subscription.customer?.id,
-    return_url: `${appOrigin}/perfil`,
+    return_url: appendPopupFlag(`${appOrigin}/perfil?stripe_portal=returned`, returnMode),
   });
 
   return { url: portal.url, id: portal.id, mode: "portal" };

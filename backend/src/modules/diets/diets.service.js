@@ -3,7 +3,62 @@ import { pool } from "../../utils/db.js";
 export async function ensureLocalDietTables() {
   await pool.query(`
     alter table diet_plans
+      add column if not exists checkin_id bigint references checkins(id) on delete set null,
+      add column if not exists variation_level varchar(20),
+      add column if not exists meal_count_available smallint,
+      add column if not exists source_preferences_snapshot jsonb not null default '{}'::jsonb,
+      add column if not exists ai_context jsonb not null default '{}'::jsonb,
       add column if not exists payload jsonb not null default '{}'::jsonb;
+
+    alter table diet_meals
+      add column if not exists day_id varchar(30),
+      add column if not exists slot_id varchar(60),
+      add column if not exists enabled boolean not null default true,
+      add column if not exists meal_status varchar(20) not null default 'active',
+      add column if not exists water_target_liters decimal(4,2);
+
+    alter table diet_meal_items
+      add column if not exists food_preference_item_id text,
+      add column if not exists preference_mark text,
+      add column if not exists order_index smallint not null default 0,
+      add column if not exists meal_item_status varchar(20) not null default 'active';
+
+    create index if not exists idx_diet_plans_account_checkin
+      on diet_plans (account_id, checkin_id);
+
+    create index if not exists idx_diet_meals_plan_day
+      on diet_meals (diet_plan_id, day_id, order_index);
+
+    create index if not exists idx_diet_meal_items_meal_order
+      on diet_meal_items (diet_meal_id, order_index);
+
+    create index if not exists idx_diet_meal_items_food_preference
+      on diet_meal_items (food_preference_item_id);
+
+    create table if not exists diet_meal_logs (
+      id bigint generated always as identity primary key,
+      account_id bigint not null references accounts(id) on delete cascade,
+      diet_plan_id bigint references diet_plans(id) on delete set null,
+      diet_meal_id bigint references diet_meals(id) on delete set null,
+      day_id varchar(30) not null,
+      slot_id varchar(60) not null,
+      meal_name varchar(120) not null,
+      log_date date not null,
+      scheduled_at timestamptz,
+      performed_at timestamptz,
+      log_status varchar(30) not null default 'completed',
+      source varchar(30) not null default 'manual',
+      payload jsonb not null default '{}'::jsonb,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now(),
+      unique(account_id, diet_plan_id, day_id, slot_id, log_date)
+    );
+
+    create index if not exists idx_diet_meal_logs_account_date
+      on diet_meal_logs (account_id, log_date desc);
+
+    create index if not exists idx_diet_meal_logs_plan_date
+      on diet_meal_logs (diet_plan_id, log_date desc);
   `);
 }
 
@@ -116,4 +171,98 @@ export async function listDietHistory(accountId) {
   );
 
   return result.rows.map(toDietProtocol);
+}
+
+function toMealLog(row) {
+  const logDate =
+    row.log_date instanceof Date
+      ? row.log_date.toISOString().slice(0, 10)
+      : String(row.log_date || "").slice(0, 10);
+
+  return {
+    id: String(row.id),
+    dietPlanId: row.diet_plan_id ? String(row.diet_plan_id) : null,
+    dietMealId: row.diet_meal_id ? String(row.diet_meal_id) : null,
+    dayId: row.day_id,
+    slotId: row.slot_id,
+    mealName: row.meal_name,
+    logDate,
+    scheduledAt: row.scheduled_at,
+    performedAt: row.performed_at,
+    status: row.log_status,
+    source: row.source,
+    payload: row.payload || {},
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function listDietMealLogs(accountId) {
+  const result = await pool.query(
+    `
+      select *
+      from diet_meal_logs
+      where account_id = $1
+      order by log_date desc, coalesce(performed_at, scheduled_at, created_at) desc, id desc;
+    `,
+    [accountId]
+  );
+
+  return result.rows.map(toMealLog);
+}
+
+export async function saveDietMealLog(accountId, mealLog) {
+  const activePlan = await loadActiveDietPlan(accountId);
+  const payload = JSON.stringify(mealLog?.payload || {});
+  const result = await pool.query(
+    `
+      insert into diet_meal_logs (
+        account_id,
+        diet_plan_id,
+        diet_meal_id,
+        day_id,
+        slot_id,
+        meal_name,
+        log_date,
+        scheduled_at,
+        performed_at,
+        log_status,
+        source,
+        payload
+      )
+      values (
+        $1, $2, nullif($3, '')::bigint, $4, $5, $6, $7::date,
+        nullif($8, '')::timestamptz,
+        nullif($9, '')::timestamptz,
+        $10, $11, $12::jsonb
+      )
+      on conflict (account_id, diet_plan_id, day_id, slot_id, log_date)
+      do update set
+        diet_meal_id = excluded.diet_meal_id,
+        meal_name = excluded.meal_name,
+        scheduled_at = excluded.scheduled_at,
+        performed_at = excluded.performed_at,
+        log_status = excluded.log_status,
+        source = excluded.source,
+        payload = excluded.payload,
+        updated_at = now()
+      returning *;
+    `,
+    [
+      accountId,
+      activePlan?.id || mealLog?.dietPlanId || null,
+      mealLog?.dietMealId || "",
+      mealLog?.dayId,
+      mealLog?.slotId,
+      mealLog?.mealName,
+      mealLog?.logDate || new Date().toISOString().slice(0, 10),
+      mealLog?.scheduledAt || "",
+      mealLog?.performedAt || new Date().toISOString(),
+      mealLog?.status || "completed",
+      mealLog?.source || "manual",
+      payload,
+    ]
+  );
+
+  return toMealLog(result.rows[0]);
 }

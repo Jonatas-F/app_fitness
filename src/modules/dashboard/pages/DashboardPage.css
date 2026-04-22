@@ -310,7 +310,7 @@
 
 .workout-evolution-exercise {
   display: grid;
-  grid-template-columns: minmax(160px, 220px) minmax(0, 1fr);
+  grid-template-columns: minmax(170px, 240px) minmax(0, 1fr);
   gap: 12px;
   align-items: stretch;
   padding: 12px;
@@ -325,13 +325,86 @@
   gap: 6px;
 }
 
+.workout-evolution-deltas {
+  display: grid;
+  gap: 6px;
+}
+
+.workout-evolution-deltas span {
+  width: fit-content;
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border-radius: 999px;
+  color: #ffd7d7;
+  background: rgba(255, 46, 46, 0.12);
+  border: 1px solid rgba(255, 46, 46, 0.2);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.workout-evolution-detail {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(360px, 0.9fr);
+  gap: 12px;
+  min-width: 0;
+}
+
 .workout-evolution-chart {
   min-width: 0;
-  height: 126px;
+  height: 168px;
   padding: 6px 4px 0;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.workout-set-diff-table {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.workout-set-diff-table > div {
+  display: grid;
+  grid-template-columns: 48px 1fr 1fr 1fr;
+  gap: 8px;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 6px;
+  border-radius: 8px;
+}
+
+.workout-set-diff-table > div:first-child {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.workout-set-diff-table > div:not(:first-child) {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.workout-set-diff-table span {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+.workout-set-diff-table .is-positive {
+  color: #ffd7d7;
+  font-weight: 900;
+}
+
+.workout-set-diff-table .is-negative {
+  color: rgba(255, 255, 255, 0.44);
+  font-weight: 900;
 }
 
 .virtual-feedback-grid {
@@ -505,6 +578,194 @@
   min-width: 0;
 }
 
+.dashboard-chart-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(170px, 0.8fr)) minmax(240px, 1.2fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin-top: -2px;
+}
+
+.dashboard-chart-controls button {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.dashboard-chart-zoom-slider,
+.dashboard-chart-date-control {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(150px, 1fr);
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dashboard-chart-date-control {
+  grid-template-columns: 1fr;
+}
+
+.dashboard-chart-scale {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 0.74rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dashboard-chart-date-control input[type="date"] {
+  width: 100%;
+  min-height: 38px;
+  color: #fff;
+  color-scheme: dark;
+  background: rgba(255, 46, 46, 0.1);
+  border: 1px solid rgba(255, 46, 46, 0.32);
+  border-radius: 8px;
+  padding: 0 10px;
+  font-weight: 900;
+  outline: none;
+}
+
+.dashboard-chart-date-control input[type="date"]:focus {
+  border-color: rgba(255, 46, 46, 0.72);
+  box-shadow: 0 0 0 3px rgba(255, 46, 46, 0.14);
+}
+
+.dashboard-chart-date-control input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(1) sepia(1) saturate(5) hue-rotate(320deg);
+  opacity: 0.9;
+}
+
+.dashboard-chart-zoom-slider input[type="range"] {
+  width: 100%;
+  height: 8px;
+  appearance: none;
+  cursor: pointer;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff2e2e, rgba(255, 46, 46, 0.28));
+  outline: none;
+  accent-color: #ff2e2e;
+}
+
+.dashboard-chart-zoom-slider input[type="range"]::-webkit-slider-thumb {
+  width: 18px;
+  height: 18px;
+  appearance: none;
+  border-radius: 999px;
+  background: #ff2e2e;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 5px rgba(255, 46, 46, 0.18), 0 8px 18px rgba(0, 0, 0, 0.32);
+}
+
+.dashboard-chart-zoom-slider input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #ff2e2e;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 5px rgba(255, 46, 46, 0.18), 0 8px 18px rgba(0, 0, 0, 0.32);
+}
+
+.dashboard-chart-zoom-slider input[type="range"]::-moz-range-track {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 46, 46, 0.42);
+}
+
+.dashboard-chart-zoom-hint {
+  grid-column: 2;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: rgba(255, 255, 255, 0.44);
+  font-size: 0.66rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.dashboard-chart-controls button {
+  color: #fff;
+  background: rgba(255, 46, 46, 0.13);
+  border: 1px solid rgba(255, 46, 46, 0.24);
+}
+
+.dashboard-chart-controls button:hover {
+  background: rgba(255, 46, 46, 0.2);
+  border-color: rgba(255, 46, 46, 0.36);
+}
+
+@media (max-width: 980px) {
+  .dashboard-chart-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-chart-controls button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .dashboard-chart-zoom-slider,
+  .dashboard-chart-date-control {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-chart-zoom-hint {
+    grid-column: 1;
+  }
+}
+
+.dashboard-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+.dashboard-chart-legend button {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.dashboard-chart-legend button:hover,
+.dashboard-chart-legend button.is-active {
+  color: #fff;
+  background: rgba(255, 46, 46, 0.13);
+  border-color: rgba(255, 46, 46, 0.28);
+}
+
+.dashboard-chart-legend i {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+}
+
 .dashboard-chart-empty {
   margin: 0;
   padding: 16px;
@@ -537,11 +798,62 @@
   font-size: 0.78rem;
 }
 
+.dashboard-chart-tooltip b {
+  font: inherit;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.dashboard-chart-tooltip em,
+.dashboard-chart-point-label .is-positive,
+.dashboard-chart-point-label .is-negative,
+.dashboard-chart-point-label .is-neutral {
+  font-style: normal;
+  font-weight: 950;
+}
+
+.dashboard-chart-tooltip em.is-positive,
+.dashboard-chart-point-label .is-positive {
+  color: #35d07f;
+  fill: #35d07f;
+}
+
+.dashboard-chart-tooltip em.is-negative,
+.dashboard-chart-point-label .is-negative {
+  color: #ff2e2e;
+  fill: #ff2e2e;
+}
+
+.dashboard-chart-tooltip em.is-neutral,
+.dashboard-chart-point-label .is-neutral {
+  color: rgba(255, 255, 255, 0.58);
+  fill: rgba(255, 255, 255, 0.58);
+}
+
 .dashboard-chart-tooltip i {
   width: 8px;
   height: 8px;
   flex: 0 0 auto;
   border-radius: 50%;
+}
+
+.dashboard-chart-point-label {
+  fill: rgba(255, 255, 255, 0.86);
+  font-size: 10px;
+  font-weight: 950;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.62);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+.dashboard-chart-x-tick {
+  fill: rgba(255, 255, 255, 0.58);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dashboard-chart-x-tick.is-missing {
+  fill: #ff2e2e;
 }
 
 .recharts-default-legend {
@@ -584,7 +896,8 @@
   .dashboard-comparison,
   .body-chart-grid,
   .workout-evolution-tabs,
-  .workout-evolution-exercise {
+  .workout-evolution-exercise,
+  .workout-evolution-detail {
     grid-template-columns: 1fr;
   }
 

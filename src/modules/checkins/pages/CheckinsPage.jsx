@@ -261,6 +261,28 @@ function getLatestCompletedCheckin(checkins, cadence) {
     .sort((a, b) => new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0))[0];
 }
 
+function makePrefilledCheckinForm(checkins, cadence) {
+  const latestSameCadence = getLatestCompletedCheckin(checkins, cadence);
+  const latestAny = getLatestCompletedCheckin(checkins);
+  const latest = latestSameCadence || latestAny;
+
+  if (!latest) {
+    return {
+      ...defaultCheckinForm,
+      cadence,
+    };
+  }
+
+  const { id, createdAt, updatedAt, checkin_date, status, aiContext, ai_context, photos, ...stableData } = latest;
+
+  return {
+    ...defaultCheckinForm,
+    ...stableData,
+    cadence,
+    photos: [],
+  };
+}
+
 function addDaysToDateKey(dateKey, days) {
   const date = parseDateKey(dateKey);
   date.setDate(date.getDate() + days);
@@ -644,10 +666,7 @@ export default function CheckinsPage() {
   const [activeCadence, setActiveCadence] = useState("weekly");
   const [selectedDateKey, setSelectedDateKey] = useState(todayKey);
   const [calendarMonth, setCalendarMonth] = useState(() => parseDateKey(todayKey));
-  const [formData, setFormData] = useState({
-    ...defaultCheckinForm,
-    cadence: "weekly",
-  });
+  const [formData, setFormData] = useState(() => makePrefilledCheckinForm(loadCheckins(), "weekly"));
   const [photoUploads, setPhotoUploads] = useState({});
   const [checkins, setCheckins] = useState(() => loadCheckins());
   const [feedback, setFeedback] = useState("");
@@ -718,6 +737,10 @@ export default function CheckinsPage() {
       }
 
       setCheckins(result.checkins);
+      setFormData((current) => ({
+        ...makePrefilledCheckinForm(result.checkins, current.cadence || activeCadence),
+        cadence: current.cadence || activeCadence,
+      }));
       setSyncStatus("Historico sincronizado com Supabase.");
     }
 
@@ -730,11 +753,8 @@ export default function CheckinsPage() {
 
   function handleCadenceChange(cadence) {
     setActiveCadence(cadence);
-    setFormData((current) => ({
-      ...defaultCheckinForm,
-      ...current,
-      cadence,
-    }));
+    setFormData(makePrefilledCheckinForm(checkins, cadence));
+    setPhotoUploads({});
     setFeedback("");
   }
 
@@ -797,7 +817,7 @@ export default function CheckinsPage() {
       setCheckins(syncSavedCheckin(updated, localCheckin, remote.data));
     }
 
-    setFormData({ ...defaultCheckinForm, cadence: activeCadence });
+    setFormData(makePrefilledCheckinForm(updated, activeCadence));
     setPhotoUploads({});
     setFeedback(
       `${checkinCadences[activeCadence].label} salvo em ${formatDateKey(selectedDateKey)}. O historico foi atualizado sem regenerar treino ou dieta automaticamente.`

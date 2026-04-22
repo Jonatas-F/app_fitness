@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PaymentCard3D from "../../../components/ui/PaymentCard3D";
@@ -29,6 +29,14 @@ import {
   loadBillingSubscription,
   setStripeDefaultPaymentMethod,
 } from "../../../services/stripeService";
+import {
+  closeStripePopup,
+  isStripePopupMessage,
+  notifyStripePopupResult,
+  openPendingStripePopup,
+  redirectStripePopup,
+  watchStripePopupClose,
+} from "../../../utils/stripePopup";
 import "./ProfilePage.css";
 
 const PROFILE_PHOTO_KEY = "shapeCertoProfilePhoto";
@@ -276,6 +284,7 @@ export default function ProfilePage() {
   const [billingSummary, setBillingSummary] = useState(null);
   const [isChangingPlan, setIsChangingPlan] = useState(false);
   const [isUpdatingPaymentMethod, setIsUpdatingPaymentMethod] = useState(false);
+  const stripePopupCompletedRef = useRef(false);
 
   const selectedEquipmentSet = useMemo(() => new Set(selectedEquipmentIds), [selectedEquipmentIds]);
   const equipmentContext = useMemo(
@@ -383,6 +392,17 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const paymentMethodStatus = searchParams.get("payment_method");
+    const stripePortalStatus = searchParams.get("stripe_portal");
+    const isStripePopupReturn = searchParams.get("stripe_popup") === "1";
+
+    if (isStripePopupReturn && (paymentMethodStatus || stripePortalStatus)) {
+      notifyStripePopupResult({
+        area: "profile",
+        paymentMethodStatus,
+        stripePortalStatus,
+      });
+      return;
+    }
 
     if (paymentMethodStatus === "success") {
       setAccountMessage("Metodo de pagamento enviado para a Stripe. Atualizando cartoes salvos...");
@@ -393,6 +413,45 @@ export default function ProfilePage() {
       setAccountMessage("Cadastro de metodo de pagamento cancelado antes de concluir na Stripe.");
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    function handleStripePopupMessage(event) {
+      if (!isStripePopupMessage(event)) {
+        return;
+      }
+
+      const payload = event.data.payload || {};
+
+      if (payload.area === "checkout" && payload.status === "success") {
+        stripePopupCompletedRef.current = true;
+        setPlanConfirmOpen(false);
+        setIsChangingPlan(false);
+        setAccountMessage("Pagamento confirmado na Stripe. Atualizando plano e assinatura...");
+        refreshStripePaymentMethods("Plano atualizado pela Stripe. Os dados serao sincronizados pelo webhook.");
+        return;
+      }
+
+      if (payload.area !== "profile") {
+        return;
+      }
+
+      stripePopupCompletedRef.current = true;
+
+      if (payload.paymentMethodStatus === "success" || payload.stripePortalStatus === "returned") {
+        setAccountMessage("Retorno da Stripe recebido. Atualizando dados de pagamento...");
+        refreshStripePaymentMethods("Dados de pagamento atualizados pela Stripe.");
+        return;
+      }
+
+      if (payload.paymentMethodStatus === "cancelled") {
+        setAccountMessage("Cadastro de metodo de pagamento cancelado antes de concluir na Stripe.");
+      }
+    }
+
+    window.addEventListener("message", handleStripePopupMessage);
+
+    return () => window.removeEventListener("message", handleStripePopupMessage);
+  }, []);
 
   async function refreshStripePaymentMethods(successMessage) {
     const result = await loadBillingSubscription();
@@ -549,6 +608,24 @@ export default function ProfilePage() {
     }
 
     setIsChangingPlan(true);
+    stripePopupCompletedRef.current = false;
+    const stripePopup = openPendingStripePopup();
+
+    if (!stripePopup) {
+      setIsChangingPlan(false);
+      setAccountMessage("O navegador bloqueou o popup da Stripe. Libere popups para continuar o pagamento.");
+      return;
+    }
+
+    const stopWatchingPopup = watchStripePopupClose(stripePopup, () => {
+      if (stripePopupCompletedRef.current) {
+        return;
+      }
+
+      setIsChangingPlan(false);
+      setAccountMessage("Janela da Stripe fechada. Se a alteracao foi concluida, o webhook atualizara o plano.");
+    });
+
     const acceptedTermsText =
       "Li e aceito que a alteracao do plano pode mudar valores, recorrencia, limites de tokens, acessos disponiveis e gerar cobranca proporcional calculada pela Stripe.";
     const acceptanceRecord = {
@@ -573,10 +650,13 @@ export default function ProfilePage() {
       planId: pendingPlan,
       billingCycle: pendingBillingCycle,
       prorationEstimate,
+      returnMode: "popup",
     });
 
     if (result.error || !result.url) {
       setIsChangingPlan(false);
+      stopWatchingPopup();
+      closeStripePopup(stripePopup);
       setAccountMessage(
         `Aceite registrado, mas nao foi possivel abrir o Stripe. ${
           result.error?.message || "Tente novamente em alguns instantes."
@@ -586,15 +666,34 @@ export default function ProfilePage() {
     }
 
     setPlanConfirmOpen(false);
-    setAccountMessage("Aceite registrado. Abrindo a pagina segura da Stripe para concluir o pagamento.");
-    window.location.href = result.url;
+    setAccountMessage("Aceite registrado. Conclua o pagamento na janela segura da Stripe.");
+    redirectStripePopup(stripePopup, result.url);
   }
 
   async function openStripePortal() {
-    setAccountMessage("Abrindo portal seguro do Stripe...");
+    setAccountMessage("Abrindo portal seguro do Stripe em uma janela popup...");
+    stripePopupCompletedRef.current = false;
+    const stripePopup = openPendingStripePopup();
+
+    if (!stripePopup) {
+      setAccountMessage("O navegador bloqueou o popup da Stripe. Libere popups para gerenciar a assinatura.");
+      return;
+    }
+
+    const stopWatchingPopup = watchStripePopupClose(stripePopup, () => {
+      if (stripePopupCompletedRef.current) {
+        return;
+      }
+
+      setAccountMessage("Janela da Stripe fechada. Atualizando dados de pagamento...");
+      refreshStripePaymentMethods();
+    });
+
     const result = await createStripePortalSession();
 
     if (result.error || !result.url) {
+      stopWatchingPopup();
+      closeStripePopup(stripePopup);
       setAccountMessage(
         `Nao foi possivel abrir o portal Stripe. ${
           result.error?.message || "Finalize uma assinatura pelo checkout primeiro."
@@ -603,14 +702,33 @@ export default function ProfilePage() {
       return;
     }
 
-    window.location.href = result.url;
+    redirectStripePopup(stripePopup, result.url);
   }
 
   async function openStripePaymentMethodSession(message = "Abrindo Stripe para gerenciar pagamento...") {
     setAccountMessage(message);
+    stripePopupCompletedRef.current = false;
+    const stripePopup = openPendingStripePopup();
+
+    if (!stripePopup) {
+      setAccountMessage("O navegador bloqueou o popup da Stripe. Libere popups para gerenciar cartoes.");
+      return;
+    }
+
+    const stopWatchingPopup = watchStripePopupClose(stripePopup, () => {
+      if (stripePopupCompletedRef.current) {
+        return;
+      }
+
+      setAccountMessage("Janela da Stripe fechada. Atualizando cartoes salvos...");
+      refreshStripePaymentMethods();
+    });
+
     const result = await createStripePaymentMethodSession();
 
     if (result.error || !result.url) {
+      stopWatchingPopup();
+      closeStripePopup(stripePopup);
       setAccountMessage(
         `Nao foi possivel abrir a tela segura da Stripe. ${
           result.error?.message || "Tente novamente em alguns instantes."
@@ -619,7 +737,7 @@ export default function ProfilePage() {
       return;
     }
 
-    window.location.href = result.url;
+    redirectStripePopup(stripePopup, result.url);
   }
 
   async function handleLogout() {

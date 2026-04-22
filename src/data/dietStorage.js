@@ -3,6 +3,7 @@ import { apiRequest, getApiToken, isLocalApiConfigured } from "../services/api/c
 
 const DIET_CURRENT_KEY = "shapeCertoDietCurrent";
 const DIET_HISTORY_KEY = "shapeCertoDietHistory";
+const DIET_MEAL_LOGS_KEY = "shapeCertoDietMealCompletions";
 
 export const dietDays = [
   { id: "segunda", short: "SEG", name: "Segunda" },
@@ -169,6 +170,98 @@ export function loadDietHistory() {
   const raw = localStorage.getItem(DIET_HISTORY_KEY);
   const parsed = raw ? safeParse(raw, []) : [];
   return Array.isArray(parsed) ? parsed : [];
+}
+
+export function loadDietMealLogs() {
+  const raw = localStorage.getItem(DIET_MEAL_LOGS_KEY);
+  const parsed = raw ? safeParse(raw, []) : [];
+  return Array.isArray(parsed) ? parsed.map(normalizeDietMealLog) : [];
+}
+
+function saveDietMealLogsLocal(logs) {
+  const normalizedLogs = logs.map(normalizeDietMealLog);
+  localStorage.setItem(DIET_MEAL_LOGS_KEY, JSON.stringify(normalizedLogs));
+  return normalizedLogs;
+}
+
+function normalizeDateKey(value) {
+  if (!value) return "";
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
+
+  return date.toISOString().slice(0, 10);
+}
+
+function normalizeDietMealLog(log) {
+  return {
+    ...log,
+    logDate: normalizeDateKey(log.logDate || log.log_date),
+    dayId: log.dayId || log.day_id,
+    slotId: log.slotId || log.slot_id,
+    mealName: log.mealName || log.meal_name,
+    scheduledAt: log.scheduledAt || log.scheduled_at,
+    performedAt: log.performedAt || log.performed_at,
+    status: log.status || log.log_status,
+    source: log.source || "manual",
+  };
+}
+
+export async function hydrateDietMealLogsFromApi() {
+  if (!isLocalApiConfigured || !getApiToken()) {
+    return { logs: loadDietMealLogs(), skipped: true, error: null };
+  }
+
+  try {
+    const data = await apiRequest(apiEndpoints.dietMealLogs);
+    const logs = data.logs || [];
+    saveDietMealLogsLocal(logs);
+    return { logs, skipped: false, error: null };
+  } catch (error) {
+    return { logs: loadDietMealLogs(), skipped: false, error };
+  }
+}
+
+export async function saveDietMealLog(mealLog) {
+  const localLogs = loadDietMealLogs();
+  const normalizedMealLog = normalizeDietMealLog(mealLog);
+  const key = `${normalizedMealLog.dayId}-${normalizedMealLog.slotId}-${normalizedMealLog.logDate}`;
+  const nextLog = {
+    ...normalizedMealLog,
+    id: normalizedMealLog.id || key,
+    createdAt: normalizedMealLog.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  const mergedLogs = [
+    nextLog,
+    ...localLogs.filter((item) => `${item.dayId}-${item.slotId}-${item.logDate}` !== key),
+  ];
+
+  saveDietMealLogsLocal(mergedLogs);
+
+  if (!isLocalApiConfigured || !getApiToken()) {
+    return nextLog;
+  }
+
+  try {
+    const data = await apiRequest(apiEndpoints.dietMealLogs, {
+      method: "POST",
+      body: JSON.stringify(nextLog),
+    });
+    const savedLog = normalizeDietMealLog(data.log || nextLog);
+    const updatedLogs = [
+      savedLog,
+      ...loadDietMealLogs().filter(
+        (item) => `${item.dayId}-${item.slotId}-${item.logDate}` !== key
+      ),
+    ];
+    saveDietMealLogsLocal(updatedLogs);
+    return savedLog;
+  } catch (error) {
+    console.warn("Nao foi possivel sincronizar registro de refeicao.", error);
+    return nextLog;
+  }
 }
 
 export function saveDietProtocol(protocol) {

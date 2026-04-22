@@ -210,6 +210,7 @@ CREATE TABLE IF NOT EXISTS diet_plans (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     account_id BIGINT NOT NULL,
     goal_id BIGINT,
+    checkin_id BIGINT,
     title VARCHAR(150) NOT NULL,
     objective_summary TEXT,
     kcal_target INTEGER,
@@ -218,10 +219,15 @@ CREATE TABLE IF NOT EXISTS diet_plans (
     fats_g DECIMAL(7,2),
     fiber_g DECIMAL(7,2),
     water_target_liters DECIMAL(4,2),
+    variation_level VARCHAR(20),
+    meal_count_available SMALLINT,
     generated_by VARCHAR(30) NOT NULL DEFAULT 'manual',
     plan_status VARCHAR(20) NOT NULL DEFAULT 'draft',
     valid_from DATE,
     valid_until DATE,
+    source_preferences_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb,
+    ai_context JSONB NOT NULL DEFAULT '{}'::jsonb,
+    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_diet_plans_account
@@ -234,13 +240,18 @@ CREATE TABLE IF NOT EXISTS diet_plans (
 CREATE TABLE IF NOT EXISTS diet_meals (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     diet_plan_id BIGINT NOT NULL,
+    day_id VARCHAR(30),
+    slot_id VARCHAR(60),
     meal_name VARCHAR(120) NOT NULL,
     meal_time TIME,
     order_index SMALLINT NOT NULL,
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    meal_status VARCHAR(20) NOT NULL DEFAULT 'active',
     kcal_target DECIMAL(7,2),
     protein_g DECIMAL(7,2),
     carbs_g DECIMAL(7,2),
     fats_g DECIMAL(7,2),
+    water_target_liters DECIMAL(4,2),
     notes TEXT,
     CONSTRAINT fk_diet_meals_plan
       FOREIGN KEY (diet_plan_id) REFERENCES diet_plans(id) ON DELETE CASCADE
@@ -249,6 +260,8 @@ CREATE TABLE IF NOT EXISTS diet_meals (
 CREATE TABLE IF NOT EXISTS diet_meal_items (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     diet_meal_id BIGINT NOT NULL,
+    food_preference_item_id TEXT,
+    preference_mark TEXT,
     food_name VARCHAR(150) NOT NULL,
     quantity_text VARCHAR(60),
     unit VARCHAR(30),
@@ -257,9 +270,36 @@ CREATE TABLE IF NOT EXISTS diet_meal_items (
     carbs_g DECIMAL(7,2),
     fats_g DECIMAL(7,2),
     substitution_group VARCHAR(80),
+    order_index SMALLINT NOT NULL DEFAULT 0,
+    meal_item_status VARCHAR(20) NOT NULL DEFAULT 'active',
     notes TEXT,
     CONSTRAINT fk_diet_meal_items_meal
       FOREIGN KEY (diet_meal_id) REFERENCES diet_meals(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS diet_meal_logs (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    account_id BIGINT NOT NULL,
+    diet_plan_id BIGINT,
+    diet_meal_id BIGINT,
+    day_id VARCHAR(30) NOT NULL,
+    slot_id VARCHAR(60) NOT NULL,
+    meal_name VARCHAR(120) NOT NULL,
+    log_date DATE NOT NULL,
+    scheduled_at TIMESTAMPTZ,
+    performed_at TIMESTAMPTZ,
+    log_status VARCHAR(30) NOT NULL DEFAULT 'completed',
+    source VARCHAR(30) NOT NULL DEFAULT 'manual',
+    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_diet_meal_logs_account
+      FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+    CONSTRAINT fk_diet_meal_logs_plan
+      FOREIGN KEY (diet_plan_id) REFERENCES diet_plans(id) ON DELETE SET NULL,
+    CONSTRAINT fk_diet_meal_logs_meal
+      FOREIGN KEY (diet_meal_id) REFERENCES diet_meals(id) ON DELETE SET NULL,
+    UNIQUE (account_id, diet_plan_id, day_id, slot_id, log_date)
 );
 
 CREATE TABLE IF NOT EXISTS checkins (
@@ -285,6 +325,11 @@ CREATE TABLE IF NOT EXISTS checkins (
     CHECK (mood_score BETWEEN 1 AND 5 OR mood_score IS NULL),
     CHECK (stress_score BETWEEN 1 AND 5 OR stress_score IS NULL)
 );
+
+ALTER TABLE diet_plans
+  DROP CONSTRAINT IF EXISTS fk_diet_plans_checkin,
+  ADD CONSTRAINT fk_diet_plans_checkin
+    FOREIGN KEY (checkin_id) REFERENCES checkins(id) ON DELETE SET NULL;
 
 CREATE TABLE IF NOT EXISTS chat_sessions (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -343,6 +388,24 @@ CREATE INDEX IF NOT EXISTS idx_workout_logs_account_date
 
 CREATE INDEX IF NOT EXISTS idx_diet_plans_account_status
     ON diet_plans (account_id, plan_status);
+
+CREATE INDEX IF NOT EXISTS idx_diet_plans_account_checkin
+    ON diet_plans (account_id, checkin_id);
+
+CREATE INDEX IF NOT EXISTS idx_diet_meals_plan_day
+    ON diet_meals (diet_plan_id, day_id, order_index);
+
+CREATE INDEX IF NOT EXISTS idx_diet_meal_items_meal_order
+    ON diet_meal_items (diet_meal_id, order_index);
+
+CREATE INDEX IF NOT EXISTS idx_diet_meal_items_food_preference
+    ON diet_meal_items (food_preference_item_id);
+
+CREATE INDEX IF NOT EXISTS idx_diet_meal_logs_account_date
+    ON diet_meal_logs (account_id, log_date DESC);
+
+CREATE INDEX IF NOT EXISTS idx_diet_meal_logs_plan_date
+    ON diet_meal_logs (diet_plan_id, log_date DESC);
 
 CREATE INDEX IF NOT EXISTS idx_checkins_account_date
     ON checkins (account_id, checkin_date DESC);
