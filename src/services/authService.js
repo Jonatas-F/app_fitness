@@ -72,9 +72,9 @@ export async function signUpWithEmail({ email, password, fullName, plan }) {
   return { data, error, skipped: false };
 }
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(options = {}) {
   if (isLocalApiConfigured) {
-    const returnTo = `${window.location.pathname}${window.location.search}`;
+    const returnTo = options.returnTo || `${window.location.pathname}${window.location.search}`;
     sessionStorage.setItem(GOOGLE_RETURN_KEY, returnTo);
 
     const url = new URL(`${apiUrl}${apiEndpoints.google}`);

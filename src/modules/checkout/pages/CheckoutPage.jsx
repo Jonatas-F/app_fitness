@@ -30,6 +30,7 @@ export default function CheckoutPage() {
   const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [checkoutTermsAccepted, setCheckoutTermsAccepted] = useState(false);
 
   const selectedPlan = useMemo(() => getPlanById(selectedPlanId), [selectedPlanId]);
   const annualTotal = getAnnualPrice(selectedPlan);
@@ -112,6 +113,10 @@ export default function CheckoutPage() {
     setMessage("");
   }
 
+  async function handleGoogleCheckoutLogin() {
+    await signInWithGoogle({ returnTo: `${window.location.pathname}${window.location.search}` });
+  }
+
   const connectedName = connectedUser?.user_metadata?.full_name || "Conta conectada";
   const connectedEmail = connectedUser?.email || "Usuario autenticado";
 
@@ -121,6 +126,11 @@ export default function CheckoutPage() {
     if (!isAuthenticated && !getApiToken()) {
       setMessage("Antes de finalizar, crie sua conta ou entre com Google/e-mail para vincular o plano.");
       setAuthMessage("Escolha uma forma de acesso para continuar com este plano.");
+      return;
+    }
+
+    if (!checkoutTermsAccepted) {
+      setMessage("Confirme que leu e concorda com a assinatura antes de seguir para o Stripe.");
       return;
     }
 
@@ -258,7 +268,7 @@ export default function CheckoutPage() {
                   </button>
                 </div>
 
-                <button type="button" className="checkout-google-button" onClick={signInWithGoogle}>
+                <button type="button" className="checkout-google-button" onClick={handleGoogleCheckoutLogin}>
                   <Icon icon="logos:google-icon" aria-hidden="true" />
                   Entrar com Google e continuar
                 </button>
@@ -384,7 +394,18 @@ export default function CheckoutPage() {
               usa os dados da conta conectada para vincular assinatura e plano aprovado.
             </p>
 
-            <button type="submit" className="primary-button">
+            <label className="checkout-terms">
+              <input
+                type="checkbox"
+                checked={checkoutTermsAccepted}
+                onChange={(event) => setCheckoutTermsAccepted(event.target.checked)}
+              />
+              <span>
+                Li e concordo em seguir para a Stripe para confirmar o pagamento da assinatura selecionada.
+              </span>
+            </label>
+
+            <button type="submit" className="primary-button" disabled={isSubmitting || !checkoutTermsAccepted}>
               {isSubmitting ? "Abrindo Stripe..." : "Finalizar assinatura"}
             </button>
             <button type="button" className="ghost-button" onClick={() => navigate("/dashboard")}>

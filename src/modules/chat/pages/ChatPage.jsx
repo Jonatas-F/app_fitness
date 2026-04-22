@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
+import { getPersonalAvatarById } from "../../../data/platformImageCatalog";
 import { loadAssistantContext } from "../../../services/assistantService";
 import "./ChatPage.css";
+
+const SETTINGS_KEY = "shapeCertoSettings";
 
 const contextChips = [
   { label: "@dashboard", value: "@dashboard ", helper: "peso, medidas, aderencia e evolucao" },
@@ -52,7 +55,7 @@ function buildContextSummary(context) {
     {
       label: "Usuario",
       value: context?.profile?.full_name || context?.account?.email || "--",
-      helper: "Escopo exclusivo da conta logada",
+      helper: "Perfil ativo",
     },
     {
       label: "Check-ins",
@@ -128,20 +131,36 @@ function createLocalAssistantReply(question, context, attachments) {
   };
 }
 
+function loadPersonalSettings() {
+  try {
+    const settings = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+
+    return {
+      name: settings?.personal?.name || "Personal Virtual",
+      avatarId: settings?.personal?.avatarId || "default-personal",
+    };
+  } catch (error) {
+    return {
+      name: "Personal Virtual",
+      avatarId: "default-personal",
+    };
+  }
+}
+
 export default function ChatPage() {
   const fileInputRef = useRef(null);
+  const [personalSettings, setPersonalSettings] = useState(() => loadPersonalSettings());
   const [context, setContext] = useState(null);
   const [isLoadingContext, setIsLoadingContext] = useState(true);
   const [contextError, setContextError] = useState("");
   const [message, setMessage] = useState("");
   const [attachments, setAttachments] = useState([]);
-  const [conversation, setConversation] = useState([
-    {
-      role: "assistant",
-      text:
-        "Estou pronto para consultar seus dados do Shape Certo. Meu escopo e apenas a sua conta logada.",
-    },
-  ]);
+  const [conversation, setConversation] = useState([]);
+  const personalAvatar = useMemo(
+    () => getPersonalAvatarById(personalSettings.avatarId),
+    [personalSettings.avatarId]
+  );
+  const personalName = personalSettings.name || "Personal Virtual";
 
   useEffect(() => {
     let isMounted = true;
@@ -166,12 +185,41 @@ export default function ChatPage() {
       }
 
       setContext(result.context);
+
+      if (result.context?.settings) {
+        setPersonalSettings({
+          name: result.context.settings.personal_name || "Personal Virtual",
+          avatarId: result.context.settings.avatar_id || "default-personal",
+        });
+      }
     }
 
     hydrateContext();
 
     return () => {
       isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    function syncPersonalSettings(event) {
+      if (event.detail?.personal) {
+        setPersonalSettings({
+          name: event.detail.personal.name || "Personal Virtual",
+          avatarId: event.detail.personal.avatarId || "default-personal",
+        });
+        return;
+      }
+
+      setPersonalSettings(loadPersonalSettings());
+    }
+
+    window.addEventListener("shape-certo-settings-updated", syncPersonalSettings);
+    window.addEventListener("storage", syncPersonalSettings);
+
+    return () => {
+      window.removeEventListener("shape-certo-settings-updated", syncPersonalSettings);
+      window.removeEventListener("storage", syncPersonalSettings);
     };
   }, []);
 
@@ -224,12 +272,22 @@ export default function ChatPage() {
   return (
     <div className="chat-page">
       <section className="chat-hero">
-        <span>Personal Virtual</span>
-        <h1>Converse com seus dados de treino, dieta e evolucao.</h1>
-        <p>
-          O agente consulta apenas a conta autenticada. Perguntas sobre outros usuarios, credenciais
-          ou dados completos de pagamento sao bloqueadas.
-        </p>
+        <div className="chat-hero__identity">
+          {personalAvatar ? (
+            <img className="chat-hero__avatar" src={personalAvatar.url} alt={`Avatar ${personalName}`} />
+          ) : null}
+          <div>
+            <span>Personal Virtual</span>
+            <strong>{personalName}</strong>
+          </div>
+        </div>
+
+        <div className="chat-hero__copy">
+          <h1>Converse com seus dados de treino, dieta e evolucao.</h1>
+          <p>
+            Consulte treino, dieta, check-ins e dashboard em uma conversa focada no seu progresso.
+          </p>
+        </div>
       </section>
 
       <section className="chat-grid">
@@ -249,14 +307,6 @@ export default function ChatPage() {
                 <span>{item.helper}</span>
               </article>
             ))}
-          </div>
-
-          <div className="chat-scope-box">
-            <Icon icon="solar:shield-check-bold" aria-hidden="true" />
-            <p>
-              Cada consulta do backend usa o ID da sessao autenticada. O chat nao recebe parametro
-              para buscar outro usuario.
-            </p>
           </div>
 
           <div className="chat-shortcuts">
@@ -282,7 +332,7 @@ export default function ChatPage() {
           <div className="chat-thread" aria-live="polite">
             {conversation.map((item, index) => (
               <article key={`${item.role}-${index}`} className={`chat-message is-${item.role}`}>
-                <span>{item.role === "assistant" ? "Personal Virtual" : "Voce"}</span>
+                <span>{item.role === "assistant" ? personalName : "Voce"}</span>
                 <p>{item.text}</p>
                 {item.attachments?.length ? (
                   <div className="chat-message-attachments">

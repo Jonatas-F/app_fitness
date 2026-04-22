@@ -40,6 +40,35 @@ function resolveAppOrigin(origin) {
     : process.env.STRIPE_SUCCESS_URL?.replace(/\/dashboard$/, "") || "http://localhost:5173";
 }
 
+function normalizeStripeCardBrand(brand) {
+  const normalized = String(brand || "").toLowerCase();
+
+  if (normalized === "visa") {
+    return "Visa";
+  }
+
+  if (normalized === "mastercard") {
+    return "Mastercard";
+  }
+
+  return brand || "Stripe";
+}
+
+function toSafePaymentMethod(paymentMethod, defaultPaymentMethodId) {
+  const card = paymentMethod.card || {};
+
+  return {
+    id: paymentMethod.id,
+    brand: normalizeStripeCardBrand(card.brand),
+    ending: card.last4 || "----",
+    label: `${normalizeStripeCardBrand(card.brand)} final ${card.last4 || "----"}`,
+    expires: card.exp_month && card.exp_year ? `${String(card.exp_month).padStart(2, "0")}/${String(card.exp_year).slice(-2)}` : "--/--",
+    funding: card.funding || null,
+    isDefault: paymentMethod.id === defaultPaymentMethodId,
+    source: "stripe",
+  };
+}
+
 export async function ensureLocalBillingTables() {
   await pool.query(`
     create table if not exists payment_profiles (
@@ -215,13 +244,13 @@ export async function createCheckoutSession(accountId, { planId, billingCycle, i
   const customerId = await getOrCreateStripeCustomer(accountId);
   const client = requireStripe();
   const appOrigin = resolveAppOrigin(requestedAppOrigin);
-  const successUrl = `${appOrigin}/checkout?checkout=success&plan=${safePlanId}`;
+  const successUrl = `${appOrigin}/checkout?checkout=success&plan=${safePlanId}&session_id={CHECKOUT_SESSION_ID}`;
   const cancelUrl = `${appOrigin}/checkout?checkout=cancelled&plan=${safePlanId}`;
   const session = await client.checkout.sessions.create({
     mode: "subscription",
     customer: customerId,
-    success_url: `${successUrl}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${cancelUrl}?checkout=cancelled&plan=${safePlanId}`,
+    success_url: successUrl,
+    cancel_url: cancelUrl,
     allow_promotion_codes: true,
     billing_address_collection: "auto",
     payment_method_types: ["card"],
@@ -273,37 +302,78 @@ export async function createPortalSession(accountId) {
   return { url: session.url, id: session.id };
 }
 
-export async function loadBillingSummary(accountId) {
-  const [paymentResult, subscriptionResult] = await Promise.all([
-    pool.query("select * from payment_profiles where account_id = $1 and gateway = 'stripe' limit 1;", [accountId]),
+export async function createPaymentMethodSession(accountId, { appOrigin: requestedAppOrigin } = {}) {
+  const customerId = await getOrCreateStripeCustomer(accountId);
+  const client = requireStripe();
+  const appOrigin = resolveAppOrigin(requestedAppOrigin);
+  const successUrl = `${appOrigin}/perfil?payment_method=success&session_id={CHECKOUT_SESSION_ID}`;
+  const cancelUrl = `${appOrigin}/perfil?payment_method=cancelled`;
+  const session = await client.checkout.sessions.create({
+    mode: "setup",
+    customer: customerId,
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    payment_method_types: ["card"],
+    metadata: {
+      accountId: String(accountId),
+      purpose: "payment_method_setup",
+    },
+  });
+
+  return { url: session.url, id: session.id, mode: "payment_method_setup" };
+}
+
+export async function listStripePaymentMethods(accountId) {
+  const customerId = await getOrCreateStripeCustomer(accountId);
+  const client = requireStripe();
+  const [customer, paymentMethods, profileResult] = await Promise.all([
+    client.customers.retrieve(customerId),
+    client.paymentMethods.list({
+      customer: customerId,
+      type: "card",
+      limit: 20,
+    }),
     pool.query(
-      `
-        select *
-        from subscriptions
-        where account_id = $1
-        order by updated_at desc, id desc
-        limit 1;
-      `,
+      "select default_payment_method_id from payment_profiles where account_id = $1 and gateway = 'stripe' limit 1;",
       [accountId]
     ),
   ]);
+  const customerDefaultPaymentMethodId =
+    typeof customer.invoice_settings?.default_payment_method === "string"
+      ? customer.invoice_settings.default_payment_method
+      : customer.invoice_settings?.default_payment_method?.id;
+  const defaultPaymentMethodId =
+    customerDefaultPaymentMethodId || profileResult.rows[0]?.default_payment_method_id || null;
 
-  return {
-    paymentProfile: paymentResult.rows[0] || null,
-    subscription: subscriptionResult.rows[0] || null,
-  };
+  return paymentMethods.data
+    .map((paymentMethod) => toSafePaymentMethod(paymentMethod, defaultPaymentMethodId))
+    .sort((a, b) => Number(b.isDefault) - Number(a.isDefault));
 }
 
-async function saveStripePaymentMethod(accountId, subscription) {
-  const client = requireStripe();
-  const paymentMethodId = subscription.default_payment_method;
-
+export async function setDefaultStripePaymentMethod(accountId, paymentMethodId) {
   if (!paymentMethodId) {
-    return;
+    const error = new Error("Informe o metodo de pagamento para selecionar.");
+    error.status = 400;
+    throw error;
   }
 
+  const customerId = await getOrCreateStripeCustomer(accountId);
+  const client = requireStripe();
   const paymentMethod = await client.paymentMethods.retrieve(paymentMethodId);
-  const card = paymentMethod.card;
+  const paymentMethodCustomerId =
+    typeof paymentMethod.customer === "string" ? paymentMethod.customer : paymentMethod.customer?.id;
+
+  if (paymentMethodCustomerId !== customerId) {
+    const error = new Error("Metodo de pagamento nao pertence a esta conta.");
+    error.status = 403;
+    throw error;
+  }
+
+  await client.customers.update(customerId, {
+    invoice_settings: {
+      default_payment_method: paymentMethodId,
+    },
+  });
 
   await pool.query(
     `
@@ -319,18 +389,302 @@ async function saveStripePaymentMethod(accountId, subscription) {
       on conflict (account_id, gateway)
       do update set gateway_customer_id = excluded.gateway_customer_id,
                     default_payment_method_id = excluded.default_payment_method_id,
-                    card_brand = excluded.card_brand,
-                    card_last4 = excluded.card_last4,
+                    card_brand = null,
+                    card_last4 = null,
+                    updated_at = current_timestamp;
+    `,
+    [accountId, customerId, paymentMethodId, null, null]
+  );
+
+  const paymentMethods = await listStripePaymentMethods(accountId);
+
+  return {
+    paymentMethods,
+    defaultPaymentMethodId: paymentMethodId,
+  };
+}
+
+async function getActiveLocalSubscription(accountId) {
+  const result = await pool.query(
+    `
+      select *
+      from subscriptions
+      where account_id = $1
+        and gateway_subscription_id is not null
+        and status in ('active', 'trialing', 'past_due', 'incomplete')
+      order by updated_at desc, id desc
+      limit 1;
+    `,
+    [accountId]
+  );
+
+  return result.rows[0] || null;
+}
+
+async function createRecurringPrice(accountId, planId, billingCycle) {
+  const client = requireStripe();
+  const plan = getPlan(planId);
+
+  return client.prices.create({
+    currency: "brl",
+    unit_amount: getPlanAmount(planId, billingCycle),
+    recurring: {
+      interval: billingCycle === "annual" ? "year" : "month",
+    },
+    product_data: {
+      name: `Shape Certo ${plan.name}`,
+      metadata: {
+        planId,
+      },
+    },
+    metadata: {
+      accountId: String(accountId),
+      planId,
+      billingCycle,
+    },
+  });
+}
+
+export async function createSubscriptionChangeSession(
+  accountId,
+  { planId, billingCycle, appOrigin: requestedAppOrigin }
+) {
+  const safePlanId = plans[planId] ? planId : "intermediario";
+  const safeBillingCycle = billingCycle === "annual" ? "annual" : "monthly";
+  const localSubscription = await getActiveLocalSubscription(accountId);
+
+  if (!localSubscription?.gateway_subscription_id) {
+    return createCheckoutSession(accountId, {
+      planId: safePlanId,
+      billingCycle: safeBillingCycle,
+      installments: 1,
+      appOrigin: requestedAppOrigin,
+    });
+  }
+
+  const client = requireStripe();
+  const appOrigin = resolveAppOrigin(requestedAppOrigin);
+  const price = await createRecurringPrice(accountId, safePlanId, safeBillingCycle);
+  const subscription = await client.subscriptions.retrieve(
+    localSubscription.gateway_subscription_id,
+    { expand: ["items.data.price"] }
+  );
+  const item = subscription.items?.data?.[0];
+
+  if (!item?.id) {
+    return createPortalSession(accountId);
+  }
+
+  const updatedSubscription = await client.subscriptions.update(subscription.id, {
+    items: [
+      {
+        id: item.id,
+        price: price.id,
+      },
+    ],
+    proration_behavior: "always_invoice",
+    payment_behavior: "default_incomplete",
+    metadata: {
+      ...subscription.metadata,
+      accountId: String(accountId),
+      planId: safePlanId,
+      billingCycle: safeBillingCycle,
+      changeSource: "profile",
+    },
+    expand: ["latest_invoice"],
+  });
+  const latestInvoice = updatedSubscription.latest_invoice;
+
+  await pool.query(
+    `
+      insert into subscriptions (
+        account_id,
+        plan,
+        billing_cycle,
+        status,
+        token_limit,
+        token_balance,
+        current_period_start,
+        current_period_end,
+        gateway_subscription_id
+      )
+      values ($1, $2, $3, $4, $5, $5, to_timestamp($6), to_timestamp($7), $8)
+      on conflict (gateway_subscription_id)
+      do update set plan = excluded.plan,
+                    billing_cycle = excluded.billing_cycle,
+                    status = excluded.status,
+                    token_limit = excluded.token_limit,
+                    current_period_start = excluded.current_period_start,
+                    current_period_end = excluded.current_period_end,
+                    updated_at = current_timestamp;
+    `,
+    [
+      accountId,
+      safePlanId,
+      safeBillingCycle,
+      updatedSubscription.status,
+      getPlan(safePlanId).tokenLimit,
+      updatedSubscription.current_period_start || null,
+      updatedSubscription.current_period_end || null,
+      updatedSubscription.id,
+    ]
+  );
+
+  if (typeof latestInvoice === "string") {
+    const invoice = await client.invoices.retrieve(latestInvoice);
+
+    if (invoice.hosted_invoice_url) {
+      return { url: invoice.hosted_invoice_url, id: invoice.id, mode: "subscription_update" };
+    }
+  }
+
+  if (latestInvoice?.hosted_invoice_url) {
+    return { url: latestInvoice.hosted_invoice_url, id: latestInvoice.id, mode: "subscription_update" };
+  }
+
+  const portal = await client.billingPortal.sessions.create({
+    customer: typeof subscription.customer === "string" ? subscription.customer : subscription.customer?.id,
+    return_url: `${appOrigin}/perfil`,
+  });
+
+  return { url: portal.url, id: portal.id, mode: "portal" };
+}
+
+export async function loadBillingSummary(accountId) {
+  const [paymentResult, subscriptionResult, paymentMethods] = await Promise.all([
+    pool.query("select * from payment_profiles where account_id = $1 and gateway = 'stripe' limit 1;", [accountId]),
+    pool.query(
+      `
+        select *
+        from subscriptions
+        where account_id = $1
+        order by updated_at desc, id desc
+        limit 1;
+      `,
+      [accountId]
+    ),
+    listStripePaymentMethods(accountId).catch(() => []),
+  ]);
+
+  return {
+    paymentProfile: paymentResult.rows[0] || null,
+    subscription: subscriptionResult.rows[0] || null,
+    paymentMethods,
+  };
+}
+
+async function saveStripePaymentMethod(accountId, subscription) {
+  const paymentMethodId = subscription.default_payment_method;
+
+  if (!paymentMethodId) {
+    return;
+  }
+
+  await pool.query(
+    `
+      insert into payment_profiles (
+        account_id,
+        gateway,
+        gateway_customer_id,
+        default_payment_method_id,
+        card_brand,
+        card_last4
+      )
+      values ($1, 'stripe', $2, $3, $4, $5)
+      on conflict (account_id, gateway)
+      do update set gateway_customer_id = excluded.gateway_customer_id,
+                    default_payment_method_id = excluded.default_payment_method_id,
+                    card_brand = null,
+                    card_last4 = null,
                     updated_at = current_timestamp;
     `,
     [
       accountId,
       typeof subscription.customer === "string" ? subscription.customer : subscription.customer?.id,
       paymentMethodId,
-      card?.brand || null,
-      card?.last4 || null,
+      null,
+      null,
     ]
   );
+}
+
+async function saveStripeCustomerPaymentMethod(customer) {
+  const accountId = Number(customer.metadata?.accountId);
+  const paymentMethodId = customer.invoice_settings?.default_payment_method;
+
+  if (!accountId || !paymentMethodId) {
+    return null;
+  }
+
+  await pool.query(
+    `
+      insert into payment_profiles (
+        account_id,
+        gateway,
+        gateway_customer_id,
+        default_payment_method_id,
+        card_brand,
+        card_last4
+      )
+      values ($1, 'stripe', $2, $3, null, null)
+      on conflict (account_id, gateway)
+      do update set gateway_customer_id = excluded.gateway_customer_id,
+                    default_payment_method_id = excluded.default_payment_method_id,
+                    card_brand = null,
+                    card_last4 = null,
+                    updated_at = current_timestamp
+      returning *;
+    `,
+    [accountId, customer.id, paymentMethodId]
+  );
+
+  return true;
+}
+
+async function saveStripePaymentMethodFromSetupSession(session) {
+  const accountId = Number(session.metadata?.accountId);
+
+  if (!accountId || !session.setup_intent) {
+    return null;
+  }
+
+  const client = requireStripe();
+  const setupIntent = await client.setupIntents.retrieve(session.setup_intent);
+  const paymentMethodId = setupIntent.payment_method;
+
+  if (!paymentMethodId) {
+    return null;
+  }
+
+  await client.customers.update(session.customer, {
+    invoice_settings: {
+      default_payment_method: paymentMethodId,
+    },
+  });
+
+  await pool.query(
+    `
+      insert into payment_profiles (
+        account_id,
+        gateway,
+        gateway_customer_id,
+        default_payment_method_id,
+        card_brand,
+        card_last4
+      )
+      values ($1, 'stripe', $2, $3, null, null)
+      on conflict (account_id, gateway)
+      do update set gateway_customer_id = excluded.gateway_customer_id,
+                    default_payment_method_id = excluded.default_payment_method_id,
+                    card_brand = null,
+                    card_last4 = null,
+                    updated_at = current_timestamp
+      returning *;
+    `,
+    [accountId, session.customer, paymentMethodId]
+  );
+
+  return true;
 }
 
 export async function upsertSubscriptionFromStripe(subscription) {
@@ -406,6 +760,10 @@ export async function handleStripeEvent(event) {
       const subscription = await client.subscriptions.retrieve(session.subscription);
       return upsertSubscriptionFromStripe(subscription);
     }
+
+    if (session.mode === "setup") {
+      return saveStripePaymentMethodFromSetupSession(session);
+    }
   }
 
   if (
@@ -414,6 +772,10 @@ export async function handleStripeEvent(event) {
     event.type === "customer.subscription.deleted"
   ) {
     return upsertSubscriptionFromStripe(event.data.object);
+  }
+
+  if (event.type === "customer.updated") {
+    return saveStripeCustomerPaymentMethod(event.data.object);
   }
 
   return null;

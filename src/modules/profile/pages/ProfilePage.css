@@ -777,7 +777,8 @@
   gap: 10px;
 }
 
-.plan-confirm-modal__summary div {
+.plan-confirm-modal__summary div,
+.plan-confirm-modal__proration div {
   display: grid;
   gap: 5px;
   padding: 12px;
@@ -786,13 +787,30 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.plan-confirm-modal__proration {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(255, 46, 46, 0.08);
+  border: 1px solid rgba(255, 46, 46, 0.18);
+}
+
+.plan-confirm-modal__proration div {
+  background: rgba(0, 0, 0, 0.22);
+}
+
 .plan-confirm-modal__summary small,
-.plan-confirm-modal__summary span {
+.plan-confirm-modal__summary span,
+.plan-confirm-modal__proration small,
+.plan-confirm-modal__proration span {
   color: rgba(255, 255, 255, 0.62);
   line-height: 1.35;
 }
 
-.plan-confirm-modal__summary small {
+.plan-confirm-modal__summary small,
+.plan-confirm-modal__proration small {
   font-size: 0.72rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -1249,7 +1267,8 @@
   .payment-methods,
   .payment-add-form__grid,
   .payment-add-form__actions,
-  .plan-confirm-modal__summary {
+  .plan-confirm-modal__summary,
+  .plan-confirm-modal__proration {
     grid-template-columns: 1fr;
   }
 

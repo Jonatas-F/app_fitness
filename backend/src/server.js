@@ -22,10 +22,14 @@ import {
 import { ensureLocalCheckinColumns } from "./modules/checkins/checkins.service.js";
 import {
   handleCreateStripeCheckoutSession,
+  handleCreateStripePaymentMethodSession,
   handleCreateStripePortalSession,
+  handleCreateStripeSubscriptionChangeSession,
   handleLoadBillingSummary,
+  handleListStripePaymentMethods,
   handleListPlanChangeAcceptances,
   handleSavePlanChangeAcceptance,
+  handleSetDefaultStripePaymentMethod,
   handleStripeWebhook,
 } from "./modules/billing/billing.controller.js";
 import { ensureLocalBillingTables } from "./modules/billing/billing.service.js";
@@ -53,6 +57,8 @@ import { ensureLocalPreferenceTables } from "./modules/preferences/preferences.s
 import { handleGoogleRiscEvent } from "./modules/security/googleRisc.controller.js";
 import { ensureGoogleRiscTables } from "./modules/security/googleRisc.service.js";
 import { handleLoadAssistantContext } from "./modules/assistant/assistant.controller.js";
+import { handleLoadSettings, handleSaveSettings } from "./modules/settings/settings.controller.js";
+import { ensureLocalSettingsTables } from "./modules/settings/settings.service.js";
 
 const app = express();
 const allowedOrigins = new Set([
@@ -123,13 +129,19 @@ app.get("/auth/google", handleGoogleStart);
 app.get("/auth/google/callback", handleGoogleCallback);
 app.get("/profile", requireAuth, handleLoadProfile);
 app.put("/profile", requireAuth, handleSaveProfile);
+app.get("/settings", requireAuth, handleLoadSettings);
+app.put("/settings", requireAuth, handleSaveSettings);
 app.get("/checkins", requireAuth, handleListCheckins);
 app.post("/checkins", requireAuth, handleSaveCheckin);
 app.delete("/checkins", requireAuth, handleDeleteCheckins);
 app.get("/billing/plan-change-acceptances", requireAuth, handleListPlanChangeAcceptances);
 app.post("/billing/plan-change-acceptances", requireAuth, handleSavePlanChangeAcceptance);
 app.get("/billing/subscription", requireAuth, handleLoadBillingSummary);
+app.get("/billing/stripe/payment-methods", requireAuth, handleListStripePaymentMethods);
+app.put("/billing/stripe/default-payment-method", requireAuth, handleSetDefaultStripePaymentMethod);
 app.post("/billing/stripe/checkout-session", requireAuth, handleCreateStripeCheckoutSession);
+app.post("/billing/stripe/subscription-change-session", requireAuth, handleCreateStripeSubscriptionChangeSession);
+app.post("/billing/stripe/payment-method-session", requireAuth, handleCreateStripePaymentMethodSession);
 app.post("/billing/stripe/portal-session", requireAuth, handleCreateStripePortalSession);
 app.get("/workouts/active", requireAuth, handleLoadWorkoutPlan);
 app.put("/workouts/active", requireAuth, handleSaveWorkoutPlan);
@@ -154,6 +166,7 @@ await ensureLocalWorkoutTables();
 await ensureLocalDietTables();
 await ensureLocalPreferenceTables();
 await ensureGoogleRiscTables();
+await ensureLocalSettingsTables();
 
 app.listen(appConfig.port, () => {
   console.log(`Shape Certo API running on http://localhost:${appConfig.port}`);

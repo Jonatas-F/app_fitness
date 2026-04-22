@@ -61,7 +61,7 @@ export default function HomePage() {
   }
 
   async function handleGoogleLogin() {
-    const result = await signInWithGoogle();
+    const result = await signInWithGoogle({ returnTo: "/dashboard" });
 
     if (result.error) {
       setAuthMessage(result.error.message);

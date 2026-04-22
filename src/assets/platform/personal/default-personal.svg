@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title desc">
+  <title id="title">Personal Virtual</title>
+  <desc id="desc">Avatar geometrico padrao do Personal Virtual.</desc>
+  <rect width="160" height="160" rx="24" fill="#161616"/>
+  <circle cx="80" cy="58" r="26" fill="#ff2e2e"/>
+  <path d="M38 132c6-30 22-46 42-46s36 16 42 46" fill="none" stroke="#f4f4f5" stroke-width="12" stroke-linecap="round"/>
+  <path d="M62 58h36M70 70c6 5 14 5 20 0" fill="none" stroke="#161616" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="69" cy="54" r="4" fill="#161616"/>
+  <circle cx="91" cy="54" r="4" fill="#161616"/>
+</svg>

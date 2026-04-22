@@ -1,6 +1,7 @@
 .settings-page {
   display: grid;
   gap: 18px;
+  --settings-avatar-card-size: 162px;
 }
 
 .settings-hero,
@@ -66,7 +67,7 @@
 }
 
 .settings-section {
-  overflow: hidden;
+  overflow: visible;
 }
 
 .settings-section[open] {
@@ -137,6 +138,7 @@
   display: grid;
   gap: 14px;
   padding: 0 16px 16px;
+  overflow: visible;
 }
 
 .settings-list {
@@ -261,6 +263,7 @@
   font-weight: 900;
 }
 
+.settings-personal-grid input,
 .settings-personal-grid select {
   width: 100%;
   min-height: 48px;
@@ -273,6 +276,10 @@
   outline: none;
 }
 
+.settings-personal-grid input::placeholder {
+  color: rgba(255, 255, 255, 0.34);
+}
+
 .settings-personal-grid select option {
   color: #fff;
   background: #111113;
@@ -283,6 +290,156 @@
   font-size: 1.35rem;
 }
 
+.settings-avatar-preview {
+  grid-template-columns: var(--settings-avatar-card-size) minmax(0, 1fr);
+  align-items: center;
+}
+
+.settings-avatar-preview img {
+  width: var(--settings-avatar-card-size);
+  height: var(--settings-avatar-card-size);
+  object-fit: contain;
+  object-position: center bottom;
+  border-radius: 8px;
+  background: rgba(255, 46, 46, 0.15);
+  border: 1px solid rgba(255, 46, 46, 0.24);
+  box-shadow: 0 18px 42px rgba(255, 46, 46, 0.18);
+}
+
+.settings-avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--settings-avatar-card-size), var(--settings-avatar-card-size)));
+  gap: 10px;
+  align-items: stretch;
+}
+
+.settings-avatar-grid button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--settings-avatar-card-size);
+  height: var(--settings-avatar-card-size);
+  overflow: visible;
+  padding: 0;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-weight: 900;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.settings-avatar-grid button:hover,
+.settings-avatar-grid button:focus-visible {
+  z-index: 3;
+  transform: translateY(-3px) scale(1.06);
+  border-color: rgba(255, 46, 46, 0.34);
+  background: rgba(255, 46, 46, 0.1);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.28);
+}
+
+.settings-avatar-grid button.is-selected {
+  background: linear-gradient(135deg, rgba(255, 46, 46, 0.16), rgba(255, 255, 255, 0.045));
+  border-color: rgba(255, 46, 46, 0.36);
+  box-shadow:
+    0 18px 42px rgba(255, 46, 46, 0.16),
+    inset 0 0 0 1px rgba(255, 46, 46, 0.16);
+}
+
+.settings-avatar-grid img {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  border-radius: 8px;
+  transition: transform 0.22s ease;
+  transform-origin: center bottom;
+}
+
+.settings-avatar-grid button:hover img,
+.settings-avatar-grid button:focus-visible img {
+  transform: scale(1.42);
+}
+
+.settings-avatar-grid button.is-selected img {
+  transform: scale(1.18);
+}
+
+.settings-option-groups {
+  display: grid;
+  gap: 12px;
+}
+
+.settings-option-group {
+  display: grid;
+  gap: 10px;
+}
+
+.settings-option-group h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 0.94rem;
+}
+
+.settings-option-group > div {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.settings-option-group button {
+  display: grid;
+  gap: 5px;
+  min-height: 82px;
+  padding: 12px;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(148, 163, 184, 0.14);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  text-align: left;
+}
+
+.settings-option-group button.is-selected {
+  background: linear-gradient(135deg, rgba(255, 46, 46, 0.16), rgba(255, 255, 255, 0.045));
+  border-color: rgba(255, 46, 46, 0.36);
+}
+
+.settings-option-group small,
+.settings-save-message {
+  color: rgba(255, 255, 255, 0.64);
+  line-height: 1.4;
+}
+
+.settings-save-message {
+  display: block;
+  padding: 0 2px;
+  font-weight: 900;
+}
+
+.settings-save-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.settings-save-actions .primary-button {
+  width: fit-content;
+  min-width: 190px;
+  border-radius: 8px;
+}
+
+.settings-save-actions .primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  box-shadow: none;
+}
+
 .settings-personal-grid p span {
   color: #ffd7d7;
   font-weight: 900;
@@ -291,7 +448,8 @@
 @media (max-width: 760px) {
   .settings-section summary,
   .settings-toggle-row,
-  .settings-personal-grid {
+  .settings-personal-grid,
+  .settings-avatar-preview {
     grid-template-columns: 1fr;
   }
 

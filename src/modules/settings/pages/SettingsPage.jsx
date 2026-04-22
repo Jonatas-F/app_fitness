@@ -1,22 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@iconify/react";
 import { loadCheckins } from "../../../data/checkinStorage";
+import { getPersonalAvatarById, personalAvatarCatalog } from "../../../data/platformImageCatalog";
+import { loadRemoteSettings, saveRemoteSettings } from "../../../services/settingsService";
 import "./SettingsPage.css";
 
 const SETTINGS_KEY = "shapeCertoSettings";
-
-const personalNames = [
-  { value: "ricardo", label: "Ricardo", gender: "masculino" },
-  { value: "marcos", label: "Marcos", gender: "masculino" },
-  { value: "rafael", label: "Rafael", gender: "masculino" },
-  { value: "bruno", label: "Bruno", gender: "masculino" },
-  { value: "gabriel", label: "Gabriel", gender: "masculino" },
-  { value: "ana", label: "Ana", gender: "feminino" },
-  { value: "mariana", label: "Mariana", gender: "feminino" },
-  { value: "camila", label: "Camila", gender: "feminino" },
-  { value: "julia", label: "Julia", gender: "feminino" },
-  { value: "lara", label: "Lara", gender: "feminino" },
-];
 
 const defaultSettings = {
   notifications: {
@@ -28,7 +17,11 @@ const defaultSettings = {
     monthlyReevaluation: true,
   },
   personal: {
-    name: "ricardo",
+    name: "Ricardo",
+    languageTone: "direto",
+    motivationStyle: "equilibrado",
+    feedbackDepth: "objetivo",
+    avatarId: "default-personal",
   },
   privacy: {
     useOnlyOwnData: true,
@@ -36,6 +29,26 @@ const defaultSettings = {
     saveChatHistory: false,
   },
 };
+
+const languageToneOptions = [
+  { value: "leve", label: "Leve", description: "Respostas tranquilas, acolhedoras e sem pressao." },
+  { value: "direto", label: "Direto", description: "Objetivo, pratico e com pouco rodeio." },
+  { value: "intenso", label: "Mais agressivo", description: "Mais cobranca, energia alta e foco em execucao." },
+  { value: "tecnico", label: "Tecnico", description: "Mais explicacoes sobre treino, dieta e dados." },
+];
+
+const motivationStyleOptions = [
+  { value: "calmo", label: "Calmo", description: "Tom sereno para manter consistencia." },
+  { value: "equilibrado", label: "Equilibrado", description: "Mistura incentivo, cobranca e clareza." },
+  { value: "animado", label: "Animado", description: "Mais entusiasmo e reforco positivo." },
+  { value: "disciplinador", label: "Disciplinador", description: "Mais firmeza quando houver queda de aderencia." },
+];
+
+const feedbackDepthOptions = [
+  { value: "curto", label: "Curto", description: "Feedback rapido e facil de aplicar." },
+  { value: "objetivo", label: "Objetivo", description: "Explica o suficiente e ja indica a acao." },
+  { value: "detalhado", label: "Detalhado", description: "Traz contexto, motivos e proximos passos." },
+];
 
 const notificationItems = [
   {
@@ -107,6 +120,7 @@ function loadSettings() {
       personal: {
         ...defaultSettings.personal,
         ...(parsed?.personal || {}),
+        name: parsed?.personal?.name ?? defaultSettings.personal.name,
       },
       privacy: {
         ...defaultSettings.privacy,
@@ -122,6 +136,25 @@ function loadSettings() {
 function persistSettings(settings) {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   return settings;
+}
+
+function normalizeSettings(settings) {
+  return {
+    notifications: {
+      ...defaultSettings.notifications,
+      ...(settings?.notifications || {}),
+    },
+    personal: {
+      ...defaultSettings.personal,
+      ...(settings?.personal || {}),
+      name: String(settings?.personal?.name ?? defaultSettings.personal.name).slice(0, 60),
+    },
+    privacy: {
+      ...defaultSettings.privacy,
+      ...(settings?.privacy || {}),
+      useOnlyOwnData: true,
+    },
+  };
 }
 
 function getLatestRoutineCheckin() {
@@ -219,17 +252,93 @@ function ToggleRow({ icon, title, description, schedule, checked, disabled = fal
   );
 }
 
+function SettingsOptionGroup({ title, options, value, onChange }) {
+  return (
+    <section className="settings-option-group">
+      <h3>{title}</h3>
+      <div>
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            className={value === option.value ? "is-selected" : ""}
+            onClick={() => onChange(option.value)}
+          >
+            <strong>{option.label}</strong>
+            <small>{option.description}</small>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function SettingsPage() {
+  const [savedSettings, setSavedSettings] = useState(() => loadSettings());
   const [settings, setSettings] = useState(() => loadSettings());
-  const selectedPersonal = useMemo(
-    () => personalNames.find((item) => item.value === settings.personal.name) || personalNames[0],
-    [settings.personal.name]
+  const [saveMessage, setSaveMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const selectedAvatar = useMemo(
+    () => getPersonalAvatarById(settings.personal.avatarId),
+    [settings.personal.avatarId]
   );
   const latestRoutineCheckin = useMemo(() => getLatestRoutineCheckin(), []);
   const activeNotificationCount = Object.values(settings.notifications).filter(Boolean).length;
+  const hasUnsavedChanges = useMemo(
+    () => JSON.stringify(settings) !== JSON.stringify(savedSettings),
+    [savedSettings, settings]
+  );
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function hydrateSettings() {
+      const result = await loadRemoteSettings();
+
+      if (ignore || result.skipped || result.error || !result.settings) {
+        return;
+      }
+
+      const remoteSettings = normalizeSettings(result.settings);
+      setSavedSettings(remoteSettings);
+      setSettings(remoteSettings);
+      persistSettings(remoteSettings);
+    }
+
+    hydrateSettings();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   function updateSettings(updater) {
-    setSettings((current) => persistSettings(updater(current)));
+    setSaveMessage("");
+    setSettings((current) => normalizeSettings(updater(current)));
+  }
+
+  async function handleSaveSettings() {
+    const next = persistSettings(normalizeSettings(settings));
+    setSettings(next);
+    setIsSaving(true);
+    setSaveMessage("Salvando configuracoes...");
+
+    const result = await saveRemoteSettings(next);
+    setIsSaving(false);
+
+    if (result.error) {
+      setSavedSettings(next);
+      window.dispatchEvent(new CustomEvent("shape-certo-settings-updated", { detail: next }));
+      setSaveMessage(`Salvo neste dispositivo. Banco SQL: ${result.error.message}`);
+      return;
+    }
+
+    const storedSettings = normalizeSettings(result.settings || next);
+    setSavedSettings(storedSettings);
+    setSettings(storedSettings);
+    persistSettings(storedSettings);
+    window.dispatchEvent(new CustomEvent("shape-certo-settings-updated", { detail: storedSettings }));
+    setSaveMessage(result.skipped ? "Salvo neste dispositivo." : "Configuracoes salvas no banco SQL.");
   }
 
   function toggleNotification(key) {
@@ -257,12 +366,22 @@ export default function SettingsPage() {
     }));
   }
 
-  function handlePersonalChange(event) {
+  function handlePersonalNameChange(event) {
     updateSettings((current) => ({
       ...current,
       personal: {
         ...current.personal,
         name: event.target.value,
+      },
+    }));
+  }
+
+  function handlePersonalOptionChange(key, value) {
+    updateSettings((current) => ({
+      ...current,
+      personal: {
+        ...current.personal,
+        [key]: value,
       },
     }));
   }
@@ -308,21 +427,65 @@ export default function SettingsPage() {
         <SettingsSection
           eyebrow="02"
           title="Personal Virtual"
-          description="Escolha o nome do agente que acompanha seu treino e dieta."
-          status={selectedPersonal.label}
+          description="Nome, avatar e personalidade do agente que acompanha seu treino e dieta."
+          status={settings.personal.name || "Personal"}
         >
-          <div className="settings-personal-grid settings-personal-grid--single">
+          <div className="settings-personal-grid">
             <label>
               <span>Nome do Personal Virtual</span>
-              <select value={settings.personal.name} onChange={handlePersonalChange}>
-                {personalNames.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
+              <input
+                type="text"
+                value={settings.personal.name}
+                onChange={handlePersonalNameChange}
+                placeholder="Ex.: Ricardo, Ana, Coach Max"
+                maxLength={60}
+              />
             </label>
+
+            <article className="settings-avatar-preview">
+              {selectedAvatar ? <img src={selectedAvatar.url} alt={`Avatar ${selectedAvatar.label}`} /> : null}
+              <div>
+                <strong>{settings.personal.name || "Personal Virtual"}</strong>
+                <p>Avatar selecionado para o chat e pontos-chave da experiencia.</p>
+              </div>
+            </article>
           </div>
+
+          <div className="settings-avatar-grid">
+            {personalAvatarCatalog.map((avatar) => (
+              <button
+                key={avatar.id}
+                type="button"
+                className={settings.personal.avatarId === avatar.id ? "is-selected" : ""}
+                onClick={() => handlePersonalOptionChange("avatarId", avatar.id)}
+              >
+                <img src={avatar.url} alt={avatar.label} />
+              </button>
+            ))}
+          </div>
+
+          <div className="settings-option-groups">
+            <SettingsOptionGroup
+              title="Tom de linguagem"
+              options={languageToneOptions}
+              value={settings.personal.languageTone}
+              onChange={(value) => handlePersonalOptionChange("languageTone", value)}
+            />
+            <SettingsOptionGroup
+              title="Nivel de animo"
+              options={motivationStyleOptions}
+              value={settings.personal.motivationStyle}
+              onChange={(value) => handlePersonalOptionChange("motivationStyle", value)}
+            />
+            <SettingsOptionGroup
+              title="Profundidade do feedback"
+              options={feedbackDepthOptions}
+              value={settings.personal.feedbackDepth}
+              onChange={(value) => handlePersonalOptionChange("feedbackDepth", value)}
+            />
+          </div>
+
+          {saveMessage ? <small className="settings-save-message">{saveMessage}</small> : null}
         </SettingsSection>
 
         <SettingsSection
@@ -344,6 +507,17 @@ export default function SettingsPage() {
             ))}
           </div>
         </SettingsSection>
+      </div>
+
+      <div className="settings-save-actions">
+        <button
+          type="button"
+          className="primary-button"
+          disabled={isSaving || !hasUnsavedChanges}
+          onClick={handleSaveSettings}
+        >
+          {isSaving ? "Salvando..." : "Salvar alteracoes"}
+        </button>
       </div>
     </section>
   );

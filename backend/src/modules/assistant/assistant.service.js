@@ -11,8 +11,7 @@ function sanitizePaymentProfile(profile) {
 
   return {
     gateway: profile.gateway,
-    card_brand: profile.card_brand,
-    card_last4: profile.card_last4,
+    default_payment_method_id: profile.default_payment_method_id,
     updated_at: profile.updated_at,
   };
 }
@@ -30,6 +29,7 @@ export async function loadAssistantContext(accountId) {
     gymEquipmentResult,
     subscriptionResult,
     paymentProfileResult,
+    settingsResult,
   ] = await Promise.all([
     pool.query(
       `
@@ -121,9 +121,18 @@ export async function loadAssistantContext(accountId) {
     ),
     pool.query(
       `
-        select gateway, card_brand, card_last4, updated_at
+        select gateway, default_payment_method_id, updated_at
         from payment_profiles
         where account_id = $1 and gateway = 'stripe'
+        limit 1;
+      `,
+      [accountId]
+    ),
+    pool.query(
+      `
+        select personal_name, language_tone, motivation_style, feedback_depth, avatar_id, notifications, privacy, updated_at
+        from user_settings
+        where account_id = $1
         limit 1;
       `,
       [accountId]
@@ -166,6 +175,7 @@ export async function loadAssistantContext(accountId) {
       foods: compactRows(foodPreferencesResult.rows, 200),
       gymEquipment: compactRows(gymEquipmentResult.rows, 200),
     },
+    settings: settingsResult.rows[0] || null,
     billing: {
       subscription: subscriptionResult.rows[0] || null,
       paymentProfile: sanitizePaymentProfile(paymentProfileResult.rows[0] || null),

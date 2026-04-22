@@ -1,11 +1,15 @@
 import {
   constructStripeWebhookEvent,
   createCheckoutSession,
+  createPaymentMethodSession,
   createPortalSession,
+  createSubscriptionChangeSession,
   handleStripeEvent,
   listPlanChangeAcceptances,
+  listStripePaymentMethods,
   loadBillingSummary,
   savePlanChangeAcceptance,
+  setDefaultStripePaymentMethod,
 } from "./billing.service.js";
 
 export async function handleSavePlanChangeAcceptance(req, res, next) {
@@ -38,6 +42,42 @@ export async function handleCreateStripeCheckoutSession(req, res, next) {
 export async function handleCreateStripePortalSession(req, res, next) {
   try {
     const data = await createPortalSession(req.auth.sub);
+    res.json(data);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function handleCreateStripePaymentMethodSession(req, res, next) {
+  try {
+    const data = await createPaymentMethodSession(req.auth.sub, req.body);
+    res.json(data);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function handleListStripePaymentMethods(req, res, next) {
+  try {
+    const paymentMethods = await listStripePaymentMethods(req.auth.sub);
+    res.json({ paymentMethods });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function handleSetDefaultStripePaymentMethod(req, res, next) {
+  try {
+    const data = await setDefaultStripePaymentMethod(req.auth.sub, req.body.paymentMethodId);
+    res.json(data);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function handleCreateStripeSubscriptionChangeSession(req, res, next) {
+  try {
+    const data = await createSubscriptionChangeSession(req.auth.sub, req.body);
     res.json(data);
   } catch (error) {
     next(error);

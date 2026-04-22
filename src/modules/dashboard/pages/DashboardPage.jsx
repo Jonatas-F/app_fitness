@@ -5,7 +5,10 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   Legend,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -25,6 +28,7 @@ import "./DashboardPage.css";
 
 const chartPalette = ["#ff2e2e", "#ff6b6b", "#f2f2f2", "#d1d1d1", "#a8a8a8", "#b8b8b8", "#ffffff"];
 const chartAxisStyle = { fill: "rgba(255, 255, 255, 0.58)", fontSize: 12 };
+const donutColors = ["#ff2e2e", "rgba(255, 255, 255, 0.13)"];
 
 function numberValue(value) {
   const parsed = Number(String(value || "").replace(",", ".").replace(/[^\d.-]/g, ""));
@@ -65,6 +69,12 @@ function formatShortDate(value) {
     day: "2-digit",
     month: "2-digit",
   });
+}
+
+function formatMonthLabel(date) {
+  return date.toLocaleDateString("pt-BR", {
+    month: "short",
+  }).replace(".", "");
 }
 
 function adherencePercent(done, total) {
@@ -128,6 +138,42 @@ function summarizeLoads(sessions) {
   });
 
   return { loadsByDate };
+}
+
+function buildMonthlyActivityData(sessions, checkins) {
+  const today = new Date();
+
+  return Array.from({ length: 6 }, (_, index) => {
+    const date = new Date(today.getFullYear(), today.getMonth() - (5 - index), 1);
+    const month = date.getMonth();
+    const year = date.getFullYear();
+
+    return {
+      label: formatMonthLabel(date),
+      treinos: sessions.filter((session) => {
+        const sessionDate = new Date(session.createdAt);
+        return sessionDate.getMonth() === month && sessionDate.getFullYear() === year;
+      }).length,
+      checkins: checkins.filter((checkin) => {
+        const checkinDate = new Date(checkin.createdAt);
+        return checkinDate.getMonth() === month && checkinDate.getFullYear() === year;
+      }).length,
+    };
+  });
+}
+
+function makeDonutData(done, total) {
+  if (!total) {
+    return [
+      { name: "Sem dados", value: 1 },
+      { name: "Pendente", value: 0 },
+    ];
+  }
+
+  return [
+    { name: "Realizado", value: Math.max(done, 0) },
+    { name: "Gaps", value: Math.max(total - done, 0) },
+  ];
 }
 
 function buildCalendar(allCheckins, sessions) {
@@ -365,6 +411,71 @@ function LoadBarChart({ data }) {
   );
 }
 
+function AdherenceDonutChart({ title, done, total, helper }) {
+  const percent = adherencePercent(done, total);
+  const data = makeDonutData(done, total);
+
+  return (
+    <article className="dashboard-donut-card dashboard-chart-shell">
+      <div className="dashboard-donut-chart">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={data}
+              dataKey="value"
+              nameKey="name"
+              innerRadius="68%"
+              outerRadius="92%"
+              paddingAngle={total ? 3 : 0}
+              stroke="rgba(255, 255, 255, 0.08)"
+              strokeWidth={1}
+              isAnimationActive={false}
+            >
+              {data.map((entry, index) => (
+                <Cell
+                  key={entry.name}
+                  fill={total ? donutColors[index % donutColors.length] : "rgba(255, 255, 255, 0.1)"}
+                />
+              ))}
+            </Pie>
+            <Tooltip content={<DashboardTooltip />} />
+          </PieChart>
+        </ResponsiveContainer>
+        <strong>{percent}</strong>
+      </div>
+      <div>
+        <h3>{title}</h3>
+        <p>{helper}</p>
+        <span>
+          {done}/{total || 0} registros
+        </span>
+      </div>
+    </article>
+  );
+}
+
+function MonthlyActivityChart({ data }) {
+  return (
+    <article className="dashboard-card dashboard-card--nested dashboard-chart-shell">
+      <h2>Atividade dos ultimos meses</h2>
+      <p>Comparativo entre sessoes de treino e check-ins salvos.</p>
+      <div className="dashboard-chart-area">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
+            <CartesianGrid stroke="rgba(255, 255, 255, 0.07)" vertical={false} />
+            <XAxis dataKey="label" tick={chartAxisStyle} axisLine={false} tickLine={false} />
+            <YAxis tick={chartAxisStyle} axisLine={false} tickLine={false} width={44} />
+            <Tooltip content={<DashboardTooltip />} />
+            <Legend iconType="circle" wrapperStyle={{ color: "rgba(255, 255, 255, 0.72)", fontSize: 12 }} />
+            <Bar dataKey="treinos" name="Treinos" fill="#ff2e2e" radius={[8, 8, 3, 3]} isAnimationActive={false} />
+            <Bar dataKey="checkins" name="Check-ins" fill="#f2f2f2" radius={[8, 8, 3, 3]} isAnimationActive={false} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </article>
+  );
+}
+
 function DashboardCollapsible({ eyebrow, title, summary, badge, children }) {
   return (
     <details className="dashboard-collapsible glass-panel">
@@ -565,6 +676,7 @@ export default function DashboardPage() {
   const monthlyCheckinTotal = monthlyCheckins.length + monthlyMissedCheckins.length;
   const calendarDays = buildCalendar(allCheckins, sessions);
   const { loadsByDate } = summarizeLoads(sessions.slice(0, 8).reverse());
+  const monthlyActivityData = buildMonthlyActivityData(sessions, checkins);
   const feedbacks = makeFeedbacks({
     weekSessions,
     monthSessions,
@@ -702,6 +814,22 @@ export default function DashboardPage() {
               </div>
             </div>
           </article>
+        </section>
+
+        <section className="dashboard-insight-grid">
+          <AdherenceDonutChart
+            title="Aderencia semanal"
+            done={weeklyCheckins.length}
+            total={weeklyCheckinTotal}
+            helper="Check-ins feitos versus gaps registrados na semana."
+          />
+          <AdherenceDonutChart
+            title="Aderencia mensal"
+            done={monthlyCheckins.length}
+            total={monthlyCheckinTotal}
+            helper="Base para acompanhar consistencia do ciclo."
+          />
+          <MonthlyActivityChart data={monthlyActivityData} />
         </section>
       </DashboardCollapsible>
 

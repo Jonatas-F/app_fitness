@@ -436,6 +436,31 @@
   font-weight: 800;
 }
 
+.checkout-terms {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  line-height: 1.45;
+}
+
+.checkout-terms input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: #ff2e2e;
+  flex-shrink: 0;
+}
+
+.checkout-form .primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  box-shadow: none;
+}
+
 .checkout-summary {
   position: sticky;
   top: 18px;

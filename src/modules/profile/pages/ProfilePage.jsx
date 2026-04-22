@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import PaymentCard3D from "../../../components/ui/PaymentCard3D";
 import logo from "../../../assets/logo.svg";
 import { foodMarkOptions, foodPreferencesCatalog } from "../../../data/foodPreferencesCatalog";
@@ -22,7 +22,13 @@ import { formatCurrency, getAnnualPrice, getPlanById, subscriptionPlans } from "
 import { signOut } from "../../../services/authService";
 import { savePlanChangeAcceptance } from "../../../services/planAcceptanceService";
 import { loadRemoteProfile, saveRemoteProfile, uploadProfileAvatar } from "../../../services/profileService";
-import { createStripePortalSession } from "../../../services/stripeService";
+import {
+  createStripePaymentMethodSession,
+  createStripePortalSession,
+  createStripeSubscriptionChangeSession,
+  loadBillingSubscription,
+  setStripeDefaultPaymentMethod,
+} from "../../../services/stripeService";
 import "./ProfilePage.css";
 
 const PROFILE_PHOTO_KEY = "shapeCertoProfilePhoto";
@@ -40,22 +46,6 @@ const defaultAccount = {
 };
 
 const defaultPaymentMethods = [
-  {
-    id: "principal",
-    brand: "Visa",
-    ending: "2847",
-    label: "Cartao principal",
-    holder: "Jonatas Ferreira",
-    expires: "12/29",
-  },
-  {
-    id: "reserva",
-    brand: "Mastercard",
-    ending: "9132",
-    label: "Cartao reserva",
-    holder: "Jonatas Ferreira",
-    expires: "08/28",
-  },
 ];
 
 const addPaymentMethodOption = {
@@ -63,15 +53,6 @@ const addPaymentMethodOption = {
   brand: "+",
   ending: "novo",
   label: "Adicionar novo cartao",
-};
-
-const emptyPaymentMethodDraft = {
-  id: "",
-  label: "",
-  brand: "Visa",
-  ending: "",
-  holder: "",
-  expires: "",
 };
 
 function loadProfilePhoto() {
@@ -101,14 +82,33 @@ function saveProfileAccount(account) {
 }
 
 function normalizePaymentMethod(method) {
+  const normalizedBrand = String(method.brand || "").toLowerCase();
+  const brand =
+    normalizedBrand === "visa"
+      ? "Visa"
+      : normalizedBrand === "mastercard"
+        ? "Mastercard"
+        : method.brand === "Visa" || method.brand === "Mastercard"
+          ? method.brand
+          : "Stripe";
+  const ending = String(method.ending || method.last4 || "")
+    .replace(/\D/g, "")
+    .slice(-4);
+
   return {
     id: method.id,
-    brand: method.brand === "Mastercard" ? "Mastercard" : "Visa",
-    ending: String(method.ending || "").replace(/\D/g, "").slice(-4),
-    label: method.label || "Cartao salvo",
-    holder: method.holder || "Titular nao informado",
+    brand,
+    ending: ending || "----",
+    label: method.label || "Metodo Stripe salvo",
+    holder: method.holder || method.funding || "Gerenciado no Stripe",
     expires: method.expires || "--/--",
+    isDefault: Boolean(method.isDefault),
+    source: method.source || "stripe",
   };
+}
+
+function normalizeStripePaymentMethods(methods = []) {
+  return methods.map(normalizePaymentMethod).filter((method) => method.id && method.source === "stripe");
 }
 
 function loadPaymentMethods() {
@@ -125,9 +125,7 @@ function loadPaymentMethods() {
       return defaultPaymentMethods;
     }
 
-    return parsedMethods
-      .map(normalizePaymentMethod)
-      .filter((method) => method.id && method.ending.length === 4);
+    return normalizeStripePaymentMethods(parsedMethods);
   } catch (error) {
     return defaultPaymentMethods;
   }
@@ -138,11 +136,61 @@ function savePaymentMethods(methods) {
   return methods;
 }
 
-function createPaymentDraft(method = {}) {
+function getPlanPrice(plan, billingCycle) {
+  return billingCycle === "annual" ? getAnnualPrice(plan) : plan.monthlyPrice;
+}
+
+function parseBillingDate(value) {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function clampNumber(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function buildProrationEstimate({ subscription, currentPlan, currentBillingCycle, nextPlan, nextBillingCycle }) {
+  const dayMs = 24 * 60 * 60 * 1000;
+  const currentPrice = getPlanPrice(currentPlan, currentBillingCycle);
+  const nextPrice = getPlanPrice(nextPlan, nextBillingCycle);
+  const startDate = parseBillingDate(subscription?.current_period_start);
+  const endDate = parseBillingDate(subscription?.current_period_end);
+  const now = new Date();
+
+  if (!startDate || !endDate || endDate <= startDate) {
+    return {
+      currentPrice,
+      nextPrice,
+      credit: 0,
+      estimatedDue: nextPrice,
+      usedDays: null,
+      totalDays: null,
+      remainingDays: null,
+      hasActivePeriod: false,
+    };
+  }
+
+  const totalDays = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / dayMs));
+  const elapsedDays = Math.ceil((now.getTime() - startDate.getTime()) / dayMs);
+  const usedDays = clampNumber(elapsedDays, 0, totalDays);
+  const remainingDays = Math.max(0, totalDays - usedDays);
+  const remainingRatio = remainingDays / totalDays;
+  const credit = Number((currentPrice * remainingRatio).toFixed(2));
+
   return {
-    ...emptyPaymentMethodDraft,
-    ...method,
-    ending: method.ending && method.ending !== "novo" ? String(method.ending).replace(/\D/g, "").slice(-4) : "",
+    currentPrice,
+    nextPrice,
+    credit,
+    estimatedDue: Number(Math.max(0, nextPrice - credit).toFixed(2)),
+    usedDays,
+    totalDays,
+    remainingDays,
+    hasActivePeriod: true,
   };
 }
 
@@ -206,11 +254,10 @@ function FoodPreferenceCard({ item, selectedMark, onChange }) {
 
 export default function ProfilePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [profilePhoto, setProfilePhoto] = useState(() => loadProfilePhoto());
   const [account, setAccount] = useState(() => loadProfileAccount());
   const [savedPaymentMethods, setSavedPaymentMethods] = useState(() => loadPaymentMethods());
-  const [paymentModalMode, setPaymentModalMode] = useState(null);
-  const [paymentDraft, setPaymentDraft] = useState(() => createPaymentDraft());
   const [planConfirmOpen, setPlanConfirmOpen] = useState(false);
   const [planTermsAccepted, setPlanTermsAccepted] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
@@ -226,6 +273,9 @@ export default function ProfilePage() {
   const [openEquipmentGroups, setOpenEquipmentGroups] = useState([]);
   const [foodPreferences, setFoodPreferences] = useState(() => loadFoodPreferences());
   const [openFoodGroups, setOpenFoodGroups] = useState([]);
+  const [billingSummary, setBillingSummary] = useState(null);
+  const [isChangingPlan, setIsChangingPlan] = useState(false);
+  const [isUpdatingPaymentMethod, setIsUpdatingPaymentMethod] = useState(false);
 
   const selectedEquipmentSet = useMemo(() => new Set(selectedEquipmentIds), [selectedEquipmentIds]);
   const equipmentContext = useMemo(
@@ -247,15 +297,27 @@ export default function ProfilePage() {
     pendingBillingCycle === "annual"
       ? getAnnualPrice(selectedPlan)
       : selectedPlan.monthlyPrice;
+  const prorationEstimate = useMemo(
+    () =>
+      buildProrationEstimate({
+        subscription: billingSummary?.subscription,
+        currentPlan: activePlan,
+        currentBillingCycle: account.billingCycle,
+        nextPlan: selectedPlan,
+        nextBillingCycle: pendingBillingCycle,
+      }),
+    [account.billingCycle, activePlan, billingSummary, pendingBillingCycle, selectedPlan]
+  );
 
   useEffect(() => {
     let ignore = false;
 
     async function hydrateRemoteProfile() {
-      const [result, equipmentResult, foodResult] = await Promise.all([
+      const [result, equipmentResult, foodResult, billingResult] = await Promise.all([
         loadRemoteProfile(),
         hydrateGymEquipmentSelectionFromApi(),
         hydrateFoodPreferencesFromApi(),
+        loadBillingSubscription(),
       ]);
 
       if (!ignore && !equipmentResult.error) {
@@ -264,6 +326,25 @@ export default function ProfilePage() {
 
       if (!ignore && !foodResult.error) {
         setFoodPreferences(foodResult.preferences);
+      }
+
+      if (!ignore && !billingResult.error && billingResult.data) {
+        setBillingSummary(billingResult.data);
+
+        const paymentProfile = billingResult.data.paymentProfile;
+        const stripeMethods = normalizeStripePaymentMethods(billingResult.data.paymentMethods || []);
+        const defaultMethod =
+          stripeMethods.find((method) => method.id === paymentProfile?.default_payment_method_id) ||
+          stripeMethods.find((method) => method.isDefault) ||
+          stripeMethods[0];
+
+        if (stripeMethods.length) {
+          setSavedPaymentMethods(savePaymentMethods(stripeMethods));
+        }
+
+        if (defaultMethod) {
+          setAccount((current) => saveProfileAccount({ ...current, paymentMethod: defaultMethod.id }));
+        }
       }
 
       if (ignore || result.skipped || result.error || !result.user) {
@@ -299,6 +380,44 @@ export default function ProfilePage() {
       ignore = true;
     };
   }, []);
+
+  useEffect(() => {
+    const paymentMethodStatus = searchParams.get("payment_method");
+
+    if (paymentMethodStatus === "success") {
+      setAccountMessage("Metodo de pagamento enviado para a Stripe. Atualizando cartoes salvos...");
+      refreshStripePaymentMethods("Metodo de pagamento salvo e sincronizado com a Stripe.");
+    }
+
+    if (paymentMethodStatus === "cancelled") {
+      setAccountMessage("Cadastro de metodo de pagamento cancelado antes de concluir na Stripe.");
+    }
+  }, [searchParams]);
+
+  async function refreshStripePaymentMethods(successMessage) {
+    const result = await loadBillingSubscription();
+
+    if (result.error || !result.data) {
+      setAccountMessage(result.error?.message || "Nao foi possivel atualizar os cartoes salvos agora.");
+      return;
+    }
+
+    const stripeMethods = normalizeStripePaymentMethods(result.data.paymentMethods || []);
+    const paymentProfile = result.data.paymentProfile;
+    const defaultMethod =
+      stripeMethods.find((method) => method.id === paymentProfile?.default_payment_method_id) ||
+      stripeMethods.find((method) => method.isDefault) ||
+      stripeMethods[0];
+
+    setBillingSummary(result.data);
+    setSavedPaymentMethods(savePaymentMethods(stripeMethods));
+
+    if (defaultMethod) {
+      setAccount((current) => saveProfileAccount({ ...current, paymentMethod: defaultMethod.id }));
+    }
+
+    setAccountMessage(successMessage || "Cartoes salvos na Stripe atualizados.");
+  }
 
   async function handlePhotoUpload(event) {
     const file = event.target.files?.[0];
@@ -382,103 +501,43 @@ export default function ProfilePage() {
     );
   }
 
-  function handlePaymentMethodSelect(method) {
+  async function handlePaymentMethodSelect(method) {
     if (method.id === "novo") {
-      setPaymentDraft(createPaymentDraft());
-      setPaymentModalMode("add");
-      setAccountMessage("");
+      await openStripePaymentMethodSession("Abrindo Stripe para adicionar um novo metodo de pagamento...");
       return;
     }
 
-    if (account.paymentMethod === method.id) {
-      setPaymentDraft(createPaymentDraft(method));
-      setPaymentModalMode("edit");
-      setAccountMessage("");
+    setIsUpdatingPaymentMethod(true);
+    setAccountMessage(`Definindo ${method.label} como cartao padrao...`);
+
+    const result = await setStripeDefaultPaymentMethod(method.id);
+
+    if (result.error || !result.data) {
+      setIsUpdatingPaymentMethod(false);
+      setAccountMessage(
+        `Nao foi possivel selecionar este cartao. ${result.error?.message || "Tente novamente em alguns instantes."}`
+      );
       return;
     }
 
-    setAccount(saveProfileAccount({ ...account, paymentMethod: method.id }));
-    setPaymentModalMode(null);
-    setAccountMessage(`${method.label} selecionado para cobrancas.`);
-  }
+    const stripeMethods = normalizeStripePaymentMethods(result.data.paymentMethods || []);
+    const defaultPaymentMethodId = result.data.defaultPaymentMethodId || method.id;
 
-  function closePaymentModal() {
-    setPaymentModalMode(null);
-    setPaymentDraft(createPaymentDraft());
-  }
-
-  function handlePaymentDraftChange(event) {
-    const { name, value } = event.target;
-    setAccountMessage("");
-    setPaymentDraft((current) => ({
+    setSavedPaymentMethods(savePaymentMethods(stripeMethods));
+    setAccount(saveProfileAccount({ ...account, paymentMethod: defaultPaymentMethodId }));
+    setBillingSummary((current) => ({
       ...current,
-      [name]: name === "ending" ? value.replace(/\D/g, "").slice(0, 4) : value,
+      paymentMethods: result.data.paymentMethods || [],
+      paymentProfile: {
+        ...(current?.paymentProfile || {}),
+        default_payment_method_id: defaultPaymentMethodId,
+      },
     }));
-  }
-
-  function handlePaymentDraftSubmit(event) {
-    event.preventDefault();
-
-    const ending = paymentDraft.ending.replace(/\D/g, "").slice(-4);
-
-    if (ending.length !== 4) {
-      setAccountMessage("Informe os 4 ultimos digitos do cartao.");
-      return;
-    }
-
-    const method = {
-      id: paymentModalMode === "edit" ? paymentDraft.id : `card-${Date.now()}`,
-      brand: paymentDraft.brand,
-      ending,
-      label: paymentDraft.label || `${paymentDraft.brand} final ${ending}`,
-      holder: paymentDraft.holder || "Titular nao informado",
-      expires: paymentDraft.expires || "--/--",
-    };
-    const updatedMethods =
-      paymentModalMode === "edit"
-        ? savedPaymentMethods.map((savedMethod) => (savedMethod.id === method.id ? method : savedMethod))
-        : [...savedPaymentMethods, method];
-    const nextAccount = { ...account, paymentMethod: method.id };
-
-    setSavedPaymentMethods(savePaymentMethods(updatedMethods));
-    setAccount(saveProfileAccount(nextAccount));
-    closePaymentModal();
-    setAccountMessage(
-      paymentModalMode === "edit"
-        ? "Dados do cartao atualizados."
-        : "Novo cartao adicionado e definido como metodo preferencial."
-    );
-  }
-
-  function handleDeletePaymentMethod() {
-    const methodId = paymentDraft.id;
-
-    if (!methodId) {
-      closePaymentModal();
-      return;
-    }
-
-    const updatedMethods = savePaymentMethods(savedPaymentMethods.filter((method) => method.id !== methodId));
-    const nextSelectedMethod = updatedMethods[0]?.id || "novo";
-
-    setSavedPaymentMethods(updatedMethods);
-
-    if (account.paymentMethod === methodId) {
-      setAccount(saveProfileAccount({ ...account, paymentMethod: nextSelectedMethod }));
-    }
-
-    closePaymentModal();
-    setAccountMessage("Cartao removido dos metodos salvos.");
+    setIsUpdatingPaymentMethod(false);
+    setAccountMessage("Cartao padrao atualizado com seguranca pela Stripe.");
   }
 
   function openPlanChangeConfirmation() {
-    const hasSavedPaymentMethod = savedPaymentMethods.some((method) => method.id === account.paymentMethod);
-
-    if (!hasSavedPaymentMethod) {
-      setAccountMessage("Adicione ou selecione um cartao salvo antes de confirmar a alteracao do plano.");
-      return;
-    }
-
     setPlanTermsAccepted(false);
     setPlanConfirmOpen(true);
   }
@@ -489,8 +548,9 @@ export default function ProfilePage() {
       return;
     }
 
+    setIsChangingPlan(true);
     const acceptedTermsText =
-      "Li e aceito que a alteracao do plano pode mudar valores, recorrencia, limites de tokens e acessos disponiveis na plataforma.";
+      "Li e aceito que a alteracao do plano pode mudar valores, recorrencia, limites de tokens, acessos disponiveis e gerar cobranca proporcional calculada pela Stripe.";
     const acceptanceRecord = {
       previousPlan: account.activePlan,
       previousBillingCycle: account.billingCycle,
@@ -504,31 +564,30 @@ export default function ProfilePage() {
         previousPlanName: activePlan.name,
         nextPlanName: selectedPlan.name,
         selectedPlanPrice,
+        prorationEstimate,
       },
-    };
-    const nextAccount = {
-      ...account,
-      activePlan: pendingPlan,
-      billingCycle: pendingBillingCycle,
     };
 
     const acceptanceResult = await savePlanChangeAcceptance(acceptanceRecord);
-    setAccount(saveProfileAccount(nextAccount));
-    const result = await saveRemoteProfile(nextAccount);
-    setPlanConfirmOpen(false);
+    const result = await createStripeSubscriptionChangeSession({
+      planId: pendingPlan,
+      billingCycle: pendingBillingCycle,
+      prorationEstimate,
+    });
 
-    if (result.error) {
-      setAccountMessage(`Plano salvo localmente. Supabase: ${result.error.message}`);
+    if (result.error || !result.url) {
+      setIsChangingPlan(false);
+      setAccountMessage(
+        `Aceite registrado, mas nao foi possivel abrir o Stripe. ${
+          result.error?.message || "Tente novamente em alguns instantes."
+        }${acceptanceResult.error ? ` Historico local salvo; Supabase: ${acceptanceResult.error.message}` : ""}`
+      );
       return;
     }
 
-    setAccountMessage(
-      `Plano ${getPlanById(pendingPlan).name} confirmado no pagamento ${
-        pendingBillingCycle === "annual" ? "anual" : "mensal"
-      } usando ${selectedPaymentMethod.label}.${
-        acceptanceResult.error ? ` Historico local salvo; Supabase: ${acceptanceResult.error.message}` : ""
-      }`
-    );
+    setPlanConfirmOpen(false);
+    setAccountMessage("Aceite registrado. Abrindo a pagina segura da Stripe para concluir o pagamento.");
+    window.location.href = result.url;
   }
 
   async function openStripePortal() {
@@ -539,6 +598,22 @@ export default function ProfilePage() {
       setAccountMessage(
         `Nao foi possivel abrir o portal Stripe. ${
           result.error?.message || "Finalize uma assinatura pelo checkout primeiro."
+        }`
+      );
+      return;
+    }
+
+    window.location.href = result.url;
+  }
+
+  async function openStripePaymentMethodSession(message = "Abrindo Stripe para gerenciar pagamento...") {
+    setAccountMessage(message);
+    const result = await createStripePaymentMethodSession();
+
+    if (result.error || !result.url) {
+      setAccountMessage(
+        `Nao foi possivel abrir a tela segura da Stripe. ${
+          result.error?.message || "Tente novamente em alguns instantes."
         }`
       );
       return;
@@ -817,7 +892,11 @@ export default function ProfilePage() {
               <article className="profile-account-card profile-payment-card">
                 <div className="profile-account-card__heading">
                   <strong>Dados de pagamento</strong>
-                  <small>Cartao e cobranca gerenciados pelo Stripe</small>
+                  <small>
+                    {isUpdatingPaymentMethod
+                      ? "Atualizando cartao padrao na Stripe..."
+                      : "Cartoes salvos e cobranca gerenciados pelo Stripe"}
+                  </small>
                 </div>
 
                 <div className="payment-methods">
@@ -831,8 +910,8 @@ export default function ProfilePage() {
                   ))}
                 </div>
 
-                <button type="button" className="ghost-button" onClick={openStripePortal}>
-                  Gerenciar pagamento no Stripe
+                <button type="button" className="ghost-button" onClick={() => openStripePaymentMethodSession()}>
+                  Adicionar ou alterar cartao na Stripe
                 </button>
               </article>
 
@@ -881,12 +960,14 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="profile-plan-card__confirm">
-                  <span>Confirmacao</span>
-                  <strong>{formatCurrency(selectedPlanPrice)}</strong>
+                  <span>Estimativa proporcional</span>
+                  <strong>{formatCurrency(prorationEstimate.estimatedDue)}</strong>
                   <small>
-                    Cobrar no {selectedPaymentMethod.label}
-                    {selectedPaymentMethod.id !== "novo" ? ` final ${selectedPaymentMethod.ending}` : ""}.
+                    {prorationEstimate.hasActivePeriod
+                      ? `Credito estimado de ${formatCurrency(prorationEstimate.credit)} pelos ${prorationEstimate.remainingDays} dias restantes.`
+                      : "Sem ciclo ativo encontrado para calcular credito proporcional."}
                   </small>
+                  <small>O Stripe recalcula o valor final antes do pagamento.</small>
                 </div>
 
                 <button type="button" className="primary-button" onClick={openPlanChangeConfirmation}>
@@ -1081,119 +1162,6 @@ export default function ProfilePage() {
       </details>
 
       <AnimatePresence>
-        {paymentModalMode ? (
-          <motion.div
-            className="profile-modal-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={closePaymentModal}
-          >
-            <motion.form
-              className="profile-modal payment-modal"
-              onSubmit={handlePaymentDraftSubmit}
-              initial={{ opacity: 0, y: 18, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 18, scale: 0.98 }}
-              transition={{ duration: 0.18, ease: "easeOut" }}
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="profile-modal__heading">
-                <div>
-                  <span>{paymentModalMode === "edit" ? "Cartao selecionado" : "Novo metodo"}</span>
-                  <h2>
-                    {paymentModalMode === "edit" ? "Alterar dados do cartao" : "Adicionar novo cartao"}
-                  </h2>
-                  <p>
-                    A cobranca real deve continuar no Stripe. Aqui ficam apenas os dados visuais usados no
-                    perfil.
-                  </p>
-                </div>
-                <button type="button" className="profile-modal__close" onClick={closePaymentModal}>
-                  x
-                </button>
-              </div>
-
-              <div className="payment-modal__preview" aria-hidden="true">
-                <span>{paymentDraft.brand}</span>
-                <strong>{paymentDraft.ending ? `**** **** **** ${paymentDraft.ending}` : "**** **** **** ----"}</strong>
-                <small>{paymentDraft.holder || "Nome do titular"}</small>
-              </div>
-
-              <div className="payment-add-form__grid">
-                <label className="profile-field">
-                  <span>Apelido do cartao</span>
-                  <input
-                    type="text"
-                    name="label"
-                    value={paymentDraft.label}
-                    onChange={handlePaymentDraftChange}
-                    placeholder="Ex.: Cartao principal"
-                  />
-                </label>
-
-                <label className="profile-field">
-                  <span>Bandeira</span>
-                  <select name="brand" value={paymentDraft.brand} onChange={handlePaymentDraftChange}>
-                    <option value="Visa">Visa</option>
-                    <option value="Mastercard">Mastercard</option>
-                  </select>
-                </label>
-
-                <label className="profile-field">
-                  <span>Ultimos 4 digitos</span>
-                  <input
-                    type="text"
-                    name="ending"
-                    inputMode="numeric"
-                    value={paymentDraft.ending}
-                    onChange={handlePaymentDraftChange}
-                    placeholder="2847"
-                  />
-                </label>
-
-                <label className="profile-field">
-                  <span>Validade</span>
-                  <input
-                    type="text"
-                    name="expires"
-                    value={paymentDraft.expires}
-                    onChange={handlePaymentDraftChange}
-                    placeholder="MM/AA"
-                  />
-                </label>
-
-                <label className="profile-field payment-add-form__wide">
-                  <span>Nome no cartao</span>
-                  <input
-                    type="text"
-                    name="holder"
-                    value={paymentDraft.holder}
-                    onChange={handlePaymentDraftChange}
-                    placeholder="Nome do titular"
-                  />
-                </label>
-              </div>
-
-              <div className="profile-modal__actions">
-                {paymentModalMode === "edit" ? (
-                  <button type="button" className="profile-modal__danger" onClick={handleDeletePaymentMethod}>
-                    Excluir cartao
-                  </button>
-                ) : null}
-                <button type="button" className="ghost-button" onClick={closePaymentModal}>
-                  Cancelar
-                </button>
-                <button type="submit" className="primary-button">
-                  {paymentModalMode === "edit" ? "Salvar alteracoes" : "Adicionar cartao"}
-                </button>
-              </div>
-            </motion.form>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
         {planConfirmOpen ? (
           <motion.div
             className="profile-modal-backdrop"
@@ -1215,8 +1183,8 @@ export default function ProfilePage() {
                   <span>Confirmacao do plano</span>
                   <h2>Confirmar alteracao da assinatura</h2>
                   <p>
-                    Revise a mudanca antes de aplicar. A assinatura sera atualizada usando o cartao
-                    selecionado.
+                    Revise a mudanca antes de ir para a pagina segura da Stripe. O valor final do
+                    proporcional sera recalculado no pagamento.
                   </p>
                 </div>
                 <button type="button" className="profile-modal__close" onClick={() => setPlanConfirmOpen(false)}>
@@ -1245,6 +1213,32 @@ export default function ProfilePage() {
                 </div>
               </div>
 
+              <div className="plan-confirm-modal__proration">
+                <div>
+                  <small>Valor do novo ciclo</small>
+                  <strong>{formatCurrency(prorationEstimate.nextPrice)}</strong>
+                  <span>{pendingBillingCycle === "annual" ? "Ciclo anual" : "Ciclo mensal"}</span>
+                </div>
+                <div>
+                  <small>Credito proporcional</small>
+                  <strong>{formatCurrency(prorationEstimate.credit)}</strong>
+                  <span>
+                    {prorationEstimate.hasActivePeriod
+                      ? `${prorationEstimate.remainingDays} dias restantes no ciclo atual`
+                      : "Sem periodo ativo encontrado"}
+                  </span>
+                </div>
+                <div>
+                  <small>Estimativa a pagar agora</small>
+                  <strong>{formatCurrency(prorationEstimate.estimatedDue)}</strong>
+                  <span>
+                    {prorationEstimate.hasActivePeriod
+                      ? `${prorationEstimate.usedDays} de ${prorationEstimate.totalDays} dias usados`
+                      : "A Stripe calcula o valor final"}
+                  </span>
+                </div>
+              </div>
+
               <label className="plan-confirm-modal__terms">
                 <input
                   type="checkbox"
@@ -1253,7 +1247,7 @@ export default function ProfilePage() {
                 />
                 <span>
                   Li e aceito que a alteracao do plano pode mudar valores, recorrencia, limites de tokens e
-                  acessos disponiveis na plataforma.
+                  acessos disponiveis na plataforma, incluindo cobranca proporcional calculada pela Stripe.
                 </span>
               </label>
 
@@ -1264,10 +1258,10 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   className="primary-button"
-                  disabled={!planTermsAccepted}
+                  disabled={!planTermsAccepted || isChangingPlan}
                   onClick={confirmPlanChange}
                 >
-                  Confirmar mudanca
+                  {isChangingPlan ? "Abrindo Stripe..." : "Confirmar e pagar no Stripe"}
                 </button>
               </div>
             </motion.div>

@@ -195,6 +195,12 @@
   gap: 16px;
 }
 
+.dashboard-insight-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.75fr) minmax(220px, 0.75fr) minmax(320px, 1.5fr);
+  gap: 14px;
+}
+
 .dashboard-comparison {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -343,6 +349,56 @@
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dashboard-donut-card {
+  display: grid;
+  grid-template-columns: 118px minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dashboard-donut-card h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.dashboard-donut-card p {
+  margin: 5px 0 10px;
+  color: rgba(255, 255, 255, 0.64);
+  line-height: 1.45;
+}
+
+.dashboard-donut-card span {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 9px;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.dashboard-donut-chart {
+  position: relative;
+  width: 118px;
+  height: 118px;
+}
+
+.dashboard-donut-chart strong {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 1.35rem;
 }
 
 .training-calendar {
@@ -500,6 +556,7 @@
   .dashboard-metrics,
   .dashboard-grid,
   .dashboard-grid--wide,
+  .dashboard-insight-grid,
   .workout-evolution-tabs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -523,6 +580,7 @@
   .dashboard-metrics,
   .dashboard-grid,
   .dashboard-grid--wide,
+  .dashboard-insight-grid,
   .dashboard-comparison,
   .body-chart-grid,
   .workout-evolution-tabs,

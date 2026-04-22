@@ -17,13 +17,18 @@ const cardBrandAssets = {
     icon: "simple-icons:mastercard",
     label: "Mastercard",
   },
+  Stripe: {
+    logo: null,
+    icon: "simple-icons:stripe",
+    label: "Stripe",
+  },
 };
 
 function getCardBrand(method) {
   return cardBrandAssets[method.brand] || {
     logo: null,
-    icon: "material-symbols:add-card-outline",
-    label: "Novo cartao",
+    icon: "material-symbols:lock-outline-rounded",
+    label: "Metodo seguro",
   };
 }
 
@@ -82,7 +87,7 @@ export default function PaymentCard3D({ method, selected = false, onSelect }) {
           </span>
 
           <span className="payment-card-3d__number">
-            {isNewCard ? "Novo metodo" : `**** **** **** ${method.ending}`}
+            {isNewCard ? "Novo metodo" : method.ending === "----" ? "Dados protegidos no Stripe" : `**** **** **** ${method.ending}`}
           </span>
 
           <span className="payment-card-3d__meta">
@@ -91,13 +96,13 @@ export default function PaymentCard3D({ method, selected = false, onSelect }) {
               <strong>{method.label}</strong>
             </span>
             <span>
-              <small>{isNewCard ? "Acao" : "Seguranca"}</small>
+              <small>{isNewCard ? "Acao" : "Validade"}</small>
               <strong>
                 <Icon
-                  icon={isNewCard ? "material-symbols:add-card-outline" : "material-symbols:lock-outline-rounded"}
+                  icon={isNewCard ? "material-symbols:add-card-outline" : "material-symbols:event-available-outline-rounded"}
                   aria-hidden="true"
                 />
-                {isNewCard ? "Adicionar" : "Stripe"}
+                {isNewCard ? "Adicionar" : method.expires || "--/--"}
               </strong>
             </span>
           </span>
