@@ -23,4 +23,7 @@ export const apiEndpoints = {
   foodPreferences: "/preferences/foods",
   gymEquipment: "/preferences/gym-equipment",
   assistantContext: "/assistant/context",
+  aiChat: "/ai/chat",
+  aiDiet: "/ai/diet",
+  aiWorkout: "/ai/workout",
 };

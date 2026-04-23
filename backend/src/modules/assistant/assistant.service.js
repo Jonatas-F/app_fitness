@@ -27,6 +27,12 @@ export async function loadAssistantContext(accountId) {
     dietHistoryResult,
     foodPreferencesResult,
     gymEquipmentResult,
+    goalsResult,
+    healthResult,
+    nutritionResult,
+    measurementsResult,
+    bioimpedanceResult,
+    progressPhotosResult,
     subscriptionResult,
     paymentProfileResult,
     settingsResult,
@@ -111,6 +117,48 @@ export async function loadAssistantContext(accountId) {
     ),
     pool.query(
       `
+        select *
+        from user_goals
+        where account_id = $1
+        order by is_active desc, updated_at desc, id desc
+        limit 12;
+      `,
+      [accountId]
+    ),
+    pool.query("select * from user_health_profiles where account_id = $1 limit 1;", [accountId]),
+    pool.query("select * from user_nutrition_preferences where account_id = $1 limit 1;", [accountId]),
+    pool.query(
+      `
+        select *
+        from body_measurements
+        where account_id = $1
+        order by measured_at desc, id desc
+        limit 24;
+      `,
+      [accountId]
+    ),
+    pool.query(
+      `
+        select *
+        from bioimpedance_records
+        where account_id = $1
+        order by recorded_at desc, id desc
+        limit 12;
+      `,
+      [accountId]
+    ),
+    pool.query(
+      `
+        select id, captured_at, angle_type, image_url, storage_key, comparison_group, notes, created_at
+        from progress_photos
+        where account_id = $1
+        order by captured_at desc, id desc
+        limit 24;
+      `,
+      [accountId]
+    ),
+    pool.query(
+      `
         select plan, billing_cycle, status, token_limit, token_balance, current_period_end, updated_at
         from subscriptions
         where account_id = $1
@@ -162,6 +210,14 @@ export async function loadAssistantContext(accountId) {
     },
     account,
     profile: profileResult.rows[0] || null,
+    goals: compactRows(goalsResult.rows, 12),
+    health: healthResult.rows[0] || null,
+    nutrition: nutritionResult.rows[0] || null,
+    progress: {
+      measurements: compactRows(measurementsResult.rows, 24),
+      bioimpedance: compactRows(bioimpedanceResult.rows, 12),
+      photos: compactRows(progressPhotosResult.rows, 24),
+    },
     checkins: compactRows(checkinsResult.rows, 24),
     workout: {
       activePlan: workoutPlanResult.rows[0] || null,

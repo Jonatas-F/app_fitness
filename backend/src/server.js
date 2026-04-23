@@ -61,6 +61,12 @@ import { ensureGoogleRiscTables } from "./modules/security/googleRisc.service.js
 import { handleLoadAssistantContext } from "./modules/assistant/assistant.controller.js";
 import { handleLoadSettings, handleSaveSettings } from "./modules/settings/settings.controller.js";
 import { ensureLocalSettingsTables } from "./modules/settings/settings.service.js";
+import {
+  handleAiChat,
+  handleGenerateAiDiet,
+  handleGenerateAiWorkout,
+} from "./modules/ai/ai.controller.js";
+import { ensureLocalAiTables } from "./modules/ai/ai.service.js";
 
 const app = express();
 const allowedOrigins = new Set([
@@ -159,6 +165,9 @@ app.put("/preferences/foods", requireAuth, handleSaveFoodPreferences);
 app.get("/preferences/gym-equipment", requireAuth, handleLoadGymEquipment);
 app.put("/preferences/gym-equipment", requireAuth, handleSaveGymEquipment);
 app.get("/assistant/context", requireAuth, handleLoadAssistantContext);
+app.post("/ai/chat", requireAuth, handleAiChat);
+app.post("/ai/diet", requireAuth, handleGenerateAiDiet);
+app.post("/ai/workout", requireAuth, handleGenerateAiWorkout);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
@@ -171,6 +180,7 @@ await ensureLocalDietTables();
 await ensureLocalPreferenceTables();
 await ensureGoogleRiscTables();
 await ensureLocalSettingsTables();
+await ensureLocalAiTables();
 
 app.listen(appConfig.port, () => {
   console.log(`Shape Certo API running on http://localhost:${appConfig.port}`);
