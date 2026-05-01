@@ -1,8 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../../../assets/logo.svg";
 import { formatCurrency, subscriptionPlans } from "../../../data/plans";
-import { signInWithEmail, signInWithGoogle, signUpWithEmail } from "../../../services/authService";
+import {
+  buildGoogleSignInUrl,
+  rememberGoogleReturnTo,
+  signInWithEmail,
+  signInWithGoogle,
+  signUpWithEmail,
+} from "../../../services/authService";
 import "./HomePage.css";
 
 const plans = subscriptionPlans;
@@ -25,6 +31,23 @@ export default function HomePage() {
     password: "",
   });
   const [authMessage, setAuthMessage] = useState("");
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const googleSignInUrl = buildGoogleSignInUrl({ returnTo: "/dashboard" });
+
+  useEffect(() => {
+    const hash = window.location.hash.startsWith("#")
+      ? window.location.hash.slice(1)
+      : window.location.hash;
+    const params = new URLSearchParams(hash);
+    const authError = params.get("auth_error");
+
+    if (!authError) {
+      return;
+    }
+
+    setAuthMessage(authError);
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+  }, []);
 
   function handleAuthChange(event) {
     const { name, value } = event.target;
@@ -34,6 +57,7 @@ export default function HomePage() {
 
   async function handleSubmit(event) {
     event.preventDefault();
+    setAuthMessage("");
 
     const result =
       authMode === "login"
@@ -61,16 +85,26 @@ export default function HomePage() {
   }
 
   async function handleGoogleLogin() {
+    setAuthMessage("");
+    setIsGoogleLoading(true);
     const result = await signInWithGoogle({ returnTo: "/dashboard" });
 
     if (result.error) {
       setAuthMessage(result.error.message);
+      setIsGoogleLoading(false);
       return;
     }
 
     if (result.skipped) {
       setAuthMessage("Supabase ainda nao configurado. Preencha o .env.local para ativar Google.");
+      setIsGoogleLoading(false);
     }
+  }
+
+  function handleGoogleLinkClick() {
+    rememberGoogleReturnTo("/dashboard");
+    setAuthMessage("");
+    setIsGoogleLoading(true);
   }
 
   return (
@@ -183,9 +217,15 @@ export default function HomePage() {
               {authMode === "login" ? "Entrar na plataforma" : "Criar conta"}
             </button>
 
-            <button type="button" className="home-google-button" onClick={handleGoogleLogin}>
-              Continuar com Google
-            </button>
+            <a
+              href={googleSignInUrl || "#"}
+              role="button"
+              className="home-google-button"
+              onClick={googleSignInUrl ? handleGoogleLinkClick : handleGoogleLogin}
+              aria-disabled={isGoogleLoading}
+            >
+              {isGoogleLoading ? "Abrindo Google..." : "Continuar com Google"}
+            </a>
 
             {authMessage ? <small className="home-auth-message">{authMessage}</small> : null}
           </form>

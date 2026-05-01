@@ -4,6 +4,7 @@ import {
   signInWithGoogleProfile,
   signUpWithEmail,
 } from "./auth.service.js";
+import { appConfig } from "../../config/app.config.js";
 
 const googleScopes = ["openid", "email", "profile"];
 
@@ -12,19 +13,24 @@ function getGoogleConfig() {
     clientId: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     redirectUri: process.env.GOOGLE_REDIRECT_URI || "http://localhost:3333/auth/google/callback",
-    appOrigin: process.env.APP_ORIGIN || "http://localhost:5173",
+    appOrigin: appConfig.origin,
   };
 }
 
-function redirectWithError(res, message) {
+function getAllowedAppOrigins() {
+  return appConfig.allowedOrigins;
+}
+
+function redirectWithError(res, message, appOriginOverride) {
   const { appOrigin } = getGoogleConfig();
-  const url = new URL("/#auth_error", appOrigin);
+  const resolvedOrigin = isAllowedAppOrigin(appOriginOverride) ? appOriginOverride : appOrigin;
+  const url = new URL("/#auth_error", resolvedOrigin);
   url.hash = new URLSearchParams({ auth_error: message }).toString();
   return res.redirect(url.toString());
 }
 
 function isAllowedAppOrigin(origin) {
-  return ["http://localhost:5173", "http://127.0.0.1:5173"].includes(origin);
+  return getAllowedAppOrigins().includes(String(origin || "").trim());
 }
 
 function sanitizeReturnTo(value) {
@@ -91,7 +97,7 @@ export async function handleGoogleStart(req, res, next) {
     const returnTo = sanitizeReturnTo(req.query.return_to);
 
     if (!clientId) {
-      return redirectWithError(res, "Google Client ID nao configurado.");
+      return redirectWithError(res, "Google Client ID nao configurado.", appOrigin);
     }
 
     const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
@@ -118,11 +124,11 @@ export async function handleGoogleCallback(req, res, next) {
     const returnTo = sanitizeReturnTo(state.returnTo);
 
     if (googleError) {
-      return redirectWithError(res, `Google: ${googleError}`);
+      return redirectWithError(res, `Google: ${googleError}`, appOrigin);
     }
 
     if (!code || !clientId || !clientSecret) {
-      return redirectWithError(res, "Configuracao do Google incompleta.");
+      return redirectWithError(res, "Configuracao do Google incompleta.", appOrigin);
     }
 
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
@@ -139,7 +145,11 @@ export async function handleGoogleCallback(req, res, next) {
     const tokenData = await tokenResponse.json();
 
     if (!tokenResponse.ok) {
-      return redirectWithError(res, tokenData.error_description || "Falha ao autenticar com Google.");
+      return redirectWithError(
+        res,
+        tokenData.error_description || "Falha ao autenticar com Google.",
+        appOrigin
+      );
     }
 
     const profileResponse = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
@@ -150,7 +160,7 @@ export async function handleGoogleCallback(req, res, next) {
     const profile = await profileResponse.json();
 
     if (!profileResponse.ok) {
-      return redirectWithError(res, "Falha ao buscar perfil do Google.");
+      return redirectWithError(res, "Falha ao buscar perfil do Google.", appOrigin);
     }
 
     const data = await signInWithGoogleProfile(profile);

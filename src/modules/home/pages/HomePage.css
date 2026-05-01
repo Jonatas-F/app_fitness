@@ -240,11 +240,20 @@
 }
 
 .home-google-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 46px;
   color: #fff;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.1);
   font-weight: 900;
+}
+
+.home-google-button[aria-disabled="true"] {
+  cursor: wait;
+  opacity: 0.72;
+  pointer-events: none;
 }
 
 .home-auth-message {

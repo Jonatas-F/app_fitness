@@ -10,6 +10,23 @@ import {
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3333";
 const GOOGLE_RETURN_KEY = "shapeCertoGoogleReturnTo";
 
+export function rememberGoogleReturnTo(returnTo) {
+  sessionStorage.setItem(GOOGLE_RETURN_KEY, returnTo);
+}
+
+export function buildGoogleSignInUrl(options = {}) {
+  if (!isLocalApiConfigured) {
+    return null;
+  }
+
+  const returnTo = options.returnTo || `${window.location.pathname}${window.location.search}`;
+  const appOrigin = options.appOrigin || window.location.origin;
+  const url = new URL(`${apiUrl}${apiEndpoints.google}`);
+  url.searchParams.set("app_origin", appOrigin);
+  url.searchParams.set("return_to", returnTo);
+  return url.toString();
+}
+
 export async function signInWithEmail({ email, password }) {
   if (isLocalApiConfigured) {
     try {
@@ -75,12 +92,9 @@ export async function signUpWithEmail({ email, password, fullName, plan }) {
 export async function signInWithGoogle(options = {}) {
   if (isLocalApiConfigured) {
     const returnTo = options.returnTo || `${window.location.pathname}${window.location.search}`;
-    sessionStorage.setItem(GOOGLE_RETURN_KEY, returnTo);
-
-    const url = new URL(`${apiUrl}${apiEndpoints.google}`);
-    url.searchParams.set("app_origin", window.location.origin);
-    url.searchParams.set("return_to", returnTo);
-    window.location.href = url.toString();
+    rememberGoogleReturnTo(returnTo);
+    const signInUrl = buildGoogleSignInUrl({ returnTo });
+    window.location.assign(signInUrl);
     return { data: null, error: null, skipped: false, provider: "postgres" };
   }
 
