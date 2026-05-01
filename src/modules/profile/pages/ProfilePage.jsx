@@ -1,6 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import {
+  CheckCircle2,
+  CreditCard,
+  ExternalLink,
+  LoaderCircle,
+  ShieldCheck,
+  Sparkles,
+  TriangleAlert,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import PaymentCard3D from "../../../components/ui/PaymentCard3D";
 import logo from "../../../assets/logo.svg";
 import { foodMarkOptions, foodPreferencesCatalog } from "../../../data/foodPreferencesCatalog";
@@ -162,6 +180,43 @@ function clampNumber(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+function getStatusTone(message) {
+  const normalizedMessage = String(message || "").toLowerCase();
+
+  if (!normalizedMessage) {
+    return "neutral";
+  }
+
+  if (
+    normalizedMessage.includes("nao foi possivel") ||
+    normalizedMessage.includes("bloqueou") ||
+    normalizedMessage.includes("cancelad") ||
+    normalizedMessage.includes("tente novamente")
+  ) {
+    return "danger";
+  }
+
+  if (
+    normalizedMessage.includes("abrindo") ||
+    normalizedMessage.includes("atualizando") ||
+    normalizedMessage.includes("aceite")
+  ) {
+    return "warning";
+  }
+
+  if (
+    normalizedMessage.includes("salvo") ||
+    normalizedMessage.includes("atualizado") ||
+    normalizedMessage.includes("confirmado") ||
+    normalizedMessage.includes("registrado") ||
+    normalizedMessage.includes("conectad")
+  ) {
+    return "success";
+  }
+
+  return "neutral";
+}
+
 function buildProrationEstimate({ subscription, currentPlan, currentBillingCycle, nextPlan, nextBillingCycle }) {
   const dayMs = 24 * 60 * 60 * 1000;
   const currentPrice = getPlanPrice(currentPlan, currentBillingCycle);
@@ -300,12 +355,16 @@ export default function ProfilePage() {
   );
   const selectedPaymentMethod =
     savedPaymentMethods.find((method) => method.id === account.paymentMethod) ||
+    savedPaymentMethods.find((method) => method.isDefault) ||
     savedPaymentMethods[0] ||
     addPaymentMethodOption;
   const selectedPlanPrice =
     pendingBillingCycle === "annual"
       ? getAnnualPrice(selectedPlan)
       : selectedPlan.monthlyPrice;
+  const hasPendingPlanChanges =
+    pendingPlan !== account.activePlan || pendingBillingCycle !== account.billingCycle;
+  const accountMessageTone = getStatusTone(accountMessage);
   const prorationEstimate = useMemo(
     () =>
       buildProrationEstimate({
@@ -566,6 +625,11 @@ export default function ProfilePage() {
       return;
     }
 
+    if (account.paymentMethod === method.id || method.isDefault) {
+      setAccountMessage(`${method.label} ja esta selecionado como cartao padrao.`);
+      return;
+    }
+
     setIsUpdatingPaymentMethod(true);
     setAccountMessage(`Definindo ${method.label} como cartao padrao...`);
 
@@ -597,6 +661,11 @@ export default function ProfilePage() {
   }
 
   function openPlanChangeConfirmation() {
+    if (!hasPendingPlanChanges) {
+      setAccountMessage("Escolha um novo plano ou ciclo antes de confirmar a alteracao.");
+      return;
+    }
+
     setPlanTermsAccepted(false);
     setPlanConfirmOpen(true);
   }
@@ -1007,95 +1076,175 @@ export default function ProfilePage() {
             </summary>
 
             <div className="profile-compact-panel__body profile-payment-plan-grid">
-              <article className="profile-account-card profile-payment-card">
-                <div className="profile-account-card__heading">
-                  <strong>Dados de pagamento</strong>
-                  <small>
+              <Card className="profile-account-card profile-payment-card border-border/70 bg-card/80 shadow-none">
+                <CardHeader className="profile-account-card__header">
+                  <div className="profile-card__eyebrow">
+                    <CreditCard data-icon="inline-start" />
+                    <span>Pagamento</span>
+                  </div>
+                  <CardTitle>Dados de pagamento</CardTitle>
+                  <CardDescription>
                     {isUpdatingPaymentMethod
-                      ? "Atualizando cartao padrao na Stripe..."
-                      : "Cartoes salvos e cobranca gerenciados pelo Stripe"}
-                  </small>
-                </div>
+                      ? "Atualizando o cartao padrao na Stripe."
+                      : "Clique em um cartao salvo para definir o metodo usado na proxima cobranca."}
+                  </CardDescription>
+                </CardHeader>
 
-                <div className="payment-methods">
-                  {paymentMethodOptions.map((method) => (
-                    <PaymentCard3D
-                      key={method.id}
-                      method={method}
-                      selected={account.paymentMethod === method.id}
-                      onSelect={handlePaymentMethodSelect}
-                    />
-                  ))}
-                </div>
-
-                <button type="button" className="ghost-button" onClick={() => openStripePaymentMethodSession()}>
-                  Adicionar ou alterar cartao na Stripe
-                </button>
-              </article>
-
-              <article className="profile-account-card profile-plan-card__details">
-                <div className="profile-account-card__heading">
-                  <strong>Plano ativo</strong>
-                  <small>Assinatura atual e limites de uso</small>
-                </div>
-
-                <div className="profile-plan-card__current">
-                  <span>{activePlan.name}</span>
-                  <strong>{activePlan.tokens}</strong>
-                  <small>
-                    {activePlan.workouts} | {account.billingCycle === "annual" ? "Anual" : "Mensal"}
-                  </small>
-                </div>
-
-                <label className="profile-field">
-                  <span>Novo plano</span>
-                  <select value={pendingPlan} onChange={(event) => setPendingPlan(event.target.value)}>
-                    {subscriptionPlans.map((plan) => (
-                      <option key={plan.id} value={plan.id}>
-                        {plan.name} - {formatCurrency(plan.monthlyPrice)}/mes
-                      </option>
+                <CardContent className="profile-payment-card__content">
+                  <div className="payment-methods">
+                    {paymentMethodOptions.map((method) => (
+                      <PaymentCard3D
+                        key={method.id}
+                        method={method}
+                        selected={account.paymentMethod === method.id || method.isDefault}
+                        disabled={isUpdatingPaymentMethod}
+                        onSelect={handlePaymentMethodSelect}
+                      />
                     ))}
-                  </select>
-                </label>
+                  </div>
 
-                <div className="profile-plan-card__billing">
-                  <button
+                  <div className="profile-inline-note">
+                    {isUpdatingPaymentMethod ? (
+                      <LoaderCircle className="animate-spin" aria-hidden="true" />
+                    ) : (
+                      <ShieldCheck aria-hidden="true" />
+                    )}
+                    <span>
+                      {isUpdatingPaymentMethod
+                        ? "Sincronizando o cartao escolhido com a Stripe."
+                        : "A troca completa de cartoes e dados de cobranca abre em popup seguro da Stripe."}
+                    </span>
+                  </div>
+
+                  <div className="profile-payment-card__actions">
+                    <Button
+                      type="button"
+                      className="profile-action-button"
+                      onClick={() =>
+                        openStripePaymentMethodSession(
+                          "Abrindo Stripe para adicionar ou trocar um metodo de pagamento..."
+                        )
+                      }
+                    >
+                      <CreditCard data-icon="inline-start" />
+                      Adicionar cartao
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="profile-action-button"
+                      onClick={openStripePortal}
+                    >
+                      Editar no Stripe
+                      <ExternalLink data-icon="inline-end" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="profile-account-card profile-plan-card__details profile-plan-card border-border/70 bg-card/80 shadow-none">
+                <CardHeader className="profile-account-card__header">
+                  <div className="profile-card__eyebrow">
+                    <Sparkles data-icon="inline-start" />
+                    <span>Assinatura</span>
+                  </div>
+                  <CardTitle>Plano ativo</CardTitle>
+                  <CardDescription>Assinatura atual, limites de uso e proxima alteracao.</CardDescription>
+                </CardHeader>
+
+                <CardContent className="profile-plan-card__content">
+                  <div className="profile-plan-card__current">
+                    <span>{activePlan.name}</span>
+                    <strong>{activePlan.tokens}</strong>
+                    <small>
+                      {activePlan.workouts} | {account.billingCycle === "annual" ? "Anual" : "Mensal"}
+                    </small>
+                  </div>
+
+                  <label className="profile-field">
+                    <span>Novo plano</span>
+                    <select value={pendingPlan} onChange={(event) => setPendingPlan(event.target.value)}>
+                      {subscriptionPlans.map((plan) => (
+                        <option key={plan.id} value={plan.id}>
+                          {plan.name} - {formatCurrency(plan.monthlyPrice)}/mes
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <div className="profile-plan-card__billing">
+                    <button
+                      type="button"
+                      className={pendingBillingCycle === "monthly" ? "is-selected" : ""}
+                      onClick={() => setPendingBillingCycle("monthly")}
+                    >
+                      <strong>Mensal</strong>
+                      <small>{formatCurrency(selectedPlan.monthlyPrice)} recorrente</small>
+                    </button>
+                    <button
+                      type="button"
+                      className={pendingBillingCycle === "annual" ? "is-selected" : ""}
+                      onClick={() => setPendingBillingCycle("annual")}
+                    >
+                      <strong>Anual</strong>
+                      <small>{formatCurrency(getAnnualPrice(selectedPlan))} com 20% off</small>
+                    </button>
+                  </div>
+
+                  <div className="profile-plan-card__confirm">
+                    <span>Estimativa proporcional</span>
+                    <strong>{formatCurrency(prorationEstimate.estimatedDue)}</strong>
+                    <small>
+                      {prorationEstimate.hasActivePeriod
+                        ? `Credito estimado de ${formatCurrency(prorationEstimate.credit)} pelos ${prorationEstimate.remainingDays} dias restantes.`
+                        : "Sem ciclo ativo encontrado para calcular credito proporcional."}
+                    </small>
+                    <small>O Stripe recalcula o valor final antes do pagamento.</small>
+                  </div>
+
+                  <div className="profile-inline-note">
+                    {hasPendingPlanChanges ? (
+                      <CheckCircle2 aria-hidden="true" />
+                    ) : (
+                      <TriangleAlert aria-hidden="true" />
+                    )}
+                    <span>
+                      {hasPendingPlanChanges
+                        ? "A alteracao sera revisada em popup seguro antes da cobranca."
+                        : "O plano e o ciclo atuais ja estao selecionados."}
+                    </span>
+                  </div>
+
+                  <Button
                     type="button"
-                    className={pendingBillingCycle === "monthly" ? "is-selected" : ""}
-                    onClick={() => setPendingBillingCycle("monthly")}
+                    className="profile-action-button"
+                    disabled={!hasPendingPlanChanges || isChangingPlan}
+                    onClick={openPlanChangeConfirmation}
                   >
-                    <strong>Mensal</strong>
-                    <small>{formatCurrency(selectedPlan.monthlyPrice)} recorrente</small>
-                  </button>
-                  <button
-                    type="button"
-                    className={pendingBillingCycle === "annual" ? "is-selected" : ""}
-                    onClick={() => setPendingBillingCycle("annual")}
-                  >
-                    <strong>Anual</strong>
-                    <small>{formatCurrency(getAnnualPrice(selectedPlan))} com 20% off</small>
-                  </button>
-                </div>
-
-                <div className="profile-plan-card__confirm">
-                  <span>Estimativa proporcional</span>
-                  <strong>{formatCurrency(prorationEstimate.estimatedDue)}</strong>
-                  <small>
-                    {prorationEstimate.hasActivePeriod
-                      ? `Credito estimado de ${formatCurrency(prorationEstimate.credit)} pelos ${prorationEstimate.remainingDays} dias restantes.`
-                      : "Sem ciclo ativo encontrado para calcular credito proporcional."}
-                  </small>
-                  <small>O Stripe recalcula o valor final antes do pagamento.</small>
-                </div>
-
-                <button type="button" className="primary-button" onClick={openPlanChangeConfirmation}>
-                  Confirmar alteracao do plano
-                </button>
-              </article>
+                    {isChangingPlan ? (
+                      <LoaderCircle className="animate-spin" data-icon="inline-start" />
+                    ) : (
+                      <Sparkles data-icon="inline-start" />
+                    )}
+                    {hasPendingPlanChanges ? "Revisar alteracao do plano" : "Plano ja selecionado"}
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
           </details>
 
-          {accountMessage ? <small className="profile-form-message profile-status-message">{accountMessage}</small> : null}
+          {accountMessage ? (
+            <div className={`profile-status-banner is-${accountMessageTone}`} role="status" aria-live="polite">
+              {accountMessageTone === "success" ? (
+                <CheckCircle2 aria-hidden="true" />
+              ) : accountMessageTone === "danger" ? (
+                <TriangleAlert aria-hidden="true" />
+              ) : (
+                <LoaderCircle aria-hidden="true" className={accountMessageTone === "warning" ? "animate-spin" : ""} />
+              )}
+              <span>{accountMessage}</span>
+            </div>
+          ) : null}
 
           <article className="profile-logout-card">
             <div>
@@ -1279,113 +1428,98 @@ export default function ProfilePage() {
         </div>
       </details>
 
-      <AnimatePresence>
-        {planConfirmOpen ? (
-          <motion.div
-            className="profile-modal-backdrop"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setPlanConfirmOpen(false)}
-          >
-            <motion.div
-              className="profile-modal plan-confirm-modal"
-              initial={{ opacity: 0, y: 18, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 18, scale: 0.98 }}
-              transition={{ duration: 0.18, ease: "easeOut" }}
-              onClick={(event) => event.stopPropagation()}
+      <Dialog open={planConfirmOpen} onOpenChange={setPlanConfirmOpen}>
+        <DialogContent className="profile-dialog-content plan-confirm-modal">
+          <DialogHeader className="profile-dialog-header">
+            <div className="profile-card__eyebrow">
+              <Sparkles data-icon="inline-start" />
+              <span>Confirmacao do plano</span>
+            </div>
+            <DialogTitle>Confirmar alteracao da assinatura</DialogTitle>
+            <DialogDescription>
+              Revise a mudanca antes de ir para a pagina segura da Stripe. O valor final do proporcional
+              sera recalculado no pagamento.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="plan-confirm-modal__summary">
+            <div>
+              <small>Plano atual</small>
+              <strong>{activePlan.name}</strong>
+              <span>{account.billingCycle === "annual" ? "Anual" : "Mensal"}</span>
+            </div>
+            <div>
+              <small>Novo plano</small>
+              <strong>{selectedPlan.name}</strong>
+              <span>{pendingBillingCycle === "annual" ? "Anual" : "Mensal"}</span>
+            </div>
+            <div>
+              <small>Cobranca</small>
+              <strong>{formatCurrency(selectedPlanPrice)}</strong>
+              <span>
+                {selectedPaymentMethod.label}
+                {selectedPaymentMethod.id !== "novo" ? ` final ${selectedPaymentMethod.ending}` : ""}
+              </span>
+            </div>
+          </div>
+
+          <div className="plan-confirm-modal__proration">
+            <div>
+              <small>Valor do novo ciclo</small>
+              <strong>{formatCurrency(prorationEstimate.nextPrice)}</strong>
+              <span>{pendingBillingCycle === "annual" ? "Ciclo anual" : "Ciclo mensal"}</span>
+            </div>
+            <div>
+              <small>Credito proporcional</small>
+              <strong>{formatCurrency(prorationEstimate.credit)}</strong>
+              <span>
+                {prorationEstimate.hasActivePeriod
+                  ? `${prorationEstimate.remainingDays} dias restantes no ciclo atual`
+                  : "Sem periodo ativo encontrado"}
+              </span>
+            </div>
+            <div>
+              <small>Estimativa a pagar agora</small>
+              <strong>{formatCurrency(prorationEstimate.estimatedDue)}</strong>
+              <span>
+                {prorationEstimate.hasActivePeriod
+                  ? `${prorationEstimate.usedDays} de ${prorationEstimate.totalDays} dias usados`
+                  : "A Stripe calcula o valor final"}
+              </span>
+            </div>
+          </div>
+
+          <label className="plan-confirm-modal__terms">
+            <input
+              type="checkbox"
+              checked={planTermsAccepted}
+              onChange={(event) => setPlanTermsAccepted(event.target.checked)}
+            />
+            <span>
+              Li e aceito que a alteracao do plano pode mudar valores, recorrencia, limites de tokens e
+              acessos disponiveis na plataforma, incluindo cobranca proporcional calculada pela Stripe.
+            </span>
+          </label>
+
+          <DialogFooter className="profile-dialog-actions">
+            <Button type="button" variant="ghost" onClick={() => setPlanConfirmOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              disabled={!planTermsAccepted || isChangingPlan}
+              onClick={confirmPlanChange}
             >
-              <div className="profile-modal__heading">
-                <div>
-                  <span>Confirmacao do plano</span>
-                  <h2>Confirmar alteracao da assinatura</h2>
-                  <p>
-                    Revise a mudanca antes de ir para a pagina segura da Stripe. O valor final do
-                    proporcional sera recalculado no pagamento.
-                  </p>
-                </div>
-                <button type="button" className="profile-modal__close" onClick={() => setPlanConfirmOpen(false)}>
-                  x
-                </button>
-              </div>
-
-              <div className="plan-confirm-modal__summary">
-                <div>
-                  <small>Plano atual</small>
-                  <strong>{activePlan.name}</strong>
-                  <span>{account.billingCycle === "annual" ? "Anual" : "Mensal"}</span>
-                </div>
-                <div>
-                  <small>Novo plano</small>
-                  <strong>{selectedPlan.name}</strong>
-                  <span>{pendingBillingCycle === "annual" ? "Anual" : "Mensal"}</span>
-                </div>
-                <div>
-                  <small>Cobranca</small>
-                  <strong>{formatCurrency(selectedPlanPrice)}</strong>
-                  <span>
-                    {selectedPaymentMethod.label}
-                    {selectedPaymentMethod.id !== "novo" ? ` final ${selectedPaymentMethod.ending}` : ""}
-                  </span>
-                </div>
-              </div>
-
-              <div className="plan-confirm-modal__proration">
-                <div>
-                  <small>Valor do novo ciclo</small>
-                  <strong>{formatCurrency(prorationEstimate.nextPrice)}</strong>
-                  <span>{pendingBillingCycle === "annual" ? "Ciclo anual" : "Ciclo mensal"}</span>
-                </div>
-                <div>
-                  <small>Credito proporcional</small>
-                  <strong>{formatCurrency(prorationEstimate.credit)}</strong>
-                  <span>
-                    {prorationEstimate.hasActivePeriod
-                      ? `${prorationEstimate.remainingDays} dias restantes no ciclo atual`
-                      : "Sem periodo ativo encontrado"}
-                  </span>
-                </div>
-                <div>
-                  <small>Estimativa a pagar agora</small>
-                  <strong>{formatCurrency(prorationEstimate.estimatedDue)}</strong>
-                  <span>
-                    {prorationEstimate.hasActivePeriod
-                      ? `${prorationEstimate.usedDays} de ${prorationEstimate.totalDays} dias usados`
-                      : "A Stripe calcula o valor final"}
-                  </span>
-                </div>
-              </div>
-
-              <label className="plan-confirm-modal__terms">
-                <input
-                  type="checkbox"
-                  checked={planTermsAccepted}
-                  onChange={(event) => setPlanTermsAccepted(event.target.checked)}
-                />
-                <span>
-                  Li e aceito que a alteracao do plano pode mudar valores, recorrencia, limites de tokens e
-                  acessos disponiveis na plataforma, incluindo cobranca proporcional calculada pela Stripe.
-                </span>
-              </label>
-
-              <div className="profile-modal__actions">
-                <button type="button" className="ghost-button" onClick={() => setPlanConfirmOpen(false)}>
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  className="primary-button"
-                  disabled={!planTermsAccepted || isChangingPlan}
-                  onClick={confirmPlanChange}
-                >
-                  {isChangingPlan ? "Abrindo Stripe..." : "Confirmar e pagar no Stripe"}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+              {isChangingPlan ? (
+                <LoaderCircle className="animate-spin" data-icon="inline-start" />
+              ) : (
+                <ExternalLink data-icon="inline-start" />
+              )}
+              {isChangingPlan ? "Abrindo Stripe..." : "Confirmar e pagar no Stripe"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

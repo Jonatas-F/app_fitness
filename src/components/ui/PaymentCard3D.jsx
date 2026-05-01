@@ -32,16 +32,26 @@ function getCardBrand(method) {
   };
 }
 
-export default function PaymentCard3D({ method, selected = false, onSelect }) {
+export default function PaymentCard3D({ method, selected = false, disabled = false, onSelect }) {
   const brand = getCardBrand(method);
   const isNewCard = method.id === "novo";
 
   function handleSelect(event) {
     event.preventDefault();
+    event.stopPropagation();
+
+    if (disabled) {
+      return;
+    }
+
     onSelect?.(method);
   }
 
   function handleKeyDown(event) {
+    if (disabled) {
+      return;
+    }
+
     if (event.key === "Enter" || event.key === " ") {
       handleSelect(event);
     }
@@ -50,11 +60,13 @@ export default function PaymentCard3D({ method, selected = false, onSelect }) {
   return (
     <motion.div
       role="button"
-      tabIndex={0}
-      className={`payment-card-3d ${selected ? "is-selected" : ""}`}
-      onClickCapture={handleSelect}
+      tabIndex={disabled ? -1 : 0}
+      aria-disabled={disabled}
+      aria-pressed={selected}
+      className={`payment-card-3d ${selected ? "is-selected" : ""} ${disabled ? "is-disabled" : ""}`}
+      onClick={handleSelect}
       onKeyDown={handleKeyDown}
-      whileTap={{ scale: 0.985 }}
+      whileTap={disabled ? undefined : { scale: 0.985 }}
       transition={{ type: "spring", stiffness: 420, damping: 34 }}
     >
       <Atropos
@@ -65,7 +77,7 @@ export default function PaymentCard3D({ method, selected = false, onSelect }) {
         shadow={false}
         highlight
       >
-        <span className="payment-card-3d__surface">
+        <span className="payment-card-3d__surface" onClick={handleSelect}>
           <span className="payment-card-3d__glow" aria-hidden="true" />
 
           <span className="payment-card-3d__top">

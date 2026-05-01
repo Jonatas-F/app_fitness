@@ -9,6 +9,11 @@
   cursor: pointer;
 }
 
+.payment-card-3d.is-disabled {
+  cursor: progress;
+  opacity: 0.74;
+}
+
 .payment-card-3d__tilt,
 .payment-card-3d__tilt .atropos-inner {
   width: 100%;

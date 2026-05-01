@@ -270,13 +270,16 @@
   gap: 14px;
   padding: 16px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.profile-account-card__heading {
+.profile-account-card__heading,
+.profile-account-card__header {
   display: grid;
   gap: 4px;
+}
+
+.profile-account-card__header {
+  padding-bottom: 0;
 }
 
 .profile-account-card__heading strong,
@@ -285,10 +288,31 @@
 }
 
 .profile-account-card__heading small,
+.profile-account-card__header [data-slot="card-description"],
 .profile-form-message,
 .profile-google-card__badge small {
   color: rgba(255, 255, 255, 0.64);
   line-height: 1.45;
+}
+
+.profile-card__eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: #ffe2de;
+  background: rgba(255, 77, 61, 0.14);
+  border: 1px solid rgba(255, 77, 61, 0.22);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.profile-card__eyebrow svg {
+  width: 14px;
+  height: 14px;
 }
 
 .profile-field {
@@ -354,6 +378,12 @@
   border-color: rgba(255, 46, 46, 0.24);
 }
 
+.profile-payment-card__content,
+.profile-plan-card__content {
+  display: grid;
+  gap: 14px;
+}
+
 .profile-plan-card__current {
   display: grid;
   gap: 7px;
@@ -401,11 +431,17 @@
   background: rgba(148, 163, 184, 0.14);
   border: 1px solid rgba(148, 163, 184, 0.22);
   text-align: left;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
 }
 
 .profile-plan-card__billing button.is-selected {
   background: linear-gradient(135deg, rgba(255, 46, 46, 0.18), rgba(255, 255, 255, 0.045));
   border-color: rgba(255, 46, 46, 0.38);
+}
+
+.profile-plan-card__billing button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 77, 61, 0.3);
 }
 
 .profile-plan-card__billing small {
@@ -463,6 +499,39 @@
 .profile-payment-card,
 .profile-plan-card__details {
   gap: 12px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.profile-payment-card__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.profile-action-button {
+  width: 100%;
+  min-height: 44px;
+}
+
+.profile-inline-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.74);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  line-height: 1.45;
+}
+
+.profile-inline-note svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: rgba(255, 77, 61, 0.92);
 }
 
 .profile-logout-card {
@@ -504,6 +573,52 @@
 
 .profile-status-message {
   padding: 0 4px;
+}
+
+.profile-status-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.45;
+}
+
+.profile-status-banner svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.profile-status-banner.is-success {
+  border-color: rgba(46, 194, 126, 0.22);
+  background: rgba(46, 194, 126, 0.12);
+}
+
+.profile-status-banner.is-success svg {
+  color: #2ec27e;
+}
+
+.profile-status-banner.is-warning {
+  border-color: rgba(242, 169, 59, 0.22);
+  background: rgba(242, 169, 59, 0.12);
+}
+
+.profile-status-banner.is-warning svg {
+  color: #f2a93b;
+}
+
+.profile-status-banner.is-danger {
+  border-color: rgba(255, 77, 61, 0.24);
+  background: rgba(255, 77, 61, 0.12);
+}
+
+.profile-status-banner.is-danger svg {
+  color: #ff4d3d;
 }
 
 .profile-collapsible-section {
@@ -620,6 +735,30 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+
+.profile-dialog-content {
+  max-width: min(720px, calc(100vw - 2rem));
+  gap: 16px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 94% 0%, rgba(255, 46, 46, 0.18), transparent 34%),
+    linear-gradient(145deg, rgba(21, 21, 22, 0.98), rgba(6, 6, 7, 0.98));
+  border: 1px solid rgba(255, 46, 46, 0.24);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+}
+
+.profile-dialog-header {
+  display: grid;
+  gap: 8px;
+}
+
+.profile-dialog-actions {
+  gap: 10px;
+}
+
+.profile-dialog-actions [data-slot="button"] {
+  min-width: 168px;
 }
 
 .profile-modal-backdrop {
@@ -1267,9 +1406,18 @@
   .payment-methods,
   .payment-add-form__grid,
   .payment-add-form__actions,
+  .profile-payment-card__actions,
   .plan-confirm-modal__summary,
   .plan-confirm-modal__proration {
     grid-template-columns: 1fr;
+  }
+
+  .profile-dialog-actions {
+    flex-direction: column;
+  }
+
+  .profile-dialog-actions [data-slot="button"] {
+    width: 100%;
   }
 
   .profile-modal {
