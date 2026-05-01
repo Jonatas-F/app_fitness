@@ -1,13 +1,27 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
+  AtSign,
+  BadgeCheck,
+  Camera,
+  ChevronDown,
   CheckCircle2,
+  Crown,
   CreditCard,
+  Dumbbell,
   ExternalLink,
+  Heart,
+  ImageIcon,
+  KeyRound,
   LoaderCircle,
+  LogOut,
+  Salad,
+  ShieldAlert,
+  ShieldBan,
   ShieldCheck,
   Sparkles,
   TriangleAlert,
+  UserRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +33,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import SectionCollapsible from "@/components/ui/SectionCollapsible";
 import PaymentCard3D from "../../../components/ui/PaymentCard3D";
 import logo from "../../../assets/logo.svg";
 import { foodMarkOptions, foodPreferencesCatalog } from "../../../data/foodPreferencesCatalog";
@@ -263,6 +279,9 @@ function EquipmentCard({ item, selected, onToggle }) {
       <label className="profile-equipment-card__control">
         <input type="checkbox" checked={selected} onChange={() => onToggle(item.id)} />
         <span>
+          <em className={`profile-equipment-card__pill ${selected ? "is-selected" : ""}`}>
+            {selected ? "Liberado" : "Ignorar"}
+          </em>
           <strong>{item.name}</strong>
           <small>{selected ? "Disponivel para o treino" : "Nao usar no treino"}</small>
         </span>
@@ -273,7 +292,9 @@ function EquipmentCard({ item, selected, onToggle }) {
           <img src={item.image} alt={`Aparelho ${item.name}`} />
         ) : (
           <div>
-            <span>Foto</span>
+            <span>
+              <ImageIcon aria-hidden="true" />
+            </span>
             <small>Espaco para imagem do aparelho</small>
           </div>
         )}
@@ -288,8 +309,13 @@ function FoodPreferenceCard({ item, selectedMark, onChange }) {
   return (
     <article className={`food-card ${activeMark ? `has-mark is-${activeMark.tone}` : ""}`}>
       <div className="food-card__heading">
-        <strong>{item.name}</strong>
-        <small>{activeMark ? activeMark.label : "Sem marcacao"}</small>
+        <div className="food-card__title">
+          <strong>{item.name}</strong>
+          <small>{activeMark ? "Ajuste se precisar mudar a dieta." : "Sem marcacao definida ainda."}</small>
+        </div>
+        <span className={`food-card__status ${activeMark ? `is-${activeMark.tone}` : ""}`}>
+          {activeMark ? activeMark.label : "Sem marcacao"}
+        </span>
       </div>
 
       <div className="food-card__marks">
@@ -339,6 +365,7 @@ export default function ProfilePage() {
   const [billingSummary, setBillingSummary] = useState(null);
   const [isChangingPlan, setIsChangingPlan] = useState(false);
   const [isUpdatingPaymentMethod, setIsUpdatingPaymentMethod] = useState(false);
+  const [isSavingAccount, setIsSavingAccount] = useState(false);
   const stripePopupCompletedRef = useRef(false);
 
   const selectedEquipmentSet = useMemo(() => new Set(selectedEquipmentIds), [selectedEquipmentIds]);
@@ -365,6 +392,14 @@ export default function ProfilePage() {
   const hasPendingPlanChanges =
     pendingPlan !== account.activePlan || pendingBillingCycle !== account.billingCycle;
   const accountMessageTone = getStatusTone(accountMessage);
+  const passwordMessageTone = getStatusTone(passwordMessage);
+  const foodMarkedCount = Object.keys(foodPreferences).length;
+  const foodRestrictionCount = Object.values(foodPreferences).filter((mark) =>
+    ["alergia", "intolerancia", "evito"].includes(mark)
+  ).length;
+  const foodPositiveCount = Object.values(foodPreferences).filter((mark) =>
+    ["gosta", "quero_incluir"].includes(mark)
+  ).length;
   const prorationEstimate = useMemo(
     () =>
       buildProrationEstimate({
@@ -571,10 +606,12 @@ export default function ProfilePage() {
 
   async function handleAccountSubmit(event) {
     event.preventDefault();
+    setIsSavingAccount(true);
     setAccount(saveProfileAccount(account));
     const result = await saveRemoteProfile(account);
 
     if (result.error) {
+      setIsSavingAccount(false);
       setAccountMessage(`Dados salvos localmente. Supabase: ${result.error.message}`);
       return;
     }
@@ -584,6 +621,7 @@ export default function ProfilePage() {
         ? "Dados de perfil salvos neste dispositivo."
         : "Dados de perfil salvos no Supabase."
     );
+    setIsSavingAccount(false);
   }
 
   function handlePasswordChange(event) {
@@ -897,6 +935,30 @@ export default function ProfilePage() {
             Centralize foto, aparelhos disponiveis na academia e preferencias alimentares para o Personal
             Virtual montar protocolos mais coerentes.
           </p>
+
+          <div className="profile-hero__meta">
+            <div className="profile-hero__metric">
+              <Crown aria-hidden="true" />
+              <span>
+                <strong>{activePlan.name}</strong>
+                <small>{account.billingCycle === "annual" ? "ciclo anual" : "ciclo mensal"}</small>
+              </span>
+            </div>
+            <div className="profile-hero__metric">
+              <Dumbbell aria-hidden="true" />
+              <span>
+                <strong>{selectedEquipmentIds.length} aparelhos</strong>
+                <small>liberados para o treino</small>
+              </span>
+            </div>
+            <div className="profile-hero__metric">
+              <Salad aria-hidden="true" />
+              <span>
+                <strong>{foodContext.selectedPreferences.length} marcacoes</strong>
+                <small>alimentares salvas</small>
+              </span>
+            </div>
+          </div>
         </div>
 
         <aside className="profile-photo-card">
@@ -907,11 +969,18 @@ export default function ProfilePage() {
               <img src={logo} alt="Shape Certo" />
             )}
           </div>
-          <strong>{profilePhoto?.name || "Foto do usuario"}</strong>
+          <div className="profile-photo-card__details">
+            <strong>{profilePhoto?.name || "Foto do usuario"}</strong>
+            <small>{account.email || "Imagem principal do perfil"}</small>
+          </div>
           <label className="profile-photo-card__button">
-            Enviar foto
+            <Camera aria-hidden="true" />
+            Atualizar foto
             <input type="file" accept="image/*" onChange={handlePhotoUpload} />
           </label>
+          <small className="profile-photo-card__hint">
+            A imagem ajuda a personalizar a experiencia e deixa o perfil mais reconhecivel.
+          </small>
         </aside>
       </header>
 
@@ -924,10 +993,19 @@ export default function ProfilePage() {
               Os dados ficam organizados em blocos recolhidos para reduzir a rolagem no celular.
             </p>
           </div>
-          <aside>
-            <strong>{activePlan.name}</strong>
-            <span>{account.billingCycle === "annual" ? "pagamento anual" : "pagamento mensal"}</span>
-            <small>{account.email || "email nao informado"}</small>
+          <aside className="profile-section__summary">
+            <div>
+              <small>Plano</small>
+              <strong>{activePlan.name}</strong>
+            </div>
+            <div>
+              <small>Ciclo</small>
+              <strong>{account.billingCycle === "annual" ? "Anual" : "Mensal"}</strong>
+            </div>
+            <div>
+              <small>Conta</small>
+              <strong>{account.email || "Email pendente"}</strong>
+            </div>
           </aside>
         </div>
 
@@ -943,94 +1021,144 @@ export default function ProfilePage() {
             </summary>
 
             <div className="profile-compact-panel__body profile-dual-grid">
-              <form className="profile-account-card" onSubmit={handleAccountSubmit}>
-                <div className="profile-account-card__heading">
-                  <strong>Dados do usuario</strong>
-                  <small>Nome publico e identificadores</small>
-                </div>
+              <Card className="profile-account-card border-border/70 bg-card/80 shadow-none">
+                <CardHeader className="profile-account-card__header">
+                  <div className="profile-card__eyebrow">
+                    <UserRound data-icon="inline-start" />
+                    <span>Identidade</span>
+                  </div>
+                  <CardTitle>Dados do usuario</CardTitle>
+                  <CardDescription>Nome publico, identificadores e email principal da conta.</CardDescription>
+                </CardHeader>
 
-                <label className="profile-field">
-                  <span>Nome completo</span>
-                  <input
-                    type="text"
-                    name="fullName"
-                    value={account.fullName}
-                    onChange={handleAccountChange}
-                    placeholder="Ex.: Jonatas Silva"
-                  />
-                </label>
+                <CardContent>
+                  <form className="profile-account-form" onSubmit={handleAccountSubmit}>
+                    <label className="profile-field">
+                      <span>Nome completo</span>
+                      <Input
+                        type="text"
+                        name="fullName"
+                        value={account.fullName}
+                        onChange={handleAccountChange}
+                        placeholder="Ex.: Jonatas Silva"
+                        className="profile-field__control"
+                      />
+                    </label>
 
-                <label className="profile-field">
-                  <span>Nome de usuario</span>
-                  <input
-                    type="text"
-                    name="username"
-                    value={account.username}
-                    onChange={handleAccountChange}
-                    placeholder="Ex.: jonatas.silva"
-                  />
-                </label>
+                    <label className="profile-field">
+                      <span>Nome de usuario</span>
+                      <Input
+                        type="text"
+                        name="username"
+                        value={account.username}
+                        onChange={handleAccountChange}
+                        placeholder="Ex.: jonatas.silva"
+                        className="profile-field__control"
+                      />
+                    </label>
 
-                <label className="profile-field">
-                  <span>Email / Gmail</span>
-                  <input
-                    type="email"
-                    name="email"
-                    value={account.email}
-                    onChange={handleAccountChange}
-                    placeholder="usuario@gmail.com"
-                  />
-                </label>
+                    <label className="profile-field">
+                      <span>Email / Gmail</span>
+                      <Input
+                        type="email"
+                        name="email"
+                        value={account.email}
+                        onChange={handleAccountChange}
+                        placeholder="usuario@gmail.com"
+                        className="profile-field__control"
+                      />
+                    </label>
 
-                <button type="submit" className="primary-button">
-                  Salvar dados
-                </button>
-              </form>
+                    <div className="profile-inline-note">
+                      <AtSign aria-hidden="true" />
+                      <span>Esse email aparece como referencia principal para login, notificacoes e cobranca.</span>
+                    </div>
 
-              <form className="profile-account-card" onSubmit={handlePasswordSubmit}>
-                <div className="profile-account-card__heading">
-                  <strong>Alterar senha</strong>
-                  <small>Validacao local ate conectar backend</small>
-                </div>
+                    <Button type="submit" className="profile-action-button" disabled={isSavingAccount}>
+                      {isSavingAccount ? (
+                        <LoaderCircle className="animate-spin" data-icon="inline-start" />
+                      ) : (
+                        <UserRound data-icon="inline-start" />
+                      )}
+                      {isSavingAccount ? "Salvando dados..." : "Salvar dados"}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
 
-                <label className="profile-field">
-                  <span>Senha atual</span>
-                  <input
-                    type="password"
-                    name="currentPassword"
-                    value={passwordForm.currentPassword}
-                    onChange={handlePasswordChange}
-                    placeholder="Digite a senha atual"
-                  />
-                </label>
+              <Card className="profile-account-card border-border/70 bg-card/80 shadow-none">
+                <CardHeader className="profile-account-card__header">
+                  <div className="profile-card__eyebrow">
+                    <KeyRound data-icon="inline-start" />
+                    <span>Seguranca</span>
+                  </div>
+                  <CardTitle>Alterar senha</CardTitle>
+                  <CardDescription>Validacao local por enquanto, pronta para plugar no backend.</CardDescription>
+                </CardHeader>
 
-                <label className="profile-field">
-                  <span>Nova senha</span>
-                  <input
-                    type="password"
-                    name="newPassword"
-                    value={passwordForm.newPassword}
-                    onChange={handlePasswordChange}
-                    placeholder="Minimo de 8 caracteres"
-                  />
-                </label>
+                <CardContent>
+                  <form className="profile-account-form" onSubmit={handlePasswordSubmit}>
+                    <label className="profile-field">
+                      <span>Senha atual</span>
+                      <Input
+                        type="password"
+                        name="currentPassword"
+                        value={passwordForm.currentPassword}
+                        onChange={handlePasswordChange}
+                        placeholder="Digite a senha atual"
+                        className="profile-field__control"
+                      />
+                    </label>
 
-                <label className="profile-field">
-                  <span>Confirmar nova senha</span>
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    value={passwordForm.confirmPassword}
-                    onChange={handlePasswordChange}
-                    placeholder="Repita a nova senha"
-                  />
-                </label>
+                    <label className="profile-field">
+                      <span>Nova senha</span>
+                      <Input
+                        type="password"
+                        name="newPassword"
+                        value={passwordForm.newPassword}
+                        onChange={handlePasswordChange}
+                        placeholder="Minimo de 8 caracteres"
+                        className="profile-field__control"
+                      />
+                    </label>
 
-                <button type="submit" className="primary-button">
-                  Atualizar senha
-                </button>
-                {passwordMessage ? <small className="profile-form-message">{passwordMessage}</small> : null}
-              </form>
+                    <label className="profile-field">
+                      <span>Confirmar nova senha</span>
+                      <Input
+                        type="password"
+                        name="confirmPassword"
+                        value={passwordForm.confirmPassword}
+                        onChange={handlePasswordChange}
+                        placeholder="Repita a nova senha"
+                        className="profile-field__control"
+                      />
+                    </label>
+
+                    <div className="profile-inline-note">
+                      <ShieldAlert aria-hidden="true" />
+                      <span>Use uma senha longa e diferente da que voce usa em outros servicos.</span>
+                    </div>
+
+                    {passwordMessage ? (
+                      <div className={`profile-status-banner is-${passwordMessageTone}`}>
+                        {passwordMessageTone === "success" ? (
+                          <CheckCircle2 aria-hidden="true" />
+                        ) : passwordMessageTone === "danger" ? (
+                          <TriangleAlert aria-hidden="true" />
+                        ) : (
+                          <ShieldAlert aria-hidden="true" />
+                        )}
+                        <span>{passwordMessage}</span>
+                      </div>
+                    ) : null}
+
+                    <Button type="submit" className="profile-action-button">
+                      <KeyRound data-icon="inline-start" />
+                      Atualizar senha
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
             </div>
           </details>
 
@@ -1045,21 +1173,48 @@ export default function ProfilePage() {
             </summary>
 
             <div className="profile-compact-panel__body">
-              <div className="profile-google-card__badge">
-                <span>G</span>
-                <div>
-                  <strong>{account.googleLinked ? "Vinculada ao Google" : "Vincular Gmail / Google"}</strong>
-                  <small>
+              <Card className="profile-account-card border-border/70 bg-card/80 shadow-none">
+                <CardHeader className="profile-account-card__header">
+                  <div className="profile-card__eyebrow">
+                    <AtSign data-icon="inline-start" />
+                    <span>Login social</span>
+                  </div>
+                  <CardTitle>{account.googleLinked ? "Google conectado" : "Vincular Gmail / Google"}</CardTitle>
+                  <CardDescription>
                     {account.googleLinked
                       ? account.email || "Conta Google conectada"
-                      : "Use para facilitar login e recuperacao de acesso"}
-                  </small>
-                </div>
-              </div>
+                      : "Use o Google para facilitar login, recuperacao de acesso e continuidade da conta."}
+                  </CardDescription>
+                </CardHeader>
 
-              <button type="button" className="ghost-button" onClick={toggleGoogleLink}>
-                {account.googleLinked ? "Desvincular Google" : "Vincular Google"}
-              </button>
+                <CardContent className="profile-google-card__content">
+                  <div className="profile-google-card__badge">
+                    <span>G</span>
+                    <div>
+                      <strong>{account.googleLinked ? "Acesso social ativo" : "Acesso social opcional"}</strong>
+                      <small>
+                        {account.googleLinked
+                          ? "Essa conta ja pode usar Google como atalho de autenticacao."
+                          : "Ative essa opcao quando quiser reduzir friccao no login."}
+                      </small>
+                    </div>
+                  </div>
+
+                  <div className="profile-inline-note">
+                    <ShieldCheck aria-hidden="true" />
+                    <span>
+                      {account.googleLinked
+                        ? "Ao desvincular, o acesso por email e senha continua disponivel normalmente."
+                        : "Vincular nao muda seu plano nem seus dados; so adiciona uma forma de entrar."}
+                    </span>
+                  </div>
+
+                  <Button type="button" variant={account.googleLinked ? "outline" : "default"} className="profile-action-button" onClick={toggleGoogleLink}>
+                    <AtSign data-icon="inline-start" />
+                    {account.googleLinked ? "Desvincular Google" : "Vincular Google"}
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
           </details>
 
@@ -1252,26 +1407,22 @@ export default function ProfilePage() {
               <small>Encerra a sessao visual e volta para a home.</small>
             </div>
 
-            <button type="button" className="profile-logout-button" onClick={handleLogout}>
+            <Button type="button" variant="destructive" className="profile-logout-button" onClick={handleLogout}>
+              <LogOut data-icon="inline-start" />
               Sair / deslogar
-            </button>
+            </Button>
           </article>
         </div>
       </section>
 
-      <details className="profile-section profile-collapsible-section glass-panel">
-        <summary className="profile-section-summary">
-          <span className="profile-compact-summary__icon">+</span>
-          <span>
-            <strong>Academia do usuario</strong>
-            <small>
-              {selectedEquipmentIds.length}/{allGymEquipment.length} aparelhos liberados
-            </small>
-          </span>
-          <em>{equipmentContext.unavailableEquipment.length} fora do treino</em>
-        </summary>
-
-        <div className="profile-collapsible-section__body">
+      <SectionCollapsible
+        className="profile-section profile-collapsible-section glass-panel"
+        summaryClassName="profile-section-summary"
+        bodyClassName="profile-collapsible-section__body"
+        title="Academia do usuario"
+        summary={`${selectedEquipmentIds.length}/${allGymEquipment.length} aparelhos liberados`}
+        badge={`${equipmentContext.unavailableEquipment.length} fora do treino`}
+      >
           <div className="profile-section__heading profile-section__heading--compact">
             <div>
               <span>Aparelhos</span>
@@ -1283,13 +1434,32 @@ export default function ProfilePage() {
             </div>
           </div>
 
+          <div className="profile-section-insights">
+            <div className="profile-section-insight">
+              <BadgeCheck aria-hidden="true" />
+              <span>
+                <strong>{selectedEquipmentIds.length} ativos</strong>
+                <small>equipamentos liberados para o treino</small>
+              </span>
+            </div>
+            <div className="profile-section-insight">
+              <ShieldBan aria-hidden="true" />
+              <span>
+                <strong>{equipmentContext.unavailableEquipment.length} fora</strong>
+                <small>itens que a IA deve evitar no protocolo</small>
+              </span>
+            </div>
+          </div>
+
           <div className="profile-actions">
-            <button type="button" className="primary-button" onClick={() => updateEquipmentSelection(getAllEquipmentIds())}>
+            <Button type="button" onClick={() => updateEquipmentSelection(getAllEquipmentIds())}>
+              <Dumbbell data-icon="inline-start" />
               Marcar todos
-            </button>
-            <button type="button" className="ghost-button" onClick={() => updateEquipmentSelection([])}>
+            </Button>
+            <Button type="button" variant="outline" onClick={() => updateEquipmentSelection([])}>
+              <TriangleAlert data-icon="inline-start" />
               Desmarcar todos
-            </button>
+            </Button>
           </div>
 
           <div className="profile-categories">
@@ -1308,7 +1478,9 @@ export default function ProfilePage() {
                       onClick={() => toggleEquipmentGroup(category.id)}
                       aria-expanded={isOpen}
                     >
-                      <span className="profile-category__chevron">{isOpen ? "-" : "+"}</span>
+                      <span className="profile-category__chevron">
+                        <ChevronDown aria-hidden="true" />
+                      </span>
                       <span>
                         <strong>{category.title}</strong>
                         <small>
@@ -1318,12 +1490,12 @@ export default function ProfilePage() {
                     </button>
 
                     <div className="profile-category__actions">
-                      <button type="button" onClick={() => selectEquipmentGroup(category)}>
+                      <Button type="button" size="sm" variant="outline" onClick={() => selectEquipmentGroup(category)}>
                         Marcar grupo
-                      </button>
-                      <button type="button" onClick={() => clearEquipmentGroup(category)}>
+                      </Button>
+                      <Button type="button" size="sm" variant="ghost" onClick={() => clearEquipmentGroup(category)}>
                         Desmarcar grupo
-                      </button>
+                      </Button>
                     </div>
                   </div>
 
@@ -1343,20 +1515,16 @@ export default function ProfilePage() {
               );
             })}
           </div>
-        </div>
-      </details>
+      </SectionCollapsible>
 
-      <details className="profile-section profile-collapsible-section glass-panel">
-        <summary className="profile-section-summary">
-          <span className="profile-compact-summary__icon">+</span>
-          <span>
-            <strong>Preferencias alimentares</strong>
-            <small>{foodContext.selectedPreferences.length} marcacoes salvas</small>
-          </span>
-          <em>{foodPreferencesCatalog.length} grupos</em>
-        </summary>
-
-        <div className="profile-collapsible-section__body">
+      <SectionCollapsible
+        className="profile-section profile-collapsible-section glass-panel"
+        summaryClassName="profile-section-summary"
+        bodyClassName="profile-collapsible-section__body"
+        title="Preferencias alimentares"
+        summary={`${foodContext.selectedPreferences.length} marcacoes salvas`}
+        badge={`${foodPreferencesCatalog.length} grupos`}
+      >
           <div className="profile-section__heading profile-section__heading--compact">
             <div>
               <span>Alimentacao</span>
@@ -1365,6 +1533,30 @@ export default function ProfilePage() {
                 Marque alergias, intolerancias, itens evitados e alimentos favoritos. Esses dados ficam
                 prontos para alimentar a dieta personalizada.
               </p>
+            </div>
+          </div>
+
+          <div className="profile-section-insights">
+            <div className="profile-section-insight">
+              <Heart aria-hidden="true" />
+              <span>
+                <strong>{foodPositiveCount} prioridades</strong>
+                <small>itens marcados como gosto ou quero incluir</small>
+              </span>
+            </div>
+            <div className="profile-section-insight">
+              <ShieldAlert aria-hidden="true" />
+              <span>
+                <strong>{foodRestrictionCount} restricoes</strong>
+                <small>alergias, intolerancias e itens para evitar</small>
+              </span>
+            </div>
+            <div className="profile-section-insight">
+              <Salad aria-hidden="true" />
+              <span>
+                <strong>{foodMarkedCount} marcacoes</strong>
+                <small>preferencias prontas para alimentar a dieta</small>
+              </span>
             </div>
           </div>
 
@@ -1383,7 +1575,9 @@ export default function ProfilePage() {
                       onClick={() => toggleFoodGroup(group.id)}
                       aria-expanded={isOpen}
                     >
-                      <span className="profile-category__chevron">{isOpen ? "-" : "+"}</span>
+                      <span className="profile-category__chevron">
+                        <ChevronDown aria-hidden="true" />
+                      </span>
                       <span>
                         <strong>{group.title}</strong>
                         <small>
@@ -1393,12 +1587,12 @@ export default function ProfilePage() {
                     </button>
 
                     <div className="profile-category__actions">
-                      <button type="button" onClick={() => markFoodGroup(group, "gosta")}>
+                      <Button type="button" size="sm" variant="outline" onClick={() => markFoodGroup(group, "gosta")}>
                         Gosto do grupo
-                      </button>
-                      <button type="button" onClick={() => clearFoodGroup(group)}>
+                      </Button>
+                      <Button type="button" size="sm" variant="ghost" onClick={() => clearFoodGroup(group)}>
                         Limpar grupo
-                      </button>
+                      </Button>
                     </div>
                   </div>
 
@@ -1425,8 +1619,7 @@ export default function ProfilePage() {
               );
             })}
           </div>
-        </div>
-      </details>
+      </SectionCollapsible>
 
       <Dialog open={planConfirmOpen} onOpenChange={setPlanConfirmOpen}>
         <DialogContent className="profile-dialog-content plan-confirm-modal">

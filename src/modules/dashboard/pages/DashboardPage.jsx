@@ -1,5 +1,16 @@
 import { useEffect, useState } from "react";
 import {
+  Activity,
+  CalendarRange,
+  ClipboardCheck,
+  Dumbbell,
+  Gauge,
+  Inbox,
+  MoonStar,
+  Scale,
+  TrendingUp,
+} from "lucide-react";
+import {
   Area,
   AreaChart,
   Bar,
@@ -15,6 +26,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import SectionCollapsible from "@/components/ui/SectionCollapsible";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { loadCheckins } from "../../../data/checkinStorage";
 import { loadTrainingHistory } from "../../../data/trainingStorage";
 import {
@@ -401,7 +414,7 @@ function ChartValueLabel({ x, y, width, value, index, dataKey, data }) {
   const labelX = typeof width === "number" ? x + width / 2 : x;
 
   return (
-    <text className="dashboard-chart-point-label" x={labelX} y={y - 12} textAnchor="middle">
+    <text className="dashboard-chart-point-label" x={labelX} y={y - 6} textAnchor="middle">
       <tspan>{formatChartValueLabel(value)}</tspan>
       {trendLabel ? <tspan className={trendClass} dx="4">{trendLabel}</tspan> : null}
     </text>
@@ -670,7 +683,10 @@ function BodyLineChart({ title, fields, checkins }) {
           </div>
         </>
       ) : (
-        <p className="dashboard-chart-empty">Salve check-ins com esses dados para montar o grafico.</p>
+        <DashboardEmptyState
+          title="Sem check-ins suficientes"
+          description="Salve check-ins com essas medidas para montar esse grafico e acompanhar a evolucao."
+        />
       )}
     </article>
   );
@@ -678,7 +694,12 @@ function BodyLineChart({ title, fields, checkins }) {
 
 function LoadBarChart({ data }) {
   if (!data.length) {
-    return <p className="dashboard-chart-empty">Salve execucoes de treino para montar o grafico de carga.</p>;
+    return (
+      <DashboardEmptyState
+        title="Sem carga registrada"
+        description="Salve execucoes de treino para montar o grafico de carga e comparar sessoes."
+      />
+    );
   }
 
   return (
@@ -785,20 +806,17 @@ function MonthlyActivityChart({ data }) {
   );
 }
 
-function DashboardCollapsible({ eyebrow, title, summary, badge, children }) {
+function DashboardEmptyState({ title, description }) {
   return (
-    <details className="dashboard-collapsible glass-panel">
-      <summary className="dashboard-collapsible__summary">
-        <span className="dashboard-collapsible__icon">+</span>
-        <span>
-          {eyebrow ? <small>{eyebrow}</small> : null}
-          <strong>{title}</strong>
-          {summary ? <em>{summary}</em> : null}
-        </span>
-        {badge ? <mark>{badge}</mark> : null}
-      </summary>
-      <div className="dashboard-collapsible__body">{children}</div>
-    </details>
+    <div className="dashboard-empty-state" role="status">
+      <span className="dashboard-empty-state__icon">
+        <Inbox aria-hidden="true" />
+      </span>
+      <div>
+        <strong>{title}</strong>
+        <p>{description}</p>
+      </div>
+    </div>
   );
 }
 
@@ -935,7 +953,7 @@ function ExerciseVolumeChart({ exercise, labels }) {
   return (
     <div className="workout-evolution-chart">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 6, right: 8, left: -14, bottom: 0 }}>
+        <BarChart data={data} margin={{ top: 18, right: 8, left: -14, bottom: 0 }}>
           <CartesianGrid stroke="rgba(255, 255, 255, 0.07)" vertical={false} />
           <XAxis dataKey="label" tick={chartAxisStyle} axisLine={false} tickLine={false} />
           <YAxis tick={chartAxisStyle} axisLine={false} tickLine={false} width={44} />
@@ -962,9 +980,13 @@ function ExerciseVolumeChart({ exercise, labels }) {
 function WorkoutEvolutionPanel({ workouts, sessions }) {
   const firstEnabledWorkout = workouts.find((workout) => workout.enabled)?.id || "monday";
   const [openWorkoutId, setOpenWorkoutId] = useState(firstEnabledWorkout);
+  const enabledWorkouts = workouts.filter((workout) => workout.enabled);
 
   return (
-    <DashboardCollapsible
+    <SectionCollapsible
+      className="dashboard-collapsible glass-panel"
+      summaryClassName="dashboard-collapsible__summary"
+      bodyClassName="dashboard-collapsible__body"
       eyebrow="Treinos"
       title="Evolucao por treino do protocolo mensal"
       summary="Comparativo de carga por dia da semana."
@@ -976,96 +998,91 @@ function WorkoutEvolutionPanel({ workouts, sessions }) {
           exercicios registrados neste protocolo mensal.
         </p>
 
-        <div className="workout-evolution-tabs">
-          {workouts.map((workout) => (
-            <button
-              key={workout.id}
-              type="button"
-              className={`${openWorkoutId === workout.id ? "is-selected" : ""} ${
-                workout.enabled ? "is-enabled" : "is-disabled"
-              }`}
-              disabled={!workout.enabled}
-              onClick={() => setOpenWorkoutId((current) => (current === workout.id ? "" : workout.id))}
-            >
-              <strong>{workout.title}</strong>
-              <span>{workout.enabled ? "Habilitado" : "Desabilitado"}</span>
-            </button>
-          ))}
-        </div>
+        <Tabs value={openWorkoutId} onValueChange={setOpenWorkoutId} className="workout-evolution-tabs-root">
+          <TabsList className="workout-evolution-tabs" variant="line">
+            {workouts.map((workout) => (
+              <TabsTrigger
+                key={workout.id}
+                value={workout.id}
+                disabled={!workout.enabled}
+                className={`workout-evolution-trigger ${workout.enabled ? "is-enabled" : "is-disabled"}`}
+              >
+                <strong>{workout.title}</strong>
+                <span>{workout.enabled ? "Habilitado" : "Desabilitado"}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-        {workouts.map((workout) => {
-          if (workout.id !== openWorkoutId || !workout.enabled) {
-            return null;
-          }
+          {enabledWorkouts.map((workout) => {
+            const evolution = buildWorkoutEvolution(workout, sessions);
 
-          const evolution = buildWorkoutEvolution(workout, sessions);
+            return (
+              <TabsContent key={workout.id} value={workout.id}>
+                <article className="workout-evolution-panel">
+                  <header>
+                    <div>
+                      <h3>{workout.title}</h3>
+                      <p>{workout.focus}</p>
+                    </div>
+                    <span>
+                      {evolution.sessionCount} registro(s) | {evolution.previousLabel} para {evolution.latestLabel}
+                    </span>
+                  </header>
 
-          return (
-            <article key={workout.id} className="workout-evolution-panel">
-              <header>
-                <div>
-                  <h3>{workout.title}</h3>
-                  <p>{workout.focus}</p>
-                </div>
-                <span>
-                  {evolution.sessionCount} registro(s) | {evolution.previousLabel} para {evolution.latestLabel}
-                </span>
-              </header>
-
-              {evolution.sessionCount ? (
-                <>
-                  <div className="workout-evolution-list">
-                    {evolution.exerciseRows.map((exercise) => (
-                      <section key={exercise.id} className="workout-evolution-exercise">
-                        <div className="workout-evolution-exercise__heading">
-                          <strong>{exercise.name}</strong>
-                          <small>
-                            {exercise.latest || "--"} kg/reps volume |{" "}
-                            {exercise.diff > 0 ? "+" : ""}
-                            {exercise.diff}
-                          </small>
-                          <div className="workout-evolution-deltas">
-                            <span>Media carga {formatSigned(exercise.averageWeightDiff, " kg")}</span>
-                            <span>Ultimo treino {formatSigned(exercise.sessionVolumeDiff)}</span>
-                          </div>
-                        </div>
-                        <div className="workout-evolution-detail">
-                          <ExerciseVolumeChart exercise={exercise} labels={evolution.labels} />
-                          <div className="workout-set-diff-table" aria-label={`Diferenca por serie de ${exercise.name}`}>
-                            <div>
-                              <strong>Serie</strong>
-                              <strong>Anterior</strong>
-                              <strong>Atual</strong>
-                              <strong>Delta</strong>
+                  {evolution.sessionCount ? (
+                    <div className="workout-evolution-list">
+                      {evolution.exerciseRows.map((exercise) => (
+                        <section key={exercise.id} className="workout-evolution-exercise">
+                          <div className="workout-evolution-exercise__heading">
+                            <strong>{exercise.name}</strong>
+                            <small>
+                              {exercise.latest || "--"} kg/reps volume |{" "}
+                              {exercise.diff > 0 ? "+" : ""}
+                              {exercise.diff}
+                            </small>
+                            <div className="workout-evolution-deltas">
+                              <span>Media carga {formatSigned(exercise.averageWeightDiff, " kg")}</span>
+                              <span>Ultimo treino {formatSigned(exercise.sessionVolumeDiff)}</span>
                             </div>
-                            {exercise.setRows.map((set) => (
-                              <div key={set.set}>
-                                <span>{set.set}</span>
-                                <span>{set.previousWeight || "--"} kg x {set.previousReps || "--"}</span>
-                                <span>{set.latestWeight || "--"} kg x {set.latestReps || "--"}</span>
-                                <span className={set.weightDiff >= 0 ? "is-positive" : "is-negative"}>
-                                  {formatSigned(set.weightDiff, " kg")}
-                                  {set.repsDiff ? ` / ${formatSigned(set.repsDiff, " rep")}` : ""}
-                                </span>
-                              </div>
-                            ))}
                           </div>
-                        </div>
-                      </section>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <p>
-                  Salve execucoes desse treino na aba Treinos para gerar os
-                  comparativos de carga por exercicio.
-                </p>
-              )}
-            </article>
-          );
-        })}
+                          <div className="workout-evolution-detail">
+                            <ExerciseVolumeChart exercise={exercise} labels={evolution.labels} />
+                            <div className="workout-set-diff-table" aria-label={`Diferenca por serie de ${exercise.name}`}>
+                              <div>
+                                <strong>Serie</strong>
+                                <strong>Anterior</strong>
+                                <strong>Atual</strong>
+                                <strong>Delta</strong>
+                              </div>
+                              {exercise.setRows.map((set) => (
+                                <div key={set.set}>
+                                  <span>{set.set}</span>
+                                  <span>{set.previousWeight || "--"} kg x {set.previousReps || "--"}</span>
+                                  <span>{set.latestWeight || "--"} kg x {set.latestReps || "--"}</span>
+                                  <span className={set.weightDiff >= 0 ? "is-positive" : "is-negative"}>
+                                    {formatSigned(set.weightDiff, " kg")}
+                                    {set.repsDiff ? ` / ${formatSigned(set.repsDiff, " rep")}` : ""}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </section>
+                      ))}
+                    </div>
+                  ) : (
+                    <DashboardEmptyState
+                      title="Sem execucoes desse treino"
+                      description="Salve execucoes na aba Treinos para gerar comparativos de carga por exercicio."
+                    />
+                  )}
+                </article>
+              </TabsContent>
+            );
+          })}
+        </Tabs>
       </div>
-    </DashboardCollapsible>
+    </SectionCollapsible>
   );
 }
 
@@ -1122,21 +1139,25 @@ export default function DashboardPage() {
       label: "Treinos na semana",
       value: `${weekSessions.length}`,
       helper: `${workoutSummary.weeklyTrainingDays} dia(s) planejados`,
+      icon: Dumbbell,
     },
     {
       label: "Treinos no mes",
       value: `${monthSessions.length}`,
       helper: `${sessions.length} no total`,
+      icon: CalendarRange,
     },
     {
       label: "Treinos no ano",
       value: `${yearSessions.length}`,
       helper: "Sessoes registradas",
+      icon: Activity,
     },
     {
       label: "Maior carga",
       value: `${workoutSummary.maxWeight || "--"} kg`,
       helper: `${workoutSummary.completedSets} series registradas`,
+      icon: Gauge,
     },
   ];
 
@@ -1152,20 +1173,58 @@ export default function DashboardPage() {
           <p>
             Evolucao de treinos, cargas, sono, alimentacao, check-ins e composicao corporal em um unico painel.
           </p>
+          <div className="dashboard-hero__meta">
+            <div className="dashboard-hero__metric">
+              <ClipboardCheck aria-hidden="true" />
+              <span>
+                <strong>{weeklyCheckins.length} check-ins</strong>
+                <small>{adherencePercent(weeklyCheckins.length, weeklyCheckinTotal)} de aderencia semanal</small>
+              </span>
+            </div>
+            <div className="dashboard-hero__metric">
+              <MoonStar aria-hidden="true" />
+              <span>
+                <strong>{average(weeklyCheckins, "sleep")}h</strong>
+                <small>sono medio nos registros recentes</small>
+              </span>
+            </div>
+            <div className="dashboard-hero__metric">
+              <Scale aria-hidden="true" />
+              <span>
+                <strong>{average(monthlyCheckins, "weight")} kg</strong>
+                <small>peso medio do ciclo atual</small>
+              </span>
+            </div>
+            <div className="dashboard-hero__metric">
+              <TrendingUp aria-hidden="true" />
+              <span>
+                <strong>{monthSessions.length} treinos</strong>
+                <small>sessoes registradas nos ultimos 30 dias</small>
+              </span>
+            </div>
+          </div>
         </div>
       </header>
 
       <section className="dashboard-metrics">
         {metrics.map((item) => (
-          <article key={item.label} className="module-stat glass-panel">
-            <span className="module-stat__label">{item.label}</span>
-            <strong className="module-stat__value">{item.value}</strong>
-            <span className="module-stat__helper">{item.helper}</span>
+          <article key={item.label} className="dashboard-metric glass-panel">
+            <div className="dashboard-metric__top">
+              <span className="dashboard-metric__icon">
+                <item.icon aria-hidden="true" />
+              </span>
+              <span className="dashboard-metric__label">{item.label}</span>
+            </div>
+            <strong className="dashboard-metric__value">{item.value}</strong>
+            <span className="dashboard-metric__helper">{item.helper}</span>
           </article>
         ))}
       </section>
 
-      <DashboardCollapsible
+      <SectionCollapsible
+        className="dashboard-collapsible glass-panel"
+        summaryClassName="dashboard-collapsible__summary"
+        bodyClassName="dashboard-collapsible__body"
         eyebrow="Resumo"
         title="Comparacao corporal e qualidade da semana"
         summary="Peso, gordura, massa muscular, check-ins, sono e aderencia."
@@ -1245,9 +1304,12 @@ export default function DashboardPage() {
           />
           <MonthlyActivityChart data={monthlyActivityData} />
         </section>
-      </DashboardCollapsible>
+      </SectionCollapsible>
 
-      <DashboardCollapsible
+      <SectionCollapsible
+        className="dashboard-collapsible glass-panel"
+        summaryClassName="dashboard-collapsible__summary"
+        bodyClassName="dashboard-collapsible__body"
         eyebrow="Corpo"
         title="Bioimpedancia e medidas"
         summary="Graficos de linha com os ultimos registros do check-in mensal."
@@ -1263,9 +1325,12 @@ export default function DashboardPage() {
             />
           ))}
         </div>
-      </DashboardCollapsible>
+      </SectionCollapsible>
 
-      <DashboardCollapsible
+      <SectionCollapsible
+        className="dashboard-collapsible glass-panel"
+        summaryClassName="dashboard-collapsible__summary"
+        bodyClassName="dashboard-collapsible__body"
         eyebrow="Calendario e cargas"
         title="Evolucao de cargas e calendario do mes"
         summary="Volume por sessoes salvas, treinos realizados, check-ins e faltas."
@@ -1295,11 +1360,14 @@ export default function DashboardPage() {
             </div>
           </article>
         </section>
-      </DashboardCollapsible>
+      </SectionCollapsible>
 
       <WorkoutEvolutionPanel workouts={workoutPlan.workouts} sessions={sessions} />
 
-      <DashboardCollapsible
+      <SectionCollapsible
+        className="dashboard-collapsible glass-panel"
+        summaryClassName="dashboard-collapsible__summary"
+        bodyClassName="dashboard-collapsible__body"
         eyebrow="Mensal"
         title="Evolucao mensal e protocolos de treino"
         summary="Medias do mes e divisao atual do protocolo."
@@ -1336,9 +1404,12 @@ export default function DashboardPage() {
             </div>
           </article>
         </section>
-      </DashboardCollapsible>
+      </SectionCollapsible>
 
-      <DashboardCollapsible
+      <SectionCollapsible
+        className="dashboard-collapsible glass-panel"
+        summaryClassName="dashboard-collapsible__summary"
+        bodyClassName="dashboard-collapsible__body"
         eyebrow="Feedback"
         title="Feedbacks do Personal Virtual"
         summary="Leituras de sono, alimentacao, protocolo e evolucao corporal."
@@ -1352,7 +1423,7 @@ export default function DashboardPage() {
             </article>
           ))}
         </div>
-      </DashboardCollapsible>
+      </SectionCollapsible>
     </section>
   );
 }

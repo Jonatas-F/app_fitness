@@ -1,0 +1,117 @@
+.section-collapsible {
+  overflow: hidden;
+}
+
+.section-collapsible[open] {
+  border-color: rgba(255, 46, 46, 0.22);
+}
+
+.section-collapsible__summary {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 14px 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.section-collapsible__summary::-webkit-details-marker {
+  display: none;
+}
+
+.section-collapsible__icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.section-collapsible__icon svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
+}
+
+.section-collapsible[open] .section-collapsible__icon {
+  background: rgba(255, 46, 46, 0.18);
+  border-color: rgba(255, 46, 46, 0.3);
+}
+
+.section-collapsible[open] .section-collapsible__icon svg {
+  transform: rotate(180deg);
+}
+
+.section-collapsible__copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.section-collapsible__copy strong {
+  line-height: 1.25;
+}
+
+.section-collapsible__eyebrow {
+  width: fit-content;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 9px;
+  border-radius: 999px;
+  color: #ffd7d7;
+  background: rgba(255, 46, 46, 0.14);
+  border: 1px solid rgba(255, 46, 46, 0.22);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.section-collapsible__copy em,
+.section-collapsible__badge {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.82rem;
+  font-style: normal;
+  line-height: 1.35;
+}
+
+.section-collapsible__badge {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.section-collapsible__body {
+  display: grid;
+  gap: 16px;
+  padding: 0 16px 16px;
+}
+
+@media (max-width: 720px) {
+  .section-collapsible__summary {
+    grid-template-columns: 32px minmax(0, 1fr);
+    min-height: 56px;
+    padding: 12px;
+  }
+
+  .section-collapsible__badge {
+    grid-column: 2;
+    justify-self: start;
+    min-height: 24px;
+  }
+
+  .section-collapsible__body {
+    padding: 0 10px 10px;
+  }
+}

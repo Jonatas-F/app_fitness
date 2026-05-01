@@ -3,11 +3,72 @@
 > vite --host 127.0.0.1
 
 
-  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m285[22m[2m[0m ms[22m
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m800[22m[2m[0m ms[22m
 
   [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5173[22m/[39m
-[2m19:47:47[22m [36m[1m[vite][22m[39m [32m✨ new dependencies optimized: [33mrecharts[32m[39m
-[2m19:47:47[22m [36m[1m[vite][22m[39m [32m✨ optimized dependencies changed. reloading[39m
-[2m19:48:18[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/modules/dashboard/pages/DashboardPage.css[22m
-[2m19:48:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/modules/dashboard/pages/DashboardPage.jsx[22m
-Deseja finalizar o arquivo em lotes (S/N)? 
+[2m12:37:19[22m [36m[1m[vite][22m[39m [32mvite.config.js changed, restarting server...[39m
+[2m12:37:19[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css[22m
+Re-optimizing dependencies because lockfile has changed
+[2m12:37:19[22m [36m[1m[vite][22m[39m server restarted.
+[2m12:40:52[22m [36m[1m[vite][22m[39m [32mvite.config.js changed, restarting server...[39m
+Re-optimizing dependencies because vite config has changed
+[2m12:40:52[22m [36m[1m[vite][22m[39m server restarted.
+[2m12:41:45[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m([22m
+[2m12:41:45[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m({[22m
+[2m12:41:45[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mloadProfileData())[22m
+[2m12:41:45[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2m{[22m
+[2m12:41:52[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mpackage.json[22m
+[2m12:41:54[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m12:43:48[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mpackage.json[22m
+[2m12:45:50[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mpackage.json[22m
+[2m12:45:53[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mpackage.json[22m
+[2m12:47:52[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mpackage.json[22m
+[2m12:59:15[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\profile\pages\ProfilePage.jsx, /src/index.css[22m
+[2m12:59:17[22m [36m[1m[vite][22m[39m [32m✨ new dependencies optimized: [33mlucide-react, class-variance-authority, radix-ui, clsx, tailwind-merge[32m[39m
+[2m12:59:17[22m [36m[1m[vite][22m[39m [32m✨ optimized dependencies changed. reloading[39m
+[2m12:59:21[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\profile\pages\ProfilePage.jsx, /src/index.css[22m
+[2m12:59:25[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\profile\pages\ProfilePage.jsx, /src/index.css[22m
+[2m13:00:12[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\profile\pages\ProfilePage.jsx, /src/index.css[22m
+[2m13:00:51[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\profile\pages\ProfilePage.jsx, /src/index.css[22m
+[2m13:01:01[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\components\ui\PaymentCard3D.jsx, /src/index.css[22m
+[2m13:01:06[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/components/ui/PaymentCard3D.css[22m
+[2m13:01:41[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m13:01:50[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m13:02:13[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m13:02:51[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/modules/profile/pages/ProfilePage.css[22m
+[2m13:03:00[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/modules/profile/pages/ProfilePage.css[22m
+[2m13:03:30[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/modules/profile/pages/ProfilePage.css[22m
+[2m13:03:36[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/modules/profile/pages/ProfilePage.css[22m
+[2m13:03:42[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\profile\pages\ProfilePage.jsx, /src/index.css[22m
+[2m13:03:51[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/modules/profile/pages/ProfilePage.css[22m
+[2m13:08:01[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\profile\pages\ProfilePage.jsx, /src/index.css[22m
+[2m13:08:11[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/modules/profile/pages/ProfilePage.css[22m
+[2m13:10:55[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\profile\pages\ProfilePage.jsx, /src/index.css[22m
+[2m13:11:09[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\profile\pages\ProfilePage.jsx, /src/index.css[22m
+[2m13:11:15[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\profile\pages\ProfilePage.jsx, /src/index.css[22m
+[2m13:11:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\profile\pages\ProfilePage.jsx, /src/index.css[22m
+[2m13:12:01[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/modules/profile/pages/ProfilePage.css[22m
+[2m13:12:32[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/modules/profile/pages/ProfilePage.css[22m
+[2m13:12:36[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\profile\pages\ProfilePage.jsx, /src/index.css[22m
+[2m13:14:44[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\profile\pages\ProfilePage.jsx, /src/index.css[22m
+[2m13:14:53[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\profile\pages\ProfilePage.jsx, /src/index.css[22m
+[2m13:15:19[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\profile\pages\ProfilePage.jsx, /src/index.css[22m
+[2m13:15:51[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/modules/profile/pages/ProfilePage.css[22m
+[2m13:15:58[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/modules/profile/pages/ProfilePage.css[22m
+[2m13:16:03[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\profile\pages\ProfilePage.jsx, /src/index.css[22m
+[2m13:19:04[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\dashboard\pages\DashboardPage.jsx, /src/index.css[22m
+[2m13:19:11[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\dashboard\pages\DashboardPage.jsx, /src/index.css[22m
+[2m13:19:47[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\dashboard\pages\DashboardPage.jsx, /src/index.css[22m
+[2m13:20:04[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\dashboard\pages\DashboardPage.jsx, /src/index.css[22m
+[2m13:20:32[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/modules/dashboard/pages/DashboardPage.css[22m
+[2m13:20:52[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/modules/dashboard/pages/DashboardPage.css[22m
+[2m13:24:09[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/modules/dashboard/pages/DashboardPage.css[22m
+[2m13:24:17[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\dashboard\pages\DashboardPage.jsx, /src/index.css[22m
+[2m13:26:11[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\dashboard\pages\DashboardPage.jsx, /src/index.css[22m
+[2m13:26:21[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/modules/dashboard/pages/DashboardPage.css[22m
+[2m13:29:40[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\dashboard\pages\DashboardPage.jsx, /src/index.css[22m
+[2m13:30:20[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\dashboard\pages\DashboardPage.jsx, /src/index.css[22m
+[2m13:30:37[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\dashboard\pages\DashboardPage.jsx, /src/index.css[22m
+[2m13:30:53[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/@fs/C:\Users\jonat\Documents\Projetos-Git\shape-certo\src\modules\profile\pages\ProfilePage.jsx, /src/index.css[22m
+[2m13:31:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/modules/dashboard/pages/DashboardPage.css[22m
+[2m13:31:40[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/index.css, /src/modules/profile/pages/ProfilePage.css[22m
