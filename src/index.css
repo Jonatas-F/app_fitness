@@ -252,6 +252,11 @@ ol {
 .dashboard-hero > div:last-child > span,
 .profile-hero__copy > span,
 .profile-section__heading > div > span,
+.nutrition-hero > span,
+.progress-hero > span,
+.checkout-eyebrow,
+.checkout-summary > span,
+.checkout-success-panel > span,
 .settings-hero > span,
 .settings-section summary small {
   width: fit-content;
@@ -302,6 +307,42 @@ ol {
 .profile-hero__metric small {
   color: rgba(255, 255, 255, 0.62);
   line-height: 1.35;
+}
+
+.app-empty-state {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  min-height: 112px;
+  align-content: center;
+  padding: 16px;
+  overflow: hidden;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px dashed rgba(255, 255, 255, 0.13);
+}
+
+.app-empty-state strong {
+  min-width: 0;
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.app-empty-state p {
+  min-width: 0;
+  margin: 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.app-empty-state small {
+  min-width: 0;
+  color: rgba(255, 255, 255, 0.58);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .sidebar {

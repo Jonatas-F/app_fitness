@@ -1,5 +1,5 @@
 import { Suspense, lazy } from "react";
-import { createBrowserRouter } from "react-router-dom";
+import { Navigate, createBrowserRouter, useLocation } from "react-router-dom";
 
 const AppLayout = lazy(() => import("../layouts/AppLayout"));
 const HomePage = lazy(() => import("../modules/home/pages/HomePage"));
@@ -9,7 +9,6 @@ const WorkoutsPage = lazy(() => import("../modules/workouts/pages/WorkoutsPage")
 const NutritionPage = lazy(() => import("../modules/nutrition/pages/NutritionPage"));
 const CheckinsPage = lazy(() => import("../modules/checkins/pages/CheckinsPage"));
 const ChatPage = lazy(() => import("../modules/chat/pages/ChatPage"));
-const ProfilePage = lazy(() => import("../modules/profile/pages/ProfilePage"));
 const SettingsPage = lazy(() => import("../modules/settings/pages/SettingsPage"));
 const NotFoundPage = lazy(() => import("../modules/shared/pages/NotFoundPage"));
 
@@ -19,6 +18,11 @@ function withSuspense(element) {
       {element}
     </Suspense>
   );
+}
+
+function RedirectToSettings() {
+  const location = useLocation();
+  return <Navigate to={`/configuracoes${location.search}${location.hash}`} replace />;
 }
 
 export const router = createBrowserRouter(
@@ -45,8 +49,8 @@ export const router = createBrowserRouter(
 
         { path: "chat", element: withSuspense(<ChatPage />) },
 
-        { path: "perfil", element: withSuspense(<ProfilePage />) },
-        { path: "perfil/editar", element: withSuspense(<ProfilePage />) },
+        { path: "perfil", element: <RedirectToSettings /> },
+        { path: "perfil/editar", element: <RedirectToSettings /> },
 
         { path: "configuracoes", element: withSuspense(<SettingsPage />) },
 

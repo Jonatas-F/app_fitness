@@ -1,7 +1,6 @@
 import { ROUTE_PATHS } from "../routes/routePaths";
 
 export const navigationItems = [
-  { label: "Perfil", path: ROUTE_PATHS.profile, iconKey: "profile" },
   { label: "Dashboard", path: ROUTE_PATHS.dashboard, iconKey: "dashboard" },
   { label: "Treinos", path: ROUTE_PATHS.workouts, iconKey: "workouts" },
   { label: "Dietas", path: ROUTE_PATHS.diets, iconKey: "diet" },
@@ -11,10 +10,10 @@ export const navigationItems = [
 ];
 
 export const mobileNavigationItems = [
-  { shortLabel: "Perfil", path: ROUTE_PATHS.profile, iconKey: "profile" },
   { shortLabel: "Inicio", path: ROUTE_PATHS.dashboard, iconKey: "dashboard" },
   { shortLabel: "Treinos", path: ROUTE_PATHS.workouts, iconKey: "workouts" },
   { shortLabel: "Dietas", path: ROUTE_PATHS.diets, iconKey: "diet" },
+  { shortLabel: "Ajustes", path: ROUTE_PATHS.settings, iconKey: "settings" },
 ];
 
 export const quickSummary = {

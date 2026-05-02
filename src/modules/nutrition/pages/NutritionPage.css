@@ -9,19 +9,6 @@
   padding: 22px;
 }
 
-.nutrition-hero span {
-  display: inline-flex;
-  min-height: 30px;
-  align-items: center;
-  padding: 0 12px;
-  border-radius: 999px;
-  color: #fff;
-  background: rgba(255, 46, 46, 0.16);
-  border: 1px solid rgba(255, 46, 46, 0.26);
-  font-size: 0.78rem;
-  font-weight: 800;
-}
-
 .nutrition-hero h1 {
   margin: 12px 0 8px;
   font-size: clamp(1.8rem, 3vw, 2.5rem);
@@ -409,6 +396,10 @@
   gap: 10px;
 }
 
+.nutrition-history-list .app-empty-state {
+  min-height: 132px;
+}
+
 .nutrition-history-list article {
   display: flex;
   align-items: center;
@@ -734,9 +725,15 @@
   .nutrition-selected-day,
   .nutrition-schedule-summary,
   .nutrition-meal-calendar,
+  .nutrition-history-list article,
   .meal-card__macros,
   .meal-grid {
     grid-template-columns: 1fr;
+  }
+
+  .nutrition-history-list article {
+    display: grid;
+    justify-items: start;
   }
 
   .nutrition-week-tabs button {

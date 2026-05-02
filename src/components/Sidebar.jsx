@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { navigationItems, quickSummary } from '../data/appData';
 import { NAV_ICONS } from './NavIcons';
-import logoMark from '../assets/logo.svg';
+import logoMark from '../assets/logo_sp.svg';
 
 export default function Sidebar() {
   return (

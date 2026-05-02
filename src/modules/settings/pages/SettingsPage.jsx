@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { loadCheckins } from "../../../data/checkinStorage";
 import { getPersonalAvatarById, personalAvatarCatalog } from "../../../data/platformImageCatalog";
 import { loadRemoteSettings, saveRemoteSettings } from "../../../services/settingsService";
+import ProfilePage from "../../profile/pages/ProfilePage";
 import "./SettingsPage.css";
 
 const SETTINGS_KEY = "shapeCertoSettings";
@@ -289,7 +290,7 @@ export default function SettingsPage() {
   const [saveMessage, setSaveMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isHydrating, setIsHydrating] = useState(true);
-  const [activeTab, setActiveTab] = useState("notifications");
+  const [activeTab, setActiveTab] = useState("account");
   const selectedAvatar = useMemo(
     () => getPersonalAvatarById(settings.personal.avatarId),
     [settings.personal.avatarId]
@@ -302,6 +303,11 @@ export default function SettingsPage() {
     [savedSettings, settings]
   );
   const overviewCards = [
+    {
+      label: "Conta e perfil",
+      value: "Unificado",
+      helper: "Dados, pagamento, academia e preferencias",
+    },
     {
       label: "Notificacoes ativas",
       value: `${activeNotificationCount}/${notificationItems.length}`,
@@ -425,8 +431,8 @@ export default function SettingsPage() {
         <span>Configuracoes</span>
         <h1>Ajustes do Shape Certo.</h1>
         <p>
-          Controle notificacoes, comportamento do Personal Virtual e permissoes de uso dos seus
-          dados. Todas as secoes ficam recolhidas para manter a tela leve no celular.
+          Controle conta, pagamento, perfil, notificacoes, comportamento do Personal Virtual e
+          permissoes de uso dos seus dados em um unico lugar.
         </p>
         {!latestRoutineCheckin ? (
           <strong className="settings-hero__notice">
@@ -461,6 +467,10 @@ export default function SettingsPage() {
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="settings-tabs-root">
             <TabsList className="settings-tabs" variant="line">
+              <TabsTrigger value="account" className="settings-tab-trigger">
+                <strong>Conta e perfil</strong>
+                <StatusPill tone="neutral">Unificado</StatusPill>
+              </TabsTrigger>
               <TabsTrigger value="notifications" className="settings-tab-trigger">
                 <strong>Notificacoes</strong>
                 <StatusPill tone="danger">{activeNotificationCount} ativas</StatusPill>
@@ -474,6 +484,10 @@ export default function SettingsPage() {
                 <StatusPill tone="warning">{enabledPrivacyRules} regra(s)</StatusPill>
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="account" className="settings-tab-panel settings-profile-panel">
+              <ProfilePage embedded />
+            </TabsContent>
 
             <TabsContent value="notifications" className="settings-tab-panel">
               <div className="settings-stack">
@@ -595,16 +609,18 @@ export default function SettingsPage() {
         </>
       )}
 
-      <div className="settings-save-actions">
-        <button
-          type="button"
-          className="primary-button"
-          disabled={isSaving || !hasUnsavedChanges}
-          onClick={handleSaveSettings}
-        >
-          {isSaving ? "Salvando..." : "Salvar alteracoes"}
-        </button>
-      </div>
+      {activeTab !== "account" ? (
+        <div className="settings-save-actions">
+          <button
+            type="button"
+            className="primary-button"
+            disabled={isSaving || !hasUnsavedChanges}
+            onClick={handleSaveSettings}
+          >
+            {isSaving ? "Salvando..." : "Salvar alteracoes"}
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }
