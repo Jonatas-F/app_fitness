@@ -52,15 +52,34 @@
 
 .dashboard-tab-trigger[data-state="active"],
 .dashboard-tab-trigger[aria-selected="true"] {
+  position: relative;
   background: linear-gradient(135deg, rgba(255, 46, 46, 0.16), rgba(255, 255, 255, 0.045)) !important;
   border-color: transparent !important;
-  box-shadow:
-    0 0 0 1px rgba(255, 46, 46, 0.5),
-    0 4px 20px rgba(255, 46, 46, 0.14) !important;
+  box-shadow: 0 4px 20px rgba(255, 46, 46, 0.14) !important;
 }
 
-.dashboard-tab-trigger::after {
-  display: none !important;
+.dashboard-tab-trigger[data-state="active"]::after,
+.dashboard-tab-trigger[aria-selected="true"]::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: inherit !important;
+  padding: 1.5px !important;
+  background-image: radial-gradient(
+    transparent, transparent,
+    #ff4d3d, rgba(255, 46, 46, 0.85), #e50914,
+    transparent, transparent
+  ) !important;
+  background-size: 300% 300% !important;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0) !important;
+  -webkit-mask-composite: xor !important;
+  mask-composite: exclude !important;
+  animation: shine-pulse 12s infinite linear !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
 }
 
 .dashboard-tab-trigger strong {
