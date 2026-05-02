@@ -488,10 +488,10 @@
 
 .settings-avatar-grid button.is-selected {
   background: linear-gradient(135deg, rgba(255, 46, 46, 0.16), rgba(255, 255, 255, 0.045));
-  border-color: rgba(255, 46, 46, 0.36);
+  border-color: transparent;
   box-shadow:
-    0 18px 42px rgba(255, 46, 46, 0.16),
-    inset 0 0 0 1px rgba(255, 46, 46, 0.16);
+    0 0 0 2px rgba(255, 46, 46, 0.78),
+    0 18px 42px rgba(255, 46, 46, 0.16);
 }
 
 .settings-avatar-grid img {
