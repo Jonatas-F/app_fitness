@@ -233,18 +233,26 @@
   width: 34px;
   height: 34px;
   place-items: center;
+  flex-shrink: 0;
   border-radius: 8px;
   color: #fff;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: 1.1rem;
-  font-weight: 900;
+}
+
+.settings-section__icon svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
 }
 
 .settings-section[open] .settings-section__icon {
   background: rgba(255, 46, 46, 0.18);
   border-color: rgba(255, 46, 46, 0.3);
-  transform: rotate(45deg);
+}
+
+.settings-section[open] .settings-section__icon svg {
+  transform: rotate(180deg);
 }
 
 /* 3º filho: texto (icon é 2º, eyebrow é 1º) */

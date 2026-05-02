@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { Icon } from "@iconify/react";
 import SectionCard from "@/components/ui/SectionCard";
 import Skeleton from "@/components/ui/skeleton";
@@ -227,7 +228,7 @@ function SettingsSection({ eyebrow, title, description, status, children, defaul
     <details className="settings-section" open={defaultOpen}>
       <summary>
         {eyebrow && <small>{eyebrow}</small>}
-        <span className="settings-section__icon">+</span>
+        <span className="settings-section__icon"><ChevronDown aria-hidden="true" /></span>
         <span>
           <strong>{title}</strong>
           <em>{description}</em>
