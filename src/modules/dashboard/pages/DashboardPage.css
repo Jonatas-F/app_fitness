@@ -3,6 +3,93 @@
   gap: 18px;
 }
 
+/* ── Tabs ─────────────────────────────────────────────────────── */
+.dashboard-tabs-root {
+  display: grid;
+  gap: 16px;
+}
+
+.dashboard-tabs {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  width: 100% !important;
+  height: auto !important;
+  gap: 12px;
+  padding: 8px;
+  align-items: stretch;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dashboard-tab-trigger {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  gap: 6px;
+  height: auto !important;
+  min-height: 68px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  text-align: left;
+  overflow: visible !important;
+  white-space: normal !important;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease !important;
+}
+
+.dashboard-tab-trigger:hover {
+  background: rgba(255, 255, 255, 0.09) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+}
+
+.dashboard-tab-trigger[data-state="active"],
+.dashboard-tab-trigger[aria-selected="true"] {
+  background: linear-gradient(135deg, rgba(255, 46, 46, 0.16), rgba(255, 255, 255, 0.045)) !important;
+  border-color: transparent !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 46, 46, 0.5),
+    0 4px 20px rgba(255, 46, 46, 0.14) !important;
+}
+
+.dashboard-tab-trigger::after {
+  display: none !important;
+}
+
+.dashboard-tab-trigger strong {
+  color: #fff;
+  font-size: 0.92rem;
+  line-height: 1.2;
+}
+
+.dashboard-tab-trigger .status-pill {
+  max-width: 100%;
+}
+
+.dashboard-tab-panel {
+  display: grid;
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .dashboard-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .dashboard-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .dashboard-page button:focus-visible,
 .dashboard-page input:focus-visible,
 .dashboard-page [role="tab"]:focus-visible,

@@ -9,7 +9,7 @@ import {
   Scale,
   TrendingUp,
 } from "lucide-react";
-import SectionCollapsible from "@/components/ui/SectionCollapsible";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import SectionCard from "@/components/ui/SectionCard";
 import StatusPill from "@/components/ui/StatusPill";
 import { loadCheckins } from "../../../data/checkinStorage";
@@ -309,6 +309,7 @@ const bodyChartGroups = [
 ];
 
 export default function DashboardPage() {
+  const [activeTab, setActiveTab] = useState("resumo");
   const [, setRemoteRefresh] = useState(0);
   const allCheckins = loadCheckins();
   const checkins = completedCheckins(allCheckins);
@@ -445,205 +446,190 @@ export default function DashboardPage() {
         ))}
       </section>
 
-      <SectionCollapsible
-        className="dashboard-collapsible glass-panel"
-        summaryClassName="dashboard-collapsible__summary"
-        bodyClassName="dashboard-collapsible__body"
-        eyebrow="Resumo"
-        title="Comparacao corporal e qualidade da semana"
-        summary="Peso, gordura, massa muscular, check-ins, sono e aderencia."
-        badge={`${weeklyCheckins.length} check-ins`}
-      >
-        <section className="dashboard-grid dashboard-grid--nested">
-          <article className="dashboard-card dashboard-card--nested">
-            <h2>Comparacao corporal</h2>
-            <p>{comparison.message}</p>
-            <div className="dashboard-comparison">
-              <div>
-                <span>Peso</span>
-                <strong>{comparison.weight} kg</strong>
-              </div>
-              <div>
-                <span>Gordura</span>
-                <strong>{comparison.bodyFat}%</strong>
-              </div>
-              <div>
-                <span>Massa muscular</span>
-                <strong>{comparison.muscleMass} kg</strong>
-              </div>
-            </div>
-          </article>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="dashboard-tabs-root">
+        <TabsList className="dashboard-tabs" variant="line">
+          <TabsTrigger value="resumo" className="dashboard-tab-trigger">
+            <strong>Resumo</strong>
+            <StatusPill tone="neutral">{weeklyCheckins.length} check-ins</StatusPill>
+          </TabsTrigger>
+          <TabsTrigger value="corpo" className="dashboard-tab-trigger">
+            <strong>Corpo</strong>
+            <StatusPill tone="neutral">{checkins.length} registros</StatusPill>
+          </TabsTrigger>
+          <TabsTrigger value="cargas" className="dashboard-tab-trigger">
+            <strong>Cargas</strong>
+            <StatusPill tone="neutral">{monthSessions.length} treinos</StatusPill>
+          </TabsTrigger>
+          <TabsTrigger value="mensal" className="dashboard-tab-trigger">
+            <strong>Mensal</strong>
+            <StatusPill tone="neutral">{monthlyCheckins.length} registros</StatusPill>
+          </TabsTrigger>
+          <TabsTrigger value="feedback" className="dashboard-tab-trigger">
+            <strong>Feedback</strong>
+            <StatusPill tone="warning">{feedbacks.length} alertas</StatusPill>
+          </TabsTrigger>
+        </TabsList>
 
-          <article className="dashboard-card dashboard-card--nested">
-            <h2>Check-ins e qualidade da semana</h2>
-            <p>Leitura com base nos registros recentes.</p>
-            <div className="dashboard-comparison">
-              <div>
-                <span>Check-ins semanais</span>
-                <strong>{weeklyCheckins.length}</strong>
-              </div>
-              <div>
-                <span>Sono medio</span>
-                <strong>{average(weeklyCheckins, "sleep")}h</strong>
-              </div>
-              <div>
-                <span>Aderencia</span>
-                <strong>{average(weeklyCheckins, "adherence")}%</strong>
-              </div>
-            </div>
-          </article>
-
-          <article className="dashboard-card dashboard-card--nested">
-            <h2>Aderencia aos check-ins</h2>
-            <p>Realizados e gaps registrados ficam concentrados aqui para consulta.</p>
-            <div className="dashboard-comparison">
-              <div>
-                <span>Semana</span>
-                <strong>{adherencePercent(weeklyCheckins.length, weeklyCheckinTotal)}</strong>
-              </div>
-              <div>
-                <span>Gaps semanais</span>
-                <strong>{weeklyMissedCheckins.length}</strong>
-              </div>
-              <div>
-                <span>Mes</span>
-                <strong>{adherencePercent(monthlyCheckins.length, monthlyCheckinTotal)}</strong>
-              </div>
-            </div>
-          </article>
-        </section>
-
-        <Suspense fallback={<DashboardChartLoading label="Carregando aderencia..." />}>
-          <DashboardCharts
-            type="adherence"
-            weeklyCheckins={weeklyCheckins.length}
-            weeklyCheckinTotal={weeklyCheckinTotal}
-            monthlyCheckins={monthlyCheckins.length}
-            monthlyCheckinTotal={monthlyCheckinTotal}
-            monthlyActivityData={monthlyActivityData}
-          />
-        </Suspense>
-      </SectionCollapsible>
-
-      <SectionCollapsible
-        className="dashboard-collapsible glass-panel"
-        summaryClassName="dashboard-collapsible__summary"
-        bodyClassName="dashboard-collapsible__body"
-        eyebrow="Corpo"
-        title="Bioimpedancia e medidas"
-        summary="Graficos de linha com os ultimos registros do check-in mensal."
-        badge={`${checkins.length} check-ins`}
-      >
-        <Suspense fallback={<DashboardChartLoading label="Carregando graficos corporais..." />}>
-          <DashboardCharts type="body" bodyChartGroups={bodyChartGroups} checkins={checkins} />
-        </Suspense>
-      </SectionCollapsible>
-
-      <SectionCollapsible
-        className="dashboard-collapsible glass-panel"
-        summaryClassName="dashboard-collapsible__summary"
-        bodyClassName="dashboard-collapsible__body"
-        eyebrow="Calendario e cargas"
-        title="Evolucao de cargas e calendario do mes"
-        summary="Volume por sessoes salvas, treinos realizados, check-ins e faltas."
-        badge={`${monthSessions.length} treinos`}
-      >
-        <section className="dashboard-grid dashboard-grid--wide dashboard-grid--nested">
-          <article className="dashboard-card dashboard-card--nested">
-            <h2>Evolucao de cargas</h2>
-            <p>Volume estimado por sessoes salvas: peso x repeticoes.</p>
-            <Suspense fallback={<DashboardChartLoading label="Carregando cargas..." />}>
-              <DashboardCharts type="load" data={loadsByDate} />
-            </Suspense>
-          </article>
-
-          <article className="dashboard-card dashboard-card--nested">
-            <h2>Calendario do mes</h2>
-            <p>Treino realizado, check-in preenchido e ausencia registrada.</p>
-            <div className="training-calendar">
-              {calendarDays.map((item) => (
-                <span key={item.day} className={`calendar-day calendar-day--${item.status}`}>
-                  {item.day}
-                </span>
-              ))}
-            </div>
-            <div className="calendar-legend">
-              <span className="calendar-day--trained">Treino</span>
-              <span className="calendar-day--checkin">Check-in</span>
-              <span className="calendar-day--missed">Falta</span>
-            </div>
-          </article>
-        </section>
-      </SectionCollapsible>
-
-      <Suspense fallback={<DashboardChartLoading label="Carregando evolucao dos treinos..." />}>
-        <DashboardCharts
-          type="workoutEvolution"
-          workouts={workoutPlan.workouts}
-          sessions={sessions}
-        />
-      </Suspense>
-
-      <SectionCollapsible
-        className="dashboard-collapsible glass-panel"
-        summaryClassName="dashboard-collapsible__summary"
-        bodyClassName="dashboard-collapsible__body"
-        eyebrow="Mensal"
-        title="Evolucao mensal e protocolos de treino"
-        summary="Medias do mes e divisao atual do protocolo."
-        badge={`${monthlyCheckins.length} registros`}
-      >
-        <section className="dashboard-grid dashboard-grid--nested">
-          <article className="dashboard-card dashboard-card--nested">
-            <h2>Evolucao mensal</h2>
-            <div className="dashboard-comparison">
-              <div>
-                <span>Check-ins no mes</span>
-                <strong>{monthlyCheckins.length}</strong>
-              </div>
-              <div>
-                <span>Peso medio</span>
-                <strong>{average(monthlyCheckins, "weight")} kg</strong>
-              </div>
-              <div>
-                <span>Gordura media</span>
-                <strong>{average(monthlyCheckins, "bodyFat")}%</strong>
-              </div>
-            </div>
-          </article>
-
-          <article className="dashboard-card dashboard-card--nested">
-            <h2>Protocolos de treino</h2>
-            <div className="dashboard-workout-list">
-              {workoutPlan.workouts.map((workout) => (
-                <div key={workout.id}>
-                  <strong>{workout.title}</strong>
-                  <span>{workout.enabled ? "Habilitado" : "Desabilitado"} | {workout.exercises.length} exercicios</span>
+        <TabsContent value="resumo" className="dashboard-tab-panel">
+          <section className="dashboard-grid dashboard-grid--nested">
+            <article className="dashboard-card dashboard-card--nested glass-panel">
+              <h2>Comparacao corporal</h2>
+              <p>{comparison.message}</p>
+              <div className="dashboard-comparison">
+                <div>
+                  <span>Peso</span>
+                  <strong>{comparison.weight} kg</strong>
                 </div>
-              ))}
-            </div>
-          </article>
-        </section>
-      </SectionCollapsible>
-
-      <SectionCollapsible
-        className="dashboard-collapsible glass-panel"
-        summaryClassName="dashboard-collapsible__summary"
-        bodyClassName="dashboard-collapsible__body"
-        eyebrow="Feedback"
-        title="Feedbacks do Personal Virtual"
-        summary="Leituras de sono, alimentacao, protocolo e evolucao corporal."
-        badge={`${feedbacks.length} alertas`}
-      >
-        <div className="virtual-feedback-grid">
-          {feedbacks.map((item) => (
-            <article key={item.title}>
-              <strong>{item.title}</strong>
-              <p>{item.text}</p>
+                <div>
+                  <span>Gordura</span>
+                  <strong>{comparison.bodyFat}%</strong>
+                </div>
+                <div>
+                  <span>Massa muscular</span>
+                  <strong>{comparison.muscleMass} kg</strong>
+                </div>
+              </div>
             </article>
-          ))}
-        </div>
-      </SectionCollapsible>
+
+            <article className="dashboard-card dashboard-card--nested glass-panel">
+              <h2>Check-ins e qualidade da semana</h2>
+              <p>Leitura com base nos registros recentes.</p>
+              <div className="dashboard-comparison">
+                <div>
+                  <span>Check-ins semanais</span>
+                  <strong>{weeklyCheckins.length}</strong>
+                </div>
+                <div>
+                  <span>Sono medio</span>
+                  <strong>{average(weeklyCheckins, "sleep")}h</strong>
+                </div>
+                <div>
+                  <span>Aderencia</span>
+                  <strong>{average(weeklyCheckins, "adherence")}%</strong>
+                </div>
+              </div>
+            </article>
+
+            <article className="dashboard-card dashboard-card--nested glass-panel">
+              <h2>Aderencia aos check-ins</h2>
+              <p>Realizados e gaps registrados ficam concentrados aqui para consulta.</p>
+              <div className="dashboard-comparison">
+                <div>
+                  <span>Semana</span>
+                  <strong>{adherencePercent(weeklyCheckins.length, weeklyCheckinTotal)}</strong>
+                </div>
+                <div>
+                  <span>Gaps semanais</span>
+                  <strong>{weeklyMissedCheckins.length}</strong>
+                </div>
+                <div>
+                  <span>Mes</span>
+                  <strong>{adherencePercent(monthlyCheckins.length, monthlyCheckinTotal)}</strong>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <Suspense fallback={<DashboardChartLoading label="Carregando aderencia..." />}>
+            <DashboardCharts
+              type="adherence"
+              weeklyCheckins={weeklyCheckins.length}
+              weeklyCheckinTotal={weeklyCheckinTotal}
+              monthlyCheckins={monthlyCheckins.length}
+              monthlyCheckinTotal={monthlyCheckinTotal}
+              monthlyActivityData={monthlyActivityData}
+            />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="corpo" className="dashboard-tab-panel">
+          <Suspense fallback={<DashboardChartLoading label="Carregando graficos corporais..." />}>
+            <DashboardCharts type="body" bodyChartGroups={bodyChartGroups} checkins={checkins} />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="cargas" className="dashboard-tab-panel">
+          <section className="dashboard-grid dashboard-grid--wide dashboard-grid--nested">
+            <article className="dashboard-card dashboard-card--nested glass-panel">
+              <h2>Evolucao de cargas</h2>
+              <p>Volume estimado por sessoes salvas: peso x repeticoes.</p>
+              <Suspense fallback={<DashboardChartLoading label="Carregando cargas..." />}>
+                <DashboardCharts type="load" data={loadsByDate} />
+              </Suspense>
+            </article>
+
+            <article className="dashboard-card dashboard-card--nested glass-panel">
+              <h2>Calendario do mes</h2>
+              <p>Treino realizado, check-in preenchido e ausencia registrada.</p>
+              <div className="training-calendar">
+                {calendarDays.map((item) => (
+                  <span key={item.day} className={`calendar-day calendar-day--${item.status}`}>
+                    {item.day}
+                  </span>
+                ))}
+              </div>
+              <div className="calendar-legend">
+                <span className="calendar-day--trained">Treino</span>
+                <span className="calendar-day--checkin">Check-in</span>
+                <span className="calendar-day--missed">Falta</span>
+              </div>
+            </article>
+          </section>
+        </TabsContent>
+
+        <TabsContent value="mensal" className="dashboard-tab-panel">
+          <section className="dashboard-grid dashboard-grid--nested">
+            <article className="dashboard-card dashboard-card--nested glass-panel">
+              <h2>Evolucao mensal</h2>
+              <div className="dashboard-comparison">
+                <div>
+                  <span>Check-ins no mes</span>
+                  <strong>{monthlyCheckins.length}</strong>
+                </div>
+                <div>
+                  <span>Peso medio</span>
+                  <strong>{average(monthlyCheckins, "weight")} kg</strong>
+                </div>
+                <div>
+                  <span>Gordura media</span>
+                  <strong>{average(monthlyCheckins, "bodyFat")}%</strong>
+                </div>
+              </div>
+            </article>
+
+            <article className="dashboard-card dashboard-card--nested glass-panel">
+              <h2>Protocolos de treino</h2>
+              <div className="dashboard-workout-list">
+                {workoutPlan.workouts.map((workout) => (
+                  <div key={workout.id}>
+                    <strong>{workout.title}</strong>
+                    <span>{workout.enabled ? "Habilitado" : "Desabilitado"} | {workout.exercises.length} exercicios</span>
+                  </div>
+                ))}
+              </div>
+            </article>
+          </section>
+
+          <Suspense fallback={<DashboardChartLoading label="Carregando evolucao dos treinos..." />}>
+            <DashboardCharts
+              type="workoutEvolution"
+              workouts={workoutPlan.workouts}
+              sessions={sessions}
+            />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="feedback" className="dashboard-tab-panel">
+          <div className="virtual-feedback-grid">
+            {feedbacks.map((item) => (
+              <article key={item.title} className="glass-panel">
+                <strong>{item.title}</strong>
+                <p>{item.text}</p>
+              </article>
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
     </section>
   );
 }
