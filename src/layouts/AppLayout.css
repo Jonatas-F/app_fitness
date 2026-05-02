@@ -53,16 +53,10 @@
 }
 
 .sidebar__brand-mark img {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 86px;
-  height: 86px;
-  max-width: none;
-  max-height: none;
+  width: 72%;
+  height: 72%;
   object-fit: contain;
   object-position: center;
-  transform: translate(-50%, -50%);
 }
 
 .sidebar__brand-title {
