@@ -50,14 +50,31 @@
   font-weight: 800;
 }
 
-.workout-loading-banner {
-  margin: 0;
-  padding: 12px 14px;
+.workout-loading-shell {
+  display: grid;
+  gap: 12px;
+}
+
+.workout-loading-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.workout-loading-skeleton {
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.78);
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  font-weight: 800;
+}
+
+.workout-loading-skeleton--hero {
+  min-height: 56px;
+}
+
+.workout-loading-skeleton--stat {
+  min-height: 74px;
+}
+
+.workout-loading-skeleton--table {
+  min-height: 180px;
 }
 
 .workout-execution__header {
@@ -1192,6 +1209,10 @@
 
   .workout-protocol-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .workout-loading-grid {
+    grid-template-columns: 1fr;
   }
 
   .workout-history-overview {

@@ -7,6 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import Skeleton from "@/components/ui/skeleton";
 import {
   checkinCadences,
   defaultCheckinForm,
@@ -662,6 +663,20 @@ function PhotoPoseCard({ slot, fileName, onChange }) {
   );
 }
 
+function CheckinsLoadingSkeleton() {
+  return (
+    <section className="checkins-loading-shell glass-panel" aria-label="Carregando check-ins">
+      <div className="checkins-loading-grid">
+        <Skeleton className="checkins-loading-skeleton checkins-loading-skeleton--hero" />
+        <Skeleton className="checkins-loading-skeleton checkins-loading-skeleton--hero" />
+        <Skeleton className="checkins-loading-skeleton checkins-loading-skeleton--stat" />
+        <Skeleton className="checkins-loading-skeleton checkins-loading-skeleton--stat" />
+        <Skeleton className="checkins-loading-skeleton checkins-loading-skeleton--table" />
+      </div>
+    </section>
+  );
+}
+
 function getCadenceIntro(cadence) {
   if (cadence === "daily") {
     return {
@@ -699,6 +714,7 @@ export default function CheckinsPage() {
   const [toast, setToast] = useState(null);
   const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
   const [pendingPayload, setPendingPayload] = useState(null);
+  const [isHydratingCheckins, setIsHydratingCheckins] = useState(true);
 
   const checkinSchedule = useMemo(() => {
     const latestAny = getLatestCompletedCheckin(checkins);
@@ -753,11 +769,15 @@ export default function CheckinsPage() {
       const result = await loadRemoteCheckins();
 
       if (ignore || result.skipped) {
+        if (!ignore) {
+          setIsHydratingCheckins(false);
+        }
         return;
       }
 
       if (result.error) {
         setSyncStatus(`Supabase: ${result.error.message}`);
+        setIsHydratingCheckins(false);
         return;
       }
 
@@ -767,6 +787,7 @@ export default function CheckinsPage() {
         cadence: current.cadence || activeCadence,
       }));
       setSyncStatus("Historico sincronizado com Supabase.");
+      setIsHydratingCheckins(false);
     }
 
     hydrateCheckins();
@@ -1114,7 +1135,11 @@ export default function CheckinsPage() {
       </section>
 
       {feedback ? <p className="checkins-feedback">{feedback}</p> : null}
-      {syncStatus ? <p className="checkins-sync-status">{syncStatus}</p> : null}
+      {isHydratingCheckins ? (
+        <CheckinsLoadingSkeleton />
+      ) : syncStatus ? (
+        <p className="checkins-sync-status">{syncStatus}</p>
+      ) : null}
 
       <form className="checkins-form" onSubmit={handleSubmit}>
         <div className="checkins-form__main">
@@ -1729,63 +1754,69 @@ export default function CheckinsPage() {
         </summary>
 
         <div className="checkins-collapsible__body">
-        <div className="checkins-history-overview">
-          {metrics.map((item) => (
-            <article key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.trend}</small>
-            </article>
-          ))}
-        </div>
-
-        <div className="checkins-history-insights">
-          <article className="checkins-history-insight">
-            <span>Leitura semanal para IA</span>
-            <strong>{weeklyAiDataset.usableEntries} registro(s) uteis</strong>
-            <small>
-              {weeklyAiDataset.ignoredGaps} gap(s) ignorado(s) nas medias. Energia {weeklyAiDataset.averages.energy},
-              sono {weeklyAiDataset.averages.sleep}h e aderencia {weeklyAiDataset.averages.adherence}%.
-            </small>
-          </article>
-
-          <article className="checkins-history-insight">
-            <span>Reavaliacao do ciclo</span>
-            <strong>
-              {monthlyReevaluation.reevaluationNeeded ? "Atencao necessaria" : "Ciclo em acompanhamento"}
-            </strong>
-            <small>
-              Treino: {monthlyReevaluation.training.cycle.label}. Dieta: {monthlyReevaluation.diet.cycle.label}.
-            </small>
-          </article>
-        </div>
-
-        <div className="checkins-cadence-table-shell">
-          <Table className="checkins-cadence-table">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Cadencia</TableHead>
-                <TableHead>Realizados</TableHead>
-                <TableHead>Gaps</TableHead>
-                <TableHead>Energia</TableHead>
-                <TableHead>Sono</TableHead>
-                <TableHead>Aderencia</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {cadenceSummary.map((item) => (
-                <TableRow key={item.cadence}>
-                  <TableCell>{item.label}</TableCell>
-                  <TableCell>{item.completed}</TableCell>
-                  <TableCell>{item.missed}</TableCell>
-                  <TableCell>{formatValue(item.energyAverage, "/10")}</TableCell>
-                  <TableCell>{formatValue(item.sleepAverage, "h")}</TableCell>
-                  <TableCell>{formatValue(item.adherenceAverage, "%")}</TableCell>
-                </TableRow>
+        {isHydratingCheckins ? (
+          <CheckinsLoadingSkeleton />
+        ) : (
+          <>
+            <div className="checkins-history-overview">
+              {metrics.map((item) => (
+                <article key={item.label}>
+                  <span>{item.label}</span>
+                  <strong>{item.value}</strong>
+                  <small>{item.trend}</small>
+                </article>
               ))}
-            </TableBody>
-          </Table>
-        </div>
+            </div>
+
+            <div className="checkins-history-insights">
+              <article className="checkins-history-insight">
+                <span>Leitura semanal para IA</span>
+                <strong>{weeklyAiDataset.usableEntries} registro(s) uteis</strong>
+                <small>
+                  {weeklyAiDataset.ignoredGaps} gap(s) ignorado(s) nas medias. Energia {weeklyAiDataset.averages.energy},
+                  sono {weeklyAiDataset.averages.sleep}h e aderencia {weeklyAiDataset.averages.adherence}%.
+                </small>
+              </article>
+
+              <article className="checkins-history-insight">
+                <span>Reavaliacao do ciclo</span>
+                <strong>
+                  {monthlyReevaluation.reevaluationNeeded ? "Atencao necessaria" : "Ciclo em acompanhamento"}
+                </strong>
+                <small>
+                  Treino: {monthlyReevaluation.training.cycle.label}. Dieta: {monthlyReevaluation.diet.cycle.label}.
+                </small>
+              </article>
+            </div>
+
+            <div className="checkins-cadence-table-shell">
+              <Table className="checkins-cadence-table">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Cadencia</TableHead>
+                    <TableHead>Realizados</TableHead>
+                    <TableHead>Gaps</TableHead>
+                    <TableHead>Energia</TableHead>
+                    <TableHead>Sono</TableHead>
+                    <TableHead>Aderencia</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {cadenceSummary.map((item) => (
+                    <TableRow key={item.cadence}>
+                      <TableCell>{item.label}</TableCell>
+                      <TableCell>{item.completed}</TableCell>
+                      <TableCell>{item.missed}</TableCell>
+                      <TableCell>{formatValue(item.energyAverage, "/10")}</TableCell>
+                      <TableCell>{formatValue(item.sleepAverage, "h")}</TableCell>
+                      <TableCell>{formatValue(item.adherenceAverage, "%")}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        )}
 
         {checkins.length === 0 ? (
           <p className="checkins-empty">

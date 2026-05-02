@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import SectionCollapsible from "@/components/ui/SectionCollapsible";
+import Skeleton from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -169,6 +170,20 @@ function WorkoutSessionHistoryTable({ sessions }) {
           ))}
         </TableBody>
       </Table>
+    </div>
+  );
+}
+
+function WorkoutLoadingSkeleton() {
+  return (
+    <div className="workout-loading-shell" aria-hidden="true">
+      <Skeleton className="workout-loading-skeleton workout-loading-skeleton--hero" />
+      <div className="workout-loading-grid">
+        <Skeleton className="workout-loading-skeleton workout-loading-skeleton--stat" />
+        <Skeleton className="workout-loading-skeleton workout-loading-skeleton--stat" />
+        <Skeleton className="workout-loading-skeleton workout-loading-skeleton--stat" />
+      </div>
+      <Skeleton className="workout-loading-skeleton workout-loading-skeleton--table" />
     </div>
   );
 }
@@ -441,11 +456,7 @@ function WorkoutExecutionSection() {
         </div>
       </header>
 
-      {isHydrating ? (
-        <div className="workout-loading-banner" role="status">
-          Sincronizando protocolo e historico do treino...
-        </div>
-      ) : null}
+      {isHydrating ? <WorkoutLoadingSkeleton /> : null}
 
       {feedback ? <p className="workout-feedback">{feedback}</p> : null}
 
@@ -863,11 +874,7 @@ function WorkoutHistorySection() {
         </div>
       </header>
 
-      {isHydrating ? (
-        <div className="workout-loading-banner" role="status">
-          Atualizando historico salvo no navegador e na API local...
-        </div>
-      ) : null}
+      {isHydrating ? <WorkoutLoadingSkeleton /> : null}
 
       <div className="workout-protocol-stats">
         <article>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import Skeleton from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -34,6 +35,20 @@ function formatDateTime(value) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function DietLoadingSkeleton() {
+  return (
+    <div className="diet-loading-shell" aria-hidden="true">
+      <Skeleton className="diet-loading-skeleton diet-loading-skeleton--hero" />
+      <div className="diet-loading-grid">
+        <Skeleton className="diet-loading-skeleton diet-loading-skeleton--card" />
+        <Skeleton className="diet-loading-skeleton diet-loading-skeleton--card" />
+        <Skeleton className="diet-loading-skeleton diet-loading-skeleton--card" />
+      </div>
+      <Skeleton className="diet-loading-skeleton diet-loading-skeleton--table" />
+    </div>
+  );
 }
 
 function DietPage() {
@@ -196,9 +211,7 @@ function DietPage() {
           </button>
         </div>
 
-        {isHydrating ? (
-          <p className="diet-sync-banner">Sincronizando dieta atual, historico e refeicoes registradas...</p>
-        ) : null}
+        {isHydrating ? <DietLoadingSkeleton /> : null}
         {feedback ? <p className="text-secondary mt-16">{feedback}</p> : null}
       </section>
 

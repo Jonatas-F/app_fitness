@@ -34,6 +34,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import Skeleton from "@/components/ui/skeleton";
 import SectionCollapsible from "@/components/ui/SectionCollapsible";
 import PaymentCard3D from "../../../components/ui/PaymentCard3D";
 import logo from "../../../assets/logo.svg";
@@ -341,6 +342,19 @@ function FoodPreferenceCard({ item, selectedMark, onChange }) {
   );
 }
 
+function ProfileLoadingSkeleton() {
+  return (
+    <section className="profile-loading-shell" aria-label="Carregando perfil">
+      <div className="profile-loading-grid">
+        <Skeleton className="profile-loading-skeleton profile-loading-skeleton--hero" />
+        <Skeleton className="profile-loading-skeleton profile-loading-skeleton--hero" />
+        <Skeleton className="profile-loading-skeleton profile-loading-skeleton--card" />
+        <Skeleton className="profile-loading-skeleton profile-loading-skeleton--card" />
+      </div>
+    </section>
+  );
+}
+
 export default function ProfilePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -366,6 +380,7 @@ export default function ProfilePage() {
   const [isChangingPlan, setIsChangingPlan] = useState(false);
   const [isUpdatingPaymentMethod, setIsUpdatingPaymentMethod] = useState(false);
   const [isSavingAccount, setIsSavingAccount] = useState(false);
+  const [isHydratingProfile, setIsHydratingProfile] = useState(true);
   const stripePopupCompletedRef = useRef(false);
 
   const selectedEquipmentSet = useMemo(() => new Set(selectedEquipmentIds), [selectedEquipmentIds]);
@@ -416,64 +431,70 @@ export default function ProfilePage() {
     let ignore = false;
 
     async function hydrateRemoteProfile() {
-      const [result, equipmentResult, foodResult, billingResult] = await Promise.all([
-        loadRemoteProfile(),
-        hydrateGymEquipmentSelectionFromApi(),
-        hydrateFoodPreferencesFromApi(),
-        loadBillingSubscription(),
-      ]);
+      try {
+        const [result, equipmentResult, foodResult, billingResult] = await Promise.all([
+          loadRemoteProfile(),
+          hydrateGymEquipmentSelectionFromApi(),
+          hydrateFoodPreferencesFromApi(),
+          loadBillingSubscription(),
+        ]);
 
-      if (!ignore && !equipmentResult.error) {
-        setSelectedEquipmentIds(equipmentResult.selectedIds);
-      }
-
-      if (!ignore && !foodResult.error) {
-        setFoodPreferences(foodResult.preferences);
-      }
-
-      if (!ignore && !billingResult.error && billingResult.data) {
-        setBillingSummary(billingResult.data);
-
-        const paymentProfile = billingResult.data.paymentProfile;
-        const stripeMethods = normalizeStripePaymentMethods(billingResult.data.paymentMethods || []);
-        const defaultMethod =
-          stripeMethods.find((method) => method.id === paymentProfile?.default_payment_method_id) ||
-          stripeMethods.find((method) => method.isDefault) ||
-          stripeMethods[0];
-
-        if (stripeMethods.length) {
-          setSavedPaymentMethods(savePaymentMethods(stripeMethods));
+        if (!ignore && !equipmentResult.error) {
+          setSelectedEquipmentIds(equipmentResult.selectedIds);
         }
 
-        if (defaultMethod) {
-          setAccount((current) => saveProfileAccount({ ...current, paymentMethod: defaultMethod.id }));
+        if (!ignore && !foodResult.error) {
+          setFoodPreferences(foodResult.preferences);
         }
-      }
 
-      if (ignore || result.skipped || result.error || !result.user) {
-        return;
-      }
+        if (!ignore && !billingResult.error && billingResult.data) {
+          setBillingSummary(billingResult.data);
 
-      const remoteAccount = {
-        ...loadProfileAccount(),
-        fullName: result.profile?.full_name || result.user.user_metadata?.full_name || "",
-        username: result.profile?.username || "",
-        email: result.user.email || "",
-        googleLinked: result.user.app_metadata?.provider === "google",
-        activePlan: result.profile?.active_plan || "intermediario",
-        billingCycle: result.profile?.billing_cycle || "monthly",
-      };
+          const paymentProfile = billingResult.data.paymentProfile;
+          const stripeMethods = normalizeStripePaymentMethods(billingResult.data.paymentMethods || []);
+          const defaultMethod =
+            stripeMethods.find((method) => method.id === paymentProfile?.default_payment_method_id) ||
+            stripeMethods.find((method) => method.isDefault) ||
+            stripeMethods[0];
 
-      setAccount(saveProfileAccount(remoteAccount));
-      setPendingPlan(remoteAccount.activePlan);
-      setPendingBillingCycle(remoteAccount.billingCycle);
+          if (stripeMethods.length) {
+            setSavedPaymentMethods(savePaymentMethods(stripeMethods));
+          }
 
-      if (result.profile?.avatar_path) {
-        setProfilePhoto((current) => ({
-          ...current,
-          name: current?.name || "Foto do perfil",
-          avatarPath: result.profile.avatar_path,
-        }));
+          if (defaultMethod) {
+            setAccount((current) => saveProfileAccount({ ...current, paymentMethod: defaultMethod.id }));
+          }
+        }
+
+        if (ignore || result.skipped || result.error || !result.user) {
+          return;
+        }
+
+        const remoteAccount = {
+          ...loadProfileAccount(),
+          fullName: result.profile?.full_name || result.user.user_metadata?.full_name || "",
+          username: result.profile?.username || "",
+          email: result.user.email || "",
+          googleLinked: result.user.app_metadata?.provider === "google",
+          activePlan: result.profile?.active_plan || "intermediario",
+          billingCycle: result.profile?.billing_cycle || "monthly",
+        };
+
+        setAccount(saveProfileAccount(remoteAccount));
+        setPendingPlan(remoteAccount.activePlan);
+        setPendingBillingCycle(remoteAccount.billingCycle);
+
+        if (result.profile?.avatar_path) {
+          setProfilePhoto((current) => ({
+            ...current,
+            name: current?.name || "Foto do perfil",
+            avatarPath: result.profile.avatar_path,
+          }));
+        }
+      } finally {
+        if (!ignore) {
+          setIsHydratingProfile(false);
+        }
       }
     }
 
@@ -936,52 +957,67 @@ export default function ProfilePage() {
             Virtual montar protocolos mais coerentes.
           </p>
 
-          <div className="profile-hero__meta">
-            <div className="profile-hero__metric">
-              <Crown aria-hidden="true" />
-              <span>
-                <strong>{activePlan.name}</strong>
-                <small>{account.billingCycle === "annual" ? "ciclo anual" : "ciclo mensal"}</small>
-              </span>
+          {isHydratingProfile ? (
+            <ProfileLoadingSkeleton />
+          ) : (
+            <div className="profile-hero__meta">
+              <div className="profile-hero__metric">
+                <Crown aria-hidden="true" />
+                <span>
+                  <strong>{activePlan.name}</strong>
+                  <small>{account.billingCycle === "annual" ? "ciclo anual" : "ciclo mensal"}</small>
+                </span>
+              </div>
+              <div className="profile-hero__metric">
+                <Dumbbell aria-hidden="true" />
+                <span>
+                  <strong>{selectedEquipmentIds.length} aparelhos</strong>
+                  <small>liberados para o treino</small>
+                </span>
+              </div>
+              <div className="profile-hero__metric">
+                <Salad aria-hidden="true" />
+                <span>
+                  <strong>{foodContext.selectedPreferences.length} marcacoes</strong>
+                  <small>alimentares salvas</small>
+                </span>
+              </div>
             </div>
-            <div className="profile-hero__metric">
-              <Dumbbell aria-hidden="true" />
-              <span>
-                <strong>{selectedEquipmentIds.length} aparelhos</strong>
-                <small>liberados para o treino</small>
-              </span>
-            </div>
-            <div className="profile-hero__metric">
-              <Salad aria-hidden="true" />
-              <span>
-                <strong>{foodContext.selectedPreferences.length} marcacoes</strong>
-                <small>alimentares salvas</small>
-              </span>
-            </div>
-          </div>
+          )}
         </div>
 
-        <aside className="profile-photo-card">
-          <div className="profile-photo-card__preview">
-            {profilePhoto?.dataUrl ? (
-              <img src={profilePhoto.dataUrl} alt="Foto de perfil" />
-            ) : (
-              <img src={logo} alt="Shape Certo" />
-            )}
+        {isHydratingProfile ? (
+          <div className="profile-photo-card">
+            <Skeleton className="profile-photo-card__preview profile-photo-card__preview--skeleton" />
+            <div className="profile-photo-card__details">
+              <Skeleton className="profile-loading-skeleton profile-loading-skeleton--line" />
+              <Skeleton className="profile-loading-skeleton profile-loading-skeleton--line is-short" />
+            </div>
+            <Skeleton className="profile-loading-skeleton profile-loading-skeleton--button" />
           </div>
-          <div className="profile-photo-card__details">
-            <strong>{profilePhoto?.name || "Foto do usuario"}</strong>
-            <small>{account.email || "Imagem principal do perfil"}</small>
-          </div>
-          <label className="profile-photo-card__button">
-            <Camera aria-hidden="true" />
-            Atualizar foto
-            <input type="file" accept="image/*" onChange={handlePhotoUpload} />
-          </label>
-          <small className="profile-photo-card__hint">
-            A imagem ajuda a personalizar a experiencia e deixa o perfil mais reconhecivel.
-          </small>
-        </aside>
+        ) : (
+          <aside className="profile-photo-card">
+            <div className="profile-photo-card__preview">
+              {profilePhoto?.dataUrl ? (
+                <img src={profilePhoto.dataUrl} alt="Foto de perfil" />
+              ) : (
+                <img src={logo} alt="Shape Certo" />
+              )}
+            </div>
+            <div className="profile-photo-card__details">
+              <strong>{profilePhoto?.name || "Foto do usuario"}</strong>
+              <small>{account.email || "Imagem principal do perfil"}</small>
+            </div>
+            <label className="profile-photo-card__button">
+              <Camera aria-hidden="true" />
+              Atualizar foto
+              <input type="file" accept="image/*" onChange={handlePhotoUpload} />
+            </label>
+            <small className="profile-photo-card__hint">
+              A imagem ajuda a personalizar a experiencia e deixa o perfil mais reconhecivel.
+            </small>
+          </aside>
+        )}
       </header>
 
       <section className="profile-section profile-account-section glass-panel">
@@ -993,20 +1029,28 @@ export default function ProfilePage() {
               Os dados ficam organizados em blocos recolhidos para reduzir a rolagem no celular.
             </p>
           </div>
-          <aside className="profile-section__summary">
-            <div>
-              <small>Plano</small>
-              <strong>{activePlan.name}</strong>
+          {isHydratingProfile ? (
+            <div className="profile-section__summary profile-section__summary--loading">
+              <Skeleton className="profile-loading-skeleton profile-loading-skeleton--line" />
+              <Skeleton className="profile-loading-skeleton profile-loading-skeleton--line" />
+              <Skeleton className="profile-loading-skeleton profile-loading-skeleton--line is-short" />
             </div>
-            <div>
-              <small>Ciclo</small>
-              <strong>{account.billingCycle === "annual" ? "Anual" : "Mensal"}</strong>
-            </div>
-            <div>
-              <small>Conta</small>
-              <strong>{account.email || "Email pendente"}</strong>
-            </div>
-          </aside>
+          ) : (
+            <aside className="profile-section__summary">
+              <div>
+                <small>Plano</small>
+                <strong>{activePlan.name}</strong>
+              </div>
+              <div>
+                <small>Ciclo</small>
+                <strong>{account.billingCycle === "annual" ? "Anual" : "Mensal"}</strong>
+              </div>
+              <div>
+                <small>Conta</small>
+                <strong>{account.email || "Email pendente"}</strong>
+              </div>
+            </aside>
+          )}
         </div>
 
         <div className="profile-compact-stack">

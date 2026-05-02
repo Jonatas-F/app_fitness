@@ -264,6 +264,33 @@
   font-weight: 800;
 }
 
+.checkins-loading-shell {
+  padding: 16px;
+}
+
+.checkins-loading-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.checkins-loading-skeleton {
+  min-height: 96px;
+}
+
+.checkins-loading-skeleton--hero {
+  min-height: 76px;
+}
+
+.checkins-loading-skeleton--stat {
+  min-height: 112px;
+}
+
+.checkins-loading-skeleton--table {
+  grid-column: 1 / -1;
+  min-height: 220px;
+}
+
 .checkins-selector {
   display: grid;
   gap: 16px;
@@ -1362,10 +1389,19 @@
 
 .checkins-cadence-table-shell,
 .checkins-history-table-shell {
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
+}
+
+.checkins-cadence-table {
+  min-width: 640px;
+}
+
+.checkins-history-table {
+  min-width: 980px;
 }
 
 .checkins-cadence-table [data-slot="table-head"],
@@ -1528,6 +1564,10 @@
   .checkins-grid--three {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .checkins-loading-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {
@@ -1574,6 +1614,14 @@
 
   .checkins-calendar__day {
     min-height: 46px;
+  }
+
+  .checkins-cadence-table {
+    min-width: 560px;
+  }
+
+  .checkins-history-table {
+    min-width: 860px;
   }
 
   .checkins-inline-actions,

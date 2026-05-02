@@ -95,10 +95,15 @@
 }
 
 .progress-table-shell {
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
+}
+
+.progress-table {
+  min-width: 760px;
 }
 
 .progress-table [data-slot="table-head"] {
@@ -151,5 +156,9 @@
   .progress-summary-grid,
   .progress-compare-grid {
     grid-template-columns: 1fr;
+  }
+
+  .progress-table {
+    min-width: 680px;
   }
 }
