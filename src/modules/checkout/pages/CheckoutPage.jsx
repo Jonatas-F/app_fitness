@@ -47,6 +47,18 @@ export default function CheckoutPage() {
   const monthlyTotal = selectedPlan.monthlyPrice;
   const currentTotal = billingCycle === "annual" ? annualTotal : monthlyTotal;
   const installmentValue = annualTotal / Number(installments || 1);
+  const isCheckoutCanceled = ["cancel", "canceled", "cancelled"].includes(checkoutStatus);
+  const checkoutStatusMessage =
+    checkoutStatus && checkoutStatus !== "success"
+      ? {
+          title: isCheckoutCanceled ? "Pagamento cancelado" : "Pagamento nao concluido",
+          description:
+            isCheckoutCanceled
+              ? "A Stripe retornou sem confirmar a assinatura. Voce pode revisar o plano e tentar novamente."
+              : "Nao recebemos confirmacao de pagamento. Confira o status no Stripe ou tente abrir o checkout novamente.",
+          helper: "Nada foi alterado no seu plano atual enquanto o pagamento nao for confirmado.",
+        }
+      : null;
 
   useEffect(() => {
     function syncAuthState() {
@@ -253,6 +265,14 @@ export default function CheckoutPage() {
               <button type="button" className="primary-button" onClick={() => navigate("/dashboard")}>
                 Entrar no app agora
               </button>
+            </section>
+          ) : null}
+
+          {checkoutStatusMessage ? (
+            <section className="checkout-status-panel app-empty-state" role="status" aria-live="polite">
+              <strong>{checkoutStatusMessage.title}</strong>
+              <p>{checkoutStatusMessage.description}</p>
+              <small>{checkoutStatusMessage.helper}</small>
             </section>
           ) : null}
 

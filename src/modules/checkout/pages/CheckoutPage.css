@@ -94,21 +94,6 @@
   border-radius: 8px;
 }
 
-.checkout-eyebrow,
-.checkout-summary > span {
-  display: inline-flex;
-  width: fit-content;
-  min-height: 30px;
-  align-items: center;
-  padding: 0 12px;
-  border-radius: 999px;
-  color: #fff;
-  background: rgba(255, 46, 46, 0.16);
-  border: 1px solid rgba(255, 46, 46, 0.26);
-  font-size: 0.78rem;
-  font-weight: 900;
-}
-
 .checkout-main h1 {
   max-width: 760px;
   margin: 0;
@@ -128,20 +113,6 @@
   min-height: 420px;
 }
 
-.checkout-success-panel span {
-  width: fit-content;
-  min-height: 30px;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 12px;
-  border-radius: 999px;
-  color: #ffd7d7;
-  background: rgba(255, 46, 46, 0.16);
-  border: 1px solid rgba(255, 46, 46, 0.26);
-  font-size: 0.78rem;
-  font-weight: 900;
-}
-
 .checkout-success-panel h1 {
   margin: 0;
 }
@@ -150,6 +121,12 @@
   width: fit-content;
   min-width: 220px;
   border-radius: 8px;
+}
+
+.checkout-status-panel {
+  margin-bottom: 18px;
+  border-color: rgba(255, 46, 46, 0.24);
+  background: linear-gradient(135deg, rgba(255, 46, 46, 0.12), rgba(255, 255, 255, 0.045));
 }
 
 .checkout-plan-picker,

@@ -156,7 +156,7 @@ function buildPhotoRows(checkins) {
 
 function ProgressEmptyState({ title, description }) {
   return (
-    <div className="progress-empty-state">
+    <div className="progress-empty-state app-empty-state">
       <strong>{title}</strong>
       <p>{description}</p>
     </div>

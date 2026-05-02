@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import PricingCard from "@/components/ui/pricing-card";
 import logo from "../../../assets/logo.svg";
-import { formatCurrency, subscriptionPlans } from "../../../data/plans";
+import { getAnnualPrice, subscriptionPlans } from "../../../data/plans";
 import {
   buildGoogleSignInUrl,
   rememberGoogleReturnTo,
@@ -25,6 +26,7 @@ export default function HomePage() {
   const navigate = useNavigate();
   const [authMode, setAuthMode] = useState("login");
   const [selectedPlan, setSelectedPlan] = useState("intermediario");
+  const [billingCycle, setBillingCycle] = useState("annually");
   const [authForm, setAuthForm] = useState({
     fullName: "",
     email: "",
@@ -106,6 +108,34 @@ export default function HomePage() {
     setAuthMessage("");
     setIsGoogleLoading(true);
   }
+
+  function handlePlanSelect(planId, cycle) {
+    const params = new URLSearchParams({
+      plan: planId,
+      cycle: cycle === "annually" ? "annual" : "monthly",
+    });
+
+    navigate(`/checkout?${params.toString()}`);
+  }
+
+  const pricingPlans = plans.map((plan) => {
+    const featureNames = [plan.tokens, plan.workouts, plan.meals, ...plan.features];
+    const features = featureNames.map((feature) => ({
+      name: feature,
+      isIncluded: true,
+    }));
+
+    return {
+      id: plan.id,
+      name: plan.name,
+      description: plan.highlight,
+      priceMonthly: plan.monthlyPrice,
+      priceAnnually: getAnnualPrice(plan),
+      isPopular: Boolean(plan.featured),
+      buttonLabel: `Escolher ${plan.name}`,
+      features,
+    };
+  });
 
   return (
     <main className="home-page">
@@ -264,40 +294,15 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="home-plan-grid">
-          {plans.map((plan) => (
-            <article key={plan.id} className={`home-plan-card ${plan.featured ? "is-featured" : ""}`}>
-              {plan.featured ? <span className="home-plan-card__badge">Mais equilibrado</span> : null}
-              <div>
-                <small>{plan.highlight}</small>
-                <h3>{plan.name}</h3>
-                <p>
-                  <strong>{formatCurrency(plan.monthlyPrice)}</strong>
-                  <span>/mes</span>
-                </p>
-              </div>
-
-              <div className="home-plan-card__limits">
-                <span>{plan.tokens}</span>
-                <span>{plan.workouts}</span>
-                <span>{plan.meals}</span>
-              </div>
-
-              <ul>
-                {plan.features.map((feature) => (
-                  <li key={feature}>{feature}</li>
-                ))}
-              </ul>
-
-              <Link
-                className={plan.featured ? "primary-button" : "secondary-button"}
-                to={`/checkout?plan=${plan.id}`}
-              >
-                Escolher {plan.name}
-              </Link>
-            </article>
-          ))}
-        </div>
+        <PricingCard
+          className="home-pricing-card"
+          plans={pricingPlans}
+          billingCycle={billingCycle}
+          onCycleChange={setBillingCycle}
+          onPlanSelect={handlePlanSelect}
+          title=""
+          description=""
+        />
       </section>
     </main>
   );

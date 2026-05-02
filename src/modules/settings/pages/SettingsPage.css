@@ -59,7 +59,7 @@
 .settings-overview-grid,
 .settings-loading-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -116,9 +116,29 @@
   gap: 16px;
 }
 
+.settings-profile-panel {
+  min-width: 0;
+}
+
+.settings-profile-panel .profile-page {
+  gap: 16px;
+}
+
+.settings-profile-panel .profile-page--embedded .profile-hero {
+  margin: 0;
+}
+
+.settings-profile-panel .profile-page--embedded .profile-hero h1 {
+  font-size: clamp(1.8rem, 3vw, 2.7rem);
+}
+
+.settings-profile-panel .profile-page--embedded .profile-hero p {
+  max-width: 820px;
+}
+
 .settings-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   padding: 8px;
   align-items: stretch;
@@ -530,6 +550,14 @@
 .settings-personal-grid p span {
   color: #ffd7d7;
   font-weight: 900;
+}
+
+@media (max-width: 1180px) {
+  .settings-overview-grid,
+  .settings-loading-grid,
+  .settings-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 760px) {

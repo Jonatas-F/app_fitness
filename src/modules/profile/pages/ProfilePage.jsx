@@ -366,7 +366,7 @@ function ProfileLoadingSkeleton() {
   );
 }
 
-export default function ProfilePage() {
+export default function ProfilePage({ embedded = false }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [profilePhoto, setProfilePhoto] = useState(() => loadProfilePhoto());
@@ -958,11 +958,11 @@ export default function ProfilePage() {
   }
 
   return (
-    <section className="profile-page">
+    <section className={`profile-page ${embedded ? "profile-page--embedded" : ""}`}>
       <header className="profile-hero glass-panel">
         <div className="profile-hero__copy">
-          <span>Perfil</span>
-          <h1>Dados permanentes para treino, dieta e preferencias.</h1>
+          <span>{embedded ? "Conta e perfil" : "Perfil"}</span>
+          <h1>{embedded ? "Conta, pagamento e dados permanentes." : "Dados permanentes para treino, dieta e preferencias."}</h1>
           <p>
             Centralize foto, aparelhos disponiveis na academia e preferencias alimentares para o Personal
             Virtual montar protocolos mais coerentes.

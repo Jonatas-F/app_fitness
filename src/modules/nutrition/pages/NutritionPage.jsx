@@ -205,6 +205,16 @@ function NutritionCollapsible({ eyebrow, title, summary, badge, children }) {
   );
 }
 
+function NutritionEmptyState({ title, description, helper }) {
+  return (
+    <div className="nutrition-empty-state app-empty-state">
+      <strong>{title}</strong>
+      <p>{description}</p>
+      {helper ? <small>{helper}</small> : null}
+    </div>
+  );
+}
+
 export default function NutritionPage() {
   const [diet, setDiet] = useState(() => loadDietProtocol());
   const [dietHistory, setDietHistory] = useState(() => loadDietHistory());
@@ -498,6 +508,26 @@ export default function NutritionPage() {
           </div>
 
           <div className="nutrition-history-list">
+            <h3>Registros do dia selecionado</h3>
+            {selectedDayMealLogs.length ? (
+              selectedDayMealLogs.map((log) => (
+                <article key={log.id || `${log.dayId}-${log.slotId}-${log.logDate}`}>
+                  <strong>{log.mealName || "Refeicao registrada"}</strong>
+                  <span>
+                    {formatDateShort(log.logDate)} as {formatTime(log.performedAt || log.scheduledAt)}
+                  </span>
+                </article>
+              ))
+            ) : (
+              <NutritionEmptyState
+                title="Nenhuma refeicao registrada neste dia"
+                description="Ao confirmar uma refeicao, ela aparece aqui e passa a alimentar o dashboard e a IA."
+                helper="Use o botao de check nas refeicoes habilitadas para registrar a execucao."
+              />
+            )}
+          </div>
+
+          <div className="nutrition-history-list">
             <h3>Dietas anteriores</h3>
             {dietHistory.length ? (
               dietHistory.slice(0, 5).map((item) => (
@@ -509,7 +539,10 @@ export default function NutritionPage() {
                 </article>
               ))
             ) : (
-              <p>Nenhuma dieta anterior arquivada ainda.</p>
+              <NutritionEmptyState
+                title="Nenhuma dieta arquivada"
+                description="Quando um protocolo alimentar for substituido, o historico antigo fica salvo aqui."
+              />
             )}
           </div>
         </section>
@@ -653,6 +686,14 @@ export default function NutritionPage() {
           </article>
         </div>
       </section>
+
+      {selectedDayActiveMeals ? null : (
+        <NutritionEmptyState
+          title="Nenhuma refeicao ativa neste dia"
+          description="Ative pelo menos uma refeicao para o Personal Virtual montar alimentos, macros e horarios."
+          helper="A configuracao pode variar por dia da semana."
+        />
+      )}
 
       <section className="meal-grid">
         {selectedDayPlan.meals.map((meal) => {

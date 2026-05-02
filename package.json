@@ -11,6 +11,9 @@
 	"dependencies": {
 		"@fontsource-variable/geist": "^5.2.8",
 		"@iconify/react": "^6.0.2",
+		"@radix-ui/react-slot": "^1.2.4",
+		"@radix-ui/react-toggle": "^1.1.10",
+		"@radix-ui/react-toggle-group": "^1.1.11",
 		"@supabase/supabase-js": "^2.103.0",
 		"atropos": "^2.0.2",
 		"class-variance-authority": "^0.7.1",
