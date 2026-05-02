@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { loadCheckins } from "../../../data/checkinStorage";
 import {
   dietDays,
@@ -193,7 +194,7 @@ function NutritionCollapsible({ eyebrow, title, summary, badge, children }) {
   return (
     <details className="nutrition-collapsible glass-panel">
       <summary className="nutrition-collapsible__summary">
-        <span className="nutrition-collapsible__icon">+</span>
+        <span className="nutrition-collapsible__icon"><ChevronDown aria-hidden="true" /></span>
         <span>
           {eyebrow ? <small>{eyebrow}</small> : null}
           <strong>{title}</strong>
@@ -709,7 +710,7 @@ export default function NutritionPage() {
                 disabled={!meal.enabled}
                 aria-expanded={openMeals.includes(meal.id)}
               >
-                <span>{openMeals.includes(meal.id) ? "−" : "+"}</span>
+                <span><ChevronDown aria-hidden="true" /></span>
                 <div>
                   <h2>{meal.name}</h2>
                   <p>

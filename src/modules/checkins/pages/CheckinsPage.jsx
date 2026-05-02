@@ -1,4 +1,5 @@
 import { Children, isValidElement, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -231,7 +232,7 @@ function Section({ eyebrow, title, description, children }) {
   return (
     <details className="checkin-section checkins-collapsible glass-panel">
       <summary className="checkins-collapsible__summary">
-        <span className="checkins-collapsible__icon">+</span>
+        <span className="checkins-collapsible__icon"><ChevronDown aria-hidden="true" /></span>
         <span>
           <small>{eyebrow}</small>
           <strong>{title}</strong>
@@ -587,7 +588,7 @@ function CheckinCalendar({
   return (
     <details className="checkins-calendar checkins-collapsible glass-panel" open>
       <summary className="checkins-collapsible__summary">
-        <span className="checkins-collapsible__icon">+</span>
+        <span className="checkins-collapsible__icon"><ChevronDown aria-hidden="true" /></span>
         <span>
           <small>Calendario</small>
           <strong>Consultar ou lancar data retroativa</strong>
@@ -1862,7 +1863,7 @@ export default function CheckinsPage() {
 
       <details className="checkins-history checkins-collapsible glass-panel">
         <summary className="checkins-collapsible__summary">
-          <span className="checkins-collapsible__icon">+</span>
+          <span className="checkins-collapsible__icon"><ChevronDown aria-hidden="true" /></span>
           <span>
             <small>Historico</small>
             <strong>Check-ins registrados</strong>

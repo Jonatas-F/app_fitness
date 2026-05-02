@@ -1067,7 +1067,7 @@ export default function ProfilePage({ embedded = false }) {
         <div className="profile-compact-stack">
           <details className="profile-compact-panel">
             <summary className="profile-compact-summary">
-              <span className="profile-compact-summary__icon">+</span>
+              <span className="profile-compact-summary__icon"><ChevronDown aria-hidden="true" /></span>
               <span>
                 <strong>Dados do usuario e senha</strong>
                 <small>{account.username || account.fullName || "Editar nome, email e acesso"}</small>
@@ -1219,7 +1219,7 @@ export default function ProfilePage({ embedded = false }) {
 
           <details className={`profile-compact-panel profile-google-card ${account.googleLinked ? "is-linked" : ""}`}>
             <summary className="profile-compact-summary">
-              <span className="profile-compact-summary__icon">+</span>
+              <span className="profile-compact-summary__icon"><ChevronDown aria-hidden="true" /></span>
               <span>
                 <strong>Vinculo de contas</strong>
                 <small>{account.googleLinked ? "Google conectado" : "Google nao vinculado"}</small>
@@ -1275,7 +1275,7 @@ export default function ProfilePage({ embedded = false }) {
 
           <details className="profile-compact-panel profile-plan-card">
             <summary className="profile-compact-summary">
-              <span className="profile-compact-summary__icon">+</span>
+              <span className="profile-compact-summary__icon"><ChevronDown aria-hidden="true" /></span>
               <span>
                 <strong>Plano e pagamento</strong>
                 <small>
