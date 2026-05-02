@@ -25,9 +25,9 @@
   margin: 0;
   padding: 12px 14px;
   border-radius: 8px;
-  color: #ffd7d7;
-  background: rgba(255, 46, 46, 0.12);
-  border: 1px solid rgba(255, 46, 46, 0.22);
+  color: rgba(255, 255, 255, 0.80);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   font-weight: 800;
 }
 
@@ -60,7 +60,7 @@
 }
 
 .nutrition-collapsible[open] {
-  border-color: rgba(255, 46, 46, 0.22);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .nutrition-collapsible__summary {
@@ -97,8 +97,8 @@
 }
 
 .nutrition-collapsible[open] .nutrition-collapsible__icon {
-  background: rgba(255, 46, 46, 0.18);
-  border-color: rgba(255, 46, 46, 0.3);
+  background: rgba(255, 255, 255, 0.075);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .nutrition-collapsible[open] .nutrition-collapsible__icon svg {
@@ -118,9 +118,9 @@
   align-items: center;
   padding: 0 9px;
   border-radius: 999px;
-  color: #ffd7d7;
-  background: rgba(255, 46, 46, 0.14);
-  border: 1px solid rgba(255, 46, 46, 0.22);
+  color: rgba(255, 255, 255, 0.80);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
   font-size: 0.72rem;
   font-weight: 900;
 }
@@ -379,8 +379,8 @@
 }
 
 .nutrition-meal-calendar__day.has-meals {
-  background: rgba(255, 46, 46, 0.11);
-  border-color: rgba(255, 46, 46, 0.26);
+  background: rgba(255, 255, 255, 0.048);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .nutrition-meal-calendar__day.is-empty {
@@ -438,13 +438,13 @@
 }
 
 .meal-card.is-enabled {
-  border-color: rgba(255, 46, 46, 0.26);
-  background: linear-gradient(135deg, rgba(255, 46, 46, 0.1), rgba(255, 255, 255, 0.05));
+  border-color: rgba(255, 255, 255, 0.12);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.04));
 }
 
 .meal-card.is-completed {
   border-color: rgba(53, 208, 127, 0.34);
-  background: linear-gradient(135deg, rgba(53, 208, 127, 0.1), rgba(255, 46, 46, 0.07));
+  background: linear-gradient(135deg, rgba(53, 208, 127, 0.1), rgba(255, 255, 255, 0.035));
 }
 
 .meal-card.is-disabled {
@@ -617,7 +617,7 @@
   display: grid;
   gap: 18px;
   padding: 18px;
-  border-color: rgba(255, 46, 46, 0.28);
+  border-color: rgba(255, 255, 255, 0.14);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
 }
 
@@ -635,9 +635,9 @@
   align-items: center;
   padding: 0 10px;
   border-radius: 999px;
-  color: #ffd7d7;
-  background: rgba(255, 46, 46, 0.16);
-  border: 1px solid rgba(255, 46, 46, 0.26);
+  color: rgba(255, 255, 255, 0.80);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   font-size: 0.74rem;
   font-weight: 900;
 }
@@ -670,9 +670,9 @@
 .nutrition-modal__notice {
   padding: 12px;
   border-radius: 8px;
-  color: #ffd7d7;
-  background: rgba(255, 46, 46, 0.11);
-  border: 1px solid rgba(255, 46, 46, 0.22);
+  color: rgba(255, 255, 255, 0.80);
+  background: rgba(255, 255, 255, 0.048);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   font-weight: 800;
 }
 
@@ -691,8 +691,8 @@
   border-radius: 8px;
   color: #fff;
   color-scheme: dark;
-  background: rgba(255, 46, 46, 0.1);
-  border: 1px solid rgba(255, 46, 46, 0.32);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   outline: none;
   font-size: 1rem;
   font-weight: 900;

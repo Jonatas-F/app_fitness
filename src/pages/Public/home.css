@@ -155,8 +155,8 @@
   width: 52px;
   height: 52px;
   border-radius: 8px;
-  background: rgba(255, 46, 46, 0.14);
-  border: 1px solid rgba(255, 46, 46, 0.22);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
   color: #fff;
   font-weight: 800;
   font-size: 1rem;

@@ -115,8 +115,8 @@
   padding: 0 12px;
   border-radius: 999px;
   color: #fff;
-  background: rgba(255, 46, 46, 0.16);
-  border: 1px solid rgba(255, 46, 46, 0.26);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   font-size: 0.78rem;
   font-weight: 900;
 }
@@ -381,9 +381,9 @@
   align-items: center;
   padding: 0 6px;
   border-radius: 999px;
-  color: #ff4d3d;
-  background: rgba(255, 46, 46, 0.14);
-  border: 1px solid rgba(255, 46, 46, 0.2);
+  color: rgba(255, 255, 255, 0.80);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
   font-size: 0.66rem;
   font-weight: 900;
 }
@@ -617,7 +617,7 @@
 }
 
 .home-pricing-card .pricing-card__comparison .is-featured {
-  background: rgba(255, 46, 46, 0.1);
+  background: rgba(255, 255, 255, 0.045);
 }
 
 .home-pricing-card .pricing-card__table-icon {
