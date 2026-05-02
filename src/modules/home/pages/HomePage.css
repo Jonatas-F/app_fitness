@@ -2,7 +2,9 @@
   min-height: 100vh;
   padding: 22px;
   color: #fff;
-  background: linear-gradient(180deg, #0a0a0b 0%, #050506 100%);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 28%),
+    linear-gradient(135deg, #111113 0%, #070708 48%, #020203 100%);
 }
 
 .home-header {
@@ -88,19 +90,15 @@
 }
 
 .home-hero {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(310px, 410px);
   gap: 28px;
   max-width: 1180px;
-  /*
-   * Dentro do .hvs-sticky (height: 100vh), a hero preenche o viewport.
-   * O padding-top dá espaço para o header flutuante (sticky top: 14px).
-   */
-  height: 100%;
-  min-height: 100vh;
-  margin: 0 auto;
-  padding: 88px 0 32px; /* top: compensa header ~70px + margem */
+  min-height: calc(100vh - 102px);
+  margin: 22px auto 0;
   align-items: center;
+  overflow: hidden;
 }
 
 .home-hero__content {
