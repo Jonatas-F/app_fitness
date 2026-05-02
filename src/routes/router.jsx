@@ -1,47 +1,56 @@
-import { createBrowserRouter } from 'react-router-dom';
-import AppLayout from '../layouts/AppLayout';
+import { Suspense, lazy } from "react";
+import { createBrowserRouter } from "react-router-dom";
 
-import HomePage from '../modules/home/pages/HomePage';
-import CheckoutPage from '../modules/checkout/pages/CheckoutPage';
-import DashboardPage from '../modules/dashboard/pages/DashboardPage';
-import WorkoutsPage from '../modules/workouts/pages/WorkoutsPage';
-import NutritionPage from '../modules/nutrition/pages/NutritionPage';
-import CheckinsPage from '../modules/checkins/pages/CheckinsPage';
-import ChatPage from '../modules/chat/pages/ChatPage';
-import ProfilePage from '../modules/profile/pages/ProfilePage';
-import SettingsPage from '../modules/settings/pages/SettingsPage';
-import NotFoundPage from '../modules/shared/pages/NotFoundPage';
+const AppLayout = lazy(() => import("../layouts/AppLayout"));
+const HomePage = lazy(() => import("../modules/home/pages/HomePage"));
+const CheckoutPage = lazy(() => import("../modules/checkout/pages/CheckoutPage"));
+const DashboardPage = lazy(() => import("../modules/dashboard/pages/DashboardPage"));
+const WorkoutsPage = lazy(() => import("../modules/workouts/pages/WorkoutsPage"));
+const NutritionPage = lazy(() => import("../modules/nutrition/pages/NutritionPage"));
+const CheckinsPage = lazy(() => import("../modules/checkins/pages/CheckinsPage"));
+const ChatPage = lazy(() => import("../modules/chat/pages/ChatPage"));
+const ProfilePage = lazy(() => import("../modules/profile/pages/ProfilePage"));
+const SettingsPage = lazy(() => import("../modules/settings/pages/SettingsPage"));
+const NotFoundPage = lazy(() => import("../modules/shared/pages/NotFoundPage"));
+
+function withSuspense(element) {
+  return (
+    <Suspense fallback={<div className="route-loading-state">Carregando...</div>}>
+      {element}
+    </Suspense>
+  );
+}
 
 export const router = createBrowserRouter(
   [
-    { path: '/', element: <HomePage /> },
-    { path: '/checkout', element: <CheckoutPage /> },
+    { path: "/", element: withSuspense(<HomePage />) },
+    { path: "/checkout", element: withSuspense(<CheckoutPage />) },
     {
-      element: <AppLayout />,
+      element: withSuspense(<AppLayout />),
       children: [
-        { path: 'dashboard', element: <DashboardPage /> },
+        { path: "dashboard", element: withSuspense(<DashboardPage />) },
 
-        { path: 'treinos', element: <WorkoutsPage /> },
-        { path: 'treinos/historico', element: <WorkoutsPage /> },
-        { path: 'treinos/gerar', element: <WorkoutsPage /> },
-        { path: 'treinos/:workoutId', element: <WorkoutsPage /> },
+        { path: "treinos", element: withSuspense(<WorkoutsPage />) },
+        { path: "treinos/historico", element: withSuspense(<WorkoutsPage />) },
+        { path: "treinos/gerar", element: withSuspense(<WorkoutsPage />) },
+        { path: "treinos/:workoutId", element: withSuspense(<WorkoutsPage />) },
 
-        { path: 'dietas', element: <NutritionPage /> },
-        { path: 'dietas/historico', element: <NutritionPage /> },
-        { path: 'dietas/gerar', element: <NutritionPage /> },
-        { path: 'dietas/:dietId', element: <NutritionPage /> },
+        { path: "dietas", element: withSuspense(<NutritionPage />) },
+        { path: "dietas/historico", element: withSuspense(<NutritionPage />) },
+        { path: "dietas/gerar", element: withSuspense(<NutritionPage />) },
+        { path: "dietas/:dietId", element: withSuspense(<NutritionPage />) },
 
-        { path: 'checkins', element: <CheckinsPage /> },
-        { path: 'checkins/novo', element: <CheckinsPage /> },
+        { path: "checkins", element: withSuspense(<CheckinsPage />) },
+        { path: "checkins/novo", element: withSuspense(<CheckinsPage />) },
 
-        { path: 'chat', element: <ChatPage /> },
+        { path: "chat", element: withSuspense(<ChatPage />) },
 
-        { path: 'perfil', element: <ProfilePage /> },
-        { path: 'perfil/editar', element: <ProfilePage /> },
+        { path: "perfil", element: withSuspense(<ProfilePage />) },
+        { path: "perfil/editar", element: withSuspense(<ProfilePage />) },
 
-        { path: 'configuracoes', element: <SettingsPage /> },
+        { path: "configuracoes", element: withSuspense(<SettingsPage />) },
 
-        { path: '*', element: <NotFoundPage /> },
+        { path: "*", element: withSuspense(<NotFoundPage />) },
       ],
     },
   ],

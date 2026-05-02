@@ -1,4 +1,4 @@
-import { Children, isValidElement, useEffect, useMemo, useState } from "react";
+import { Children, isValidElement, useEffect, useMemo, useRef, useState } from "react";
 import {
   Table,
   TableBody,
@@ -748,6 +748,8 @@ export default function CheckinsPage() {
   const [toast, setToast] = useState(null);
   const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
   const [pendingPayload, setPendingPayload] = useState(null);
+  const confirmButtonRef = useRef(null);
+  const cancelButtonRef = useRef(null);
   const [isHydratingCheckins, setIsHydratingCheckins] = useState(true);
 
   const checkinSchedule = useMemo(() => {
@@ -837,6 +839,51 @@ export default function CheckinsPage() {
       ignore = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!saveConfirmOpen) {
+      return undefined;
+    }
+
+    const previousActive = document.activeElement;
+    confirmButtonRef.current?.focus();
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setSaveConfirmOpen(false);
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const focusables = [cancelButtonRef.current, confirmButtonRef.current].filter(Boolean);
+
+      if (!focusables.length) {
+        return;
+      }
+
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      previousActive?.focus?.();
+    };
+  }, [saveConfirmOpen]);
 
   function handleCadenceChange(cadence) {
     setActiveCadence(cadence);
@@ -1034,13 +1081,19 @@ export default function CheckinsPage() {
       ) : null}
 
       {saveConfirmOpen ? (
-        <div className="checkins-modal" role="dialog" aria-modal="true" aria-labelledby="checkin-save-title">
+        <div
+          className="checkins-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="checkin-save-title"
+          aria-describedby="checkin-save-description"
+        >
           <div className="checkins-modal__panel glass-panel">
             <div className="checkins-modal__header">
               <div>
                 <span>Confirmar data</span>
                 <h2 id="checkin-save-title">Salvar {checkinCadences[activeCadence].label.toLowerCase()}</h2>
-                <p>
+                <p id="checkin-save-description">
                   Escolha se este check-in entra em hoje ou em uma data retroativa.
                   Data selecionada: <strong>{formatDateKey(selectedDateKey)}</strong>.
                 </p>
@@ -1065,10 +1118,15 @@ export default function CheckinsPage() {
             />
 
             <div className="checkins-modal__actions">
-              <button type="button" className="ghost-button" onClick={() => setSaveConfirmOpen(false)}>
+              <button
+                ref={cancelButtonRef}
+                type="button"
+                className="ghost-button"
+                onClick={() => setSaveConfirmOpen(false)}
+              >
                 Cancelar
               </button>
-              <button type="button" className="primary-button" onClick={handleConfirmSave}>
+              <button ref={confirmButtonRef} type="button" className="primary-button" onClick={handleConfirmSave}>
                 Confirmar e salvar
               </button>
             </div>

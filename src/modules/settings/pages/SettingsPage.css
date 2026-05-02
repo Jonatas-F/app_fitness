@@ -1,6 +1,6 @@
 .settings-page {
   display: grid;
-  gap: 24px;
+  gap: 20px;
   --settings-avatar-card-size: 162px;
 }
 
@@ -16,8 +16,8 @@
 
 .settings-hero {
   display: grid;
-  gap: 14px;
-  padding: 24px;
+  gap: 12px;
+  padding: 20px;
 }
 
 .settings-hero > span,
@@ -68,7 +68,7 @@
 
 .settings-stack {
   display: grid;
-  gap: 16px;
+  gap: 14px;
 }
 
 .settings-overview-grid,
@@ -123,12 +123,12 @@
 
 .settings-tabs-root {
   display: grid;
-  gap: 18px;
+  gap: 16px;
 }
 
 .settings-tab-panel {
   display: grid;
-  gap: 18px;
+  gap: 16px;
 }
 
 .settings-tabs {
@@ -175,9 +175,9 @@
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 14px;
-  min-height: 82px;
-  padding: 18px 18px 16px;
+  gap: 12px;
+  min-height: 76px;
+  padding: 16px;
   cursor: pointer;
   list-style: none;
 }
@@ -233,8 +233,8 @@
 
 .settings-section__body {
   display: grid;
-  gap: 18px;
-  padding: 0 18px 18px;
+  gap: 16px;
+  padding: 0 16px 16px;
   overflow: visible;
 }
 
@@ -250,10 +250,10 @@
 .settings-toggle-row {
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr) auto;
-  gap: 14px;
+  gap: 12px;
   align-items: center;
-  min-height: 88px;
-  padding: 16px;
+  min-height: 82px;
+  padding: 14px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid rgba(255, 255, 255, 0.08);

@@ -1,11 +1,11 @@
 .profile-page {
   display: grid;
-  gap: 20px;
+  gap: 18px;
 }
 
 .profile-hero,
 .profile-section {
-  padding: 22px;
+  padding: 20px;
 }
 
 .profile-loading-shell {
@@ -43,14 +43,14 @@
 .profile-hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
-  gap: 18px;
+  gap: 16px;
 }
 
 .profile-hero__meta {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 18px;
+  gap: 10px;
+  margin-top: 16px;
 }
 
 .profile-hero__metric {
@@ -202,13 +202,13 @@
 
 .profile-section {
   display: grid;
-  gap: 18px;
+  gap: 16px;
 }
 
 .profile-section__heading {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(190px, 260px);
-  gap: 18px;
+  gap: 16px;
 }
 
 .profile-section__summary {
