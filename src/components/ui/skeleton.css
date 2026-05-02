@@ -1,0 +1,21 @@
+.ui-skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.ui-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+  animation: uiSkeletonSweep 1.4s ease-in-out infinite;
+}
+
+@keyframes uiSkeletonSweep {
+  to {
+    transform: translateX(100%);
+  }
+}

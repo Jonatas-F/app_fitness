@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@iconify/react";
+import Skeleton from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { loadCheckins } from "../../../data/checkinStorage";
 import { getPersonalAvatarById, personalAvatarCatalog } from "../../../data/platformImageCatalog";
 import { loadRemoteSettings, saveRemoteSettings } from "../../../services/settingsService";
@@ -278,24 +280,46 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState(() => loadSettings());
   const [saveMessage, setSaveMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isHydrating, setIsHydrating] = useState(true);
+  const [activeTab, setActiveTab] = useState("notifications");
   const selectedAvatar = useMemo(
     () => getPersonalAvatarById(settings.personal.avatarId),
     [settings.personal.avatarId]
   );
   const latestRoutineCheckin = useMemo(() => getLatestRoutineCheckin(), []);
   const activeNotificationCount = Object.values(settings.notifications).filter(Boolean).length;
+  const enabledPrivacyRules = Object.values(settings.privacy).filter(Boolean).length;
   const hasUnsavedChanges = useMemo(
     () => JSON.stringify(settings) !== JSON.stringify(savedSettings),
     [savedSettings, settings]
   );
+  const overviewCards = [
+    {
+      label: "Notificacoes ativas",
+      value: `${activeNotificationCount}/${notificationItems.length}`,
+      helper: latestRoutineCheckin ? "Baseadas na rotina mais recente" : "Falta rotina no check-in",
+    },
+    {
+      label: "Personal atual",
+      value: settings.personal.name || "Personal",
+      helper: `${settings.personal.languageTone} | ${settings.personal.feedbackDepth}`,
+    },
+    {
+      label: "Privacidade",
+      value: `${enabledPrivacyRules}/${Object.keys(settings.privacy).length}`,
+      helper: "Regras locais e de IA ativas",
+    },
+  ];
 
   useEffect(() => {
     let ignore = false;
 
     async function hydrateSettings() {
+      setIsHydrating(true);
       const result = await loadRemoteSettings();
 
       if (ignore || result.skipped || result.error || !result.settings) {
+        setIsHydrating(false);
         return;
       }
 
@@ -303,6 +327,7 @@ export default function SettingsPage() {
       setSavedSettings(remoteSettings);
       setSettings(remoteSettings);
       persistSettings(remoteSettings);
+      setIsHydrating(false);
     }
 
     hydrateSettings();
@@ -402,112 +427,163 @@ export default function SettingsPage() {
         ) : null}
       </header>
 
-      <div className="settings-stack">
-        <SettingsSection
-          eyebrow="01"
-          title="Notificacoes"
-          description="Treino, refeicoes, agua, progresso e check-ins."
-          status={`${activeNotificationCount}/${notificationItems.length} ativas`}
-        >
-          <div className="settings-list">
-            {notificationItems.map((item) => (
-              <ToggleRow
-                key={item.key}
-                icon={item.icon}
-                title={item.title}
-                description={item.description}
-                schedule={getSuggestedSchedule(item, latestRoutineCheckin)}
-                checked={settings.notifications[item.key]}
-                onChange={() => toggleNotification(item.key)}
-              />
-            ))}
+      {isHydrating ? (
+        <section className="settings-loading-shell glass-panel">
+          <div className="settings-loading-grid">
+            <Skeleton className="settings-skeleton settings-skeleton--card" />
+            <Skeleton className="settings-skeleton settings-skeleton--card" />
+            <Skeleton className="settings-skeleton settings-skeleton--card" />
           </div>
-        </SettingsSection>
+          <Skeleton className="settings-skeleton settings-skeleton--tabs" />
+          <Skeleton className="settings-skeleton settings-skeleton--panel" />
+        </section>
+      ) : (
+        <>
+          <section className="settings-overview-grid">
+            {overviewCards.map((item) => (
+              <article key={item.label} className="settings-overview-card glass-panel">
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+                <small>{item.helper}</small>
+              </article>
+            ))}
+          </section>
 
-        <SettingsSection
-          eyebrow="02"
-          title="Personal Virtual"
-          description="Nome, avatar e personalidade do agente que acompanha seu treino e dieta."
-          status={settings.personal.name || "Personal"}
-        >
-          <div className="settings-personal-grid">
-            <label>
-              <span>Nome do Personal Virtual</span>
-              <input
-                type="text"
-                value={settings.personal.name}
-                onChange={handlePersonalNameChange}
-                placeholder="Ex.: Ricardo, Ana, Coach Max"
-                maxLength={60}
-              />
-            </label>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="settings-tabs-root">
+            <TabsList className="settings-tabs" variant="line">
+              <TabsTrigger value="notifications" className="settings-tab-trigger">
+                <strong>Notificacoes</strong>
+                <span>{activeNotificationCount} ativas</span>
+              </TabsTrigger>
+              <TabsTrigger value="personal" className="settings-tab-trigger">
+                <strong>Personal</strong>
+                <span>{settings.personal.name || "Personal"}</span>
+              </TabsTrigger>
+              <TabsTrigger value="privacy" className="settings-tab-trigger">
+                <strong>Privacidade</strong>
+                <span>{enabledPrivacyRules} regra(s)</span>
+              </TabsTrigger>
+            </TabsList>
 
-            <article className="settings-avatar-preview">
-              {selectedAvatar ? <img src={selectedAvatar.url} alt={`Avatar ${selectedAvatar.label}`} /> : null}
-              <div>
-                <strong>{settings.personal.name || "Personal Virtual"}</strong>
-                <p>Avatar selecionado para o chat e pontos-chave da experiencia.</p>
+            <TabsContent value="notifications">
+              <div className="settings-stack">
+                <SettingsSection
+                  eyebrow="01"
+                  title="Notificacoes"
+                  description="Treino, refeicoes, agua, progresso e check-ins."
+                  status={`${activeNotificationCount}/${notificationItems.length} ativas`}
+                >
+                  <div className="settings-list">
+                    {notificationItems.map((item) => (
+                      <ToggleRow
+                        key={item.key}
+                        icon={item.icon}
+                        title={item.title}
+                        description={item.description}
+                        schedule={getSuggestedSchedule(item, latestRoutineCheckin)}
+                        checked={settings.notifications[item.key]}
+                        onChange={() => toggleNotification(item.key)}
+                      />
+                    ))}
+                  </div>
+                </SettingsSection>
               </div>
-            </article>
-          </div>
+            </TabsContent>
 
-          <div className="settings-avatar-grid">
-            {personalAvatarCatalog.map((avatar) => (
-              <button
-                key={avatar.id}
-                type="button"
-                className={settings.personal.avatarId === avatar.id ? "is-selected" : ""}
-                onClick={() => handlePersonalOptionChange("avatarId", avatar.id)}
-              >
-                <img src={avatar.url} alt={avatar.label} />
-              </button>
-            ))}
-          </div>
+            <TabsContent value="personal">
+              <div className="settings-stack">
+                <SettingsSection
+                  eyebrow="02"
+                  title="Personal Virtual"
+                  description="Nome, avatar e personalidade do agente que acompanha seu treino e dieta."
+                  status={settings.personal.name || "Personal"}
+                >
+                  <div className="settings-personal-grid">
+                    <label>
+                      <span>Nome do Personal Virtual</span>
+                      <input
+                        type="text"
+                        value={settings.personal.name}
+                        onChange={handlePersonalNameChange}
+                        placeholder="Ex.: Ricardo, Ana, Coach Max"
+                        maxLength={60}
+                      />
+                    </label>
 
-          <div className="settings-option-groups">
-            <SettingsOptionGroup
-              title="Tom de linguagem"
-              options={languageToneOptions}
-              value={settings.personal.languageTone}
-              onChange={(value) => handlePersonalOptionChange("languageTone", value)}
-            />
-            <SettingsOptionGroup
-              title="Nivel de animo"
-              options={motivationStyleOptions}
-              value={settings.personal.motivationStyle}
-              onChange={(value) => handlePersonalOptionChange("motivationStyle", value)}
-            />
-            <SettingsOptionGroup
-              title="Profundidade do feedback"
-              options={feedbackDepthOptions}
-              value={settings.personal.feedbackDepth}
-              onChange={(value) => handlePersonalOptionChange("feedbackDepth", value)}
-            />
-          </div>
+                    <article className="settings-avatar-preview">
+                      {selectedAvatar ? <img src={selectedAvatar.url} alt={`Avatar ${selectedAvatar.label}`} /> : null}
+                      <div>
+                        <strong>{settings.personal.name || "Personal Virtual"}</strong>
+                        <p>Avatar selecionado para o chat e pontos-chave da experiencia.</p>
+                      </div>
+                    </article>
+                  </div>
 
-          {saveMessage ? <small className="settings-save-message">{saveMessage}</small> : null}
-        </SettingsSection>
+                  <div className="settings-avatar-grid">
+                    {personalAvatarCatalog.map((avatar) => (
+                      <button
+                        key={avatar.id}
+                        type="button"
+                        className={settings.personal.avatarId === avatar.id ? "is-selected" : ""}
+                        onClick={() => handlePersonalOptionChange("avatarId", avatar.id)}
+                      >
+                        <img src={avatar.url} alt={avatar.label} />
+                      </button>
+                    ))}
+                  </div>
 
-        <SettingsSection
-          eyebrow="03"
-          title="Privacidade e IA"
-          description="Regras de uso dos dados pelo Personal Virtual."
-          status="Protegido"
-        >
-          <div className="settings-list">
-            {privacyItems.map((item) => (
-              <ToggleRow
-                key={item.key}
-                title={item.title}
-                description={item.description}
-                checked={settings.privacy[item.key]}
-                disabled={item.locked}
-                onChange={() => togglePrivacy(item.key)}
-              />
-            ))}
-          </div>
-        </SettingsSection>
-      </div>
+                  <div className="settings-option-groups">
+                    <SettingsOptionGroup
+                      title="Tom de linguagem"
+                      options={languageToneOptions}
+                      value={settings.personal.languageTone}
+                      onChange={(value) => handlePersonalOptionChange("languageTone", value)}
+                    />
+                    <SettingsOptionGroup
+                      title="Nivel de animo"
+                      options={motivationStyleOptions}
+                      value={settings.personal.motivationStyle}
+                      onChange={(value) => handlePersonalOptionChange("motivationStyle", value)}
+                    />
+                    <SettingsOptionGroup
+                      title="Profundidade do feedback"
+                      options={feedbackDepthOptions}
+                      value={settings.personal.feedbackDepth}
+                      onChange={(value) => handlePersonalOptionChange("feedbackDepth", value)}
+                    />
+                  </div>
+
+                  {saveMessage ? <small className="settings-save-message">{saveMessage}</small> : null}
+                </SettingsSection>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="privacy">
+              <div className="settings-stack">
+                <SettingsSection
+                  eyebrow="03"
+                  title="Privacidade e IA"
+                  description="Regras de uso dos dados pelo Personal Virtual."
+                  status="Protegido"
+                >
+                  <div className="settings-list">
+                    {privacyItems.map((item) => (
+                      <ToggleRow
+                        key={item.key}
+                        title={item.title}
+                        description={item.description}
+                        checked={settings.privacy[item.key]}
+                        disabled={item.locked}
+                        onChange={() => togglePrivacy(item.key)}
+                      />
+                    ))}
+                  </div>
+                </SettingsSection>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </>
+      )}
 
       <div className="settings-save-actions">
         <button
