@@ -1318,6 +1318,119 @@
   background: rgba(255, 255, 255, 0.05);
 }
 
+.checkins-history-overview,
+.checkins-history-insights {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.checkins-history-overview {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.checkins-history-overview article,
+.checkins-history-insight {
+  display: grid;
+  gap: 8px;
+  min-height: 96px;
+  padding: 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.checkins-history-overview span,
+.checkins-history-insight span {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.checkins-history-overview strong,
+.checkins-history-insight strong {
+  color: #fff;
+  font-size: 1rem;
+}
+
+.checkins-history-overview small,
+.checkins-history-insight small {
+  color: rgba(255, 255, 255, 0.66);
+  line-height: 1.5;
+}
+
+.checkins-cadence-table-shell,
+.checkins-history-table-shell {
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.checkins-cadence-table [data-slot="table-head"],
+.checkins-history-table [data-slot="table-head"] {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.checkins-cadence-table [data-slot="table-row"],
+.checkins-history-table [data-slot="table-row"] {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.checkins-cadence-table [data-slot="table-cell"],
+.checkins-history-table [data-slot="table-cell"] {
+  color: rgba(255, 255, 255, 0.88);
+  vertical-align: top;
+}
+
+.checkins-table-pill {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.checkins-table-pill.is-completed {
+  color: #fff;
+  background: rgba(34, 197, 94, 0.16);
+  border: 1px solid rgba(34, 197, 94, 0.28);
+}
+
+.checkins-table-pill.is-missed {
+  color: #fff;
+  background: rgba(255, 46, 46, 0.16);
+  border: 1px solid rgba(255, 46, 46, 0.28);
+}
+
+.checkins-history-table__notes-head,
+.checkins-history-table__notes-cell {
+  width: 100%;
+}
+
+.checkins-history-table__notes-cell {
+  min-width: 260px;
+  white-space: normal;
+}
+
+.checkins-history-table__notes-cell strong,
+.checkins-history-table__notes-cell span {
+  display: block;
+}
+
+.checkins-history-table__notes-cell span {
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.45;
+}
+
 .checkins-history__header,
 .checkins-history-card__top {
   display: flex;
@@ -1408,6 +1521,8 @@
   .checkins-schedule-grid,
   .checkins-tabs,
   .checkins-cadence-summary,
+  .checkins-history-overview,
+  .checkins-history-insights,
   .photo-pose-grid,
   .checkins-auto-grid,
   .checkins-grid--three {
@@ -1427,6 +1542,8 @@
   .checkins-schedule-grid,
   .checkins-tabs,
   .checkins-cadence-summary,
+  .checkins-history-overview,
+  .checkins-history-insights,
   .photo-pose-grid,
   .checkins-auto-grid,
   .checkins-grid--two,

@@ -1,7 +1,19 @@
 import { Children, isValidElement, useEffect, useMemo, useState } from "react";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   checkinCadences,
   defaultCheckinForm,
+  getCheckinCadenceSummary,
+  getCheckinMetrics,
+  getMonthlyReevaluation,
+  getWeeklyAiDataset,
   loadCheckins,
   persistCheckins,
   resetCheckins,
@@ -230,6 +242,19 @@ function Section({ eyebrow, title, description, children }) {
 
 function formatValue(value, suffix = "") {
   return value ? `${value}${suffix}` : "--";
+}
+
+function formatCompactDateTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--";
+
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function toDateKey(date) {
@@ -927,6 +952,10 @@ export default function CheckinsPage() {
   const showMonthly = activeCadence === "monthly";
   const showProtocolBase = showMonthly;
   const showBodyComposition = showMonthly;
+  const metrics = useMemo(() => getCheckinMetrics(checkins), [checkins]);
+  const cadenceSummary = useMemo(() => getCheckinCadenceSummary(checkins), [checkins]);
+  const weeklyAiDataset = useMemo(() => getWeeklyAiDataset(checkins), [checkins]);
+  const monthlyReevaluation = useMemo(() => getMonthlyReevaluation(), []);
 
   return (
     <section className="checkins-page">
@@ -1700,6 +1729,63 @@ export default function CheckinsPage() {
         </summary>
 
         <div className="checkins-collapsible__body">
+        <div className="checkins-history-overview">
+          {metrics.map((item) => (
+            <article key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.trend}</small>
+            </article>
+          ))}
+        </div>
+
+        <div className="checkins-history-insights">
+          <article className="checkins-history-insight">
+            <span>Leitura semanal para IA</span>
+            <strong>{weeklyAiDataset.usableEntries} registro(s) uteis</strong>
+            <small>
+              {weeklyAiDataset.ignoredGaps} gap(s) ignorado(s) nas medias. Energia {weeklyAiDataset.averages.energy},
+              sono {weeklyAiDataset.averages.sleep}h e aderencia {weeklyAiDataset.averages.adherence}%.
+            </small>
+          </article>
+
+          <article className="checkins-history-insight">
+            <span>Reavaliacao do ciclo</span>
+            <strong>
+              {monthlyReevaluation.reevaluationNeeded ? "Atencao necessaria" : "Ciclo em acompanhamento"}
+            </strong>
+            <small>
+              Treino: {monthlyReevaluation.training.cycle.label}. Dieta: {monthlyReevaluation.diet.cycle.label}.
+            </small>
+          </article>
+        </div>
+
+        <div className="checkins-cadence-table-shell">
+          <Table className="checkins-cadence-table">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Cadencia</TableHead>
+                <TableHead>Realizados</TableHead>
+                <TableHead>Gaps</TableHead>
+                <TableHead>Energia</TableHead>
+                <TableHead>Sono</TableHead>
+                <TableHead>Aderencia</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {cadenceSummary.map((item) => (
+                <TableRow key={item.cadence}>
+                  <TableCell>{item.label}</TableCell>
+                  <TableCell>{item.completed}</TableCell>
+                  <TableCell>{item.missed}</TableCell>
+                  <TableCell>{formatValue(item.energyAverage, "/10")}</TableCell>
+                  <TableCell>{formatValue(item.sleepAverage, "h")}</TableCell>
+                  <TableCell>{formatValue(item.adherenceAverage, "%")}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
 
         {checkins.length === 0 ? (
           <p className="checkins-empty">
@@ -1707,64 +1793,49 @@ export default function CheckinsPage() {
             linha do tempo do usuario.
           </p>
         ) : (
-          <div className="checkins-history__list">
-            {checkins.map((item) => {
-              const cadence = item.cadence || "monthly";
-              const isMissed = item.status === "missed";
+          <div className="checkins-history-table-shell">
+            <Table className="checkins-history-table">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Cadencia</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Peso</TableHead>
+                  <TableHead>Sono</TableHead>
+                  <TableHead>Energia</TableHead>
+                  <TableHead>Aderencia</TableHead>
+                  <TableHead>Fotos</TableHead>
+                  <TableHead className="checkins-history-table__notes-head">Resumo</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {checkins.map((item) => {
+                  const cadence = item.cadence || "monthly";
+                  const isMissed = item.status === "missed";
 
-              return (
-                <article
-                  key={item.id}
-                  className={`checkins-history-card ${isMissed ? "is-missed" : ""}`}
-                >
-                  <div className="checkins-history-card__top">
-                    <div>
-                      <h3>{new Date(item.createdAt).toLocaleString("pt-BR")}</h3>
-                      <p>
-                        {checkinCadences[cadence].label} -{" "}
-                        {isMissed ? "nao realizado" : item.goal || "realizado"}
-                      </p>
-                    </div>
-                    <span>{isMissed ? "Gap registrado" : `${item.completeness ?? "--"}% para IA`}</span>
-                  </div>
-
-                  <div className="checkins-history-card__grid">
-                    <div>
-                      <small>Peso</small>
-                      <strong>{formatValue(item.weight)}</strong>
-                    </div>
-                    <div>
-                      <small>Sono</small>
-                      <strong>{formatValue(item.sleep, "h")}</strong>
-                    </div>
-                    <div>
-                      <small>Energia</small>
-                      <strong>{formatValue(item.energy, "/10")}</strong>
-                    </div>
-                    <div>
-                      <small>Aderencia</small>
-                      <strong>{formatValue(item.adherence, "%")}</strong>
-                    </div>
-                    <div>
-                      <small>Fome</small>
-                      <strong>{formatValue(item.hunger)}</strong>
-                    </div>
-                    <div>
-                      <small>Acao</small>
-                      <strong>{item.protocolAction || "none"}</strong>
-                    </div>
-                    <div>
-                      <small>Fotos</small>
-                      <strong>{Array.isArray(item.photos) ? item.photos.length : 0}/5</strong>
-                    </div>
-                  </div>
-
-                  <p className="checkins-history-card__notes">
-                    {item.notes || "Sem observacoes registradas."}
-                  </p>
-                </article>
-              );
-            })}
+                  return (
+                    <TableRow key={item.id}>
+                      <TableCell>{formatCompactDateTime(item.createdAt)}</TableCell>
+                      <TableCell>{checkinCadences[cadence].label}</TableCell>
+                      <TableCell>
+                        <span className={`checkins-table-pill ${isMissed ? "is-missed" : "is-completed"}`}>
+                          {isMissed ? "Gap" : `${item.completeness ?? "--"}%`}
+                        </span>
+                      </TableCell>
+                      <TableCell>{formatValue(item.weight)}</TableCell>
+                      <TableCell>{formatValue(item.sleep, "h")}</TableCell>
+                      <TableCell>{formatValue(item.energy, "/10")}</TableCell>
+                      <TableCell>{formatValue(item.adherence, "%")}</TableCell>
+                      <TableCell>{Array.isArray(item.photos) ? item.photos.length : 0}/5</TableCell>
+                      <TableCell className="checkins-history-table__notes-cell">
+                        <strong>{isMissed ? "Nao realizado" : item.goal || "Check-in realizado"}</strong>
+                        <span>{item.notes || "Sem observacoes registradas."}</span>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </div>
         )}
         </div>

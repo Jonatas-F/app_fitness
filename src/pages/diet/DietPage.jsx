@@ -1,21 +1,48 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  createExampleDietProtocol,
-  loadDietProtocol,
-  loadDietHistory,
-  saveDietProtocol,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   closeDietProtocol,
-  resetDietState,
-  getDietMetrics,
+  createExampleDietProtocol,
   dietDays,
+  getDietMetrics,
+  hydrateDietHistoryFromApi,
+  hydrateDietMealLogsFromApi,
+  hydrateDietProtocolFromApi,
+  loadDietHistory,
+  loadDietMealLogs,
+  loadDietProtocol,
+  resetDietState,
+  saveDietProtocol,
 } from "../../data/dietStorage";
 import "./diet.css";
+
+function formatDateTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--";
+
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 function DietPage() {
   const [diet, setDiet] = useState(() => loadDietProtocol());
   const [history, setHistory] = useState(() => loadDietHistory());
+  const [mealLogs, setMealLogs] = useState(() => loadDietMealLogs());
   const [feedback, setFeedback] = useState("");
   const [selectedDayId, setSelectedDayId] = useState("segunda");
+  const [isHydrating, setIsHydrating] = useState(true);
 
   const metrics = useMemo(() => getDietMetrics(diet, history), [diet, history]);
   const selectedDayPlan =
@@ -25,6 +52,47 @@ function DietPage() {
       meals: diet.meals || [],
     };
   const activeDayMeals = selectedDayPlan.meals.filter((meal) => meal.enabled).length;
+  const selectedDayLogs = mealLogs
+    .filter((log) => log.dayId === selectedDayId)
+    .sort((a, b) => new Date(b.createdAt || b.performedAt || 0) - new Date(a.createdAt || a.performedAt || 0))
+    .slice(0, 8);
+  const completedMealLogs = mealLogs.filter((log) => log.status === "done").length;
+  const missedMealLogs = mealLogs.filter((log) => log.status === "missed").length;
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function hydrateDiet() {
+      setIsHydrating(true);
+      const [dietResult, historyResult, logResult] = await Promise.all([
+        hydrateDietProtocolFromApi(),
+        hydrateDietHistoryFromApi(),
+        hydrateDietMealLogsFromApi(),
+      ]);
+
+      if (ignore) return;
+
+      if (!dietResult.error) {
+        setDiet(dietResult.diet);
+      }
+
+      if (!historyResult.error) {
+        setHistory(historyResult.history);
+      }
+
+      if (!logResult.error) {
+        setMealLogs(logResult.logs);
+      }
+
+      setIsHydrating(false);
+    }
+
+    hydrateDiet();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   function updateDietField(field, value) {
     setDiet((current) => ({
@@ -87,13 +155,14 @@ function DietPage() {
     const result = closeDietProtocol(diet);
     setDiet(result.currentDiet);
     setHistory(result.history);
-    setFeedback("Dieta encerrada e movida para o histórico. Novo plano liberado.");
+    setFeedback("Dieta encerrada e movida para o historico. Novo plano liberado.");
   }
 
   function handleReset() {
     const resetDiet = resetDietState();
     setDiet(resetDiet);
     setHistory([]);
+    setMealLogs([]);
     setFeedback("Dietas resetadas com sucesso.");
   }
 
@@ -102,12 +171,11 @@ function DietPage() {
       <section className="hero-card">
         <span className="eyebrow">Protocolo alimentar</span>
         <h2 className="hero-title">
-          Organize a dieta atual e mantenha o histórico dos planos anteriores.
+          Organize a dieta atual e acompanhe aderencia e historico do ciclo.
         </h2>
         <p className="hero-description">
-          Agora a área de dieta passa a salvar o plano atual, registrar o
-          histórico de ciclos alimentares e preparar a base para futuras
-          revisões com IA.
+          Agora a area de dieta mostra o plano atual, os registros de refeicao ja salvos e o historico
+          das dietas encerradas em um formato mais operacional.
         </p>
 
         <div className="hero-actions">
@@ -115,19 +183,11 @@ function DietPage() {
             Salvar dieta
           </button>
 
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={handleCloseDiet}
-          >
+          <button type="button" className="secondary-button" onClick={handleCloseDiet}>
             Encerrar dieta
           </button>
 
-          <button
-            type="button"
-            className="ghost-button"
-            onClick={handleLoadExample}
-          >
+          <button type="button" className="ghost-button" onClick={handleLoadExample}>
             Carregar exemplo
           </button>
 
@@ -136,6 +196,9 @@ function DietPage() {
           </button>
         </div>
 
+        {isHydrating ? (
+          <p className="diet-sync-banner">Sincronizando dieta atual, historico e refeicoes registradas...</p>
+        ) : null}
         {feedback ? <p className="text-secondary mt-16">{feedback}</p> : null}
       </section>
 
@@ -153,9 +216,7 @@ function DietPage() {
         <div className="card-header">
           <div>
             <h3 className="card-title">Dieta atual</h3>
-            <p className="card-subtitle">
-              Dados principais do ciclo alimentar em andamento.
-            </p>
+            <p className="card-subtitle">Dados principais do ciclo alimentar em andamento.</p>
           </div>
           <span className="badge badge-primary">Atual</span>
         </div>
@@ -177,25 +238,21 @@ function DietPage() {
             <input
               className="input-field"
               type="text"
-              placeholder="Ex.: Superávit controlado para massa magra"
+              placeholder="Ex.: Superavit controlado para massa magra"
               value={diet.nutritionalGoal}
-              onChange={(event) =>
-                updateDietField("nutritionalGoal", event.target.value)
-              }
+              onChange={(event) => updateDietField("nutritionalGoal", event.target.value)}
             />
           </div>
         </div>
 
         <div className="form-grid grid-2 mt-16">
           <div className="input-group">
-            <label className="input-label">Data de início</label>
+            <label className="input-label">Data de inicio</label>
             <input
               className="input-field"
               type="date"
               value={diet.startDate}
-              onChange={(event) =>
-                updateDietField("startDate", event.target.value)
-              }
+              onChange={(event) => updateDietField("startDate", event.target.value)}
             />
           </div>
 
@@ -205,48 +262,42 @@ function DietPage() {
               className="input-field"
               type="date"
               value={diet.endDate}
-              onChange={(event) =>
-                updateDietField("endDate", event.target.value)
-              }
+              onChange={(event) => updateDietField("endDate", event.target.value)}
             />
           </div>
         </div>
 
         <div className="form-grid grid-2 mt-16">
           <div className="input-group">
-            <label className="input-label">Estratégia alimentar</label>
+            <label className="input-label">Refeicoes recomendadas</label>
             <input
               className="input-field"
               type="text"
-              placeholder="Ex.: Alta proteína com refeeds planejados"
-              value={diet.strategy}
-              onChange={(event) =>
-                updateDietField("strategy", event.target.value)
-              }
+              placeholder="Ex.: 5"
+              value={diet.recommendedMeals}
+              onChange={(event) => updateDietField("recommendedMeals", event.target.value)}
             />
           </div>
 
           <div className="input-group">
-            <label className="input-label">Hidratação</label>
+            <label className="input-label">Disponibilidade do usuario</label>
             <input
               className="input-field"
               type="text"
-              placeholder="Ex.: 3,5 litros por dia"
-              value={diet.hydration}
-              onChange={(event) =>
-                updateDietField("hydration", event.target.value)
-              }
+              placeholder="Ex.: 4 refeicoes por dia"
+              value={diet.userAvailableMeals}
+              onChange={(event) => updateDietField("userAvailableMeals", event.target.value)}
             />
           </div>
         </div>
 
         <div className="input-group mt-16">
-          <label className="input-label">Observações</label>
+          <label className="input-label">Orientacoes do plano</label>
           <textarea
             className="textarea-field"
-            placeholder="Observações gerais do plano, aderência, preferências e cuidados."
-            value={diet.notes}
-            onChange={(event) => updateDietField("notes", event.target.value)}
+            placeholder="Orientacoes gerais do plano, aderencia, preferencias e cuidados."
+            value={diet.guidance || ""}
+            onChange={(event) => updateDietField("guidance", event.target.value)}
           />
         </div>
       </section>
@@ -257,7 +308,7 @@ function DietPage() {
             <div>
               <h3 className="card-title">Refeicoes do protocolo</h3>
               <p className="card-subtitle">
-                Selecione o dia para consultar a dieta. A IA pode repetir pratos ou variar ingredientes conforme a variacao escolhida no check-in.
+                Selecione o dia para consultar a dieta e o volume de refeicoes ativas nesse bloco.
               </p>
             </div>
             <span className="badge badge-primary">{activeDayMeals} ativas</span>
@@ -295,7 +346,7 @@ function DietPage() {
           </div>
         </article>
 
-        {selectedDayPlan.meals.map((meal, index) => (
+        {selectedDayPlan.meals.map((meal) => (
           <article
             key={`${selectedDayPlan.id}-${meal.id}`}
             className={`glass-card card-padding diet-meal-card ${meal.enabled ? "is-enabled" : "is-disabled"}`}
@@ -318,7 +369,7 @@ function DietPage() {
 
             <div className="form-grid">
               <div className="input-group">
-                <label className="input-label">Nome da refeição</label>
+                <label className="input-label">Nome da refeicao</label>
                 <input
                   className="input-field"
                   type="text"
@@ -330,7 +381,7 @@ function DietPage() {
               </div>
 
               <div className="input-group">
-                <label className="input-label">Descrição</label>
+                <label className="input-label">Descricao</label>
                 <textarea
                   className="textarea-field diet-meal-description"
                   placeholder="Ex.: Frango, arroz, legumes e fruta."
@@ -395,70 +446,116 @@ function DietPage() {
       <section className="glass-card card-padding">
         <div className="card-header">
           <div>
-            <h3 className="card-title">Histórico de dietas</h3>
+            <h3 className="card-title">Aderencia por refeicao</h3>
             <p className="card-subtitle">
-              Planos anteriores encerrados e salvos para consulta.
+              Historico das refeicoes registradas para o dia selecionado, com status e horario salvo.
             </p>
+          </div>
+          <span className="badge badge-primary">{selectedDayLogs.length} registros</span>
+        </div>
+
+        <div className="diet-log-summary">
+          <article className="metric-card">
+            <div className="metric-label">Concluidas</div>
+            <div className="metric-value">{completedMealLogs}</div>
+            <div className="metric-trend">Refeicoes marcadas como feitas</div>
+          </article>
+          <article className="metric-card">
+            <div className="metric-label">Gaps</div>
+            <div className="metric-value">{missedMealLogs}</div>
+            <div className="metric-trend">Refeicoes registradas como nao feitas</div>
+          </article>
+          <article className="metric-card">
+            <div className="metric-label">Dia filtrado</div>
+            <div className="metric-value">{selectedDayPlan.name}</div>
+            <div className="metric-trend">{activeDayMeals} refeicoes ativas previstas</div>
+          </article>
+        </div>
+
+        {selectedDayLogs.length === 0 ? (
+          <div className="diet-empty-history">
+            Ainda nao ha registros de refeicao para {selectedDayPlan.name}. Conforme a dieta for sendo usada, os logs vao aparecer aqui.
+          </div>
+        ) : (
+          <div className="diet-history-table-shell">
+            <Table className="diet-history-table">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Refeicao</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Horario</TableHead>
+                  <TableHead>Origem</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {selectedDayLogs.map((log) => (
+                  <TableRow key={log.id}>
+                    <TableCell>{log.logDate || "--"}</TableCell>
+                    <TableCell>{log.mealName || log.slotId}</TableCell>
+                    <TableCell>
+                      <span className={`diet-log-pill ${log.status === "done" ? "is-done" : "is-missed"}`}>
+                        {log.status === "done" ? "Feita" : "Nao feita"}
+                      </span>
+                    </TableCell>
+                    <TableCell>{formatDateTime(log.performedAt || log.createdAt || log.scheduledAt)}</TableCell>
+                    <TableCell>{log.source || "manual"}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </section>
+
+      <section className="glass-card card-padding">
+        <div className="card-header">
+          <div>
+            <h3 className="card-title">Historico de dietas</h3>
+            <p className="card-subtitle">Planos anteriores encerrados e salvos para consulta.</p>
           </div>
           <span className="badge badge-primary">{history.length}</span>
         </div>
 
         {history.length === 0 ? (
           <div className="diet-empty-history">
-            Ainda não existem dietas finalizadas. Quando você encerrar a dieta
-            atual, ela aparecerá aqui.
+            Ainda nao existem dietas finalizadas. Quando voce encerrar a dieta atual, ela aparecera aqui.
           </div>
         ) : (
-          <div className="diet-history-list">
-            {history.map((item) => (
-              <article key={item.id} className="diet-history-card">
-                <div className="diet-history-top">
-                  <div>
-                    <h4>{item.title || "Dieta sem nome"}</h4>
-                    <p>
-                      {item.startDate || "--"} até {item.endDate || "--"}
-                    </p>
-                  </div>
-
-                  <span className="badge badge-success">Encerrada</span>
-                </div>
-
-                <div className="diet-history-grid">
-                  <div className="data-row">
-                    <span>Objetivo nutricional</span>
-                    <strong>{item.nutritionalGoal || "--"}</strong>
-                  </div>
-
-                  <div className="data-row">
-                    <span>Estratégia</span>
-                    <strong>{item.strategy || "--"}</strong>
-                  </div>
-
-                  <div className="data-row">
-                    <span>Hidratação</span>
-                    <strong>{item.hydration || "--"}</strong>
-                  </div>
-
-                  <div className="data-row">
-                    <span>Fechada em</span>
-                    <strong>
+          <div className="diet-history-table-shell">
+            <Table className="diet-history-table">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Dieta</TableHead>
+                  <TableHead>Periodo</TableHead>
+                  <TableHead>Objetivo</TableHead>
+                  <TableHead>Refeicoes</TableHead>
+                  <TableHead>Fechada em</TableHead>
+                  <TableHead className="diet-history-table__notes-head">Resumo</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {history.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>{item.title || "Dieta sem nome"}</TableCell>
+                    <TableCell>
+                      {item.startDate || "--"} ate {item.endDate || "--"}
+                    </TableCell>
+                    <TableCell>{item.nutritionalGoal || "--"}</TableCell>
+                    <TableCell>{(item.meals || []).filter((meal) => meal.enabled).length}</TableCell>
+                    <TableCell>
                       {item?.metadata?.closedAt
                         ? new Date(item.metadata.closedAt).toLocaleString("pt-BR")
                         : "--"}
-                    </strong>
-                  </div>
-                </div>
-
-                <div className="diet-history-meals">
-                  {item.meals.map((meal) => (
-                    <div key={`${item.id}-${meal.id}`} className="diet-history-meal">
-                      <strong>{meal.name || "Refeição"}</strong>
-                      <p>{meal.description || "Sem descrição registrada."}</p>
-                    </div>
-                  ))}
-                </div>
-              </article>
-            ))}
+                    </TableCell>
+                    <TableCell className="diet-history-table__notes-cell">
+                      <strong>{item.preferenceNotes || item.restrictionNotes || "Sem observacoes registradas"}</strong>
+                      <span>{item.guidance || "Sem orientacoes adicionais salvas."}</span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         )}
       </section>

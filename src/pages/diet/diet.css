@@ -143,10 +143,94 @@
 
 .diet-empty-history {
   padding: 18px;
-  border-radius: 16px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px dashed rgba(255, 255, 255, 0.12);
   color: var(--text-secondary);
+}
+
+.diet-sync-banner {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-weight: 800;
+}
+
+.diet-log-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.diet-history-table-shell {
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.diet-history-table [data-slot="table-head"] {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.diet-history-table [data-slot="table-row"] {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.diet-history-table [data-slot="table-cell"] {
+  color: rgba(255, 255, 255, 0.88);
+  vertical-align: top;
+}
+
+.diet-history-table__notes-head,
+.diet-history-table__notes-cell {
+  width: 100%;
+}
+
+.diet-history-table__notes-cell {
+  min-width: 260px;
+  white-space: normal;
+}
+
+.diet-history-table__notes-cell strong,
+.diet-history-table__notes-cell span {
+  display: block;
+}
+
+.diet-history-table__notes-cell span {
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.45;
+}
+
+.diet-log-pill {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.diet-log-pill.is-done {
+  color: #fff;
+  background: rgba(34, 197, 94, 0.16);
+  border: 1px solid rgba(34, 197, 94, 0.28);
+}
+
+.diet-log-pill.is-missed {
+  color: #fff;
+  background: rgba(255, 46, 46, 0.16);
+  border: 1px solid rgba(255, 46, 46, 0.28);
 }
 
 .diet-history-list {
@@ -208,6 +292,10 @@
 
 @media (max-width: 1100px) {
   .diet-meals-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .diet-log-summary {
     grid-template-columns: 1fr;
   }
 

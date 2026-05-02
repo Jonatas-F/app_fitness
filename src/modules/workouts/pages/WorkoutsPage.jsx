@@ -1,11 +1,21 @@
 import { useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
+import SectionCollapsible from "@/components/ui/SectionCollapsible";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { workoutsViews } from "../../../data/appData";
 import {
   getPreviousWorkoutSession,
   hydrateWorkoutExecutionFromApi,
   hydrateWorkoutSessionsFromApi,
   loadWorkoutExecution,
+  loadWorkoutSessionHistory,
   saveWorkoutSession,
   saveWorkoutExecution,
 } from "../../../data/workoutExecutionStorage";
@@ -59,8 +69,113 @@ function formatTimer(totalSeconds) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+function formatWorkoutDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--";
+
+  return date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+function numberValue(value) {
+  const normalized = String(value ?? "").trim().replace(",", ".");
+  if (!normalized) return 0;
+
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getSessionVolume(session) {
+  return session.exercises.reduce(
+    (exerciseSum, exercise) =>
+      exerciseSum +
+      exercise.sets.reduce((setSum, set) => {
+        if (set.enabled === false) return setSum;
+        return setSum + numberValue(set.weight) * numberValue(set.reps);
+      }, 0),
+    0
+  );
+}
+
+function getRegisteredSets(session) {
+  return session.exercises.reduce(
+    (exerciseSum, exercise) =>
+      exerciseSum +
+      exercise.sets.filter((set) => set.enabled !== false && (set.weight || set.reps)).length,
+    0
+  );
+}
+
+function getSessionDurationMinutes(session) {
+  const startedAt = new Date(session.startedAt || session.createdAt);
+  const finishedAt = new Date(session.createdAt);
+
+  if (Number.isNaN(startedAt.getTime()) || Number.isNaN(finishedAt.getTime())) {
+    return "--";
+  }
+
+  const minutes = Math.max(Math.round((finishedAt - startedAt) / 60000), 1);
+  return `${minutes} min`;
+}
+
+function formatExerciseSummary(session) {
+  return session.exercises
+    .slice(0, 2)
+    .map((exercise) => exercise.name)
+    .join(" • ");
+}
+
+function WorkoutEmptyState({ title, description }) {
+  return (
+    <div className="workout-empty-state">
+      <strong>{title}</strong>
+      <p>{description}</p>
+    </div>
+  );
+}
+
+function WorkoutSessionHistoryTable({ sessions }) {
+  return (
+    <div className="workout-history-table-shell">
+      <Table className="workout-history-table">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Data</TableHead>
+            <TableHead>Treino</TableHead>
+            <TableHead>Duracao</TableHead>
+            <TableHead>Series</TableHead>
+            <TableHead>Volume</TableHead>
+            <TableHead className="workout-history-table__summary-head">Resumo</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sessions.map((session) => (
+            <TableRow key={session.id}>
+              <TableCell>{formatWorkoutDate(session.createdAt)}</TableCell>
+              <TableCell>{session.workoutTitle}</TableCell>
+              <TableCell>{getSessionDurationMinutes(session)}</TableCell>
+              <TableCell>{getRegisteredSets(session)}</TableCell>
+              <TableCell>{Math.round(getSessionVolume(session))}</TableCell>
+              <TableCell className="workout-history-table__summary-cell">
+                <strong>{formatExerciseSummary(session) || "Sem exercicios registrados"}</strong>
+                <span>
+                  {session.exercises.length} exercicio(s) no registro
+                </span>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 function WorkoutExecutionSection() {
   const [workoutState, setWorkoutState] = useState(() => getInitialWorkoutState());
+  const [sessionHistory, setSessionHistory] = useState(() => loadWorkoutSessionHistory());
   const [activeSessionWorkoutId, setActiveSessionWorkoutId] = useState("");
   const [sessionStartedAt, setSessionStartedAt] = useState("");
   const [expandedExerciseIndex, setExpandedExerciseIndex] = useState(null);
@@ -70,6 +185,7 @@ function WorkoutExecutionSection() {
   const [restRemainingSeconds, setRestRemainingSeconds] = useState(0);
   const [activeVideo, setActiveVideo] = useState(null);
   const [feedback, setFeedback] = useState("");
+  const [isHydrating, setIsHydrating] = useState(true);
   const { plan, selectedWorkoutId } = workoutState;
   const selectedWorkout =
     plan.workouts.find((workout) => workout.id === selectedWorkoutId) ||
@@ -80,6 +196,10 @@ function WorkoutExecutionSection() {
     selectedWorkout?.exercises[sessionExerciseIndex] || selectedWorkout?.exercises[0];
   const selectedSet = selectedExercise?.sets[activeSetIndex] || selectedExercise?.sets[0];
   const previousSession = selectedWorkout ? getPreviousWorkoutSession(selectedWorkout.id) : null;
+  const selectedWorkoutSessions = selectedWorkout
+    ? sessionHistory.filter((session) => session.workoutId === selectedWorkout.id)
+    : [];
+  const recentSessions = selectedWorkoutSessions.slice(0, 6);
   const completedExercises = selectedWorkout ? countCompletedExercises(selectedWorkout) : 0;
   const estimatedVolume = selectedWorkout ? getEstimatedVolume(selectedWorkout) : 0;
   const adherence = Math.round(
@@ -90,10 +210,13 @@ function WorkoutExecutionSection() {
     let ignore = false;
 
     async function hydrateWorkouts() {
+      setIsHydrating(true);
+
       const result = await hydrateWorkoutExecutionFromApi();
-      await hydrateWorkoutSessionsFromApi();
+      const sessionResult = await hydrateWorkoutSessionsFromApi();
 
       if (ignore || result.error) {
+        setIsHydrating(false);
         return;
       }
 
@@ -107,6 +230,10 @@ function WorkoutExecutionSection() {
         plan: nextPlan,
         selectedWorkoutId: selectedId,
       });
+      if (!sessionResult.error) {
+        setSessionHistory(sessionResult.sessions);
+      }
+      setIsHydrating(false);
     }
 
     hydrateWorkouts();
@@ -211,7 +338,8 @@ function WorkoutExecutionSection() {
 
   function handleFinishWorkoutSession() {
     if (!selectedWorkout) return;
-    saveWorkoutSession(selectedWorkout, { startedAt: sessionStartedAt });
+    const updatedHistory = saveWorkoutSession(selectedWorkout, { startedAt: sessionStartedAt });
+    setSessionHistory(updatedHistory);
     setActiveSessionWorkoutId("");
     setSessionStartedAt("");
     setSessionElapsedSeconds(0);
@@ -313,6 +441,12 @@ function WorkoutExecutionSection() {
         </div>
       </header>
 
+      {isHydrating ? (
+        <div className="workout-loading-banner" role="status">
+          Sincronizando protocolo e historico do treino...
+        </div>
+      ) : null}
+
       {feedback ? <p className="workout-feedback">{feedback}</p> : null}
 
       <div className="workout-protocol-stats">
@@ -358,6 +492,39 @@ function WorkoutExecutionSection() {
           </button>
         ))}
       </nav>
+
+      <SectionCollapsible
+        className="workout-section-collapsible glass-panel"
+        eyebrow="Historico"
+        title={`Ultimos registros de ${selectedWorkout.title}`}
+        summary="Tabela com sessoes salvas, series registradas e volume estimado."
+        badge={`${selectedWorkoutSessions.length} sessao${selectedWorkoutSessions.length === 1 ? "" : "es"}`}
+        defaultOpen
+      >
+        <div className="workout-history-overview">
+          <article>
+            <span>Ultima execucao</span>
+            <strong>{previousSession ? formatWorkoutDate(previousSession.createdAt) : "--"}</strong>
+          </article>
+          <article>
+            <span>Series registradas</span>
+            <strong>{previousSession ? getRegisteredSets(previousSession) : 0}</strong>
+          </article>
+          <article>
+            <span>Volume ultimo treino</span>
+            <strong>{previousSession ? Math.round(getSessionVolume(previousSession)) : 0}</strong>
+          </article>
+        </div>
+
+        {selectedWorkoutSessions.length ? (
+          <WorkoutSessionHistoryTable sessions={recentSessions} />
+        ) : (
+          <WorkoutEmptyState
+            title="Sem historico para este treino"
+            description="Finalize pelo menos uma sessao para ver duracao, series e volume aqui."
+          />
+        )}
+      </SectionCollapsible>
 
       {isSessionActive && selectedExercise ? (
         <div className="live-session-overlay" role="dialog" aria-modal="true">
@@ -639,6 +806,133 @@ function WorkoutExecutionSection() {
   );
 }
 
+function WorkoutHistorySection() {
+  const [plan, setPlan] = useState(() => loadWorkoutExecution());
+  const [sessionHistory, setSessionHistory] = useState(() => loadWorkoutSessionHistory());
+  const [isHydrating, setIsHydrating] = useState(true);
+  const [selectedWorkoutId, setSelectedWorkoutId] = useState("all");
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function hydrateHistory() {
+      setIsHydrating(true);
+      const [planResult, sessionResult] = await Promise.all([
+        hydrateWorkoutExecutionFromApi(),
+        hydrateWorkoutSessionsFromApi(),
+      ]);
+
+      if (ignore) return;
+
+      if (!planResult.error) {
+        setPlan(planResult.plan);
+      }
+
+      if (!sessionResult.error) {
+        setSessionHistory(sessionResult.sessions);
+      }
+
+      setIsHydrating(false);
+    }
+
+    hydrateHistory();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const enabledWorkouts = plan.workouts.filter((workout) => workout.enabled);
+  const filteredSessions =
+    selectedWorkoutId === "all"
+      ? sessionHistory
+      : sessionHistory.filter((session) => session.workoutId === selectedWorkoutId);
+  const totalVolume = filteredSessions.reduce((sum, session) => sum + getSessionVolume(session), 0);
+  const totalRegisteredSets = filteredSessions.reduce(
+    (sum, session) => sum + getRegisteredSets(session),
+    0
+  );
+
+  return (
+    <section className="workout-execution glass-panel">
+      <header className="workout-execution__header">
+        <div>
+          <span>Historico salvo</span>
+          <h2>Comparativo de execucoes</h2>
+          <p>Consulte sessoes salvas por treino, volume estimado e quantidade de series registradas.</p>
+        </div>
+      </header>
+
+      {isHydrating ? (
+        <div className="workout-loading-banner" role="status">
+          Atualizando historico salvo no navegador e na API local...
+        </div>
+      ) : null}
+
+      <div className="workout-protocol-stats">
+        <article>
+          <span>Sessoes</span>
+          <strong>{filteredSessions.length}</strong>
+        </article>
+        <article>
+          <span>Series registradas</span>
+          <strong>{totalRegisteredSets}</strong>
+        </article>
+        <article>
+          <span>Volume total</span>
+          <strong>{Math.round(totalVolume)}</strong>
+        </article>
+        <article>
+          <span>Treinos ativos</span>
+          <strong>{enabledWorkouts.length}</strong>
+        </article>
+        <article>
+          <span>Ultimo registro</span>
+          <strong>{filteredSessions[0] ? formatWorkoutDate(filteredSessions[0].createdAt) : "--"}</strong>
+        </article>
+      </div>
+
+      <nav className="workout-week-tabs" aria-label="Filtro do historico de treinos">
+        <button
+          type="button"
+          className={selectedWorkoutId === "all" ? "is-selected is-enabled" : "is-enabled"}
+          onClick={() => setSelectedWorkoutId("all")}
+        >
+          <strong>Todos</strong>
+          <span>{sessionHistory.length} registros</span>
+        </button>
+        {plan.workouts.map((workout) => {
+          const sessionCount = sessionHistory.filter((session) => session.workoutId === workout.id).length;
+
+          return (
+            <button
+              key={workout.id}
+              type="button"
+              className={`${selectedWorkoutId === workout.id ? "is-selected" : ""} ${
+                workout.enabled ? "is-enabled" : "is-disabled"
+              }`}
+              disabled={!workout.enabled && sessionCount === 0}
+              onClick={() => setSelectedWorkoutId(workout.id)}
+            >
+              <strong>{getDayPrefix(workout.title)}</strong>
+              <span>{sessionCount} registro(s)</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      {filteredSessions.length ? (
+        <WorkoutSessionHistoryTable sessions={filteredSessions.slice(0, 12)} />
+      ) : (
+        <WorkoutEmptyState
+          title="Nada salvo neste filtro ainda"
+          description="Finalize uma sessao em Treinos para começar a construir o historico comparativo."
+        />
+      )}
+    </section>
+  );
+}
+
 export default function WorkoutsPage() {
   const { pathname } = useLocation();
   const { workoutId } = useParams();
@@ -658,7 +952,8 @@ export default function WorkoutsPage() {
         <h1>{content.title}</h1>
         <p>Plano de treino, execucao, videos e historico de cargas do protocolo atual.</p>
       </header>
-      {["list", "generate"].includes(viewKey) ? <WorkoutExecutionSection /> : null}
+      {["list", "generate", "detail"].includes(viewKey) ? <WorkoutExecutionSection /> : null}
+      {viewKey === "history" ? <WorkoutHistorySection /> : null}
     </div>
   );
 }
