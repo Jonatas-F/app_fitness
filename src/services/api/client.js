@@ -2,7 +2,9 @@ const API_TOKEN_KEY = "shapeCertoApiToken";
 const API_USER_KEY = "shapeCertoApiUser";
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3333";
 
-export const isLocalApiConfigured = Boolean(apiUrl);
+// True only when VITE_API_URL is explicitly set — avoids treating the
+// hardcoded localhost fallback as a "real" configured backend.
+export const isLocalApiConfigured = Boolean(import.meta.env.VITE_API_URL);
 
 export function getApiToken() {
   return localStorage.getItem(API_TOKEN_KEY);

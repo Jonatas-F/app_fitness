@@ -86,7 +86,8 @@ export default function HomePage() {
     navigate("/dashboard");
   }
 
-  async function handleGoogleLogin() {
+  async function handleGoogleLogin(event) {
+    if (event?.preventDefault) event.preventDefault();
     setAuthMessage("");
     setIsGoogleLoading(true);
     const result = await signInWithGoogle({ returnTo: "/dashboard" });
@@ -98,7 +99,7 @@ export default function HomePage() {
     }
 
     if (result.skipped) {
-      setAuthMessage("Supabase ainda nao configurado. Preencha o .env.local para ativar Google.");
+      setAuthMessage("Backend nao configurado. Defina VITE_API_URL no .env.local para ativar Google.");
       setIsGoogleLoading(false);
     }
   }

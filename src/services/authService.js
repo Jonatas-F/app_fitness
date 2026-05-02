@@ -2,6 +2,7 @@ import { apiEndpoints } from "./api/endpoints";
 import {
   apiRequest,
   clearApiSession,
+  isLocalApiConfigured,
   saveApiSession,
 } from "./api/client";
 
@@ -13,6 +14,10 @@ export function rememberGoogleReturnTo(returnTo) {
 }
 
 export function buildGoogleSignInUrl(options = {}) {
+  if (!isLocalApiConfigured) {
+    return null;
+  }
+
   const returnTo = options.returnTo || `${window.location.pathname}${window.location.search}`;
   const appOrigin = options.appOrigin || window.location.origin;
   const url = new URL(`${apiUrl}${apiEndpoints.google}`);
@@ -50,6 +55,10 @@ export async function signUpWithEmail({ email, password, fullName, plan }) {
 }
 
 export async function signInWithGoogle(options = {}) {
+  if (!isLocalApiConfigured) {
+    return { data: null, error: null, skipped: true };
+  }
+
   const returnTo = options.returnTo || `${window.location.pathname}${window.location.search}`;
   rememberGoogleReturnTo(returnTo);
   const signInUrl = buildGoogleSignInUrl({ returnTo });
