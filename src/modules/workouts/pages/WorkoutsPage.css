@@ -346,11 +346,15 @@
   font-size: 0.75rem;
   font-weight: 900;
   text-transform: uppercase;
+  padding: 10px 14px;
+  white-space: nowrap;
 }
 
 .workout-history-table [data-slot="table-cell"] {
   color: rgba(255, 255, 255, 0.88);
   vertical-align: top;
+  padding: 12px 14px;
+  white-space: nowrap;
 }
 
 .workout-history-table__summary-head,

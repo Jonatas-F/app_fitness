@@ -12,6 +12,7 @@ import {
   saveDietMealLog,
   saveDietProtocol,
 } from "../../../data/dietStorage";
+import "@/components/ModulePageLayout.css";
 import "./NutritionPage.css";
 
 function parseNumeric(value) {

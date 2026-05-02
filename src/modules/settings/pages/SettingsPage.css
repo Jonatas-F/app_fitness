@@ -117,8 +117,10 @@
 }
 
 .settings-tabs {
-  display: grid;
+  display: grid !important;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100% !important;
+  height: auto !important;
   gap: 12px;
   padding: 8px;
   align-items: stretch;
@@ -128,14 +130,44 @@
 }
 
 .settings-tab-trigger {
-  display: grid;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
   gap: 6px;
-  min-height: 72px;
-  padding: 12px 14px;
+  height: auto !important;
+  min-height: 68px;
+  padding: 10px 14px;
   border-radius: 8px;
   text-align: left;
-  align-content: center;
-  overflow: hidden;
+  overflow: visible !important;
+  white-space: normal !important;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease !important;
+}
+
+.settings-tab-trigger:hover {
+  background: rgba(255, 255, 255, 0.09) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+}
+
+.settings-tab-trigger[data-state="active"],
+.settings-tab-trigger[aria-selected="true"] {
+  background: linear-gradient(135deg, rgba(255, 46, 46, 0.16), rgba(255, 255, 255, 0.045)) !important;
+  border-color: transparent !important;
+  box-shadow:
+    0 4px 20px rgba(255, 46, 46, 0.14),
+    inset 0 0 0 1px rgba(255, 46, 46, 0.16) !important;
+}
+
+.settings-tab-trigger::after {
+  display: none !important;
 }
 
 .settings-tab-trigger strong {
@@ -160,11 +192,16 @@
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  min-height: 76px;
+  gap: 8px 12px;
   padding: 16px;
   cursor: pointer;
   list-style: none;
+}
+
+/* Eyebrow ocupa toda a linha acima do ícone + título + status */
+.settings-section summary > small {
+  grid-column: 1 / -1;
+  margin-bottom: 4px;
 }
 
 .settings-section summary::-webkit-details-marker {
@@ -190,9 +227,10 @@
   transform: rotate(45deg);
 }
 
-.settings-section summary > span:nth-child(2) {
+/* 3º filho: texto (icon é 2º, eyebrow é 1º) */
+.settings-section summary > span:nth-child(3) {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 

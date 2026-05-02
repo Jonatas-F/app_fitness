@@ -20,9 +20,6 @@ export default defineConfig({
             return "motion";
           }
 
-          if (id.includes("@supabase/supabase-js")) {
-            return "supabase";
-          }
         },
       },
     },

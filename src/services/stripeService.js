@@ -1,6 +1,5 @@
-import { requireSupabase } from "./supabaseClient";
 import { apiEndpoints } from "./api/endpoints";
-import { apiRequest, getApiToken, isLocalApiConfigured } from "./api/client";
+import { apiRequest, getApiToken } from "./api/client";
 
 export async function createStripeCheckoutSession({
   planId,
@@ -8,76 +7,43 @@ export async function createStripeCheckoutSession({
   installments = 1,
   returnMode = "redirect",
 }) {
-  if (isLocalApiConfigured && getApiToken()) {
-    try {
-      const data = await apiRequest(apiEndpoints.stripeCheckoutSession, {
-        method: "POST",
-        body: JSON.stringify({
-          planId,
-          billingCycle,
-          installments: Number(installments) || 1,
-          appOrigin: window.location.origin,
-          returnMode,
-        }),
-      });
-
-      return { url: data?.url || null, error: null };
-    } catch (error) {
-      return { url: null, error };
-    }
+  if (!getApiToken()) {
+    return { url: null, error: new Error("Faça login antes de finalizar a assinatura.") };
   }
 
-  if (isLocalApiConfigured && !getApiToken()) {
-    return {
-      url: null,
-      error: new Error("Faca login antes de finalizar a assinatura."),
-    };
-  }
-
-  const { data, error } = await requireSupabase().functions.invoke(
-    "create-checkout-session",
-    {
-      body: {
+  try {
+    const data = await apiRequest(apiEndpoints.stripeCheckoutSession, {
+      method: "POST",
+      body: JSON.stringify({
         planId,
         billingCycle,
         installments: Number(installments) || 1,
-      },
-    }
-  );
+        appOrigin: window.location.origin,
+        returnMode,
+      }),
+    });
 
-  if (error) {
+    return { url: data?.url || null, error: null };
+  } catch (error) {
     return { url: null, error };
   }
-
-  return { url: data?.url || null, error: null };
 }
 
 export async function createStripePortalSession() {
-  if (isLocalApiConfigured && getApiToken()) {
-    try {
-      const data = await apiRequest(apiEndpoints.stripePortalSession, {
-        method: "POST",
-        body: JSON.stringify({
-          appOrigin: window.location.origin,
-          returnMode: "popup",
-        }),
-      });
-
-      return { url: data?.url || null, error: null };
-    } catch (error) {
-      return { url: null, error };
-    }
+  if (!getApiToken()) {
+    return { url: null, error: new Error("Faça login para acessar o portal de pagamentos.") };
   }
 
-  const { data, error } = await requireSupabase().functions.invoke(
-    "create-portal-session"
-  );
+  try {
+    const data = await apiRequest(apiEndpoints.stripePortalSession, {
+      method: "POST",
+      body: JSON.stringify({ appOrigin: window.location.origin, returnMode: "popup" }),
+    });
 
-  if (error) {
+    return { url: data?.url || null, error: null };
+  } catch (error) {
     return { url: null, error };
   }
-
-  return { url: data?.url || null, error: null };
 }
 
 export async function createStripeSubscriptionChangeSession({
@@ -86,86 +52,64 @@ export async function createStripeSubscriptionChangeSession({
   prorationEstimate,
   returnMode = "redirect",
 }) {
-  if (isLocalApiConfigured && getApiToken()) {
-    try {
-      const data = await apiRequest(apiEndpoints.stripeSubscriptionChangeSession, {
-        method: "POST",
-        body: JSON.stringify({
-          planId,
-          billingCycle,
-          prorationEstimate,
-          appOrigin: window.location.origin,
-          returnMode,
-        }),
-      });
-
-      return { url: data?.url || null, mode: data?.mode || null, error: null };
-    } catch (error) {
-      return { url: null, mode: null, error };
-    }
+  if (!getApiToken()) {
+    return { url: null, mode: null, error: new Error("Faça login antes de alterar a assinatura.") };
   }
 
-  if (isLocalApiConfigured && !getApiToken()) {
-    return {
-      url: null,
-      mode: null,
-      error: new Error("Faca login antes de alterar a assinatura."),
-    };
-  }
+  try {
+    const data = await apiRequest(apiEndpoints.stripeSubscriptionChangeSession, {
+      method: "POST",
+      body: JSON.stringify({
+        planId,
+        billingCycle,
+        prorationEstimate,
+        appOrigin: window.location.origin,
+        returnMode,
+      }),
+    });
 
-  return {
-    url: null,
-    mode: null,
-    error: new Error("A alteracao de assinatura precisa do backend local conectado ao Stripe."),
-  };
+    return { url: data?.url || null, mode: data?.mode || null, error: null };
+  } catch (error) {
+    return { url: null, mode: null, error };
+  }
 }
 
 export async function createStripePaymentMethodSession() {
-  if (isLocalApiConfigured && getApiToken()) {
-    try {
-      const data = await apiRequest(apiEndpoints.stripePaymentMethodSession, {
-        method: "POST",
-        body: JSON.stringify({
-          appOrigin: window.location.origin,
-          returnMode: "popup",
-        }),
-      });
-
-      return { url: data?.url || null, mode: data?.mode || null, error: null };
-    } catch (error) {
-      return { url: null, mode: null, error };
-    }
+  if (!getApiToken()) {
+    return { url: null, mode: null, error: new Error("Faça login para gerenciar métodos de pagamento.") };
   }
 
-  return {
-    url: null,
-    mode: null,
-    error: new Error("Faca login para gerenciar metodos de pagamento no Stripe."),
-  };
+  try {
+    const data = await apiRequest(apiEndpoints.stripePaymentMethodSession, {
+      method: "POST",
+      body: JSON.stringify({ appOrigin: window.location.origin, returnMode: "popup" }),
+    });
+
+    return { url: data?.url || null, mode: data?.mode || null, error: null };
+  } catch (error) {
+    return { url: null, mode: null, error };
+  }
 }
 
 export async function setStripeDefaultPaymentMethod(paymentMethodId) {
-  if (isLocalApiConfigured && getApiToken()) {
-    try {
-      const data = await apiRequest(apiEndpoints.stripeDefaultPaymentMethod, {
-        method: "PUT",
-        body: JSON.stringify({ paymentMethodId }),
-      });
-
-      return { data, error: null };
-    } catch (error) {
-      return { data: null, error };
-    }
+  if (!getApiToken()) {
+    return { data: null, error: new Error("Faça login para trocar o método de pagamento padrão.") };
   }
 
-  return {
-    data: null,
-    error: new Error("Faca login para trocar o metodo de pagamento padrao."),
-  };
+  try {
+    const data = await apiRequest(apiEndpoints.stripeDefaultPaymentMethod, {
+      method: "PUT",
+      body: JSON.stringify({ paymentMethodId }),
+    });
+
+    return { data, error: null };
+  } catch (error) {
+    return { data: null, error };
+  }
 }
 
 export async function loadBillingSubscription() {
-  if (!isLocalApiConfigured || !getApiToken()) {
+  if (!getApiToken()) {
     return { data: null, error: null, skipped: true };
   }
 

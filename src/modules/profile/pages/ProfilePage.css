@@ -336,7 +336,7 @@
 .profile-account-card__heading,
 .profile-account-card__header {
   display: grid;
-  gap: 4px;
+  gap: 8px;
 }
 
 .profile-account-card__header {

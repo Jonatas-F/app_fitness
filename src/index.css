@@ -1004,6 +1004,12 @@ ol {
   box-shadow: 0 0 10px rgba(255, 77, 61, 0.22);
 }
 
+@keyframes shine-pulse {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 100%; }
+  to { background-position: 0% 0%; }
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: 'Geist Variable', sans-serif;
@@ -1079,6 +1085,133 @@ ol {
   --sidebar-accent-foreground: oklch(0.96 0.01 20);
   --sidebar-border: oklch(1 0 0 / 12%);
   --sidebar-ring: oklch(0.62 0.15 27);
+}
+
+/* ============================================================
+   SHAPE CERTO — Shine border: itens selecionados/ativos
+   Cobre: checkout plans, billing tabs, auth tabs, workout days,
+   nutrition days, checkin cadence, calendar days, photo poses,
+   meal cards, payment methods, equipment cards, settings options,
+   settings avatars, home featured plan, PaymentCard3D.
+   ============================================================ */
+
+.is-selected,
+.is-featured {
+  position: relative;
+}
+
+.is-selected::after,
+.is-featured::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background-image: radial-gradient(
+    transparent, transparent,
+    #ff4d3d, rgba(255, 46, 46, 0.85), #e50914,
+    transparent, transparent
+  );
+  background-size: 300% 300%;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: shine-pulse 12s infinite linear;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* .is-active apenas em tabs específicas — exclui sidebar e bottom-nav */
+.checkout-plan-picker .is-active,
+.checkout-billing .is-active,
+.checkout-auth-card__tabs .is-active,
+.home-auth-panel__tabs .is-active,
+.checkins-tab.is-active {
+  position: relative;
+}
+
+.checkout-plan-picker .is-active::after,
+.checkout-billing .is-active::after,
+.checkout-auth-card__tabs .is-active::after,
+.home-auth-panel__tabs .is-active::after,
+.checkins-tab.is-active::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background-image: radial-gradient(
+    transparent, transparent,
+    #ff4d3d, rgba(255, 46, 46, 0.85), #e50914,
+    transparent, transparent
+  );
+  background-size: 300% 300%;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: shine-pulse 12s infinite linear;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Meal cards abertos e photo pose cards enviados */
+.meal-card.is-open,
+.photo-pose-card.is-uploaded {
+  position: relative;
+}
+
+.meal-card.is-open::after,
+.photo-pose-card.is-uploaded::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background-image: radial-gradient(
+    transparent, transparent,
+    #ff4d3d, rgba(255, 46, 46, 0.85), #e50914,
+    transparent, transparent
+  );
+  background-size: 300% 300%;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: shine-pulse 12s infinite linear;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Settings tab ativa — shine border via ::before (::after é do Radix line-indicator) */
+.settings-tab-trigger[data-state="active"] {
+  position: relative;
+}
+
+.settings-tab-trigger[data-state="active"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background-image: radial-gradient(
+    transparent, transparent,
+    #ff4d3d, rgba(255, 46, 46, 0.85), #e50914,
+    transparent, transparent
+  );
+  background-size: 300% 300%;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: shine-pulse 12s infinite linear;
+  pointer-events: none;
+  z-index: 2;
 }
 
 @layer base {

@@ -225,9 +225,9 @@ function SettingsSection({ eyebrow, title, description, status, children, defaul
   return (
     <details className="settings-section" open={defaultOpen}>
       <summary>
+        {eyebrow && <small>{eyebrow}</small>}
         <span className="settings-section__icon">+</span>
         <span>
-          <small>{eyebrow}</small>
           <strong>{title}</strong>
           <em>{description}</em>
         </span>

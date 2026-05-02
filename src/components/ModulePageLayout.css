@@ -42,24 +42,39 @@
 }
 
 .module-stat {
-  padding: 18px;
+  padding: 16px 18px 18px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
+  min-height: 110px;
 }
 
 .module-stat__label {
-  color: rgba(255, 255, 255, 0.65);
-  font-size: 0.84rem;
+  display: block;
+  color: rgba(255, 255, 255, 0.52);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  margin-bottom: 8px;
 }
 
 .module-stat__value {
-  font-size: 1.5rem;
+  display: block;
+  font-size: 1.7rem;
+  font-weight: 900;
+  line-height: 1.1;
+  color: #fff;
+  margin-bottom: 6px;
 }
 
 .module-stat__helper {
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 0.9rem;
+  display: block;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  margin-top: auto;
 }
 
 .module-page__content {
