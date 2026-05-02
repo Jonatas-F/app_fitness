@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
-import { RouterProvider } from 'react-router-dom';
-import { router } from './routes/router';
-import { saveApiSession } from './services/api/client';
+import { useEffect } from "react";
+import Lenis from "lenis";
+import { RouterProvider } from "react-router-dom";
+import { router } from "./routes/router";
+import { saveApiSession } from "./services/api/client";
 
 const GOOGLE_RETURN_KEY = "shapeCertoGoogleReturnTo";
 
@@ -38,6 +39,33 @@ export default function App() {
     } catch (error) {
       console.warn("Nao foi possivel restaurar a sessao Google local.", error);
     }
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    if (media.matches) {
+      return undefined;
+    }
+
+    const lenis = new Lenis({
+      duration: 1.05,
+      smoothWheel: true,
+      syncTouch: false,
+    });
+
+    let frame = 0;
+    const raf = (time) => {
+      lenis.raf(time);
+      frame = window.requestAnimationFrame(raf);
+    };
+
+    frame = window.requestAnimationFrame(raf);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      lenis.destroy();
+    };
   }, []);
 
   return <RouterProvider router={router} />;

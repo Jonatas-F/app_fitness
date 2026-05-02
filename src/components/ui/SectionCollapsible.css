@@ -17,6 +17,11 @@
   list-style: none;
 }
 
+.section-collapsible__summary:focus-visible {
+  outline: 2px solid rgba(255, 77, 61, 0.9);
+  outline-offset: 2px;
+}
+
 .section-collapsible__summary::-webkit-details-marker {
   display: none;
 }
@@ -73,7 +78,7 @@
 
 .section-collapsible__copy em,
 .section-collapsible__badge {
-  color: rgba(255, 255, 255, 0.62);
+  color: rgba(255, 255, 255, 0.68);
   font-size: 0.82rem;
   font-style: normal;
   line-height: 1.35;

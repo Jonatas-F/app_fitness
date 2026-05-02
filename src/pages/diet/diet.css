@@ -3,6 +3,24 @@
   gap: 20px;
 }
 
+.diet-page button:focus-visible,
+.diet-page input:focus-visible,
+.diet-page textarea:focus-visible,
+.diet-week-tabs button:focus-visible {
+  outline: 2px solid rgba(255, 77, 61, 0.9);
+  outline-offset: 2px;
+}
+
+.metric-card .section-card__eyebrow,
+.metric-card .section-card__description {
+  color: rgba(255, 255, 255, 0.66);
+}
+
+.metric-card .section-card__title {
+  font-size: 1.1rem;
+  color: #fff;
+}
+
 .diet-meals-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -55,7 +73,8 @@
   border-color: rgba(255, 255, 255, 0.12);
 }
 
-.diet-week-tabs button.is-selected {
+.diet-week-tabs button.is-selected,
+.diet-week-tabs button[aria-selected="true"] {
   box-shadow: inset 0 0 0 1px rgba(255, 46, 46, 0.28);
 }
 
@@ -176,6 +195,19 @@
   min-height: 180px;
 }
 
+.diet-feedback,
+.diet-sync-status {
+  line-height: 1.55;
+}
+
+.diet-feedback {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.diet-sync-status {
+  color: rgba(255, 255, 255, 0.68);
+}
+
 .diet-log-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -184,10 +216,15 @@
 }
 
 .diet-history-table-shell {
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
+}
+
+.diet-history-table {
+  min-width: 720px;
 }
 
 .diet-history-table [data-slot="table-head"] {
@@ -239,15 +276,15 @@
 }
 
 .diet-log-pill.is-done {
-  color: #fff;
-  background: rgba(34, 197, 94, 0.16);
-  border: 1px solid rgba(34, 197, 94, 0.28);
+  color: inherit;
+  background: inherit;
+  border-color: inherit;
 }
 
 .diet-log-pill.is-missed {
-  color: #fff;
-  background: rgba(255, 46, 46, 0.16);
-  border: 1px solid rgba(255, 46, 46, 0.28);
+  color: inherit;
+  background: inherit;
+  border-color: inherit;
 }
 
 .diet-history-list {
@@ -320,6 +357,10 @@
     grid-template-columns: 1fr;
   }
 
+  .diet-selected-day-summary {
+    grid-template-columns: 1fr;
+  }
+
   .diet-week-tabs button {
     min-width: 142px;
   }
@@ -330,14 +371,35 @@
 }
 
 @media (max-width: 760px) {
+  .diet-page {
+    gap: 18px;
+  }
+
   .diet-history-grid,
   .diet-selected-day-summary,
   .diet-macro-grid {
     grid-template-columns: 1fr;
   }
 
+  .diet-history-table {
+    min-width: 640px;
+  }
+
   .diet-history-top {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+@media (max-width: 560px) {
+  .diet-week-tabs {
+    gap: 6px;
+    padding: 4px;
+  }
+
+  .diet-week-tabs button {
+    min-width: 132px;
+    min-height: 50px;
+    padding: 10px;
   }
 }

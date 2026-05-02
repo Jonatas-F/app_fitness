@@ -1,3 +1,4 @@
+import { useId, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import "./SectionCollapsible.css";
@@ -14,9 +15,20 @@ export default function SectionCollapsible({
   badgeClassName,
   defaultOpen = false,
 }) {
+  const contentId = useId();
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
   return (
-    <details className={cn("section-collapsible", className)} open={defaultOpen}>
-      <summary className={cn("section-collapsible__summary", summaryClassName)}>
+    <details
+      className={cn("section-collapsible", className)}
+      open={defaultOpen}
+      onToggle={(event) => setIsOpen(event.currentTarget.open)}
+    >
+      <summary
+        className={cn("section-collapsible__summary", summaryClassName)}
+        aria-expanded={isOpen}
+        aria-controls={contentId}
+      >
         <span className="section-collapsible__icon">
           <ChevronDown aria-hidden="true" />
         </span>
@@ -31,7 +43,9 @@ export default function SectionCollapsible({
           </span>
         ) : null}
       </summary>
-      <div className={cn("section-collapsible__body", bodyClassName)}>{children}</div>
+      <div id={contentId} className={cn("section-collapsible__body", bodyClassName)}>
+        {children}
+      </div>
     </details>
   );
 }

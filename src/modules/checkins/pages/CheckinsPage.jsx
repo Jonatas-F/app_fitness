@@ -337,6 +337,38 @@ function clampPercent(value) {
   return Math.min(100, Math.max(0, Math.round(value)));
 }
 
+function buildSyncStatus({ successMessage, skippedMessage, localFallback, remote }) {
+  if (remote?.error) {
+    const normalized = String(remote.error.message || "").toLowerCase();
+
+    if (
+      normalized.includes("auth") ||
+      normalized.includes("token") ||
+      normalized.includes("jwt") ||
+      normalized.includes("session")
+    ) {
+      return `${localFallback} Entre novamente para sincronizar com o Supabase.`;
+    }
+
+    if (
+      normalized.includes("fetch") ||
+      normalized.includes("network") ||
+      normalized.includes("timeout") ||
+      normalized.includes("failed")
+    ) {
+      return `${localFallback} Verifique a conexao e tente sincronizar novamente em alguns instantes.`;
+    }
+
+    return `${localFallback} Tente sincronizar novamente daqui a pouco.`;
+  }
+
+  if (remote?.skipped) {
+    return skippedMessage;
+  }
+
+  return successMessage;
+}
+
 function parseStoredArray(key) {
   try {
     const raw = window.localStorage.getItem(key);
@@ -778,7 +810,14 @@ export default function CheckinsPage() {
       }
 
       if (result.error) {
-        setSyncStatus(`Supabase: ${result.error.message}`);
+        setSyncStatus(
+          buildSyncStatus({
+            localFallback: "Nao foi possivel sincronizar o historico agora.",
+            skippedMessage: "",
+            successMessage: "",
+            remote: { error: result.error },
+          })
+        );
         setIsHydratingCheckins(false);
         return;
       }
@@ -788,7 +827,7 @@ export default function CheckinsPage() {
         ...makePrefilledCheckinForm(result.checkins, current.cadence || activeCadence),
         cadence: current.cadence || activeCadence,
       }));
-      setSyncStatus("Historico sincronizado com Supabase.");
+      setSyncStatus("Historico sincronizado com o Supabase. Pode seguir preenchendo normalmente.");
       setIsHydratingCheckins(false);
     }
 
@@ -872,11 +911,12 @@ export default function CheckinsPage() {
     );
     showToast(`${checkinCadences[activeCadence].label} salvo com sucesso.`);
     setSyncStatus(
-      remote.error
-        ? `Salvo localmente. Supabase: ${remote.error.message}`
-        : remote.skipped
-          ? "Salvo localmente. Entre com Supabase para sincronizar."
-          : "Check-in salvo no Supabase."
+      buildSyncStatus({
+        successMessage: "Check-in salvo e sincronizado com o Supabase.",
+        skippedMessage: "Check-in salvo nesta maquina. Entre com o Supabase se quiser sincronizar em nuvem.",
+        localFallback: "Check-in salvo nesta maquina.",
+        remote,
+      })
     );
   }
 
@@ -921,11 +961,12 @@ export default function CheckinsPage() {
     );
     showToast("Ausencia registrada no historico.", "warning");
     setSyncStatus(
-      remote.error
-        ? `Ausencia salva localmente. Supabase: ${remote.error.message}`
-        : remote.skipped
-          ? "Ausencia salva localmente. Entre com Supabase para sincronizar."
-          : "Ausencia salva no Supabase."
+      buildSyncStatus({
+        successMessage: "Ausencia salva e sincronizada com o Supabase.",
+        skippedMessage: "Ausencia salva nesta maquina. Entre com o Supabase se quiser sincronizar em nuvem.",
+        localFallback: "Ausencia salva nesta maquina.",
+        remote,
+      })
     );
   }
 
@@ -936,11 +977,12 @@ export default function CheckinsPage() {
     showToast("Historico de check-ins resetado.", "warning");
     const remote = await deleteRemoteCheckins();
     setSyncStatus(
-      remote.error
-        ? `Historico local resetado. Supabase: ${remote.error.message}`
-        : remote.skipped
-          ? "Historico local resetado."
-          : "Historico local e Supabase resetados."
+      buildSyncStatus({
+        successMessage: "Historico local e Supabase resetados.",
+        skippedMessage: "Historico local resetado. Entre com o Supabase se quiser limpar tambem a nuvem.",
+        localFallback: "Historico local resetado.",
+        remote,
+      })
     );
   }
 
@@ -1078,7 +1120,11 @@ export default function CheckinsPage() {
               type="button"
               className={`checkins-tab checkins-tab--${cadence} ${activeCadence === cadence ? "is-active" : ""}`}
               onClick={() => handleCadenceChange(cadence)}
-              aria-pressed={activeCadence === cadence}
+              role="tab"
+              aria-selected={activeCadence === cadence}
+              aria-controls={`checkins-panel-${cadence}`}
+              id={`checkins-tab-${cadence}`}
+              tabIndex={activeCadence === cadence ? 0 : -1}
             >
               <span className="checkins-tab__icon">{cadence === "weekly" ? "S" : "M"}</span>
               <span className="checkins-tab__content">
@@ -1136,14 +1182,26 @@ export default function CheckinsPage() {
         </div>
       </section>
 
-      {feedback ? <p className="checkins-feedback">{feedback}</p> : null}
+      {feedback ? (
+        <p className="checkins-feedback" role="status" aria-live="polite">
+          {feedback}
+        </p>
+      ) : null}
       {isHydratingCheckins ? (
         <CheckinsLoadingSkeleton />
       ) : syncStatus ? (
-        <p className="checkins-sync-status">{syncStatus}</p>
+        <p className="checkins-sync-status" role="status" aria-live="polite">
+          {syncStatus}
+        </p>
       ) : null}
 
-      <form className="checkins-form" onSubmit={handleSubmit}>
+      <form
+        className="checkins-form"
+        onSubmit={handleSubmit}
+        id={`checkins-panel-${activeCadence}`}
+        role="tabpanel"
+        aria-labelledby={`checkins-tab-${activeCadence}`}
+      >
         <div className="checkins-form__main">
           <CheckinCalendar
             checkins={checkins}
@@ -1804,7 +1862,7 @@ export default function CheckinsPage() {
             </div>
 
             <div className="checkins-cadence-table-shell">
-              <Table className="checkins-cadence-table">
+              <Table className="checkins-cadence-table" aria-label="Resumo por cadencia de check-ins">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Cadencia</TableHead>
@@ -1839,7 +1897,7 @@ export default function CheckinsPage() {
           </p>
         ) : (
           <div className="checkins-history-table-shell">
-            <Table className="checkins-history-table">
+            <Table className="checkins-history-table" aria-label="Historico completo de check-ins">
               <TableHeader>
                 <TableRow>
                   <TableHead>Data</TableHead>

@@ -3,6 +3,15 @@
   gap: 20px;
 }
 
+.dashboard-page button:focus-visible,
+.dashboard-page input:focus-visible,
+.dashboard-page [role="tab"]:focus-visible,
+.dashboard-page [data-slot="tabs-trigger"]:focus-visible,
+.dashboard-page summary:focus-visible {
+  outline: 2px solid rgba(255, 77, 61, 0.9);
+  outline-offset: 2px;
+}
+
 .dashboard-hero,
 .dashboard-card {
   padding: 22px;
@@ -992,6 +1001,10 @@
 }
 
 @media (max-width: 720px) {
+  .dashboard-page {
+    gap: 18px;
+  }
+
   .dashboard-hero,
   .dashboard-card {
     padding: 18px;
@@ -1022,6 +1035,14 @@
   .dashboard-collapsible__summary .section-collapsible__badge {
     grid-column: 2;
     justify-self: start;
+  }
+
+  .dashboard-metric .section-card__header {
+    align-items: flex-start;
+  }
+
+  .dashboard-metric .section-card__title {
+    white-space: normal;
   }
 
   .workout-evolution-panel header {

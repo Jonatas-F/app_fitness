@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import SectionCard from "@/components/ui/SectionCard";
 import Skeleton from "@/components/ui/skeleton";
+import StatusPill from "@/components/ui/StatusPill";
 import {
   Table,
   TableBody,
@@ -37,6 +39,27 @@ function formatDateTime(value) {
   });
 }
 
+function buildDietSyncMessage(results) {
+  const errors = results
+    .map((result) => result?.error?.message)
+    .filter(Boolean)
+    .map((message) => String(message).toLowerCase());
+
+  if (!errors.length) {
+    return "Dieta, logs e historico sincronizados. Pode seguir ajustando o plano normalmente.";
+  }
+
+  if (errors.some((message) => message.includes("auth") || message.includes("session") || message.includes("token"))) {
+    return "Nao foi possivel sincronizar a dieta agora. Entre novamente para recuperar os dados em nuvem.";
+  }
+
+  if (errors.some((message) => message.includes("fetch") || message.includes("network") || message.includes("timeout"))) {
+    return "Nao foi possivel sincronizar a dieta agora. Continue editando localmente e tente atualizar a pagina em alguns instantes.";
+  }
+
+  return "Parte dos dados da dieta nao sincronizou agora. Continue editando localmente e tente atualizar a pagina depois.";
+}
+
 function DietLoadingSkeleton() {
   return (
     <div className="diet-loading-shell" aria-hidden="true">
@@ -56,6 +79,7 @@ function DietPage() {
   const [history, setHistory] = useState(() => loadDietHistory());
   const [mealLogs, setMealLogs] = useState(() => loadDietMealLogs());
   const [feedback, setFeedback] = useState("");
+  const [syncStatus, setSyncStatus] = useState("");
   const [selectedDayId, setSelectedDayId] = useState("segunda");
   const [isHydrating, setIsHydrating] = useState(true);
 
@@ -99,6 +123,7 @@ function DietPage() {
         setMealLogs(logResult.logs);
       }
 
+      setSyncStatus(buildDietSyncMessage([dietResult, historyResult, logResult]));
       setIsHydrating(false);
     }
 
@@ -157,20 +182,20 @@ function DietPage() {
   function handleSave() {
     const saved = saveDietProtocol(diet);
     setDiet(saved);
-    setFeedback("Dieta atual salva com sucesso.");
+    setFeedback("Dieta atual salva nesta maquina. Revise o ciclo abaixo ou continue editando antes de encerrar.");
   }
 
   function handleLoadExample() {
     const example = createExampleDietProtocol();
     setDiet(example);
-    setFeedback("Exemplo de dieta carregado na tela.");
+    setFeedback("Exemplo carregado. Ajuste refeicoes, datas e macros antes de salvar como plano real.");
   }
 
   function handleCloseDiet() {
     const result = closeDietProtocol(diet);
     setDiet(result.currentDiet);
     setHistory(result.history);
-    setFeedback("Dieta encerrada e movida para o historico. Novo plano liberado.");
+    setFeedback("Dieta encerrada e movida para o historico. Confira o bloco de historico antes de abrir o proximo ciclo.");
   }
 
   function handleReset() {
@@ -178,7 +203,7 @@ function DietPage() {
     setDiet(resetDiet);
     setHistory([]);
     setMealLogs([]);
-    setFeedback("Dietas resetadas com sucesso.");
+    setFeedback("Dietas resetadas nesta maquina. Carregue um exemplo ou comece um plano novo para continuar.");
   }
 
   return (
@@ -212,16 +237,27 @@ function DietPage() {
         </div>
 
         {isHydrating ? <DietLoadingSkeleton /> : null}
-        {feedback ? <p className="text-secondary mt-16">{feedback}</p> : null}
+        {feedback ? (
+          <p className="diet-feedback mt-16" role="status" aria-live="polite">
+            {feedback}
+          </p>
+        ) : null}
+        {!isHydrating && syncStatus ? (
+          <p className="diet-sync-status mt-16" role="status" aria-live="polite">
+            {syncStatus}
+          </p>
+        ) : null}
       </section>
 
       <section className="grid grid-4">
         {metrics.map((item) => (
-          <article key={item.label} className="metric-card">
-            <div className="metric-label">{item.label}</div>
-            <div className="metric-value">{item.value}</div>
-            <div className="metric-trend">{item.trend}</div>
-          </article>
+          <SectionCard
+            key={item.label}
+            className="metric-card"
+            eyebrow={item.label}
+            title={item.value}
+            description={item.trend}
+          />
         ))}
       </section>
 
@@ -231,7 +267,7 @@ function DietPage() {
             <h3 className="card-title">Dieta atual</h3>
             <p className="card-subtitle">Dados principais do ciclo alimentar em andamento.</p>
           </div>
-          <span className="badge badge-primary">Atual</span>
+          <StatusPill tone="danger">Atual</StatusPill>
         </div>
 
         <div className="form-grid grid-2">
@@ -324,7 +360,7 @@ function DietPage() {
                 Selecione o dia para consultar a dieta e o volume de refeicoes ativas nesse bloco.
               </p>
             </div>
-            <span className="badge badge-primary">{activeDayMeals} ativas</span>
+            <StatusPill tone="danger">{activeDayMeals} ativas</StatusPill>
           </div>
 
           <nav className="diet-week-tabs" role="tablist" aria-label="Dias da dieta">
@@ -338,6 +374,12 @@ function DietPage() {
                   type="button"
                   className={selectedDayId === day.id ? "is-selected" : ""}
                   onClick={() => setSelectedDayId(day.id)}
+                  role="tab"
+                  aria-pressed={selectedDayId === day.id}
+                  aria-selected={selectedDayId === day.id}
+                  aria-controls={`diet-day-panel-${day.id}`}
+                  id={`diet-tab-${day.id}`}
+                  tabIndex={selectedDayId === day.id ? 0 : -1}
                 >
                   <strong>{day.short}</strong>
                   <span>{day.name}</span>
@@ -347,7 +389,7 @@ function DietPage() {
             })}
           </nav>
 
-          <div className="diet-selected-day-summary">
+          <div className="diet-selected-day-summary" id={`diet-day-panel-${selectedDayId}`} role="tabpanel" aria-labelledby={`diet-tab-${selectedDayId}`}>
             <div>
               <span>Dia selecionado</span>
               <strong>Dieta de {selectedDayPlan.name}</strong>
@@ -464,25 +506,13 @@ function DietPage() {
               Historico das refeicoes registradas para o dia selecionado, com status e horario salvo.
             </p>
           </div>
-          <span className="badge badge-primary">{selectedDayLogs.length} registros</span>
+          <StatusPill tone="neutral">{selectedDayLogs.length} registros</StatusPill>
         </div>
 
         <div className="diet-log-summary">
-          <article className="metric-card">
-            <div className="metric-label">Concluidas</div>
-            <div className="metric-value">{completedMealLogs}</div>
-            <div className="metric-trend">Refeicoes marcadas como feitas</div>
-          </article>
-          <article className="metric-card">
-            <div className="metric-label">Gaps</div>
-            <div className="metric-value">{missedMealLogs}</div>
-            <div className="metric-trend">Refeicoes registradas como nao feitas</div>
-          </article>
-          <article className="metric-card">
-            <div className="metric-label">Dia filtrado</div>
-            <div className="metric-value">{selectedDayPlan.name}</div>
-            <div className="metric-trend">{activeDayMeals} refeicoes ativas previstas</div>
-          </article>
+          <SectionCard eyebrow="Concluidas" title={String(completedMealLogs)} description="Refeicoes marcadas como feitas" className="metric-card" />
+          <SectionCard eyebrow="Gaps" title={String(missedMealLogs)} description="Refeicoes registradas como nao feitas" className="metric-card" />
+          <SectionCard eyebrow="Dia filtrado" title={selectedDayPlan.name} description={`${activeDayMeals} refeicoes ativas previstas`} className="metric-card" />
         </div>
 
         {selectedDayLogs.length === 0 ? (
@@ -491,7 +521,7 @@ function DietPage() {
           </div>
         ) : (
           <div className="diet-history-table-shell">
-            <Table className="diet-history-table">
+            <Table className="diet-history-table" aria-label={`Historico de refeicoes de ${selectedDayPlan.name}`}>
               <TableHeader>
                 <TableRow>
                   <TableHead>Data</TableHead>
@@ -507,9 +537,14 @@ function DietPage() {
                     <TableCell>{log.logDate || "--"}</TableCell>
                     <TableCell>{log.mealName || log.slotId}</TableCell>
                     <TableCell>
-                      <span className={`diet-log-pill ${log.status === "done" ? "is-done" : "is-missed"}`}>
+                      <StatusPill
+                        tone={log.status === "done" ? "success" : "danger"}
+                        className={`diet-log-pill ${log.status === "done" ? "is-done" : "is-missed"}`}
+                        role="status"
+                        aria-label={log.status === "done" ? "Refeicao feita" : "Refeicao nao feita"}
+                      >
                         {log.status === "done" ? "Feita" : "Nao feita"}
-                      </span>
+                      </StatusPill>
                     </TableCell>
                     <TableCell>{formatDateTime(log.performedAt || log.createdAt || log.scheduledAt)}</TableCell>
                     <TableCell>{log.source || "manual"}</TableCell>
@@ -527,7 +562,7 @@ function DietPage() {
             <h3 className="card-title">Historico de dietas</h3>
             <p className="card-subtitle">Planos anteriores encerrados e salvos para consulta.</p>
           </div>
-          <span className="badge badge-primary">{history.length}</span>
+          <StatusPill tone="neutral">{history.length}</StatusPill>
         </div>
 
         {history.length === 0 ? (
@@ -536,7 +571,7 @@ function DietPage() {
           </div>
         ) : (
           <div className="diet-history-table-shell">
-            <Table className="diet-history-table">
+            <Table className="diet-history-table" aria-label="Historico de dietas encerradas">
               <TableHeader>
                 <TableRow>
                   <TableHead>Dieta</TableHead>

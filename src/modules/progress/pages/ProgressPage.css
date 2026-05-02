@@ -3,9 +3,16 @@
   gap: 20px;
 }
 
+.progress-page button:focus-visible,
+.progress-page summary:focus-visible,
+.progress-page [data-slot="table-cell"]:focus-visible {
+  outline: 2px solid rgba(255, 77, 61, 0.9);
+  outline-offset: 2px;
+}
+
 .progress-hero {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   padding: 22px;
 }
 
@@ -44,13 +51,10 @@
 }
 
 .progress-summary-card {
-  display: grid;
-  gap: 8px;
   min-height: 104px;
-  padding: 16px;
 }
 
-.progress-summary-card span,
+.progress-summary-card .section-card__eyebrow,
 .progress-compare-grid span {
   color: rgba(255, 255, 255, 0.6);
   font-size: 0.74rem;
@@ -58,11 +62,16 @@
   text-transform: uppercase;
 }
 
-.progress-summary-card strong,
+.progress-summary-card .section-card__title,
 .progress-compare-grid strong,
 .progress-empty-state strong {
   color: #fff;
   font-size: 1rem;
+}
+
+.progress-summary-card .section-card__description {
+  color: rgba(255, 255, 255, 0.68);
+  line-height: 1.55;
 }
 
 .progress-collapsible {
@@ -122,6 +131,13 @@
   vertical-align: top;
 }
 
+.progress-table__caption {
+  padding: 10px 14px 0;
+  color: rgba(255, 255, 255, 0.58);
+  text-align: left;
+  font-size: 0.78rem;
+}
+
 .progress-table__notes-head,
 .progress-table__notes-cell {
   width: 100%;
@@ -149,6 +165,10 @@
 }
 
 @media (max-width: 720px) {
+  .progress-page {
+    gap: 18px;
+  }
+
   .progress-hero {
     padding: 18px;
   }
@@ -159,6 +179,6 @@
   }
 
   .progress-table {
-    min-width: 680px;
+    min-width: 720px;
   }
 }

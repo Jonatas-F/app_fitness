@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 import SectionCollapsible from "@/components/ui/SectionCollapsible";
+import SectionCard from "@/components/ui/SectionCard";
+import StatusPill from "@/components/ui/StatusPill";
 import {
   Table,
   TableBody,
@@ -165,11 +167,13 @@ function ProgressSummaryCards({ items }) {
   return (
     <section className="progress-summary-grid">
       {items.map((item) => (
-        <article key={item.label} className="progress-summary-card glass-panel">
-          <span>{item.label}</span>
-          <strong>{item.value}</strong>
-          <small>{item.helper}</small>
-        </article>
+        <SectionCard
+          key={item.label}
+          className="progress-summary-card glass-panel"
+          eyebrow={item.label}
+          title={item.value}
+          description={item.helper}
+        />
       ))}
     </section>
   );
@@ -287,6 +291,7 @@ function MeasurementsSection({ rows }) {
       {rows.length ? (
         <div className="progress-table-shell">
           <Table className="progress-table">
+            <caption className="progress-table__caption">Historico de medidas corporais salvas nos check-ins.</caption>
             <TableHeader>
               <TableRow>
                 <TableHead>Data</TableHead>
@@ -338,6 +343,7 @@ function BioSection({ rows }) {
       {rows.length ? (
         <div className="progress-table-shell">
           <Table className="progress-table">
+            <caption className="progress-table__caption">Historico de bioimpedancia e composicao corporal.</caption>
             <TableHeader>
               <TableRow>
                 <TableHead>Data</TableHead>
@@ -387,6 +393,7 @@ function PhotosSection({ rows }) {
       {rows.length ? (
         <div className="progress-table-shell">
           <Table className="progress-table">
+            <caption className="progress-table__caption">Historico de registros com fotos anexadas.</caption>
             <TableHeader>
               <TableRow>
                 <TableHead>Data</TableHead>
@@ -399,8 +406,12 @@ function PhotosSection({ rows }) {
               {rows.map((row) => (
                 <TableRow key={row.id}>
                   <TableCell>{row.date}</TableCell>
-                  <TableCell>{row.cadence}</TableCell>
-                  <TableCell>{row.count}/5</TableCell>
+                  <TableCell>
+                    <StatusPill tone="neutral">{row.cadence}</StatusPill>
+                  </TableCell>
+                  <TableCell>
+                    <StatusPill tone="info">{row.count}/5</StatusPill>
+                  </TableCell>
                   <TableCell className="progress-table__notes-cell">
                     <strong>Registro com apoio visual</strong>
                     <span>{row.note}</span>

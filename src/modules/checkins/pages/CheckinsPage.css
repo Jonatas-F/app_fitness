@@ -3,6 +3,15 @@
   gap: 20px;
 }
 
+.checkins-page button:focus-visible,
+.checkins-page input:focus-visible,
+.checkins-page select:focus-visible,
+.checkins-page textarea:focus-visible,
+.checkins-page summary:focus-visible {
+  outline: 2px solid rgba(255, 77, 61, 0.9);
+  outline-offset: 2px;
+}
+
 .checkins-toast {
   position: fixed;
   top: 18px;
@@ -1558,6 +1567,10 @@
 }
 
 @media (max-width: 720px) {
+  .checkins-page {
+    gap: 18px;
+  }
+
   .checkins-hero,
   .checkin-section,
   .checkins-actions,
@@ -1601,6 +1614,10 @@
 
   .checkins-calendar__day {
     min-height: 46px;
+  }
+
+  .checkins-tabs--compact .checkins-tab {
+    min-height: 110px;
   }
 
   .checkins-cadence-table {
