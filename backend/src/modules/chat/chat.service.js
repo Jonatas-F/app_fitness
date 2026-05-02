@@ -11,6 +11,7 @@ function estimateTokens(text) {
 }
 
 export async function ensureLocalChatTables() {
+  // Separado em queries individuais para evitar conflitos de DDL em batch no Postgres
   await pool.query(`
     create table if not exists chat_sessions (
       id          bigint generated always as identity primary key,
@@ -19,8 +20,10 @@ export async function ensureLocalChatTables() {
       tokens_used integer not null default 0,
       created_at  timestamptz not null default now(),
       updated_at  timestamptz not null default now()
-    );
+    )
+  `);
 
+  await pool.query(`
     create table if not exists chat_messages (
       id              bigint generated always as identity primary key,
       account_id      bigint not null references accounts(id) on delete cascade,
@@ -31,13 +34,17 @@ export async function ensureLocalChatTables() {
       ai_run_id       bigint references ai_generation_runs(id) on delete set null,
       created_at      timestamptz not null default now(),
       check (role in ('user', 'assistant'))
-    );
+    )
+  `);
 
+  await pool.query(`
     create index if not exists idx_chat_messages_account_created
-      on chat_messages (account_id, created_at asc);
+      on chat_messages (account_id, created_at)
+  `);
 
+  await pool.query(`
     create index if not exists idx_chat_sessions_account_updated
-      on chat_sessions (account_id, updated_at desc);
+      on chat_sessions (account_id, updated_at desc)
   `);
 }
 
