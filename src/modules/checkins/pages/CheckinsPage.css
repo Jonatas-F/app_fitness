@@ -1235,57 +1235,20 @@
   width: 86px;
   height: 100px;
   overflow: visible;
-  /* No fill/stroke defaults — individual shapes use inline styles */
-  filter:
-    drop-shadow(0 6px 18px rgba(255, 46, 46, 0.30))
-    drop-shadow(0 2px 6px rgba(0, 0, 0, 0.40));
-}
-
-/* Pose figure — shared base (stroke inherited from .photo-pose-card__stickman) */
-.photo-pose-card__stickman circle {
-  fill: rgba(255, 255, 255, 0.055);
-}
-
-/* Head: filled with brand-red tint */
-.photo-pose-card__stickman .pose-head {
-  fill: rgba(255, 60, 46, 0.36);
-  stroke-width: 2;
-}
-
-/* Torso: subtle red fill, thinner stroke */
-.photo-pose-card__stickman .pose-torso {
-  fill: rgba(255, 46, 46, 0.16);
-  stroke-width: 1.6;
+  /* Outline / line-art style — stroke inherited by all child elements */
+  fill: none;
+  stroke: rgba(255, 210, 185, 0.92);
+  stroke-linecap: round;
   stroke-linejoin: round;
-}
-
-/* Faded elements (back arm/leg in side view, spine in back poses) */
-.photo-pose-card__stickman .pose-faded {
-  stroke-opacity: 0.38;
-}
-
-/* Elbow / knee joints */
-.photo-pose-card__stickman .pose-joint {
-  fill: rgba(255, 190, 180, 0.8);
-  stroke: none;
-}
-
-/* Legacy classes kept for safety */
-.photo-pose-card__stickman .stickman-joint {
-  fill: rgba(255, 255, 255, 0.22);
-  stroke-width: 2;
-}
-
-.photo-pose-card__stickman .stickman-backline,
-.photo-pose-card__stickman .stickman-centerline {
-  stroke: rgba(255, 255, 255, 0.34);
-  stroke-width: 1.8;
+  filter:
+    drop-shadow(0 6px 18px rgba(255, 46, 46, 0.28))
+    drop-shadow(0 2px 6px rgba(0, 0, 0, 0.42));
 }
 
 /* Double-biceps figure is wider (arms extend beyond torso) */
 .photo-pose-card__silhouette--double-front .photo-pose-card__stickman,
 .photo-pose-card__silhouette--double-back .photo-pose-card__stickman {
-  width: 116px;
+  width: 120px;
   height: 100px;
 }
 
