@@ -240,8 +240,11 @@ async function failRun(runId, error) {
  * garantindo que o modelo só enxerga dados do accountId autenticado.
  */
 function buildSystemMessage(instructions, context, accountId) {
+  const personalName = context?.settings?.personal_name || "Personal Virtual";
+
   const scopeRules = [
-    `Você é o Personal Virtual do Shape Certo.`,
+    `Seu nome é "${personalName}". Você é o Personal Virtual do Shape Certo.`,
+    `Sempre que se apresentar ou for perguntado quem você é, responda com seu nome: ${personalName}, e diga que é o Personal Virtual do Shape Certo.`,
     `Responda SOMENTE com base nos dados do usuário autenticado (account_id: ${accountId}).`,
     `Nunca invente dados clínicos. Nunca prescreva condutas médicas.`,
     `Se faltar informação, sinalize claramente.`,
