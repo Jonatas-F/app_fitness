@@ -185,28 +185,27 @@
   box-shadow: 0 4px 20px rgba(255, 46, 46, 0.14) !important;
 }
 
-.settings-tab-trigger[data-state="active"]::after,
-.settings-tab-trigger[aria-selected="true"]::after {
-  content: "" !important;
-  display: block !important;
-  position: absolute !important;
-  inset: 0 !important;
-  border-radius: inherit !important;
-  padding: 1.5px !important;
+.settings-tab-trigger[data-state="active"]::before,
+.settings-tab-trigger[aria-selected="true"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
   background-image: radial-gradient(
     transparent, transparent,
     #ff4d3d, rgba(255, 46, 46, 0.85), #e50914,
     transparent, transparent
-  ) !important;
-  background-size: 300% 300% !important;
+  );
+  background-size: 300% 300%;
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0) !important;
-  -webkit-mask-composite: xor !important;
-  mask-composite: exclude !important;
-  animation: shine-pulse 12s infinite linear !important;
-  pointer-events: none !important;
-  z-index: 1 !important;
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: shine-pulse 12s infinite linear;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .settings-tab-trigger strong {
