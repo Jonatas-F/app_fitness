@@ -67,6 +67,8 @@ import {
   handleGenerateAiWorkout,
 } from "./modules/ai/ai.controller.js";
 import { ensureLocalAiTables } from "./modules/ai/ai.service.js";
+import { handleLoadChatHistory } from "./modules/chat/chat.controller.js";
+import { ensureLocalChatTables } from "./modules/chat/chat.service.js";
 
 const app = express();
 const allowedOrigins = new Set(appConfig.allowedOrigins);
@@ -164,6 +166,7 @@ app.get("/assistant/context", requireAuth, handleLoadAssistantContext);
 app.post("/ai/chat", requireAuth, handleAiChat);
 app.post("/ai/diet", requireAuth, handleGenerateAiDiet);
 app.post("/ai/workout", requireAuth, handleGenerateAiWorkout);
+app.get("/chat/history", requireAuth, handleLoadChatHistory);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
@@ -177,6 +180,7 @@ await ensureLocalPreferenceTables();
 await ensureGoogleRiscTables();
 await ensureLocalSettingsTables();
 await ensureLocalAiTables();
+await ensureLocalChatTables();
 
 app.listen(appConfig.port, () => {
   console.log(`Shape Certo API running on http://localhost:${appConfig.port}`);

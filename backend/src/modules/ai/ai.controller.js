@@ -3,10 +3,26 @@ import {
   generateAiDietPlan,
   generateAiWorkoutPlan,
 } from "./ai.service.js";
+import { loadChatHistory, saveMessagePair } from "../chat/chat.service.js";
 
 export async function handleAiChat(req, res, next) {
   try {
-    const result = await generateAiChatResponse(req.auth.sub, req.body);
+    const accountId = req.auth.sub;
+    const { message } = req.body;
+
+    // Carrega histórico persistido do banco (respeitando limite de 10k tokens)
+    const dbHistory = await loadChatHistory(accountId);
+    const history = dbHistory.map((m) => ({ role: m.role, text: m.content }));
+
+    const result = await generateAiChatResponse(accountId, { message, history });
+
+    // Persiste o par user → assistant no banco
+    await saveMessagePair(accountId, {
+      userMessage: message,
+      assistantMessage: result.text,
+      aiRunId: result.run?.id ? Number(result.run.id) : null,
+    });
+
     res.json(result);
   } catch (error) {
     next(error);

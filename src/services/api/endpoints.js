@@ -26,4 +26,5 @@ export const apiEndpoints = {
   aiChat: "/ai/chat",
   aiDiet: "/ai/diet",
   aiWorkout: "/ai/workout",
+  chatHistory: "/chat/history",
 };
