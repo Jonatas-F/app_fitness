@@ -98,6 +98,36 @@ export function verifyToken(token) {
 
 export async function ensureLocalAuthColumns() {
   await pool.query(`
+    create table if not exists accounts (
+      id              bigserial primary key,
+      email           varchar(255) unique not null,
+      password_hash   text,
+      auth_provider   varchar(20)  not null default 'email',
+      account_status  varchar(20)  not null default 'active',
+      plan_type       varchar(50)  not null default 'intermediario',
+      billing_cycle   varchar(20)  not null default 'monthly',
+      google_subject  text,
+      google_signin_disabled  boolean not null default false,
+      auth_session_version    integer not null default 1,
+      last_login_at   timestamptz,
+      created_at      timestamptz not null default current_timestamp,
+      updated_at      timestamptz not null default current_timestamp
+    );
+
+    create table if not exists user_profiles (
+      id          bigserial primary key,
+      account_id  bigint not null references accounts(id) on delete cascade,
+      full_name   text not null default '',
+      avatar_url  text,
+      phone       text,
+      city        text,
+      state       text,
+      birth_date  date,
+      gym_name    text,
+      created_at  timestamptz not null default current_timestamp,
+      updated_at  timestamptz not null default current_timestamp
+    );
+
     alter table accounts
       add column if not exists billing_cycle varchar(20) not null default 'monthly';
 

@@ -2,6 +2,20 @@ import { pool } from "../../utils/db.js";
 
 export async function ensureLocalWorkoutTables() {
   await pool.query(`
+    create table if not exists training_plans (
+      id               bigserial primary key,
+      account_id       bigint not null references accounts(id) on delete cascade,
+      title            text not null default '',
+      weekly_frequency integer not null default 3,
+      generated_by     varchar(30) not null default 'manual',
+      plan_status      varchar(20) not null default 'active',
+      valid_from       date,
+      valid_until      date,
+      payload          jsonb not null default '{}'::jsonb,
+      created_at       timestamptz not null default current_timestamp,
+      updated_at       timestamptz not null default current_timestamp
+    );
+
     alter table training_plans
       add column if not exists payload jsonb not null default '{}'::jsonb;
 

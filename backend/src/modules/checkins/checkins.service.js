@@ -2,6 +2,25 @@ import { pool } from "../../utils/db.js";
 
 export async function ensureLocalCheckinColumns() {
   await pool.query(`
+    create table if not exists checkins (
+      id                       bigserial primary key,
+      account_id               bigint not null references accounts(id) on delete cascade,
+      checkin_date             date not null,
+      weight_kg                decimal(6,2),
+      energy_score             integer,
+      sleep_score              integer,
+      mood_score               integer,
+      stress_score             integer,
+      workout_adherence_pct    integer,
+      observations             text,
+      cadence                  varchar(20) not null default 'monthly',
+      status                   varchar(20) not null default 'completed',
+      payload                  jsonb not null default '{}'::jsonb,
+      ai_context               jsonb not null default '{}'::jsonb,
+      created_at               timestamptz not null default current_timestamp,
+      updated_at               timestamptz not null default current_timestamp
+    );
+
     alter table checkins
       add column if not exists cadence varchar(20) not null default 'monthly',
       add column if not exists status varchar(20) not null default 'completed',

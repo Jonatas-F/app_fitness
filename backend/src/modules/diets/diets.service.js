@@ -2,6 +2,53 @@ import { pool } from "../../utils/db.js";
 
 export async function ensureLocalDietTables() {
   await pool.query(`
+    create table if not exists diet_plans (
+      id                          bigserial primary key,
+      account_id                  bigint not null references accounts(id) on delete cascade,
+      title                       text not null default '',
+      objective_summary           text,
+      valid_from                  date,
+      valid_until                 date,
+      generated_by                varchar(30) not null default 'manual',
+      plan_status                 varchar(20) not null default 'active',
+      checkin_id                  bigint references checkins(id) on delete set null,
+      variation_level             varchar(20),
+      meal_count_available        smallint,
+      source_preferences_snapshot jsonb not null default '{}'::jsonb,
+      ai_context                  jsonb not null default '{}'::jsonb,
+      payload                     jsonb not null default '{}'::jsonb,
+      created_at                  timestamptz not null default current_timestamp,
+      updated_at                  timestamptz not null default current_timestamp
+    );
+
+    create table if not exists diet_meals (
+      id                  bigserial primary key,
+      diet_plan_id        bigint not null references diet_plans(id) on delete cascade,
+      name                text not null default '',
+      order_index         smallint not null default 0,
+      day_id              varchar(30),
+      slot_id             varchar(60),
+      enabled             boolean not null default true,
+      meal_status         varchar(20) not null default 'active',
+      water_target_liters decimal(4,2),
+      payload             jsonb not null default '{}'::jsonb,
+      created_at          timestamptz not null default current_timestamp,
+      updated_at          timestamptz not null default current_timestamp
+    );
+
+    create table if not exists diet_meal_items (
+      id                      bigserial primary key,
+      diet_meal_id            bigint not null references diet_meals(id) on delete cascade,
+      name                    text not null default '',
+      order_index             smallint not null default 0,
+      food_preference_item_id text,
+      preference_mark         text,
+      meal_item_status        varchar(20) not null default 'active',
+      payload                 jsonb not null default '{}'::jsonb,
+      created_at              timestamptz not null default current_timestamp,
+      updated_at              timestamptz not null default current_timestamp
+    );
+
     alter table diet_plans
       add column if not exists checkin_id bigint references checkins(id) on delete set null,
       add column if not exists variation_level varchar(20),
