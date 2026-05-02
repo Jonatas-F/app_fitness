@@ -3,8 +3,8 @@ import { loadAssistantContext } from "../assistant/assistant.service.js";
 import { saveDietPlan } from "../diets/diets.service.js";
 import { saveWorkoutPlan } from "../workouts/workouts.service.js";
 
-const defaultModel = process.env.OPENAI_MODEL || "gpt-5";
-const openAiUrl = "https://api.openai.com/v1/responses";
+const defaultModel = process.env.OPENAI_MODEL || "gpt-4o-mini";
+const openAiUrl = "https://api.openai.com/v1/chat/completions";
 
 export async function ensureLocalAiTables() {
   await pool.query(`
@@ -194,8 +194,7 @@ async function createRun({ accountId, generationType, model, instructions, input
   return result.rows[0];
 }
 
-async function completeRun(runId, response, responseJson = null) {
-  const usage = getUsage(response);
+async function completeRun(runId, { text, usage, responseJson = null }) {
   const result = await pool.query(
     `
       update ai_generation_runs
@@ -211,7 +210,7 @@ async function completeRun(runId, response, responseJson = null) {
     `,
     [
       runId,
-      response.output_text || "",
+      text || "",
       responseJson ? JSON.stringify(responseJson) : null,
       usage.input,
       usage.output,
@@ -235,23 +234,66 @@ async function failRun(runId, error) {
   );
 }
 
-async function callOpenAi({ accountId, generationType, instructions, input, expectJson = false }) {
+/**
+ * Monta o prompt de sistema com instruções + contexto completo do usuário.
+ * O contexto é inserido no system message — nunca exposto no user message —
+ * garantindo que o modelo só enxerga dados do accountId autenticado.
+ */
+function buildSystemMessage(instructions, context, accountId) {
+  const scopeRules = [
+    `Você é o Personal Virtual do Shape Certo.`,
+    `Responda SOMENTE com base nos dados do usuário autenticado (account_id: ${accountId}).`,
+    `Nunca invente dados clínicos. Nunca prescreva condutas médicas.`,
+    `Se faltar informação, sinalize claramente.`,
+    `Responda sempre em Português do Brasil.`,
+    `Tópicos bloqueados: dados de outros usuários, senhas, tokens secretos, cartão de crédito completo.`,
+    `\nInstruções específicas: ${instructions}`,
+  ].join("\n");
+
+  return `${scopeRules}\n\n--- DADOS DO USUÁRIO AUTENTICADO ---\n${JSON.stringify(context)}`;
+}
+
+/**
+ * Chama a OpenAI Chat Completions API (gpt-4o-mini).
+ *
+ * @param {object} opts
+ * @param {string}   opts.accountId       - ID do usuário autenticado (isolamento de dados)
+ * @param {string}   opts.generationType  - 'chat' | 'diet' | 'workout' | 'recommendation'
+ * @param {string}   opts.instructions    - prompt de sistema específico para o tipo
+ * @param {string}   opts.input           - mensagem atual do usuário
+ * @param {Array}    [opts.history]        - histórico de conversa [{role, text}]
+ * @param {boolean}  [opts.expectJson]    - true para dieta/treino (extrai JSON da resposta)
+ */
+async function callOpenAi({ accountId, generationType, instructions, input, history = [], expectJson = false }) {
   requireOpenAiKey();
 
   const context = compactContext(await loadAssistantContext(accountId));
   const model = defaultModel;
-  const inputMessages = [
-    {
-      role: "user",
-      content: input,
-    },
+
+  // Monta array de mensagens no formato Chat Completions
+  const systemContent = buildSystemMessage(instructions, context, accountId);
+
+  // Limita histórico a 20 mensagens (10 trocas) para não explodir o contexto
+  const recentHistory = history.slice(-20);
+
+  const messages = [
+    { role: "system", content: systemContent },
+    // Histórico de conversa anterior (já no formato OpenAI)
+    ...recentHistory.map((m) => ({
+      role: m.role === "user" ? "user" : "assistant",
+      content: String(m.text || m.content || ""),
+    })),
+    // Mensagem atual do usuário
+    { role: "user", content: String(input).trim() },
   ];
+
+  // Persiste o run como 'pending' antes de chamar a API
   const run = await createRun({
     accountId,
     generationType,
     model,
     instructions,
-    inputMessages,
+    inputMessages: messages,
     inputContext: context,
   });
 
@@ -264,18 +306,11 @@ async function callOpenAi({ accountId, generationType, instructions, input, expe
       },
       body: JSON.stringify({
         model,
-        instructions,
-        input: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "input_text",
-                text: `${input}\n\nContexto do usuario autenticado:\n${JSON.stringify(context)}`,
-              },
-            ],
-          },
-        ],
+        messages,
+        temperature: 0.7,
+        max_tokens: 2048,
+        // Para geração de JSON estruturado (dieta/treino), força JSON mode
+        ...(expectJson ? { response_format: { type: "json_object" } } : {}),
       }),
     });
 
@@ -287,13 +322,17 @@ async function callOpenAi({ accountId, generationType, instructions, input, expe
       throw error;
     }
 
-    const responseJson = expectJson ? extractJson(data.output_text) : null;
-    const completedRun = await completeRun(run.id, data, responseJson);
+    // Chat Completions retorna: choices[0].message.content
+    const text = data.choices?.[0]?.message?.content || "";
+    const usage = getUsage(data);
+    const responseJson = expectJson ? extractJson(text) : null;
+
+    const completedRun = await completeRun(run.id, { text, usage, responseJson });
 
     return {
       run: completedRun,
       publicRun: toPublicRun(completedRun),
-      text: data.output_text || "",
+      text,
       json: responseJson,
     };
   } catch (error) {
@@ -302,7 +341,7 @@ async function callOpenAi({ accountId, generationType, instructions, input, expe
   }
 }
 
-export async function generateAiChatResponse(accountId, { message }) {
+export async function generateAiChatResponse(accountId, { message, history = [] }) {
   if (!String(message || "").trim()) {
     const error = new Error("Informe uma mensagem para o Personal Virtual.");
     error.status = 400;
@@ -313,8 +352,9 @@ export async function generateAiChatResponse(accountId, { message }) {
     accountId,
     generationType: "chat",
     instructions:
-      "Voce e o Personal Virtual do Shape Certo. Responda apenas com base no contexto do usuario autenticado. Nao invente dados clinicos, nao prescreva condutas medicas e sinalize quando faltar informacao.",
+      "Você é o Personal Virtual do Shape Certo. Analise o contexto do usuário e responda de forma precisa, prática e motivadora. Use os dados reais disponíveis. Quando não houver dados suficientes, sinalize e sugira como preencher a lacuna.",
     input: String(message).trim(),
+    history,
   });
 
   return {
