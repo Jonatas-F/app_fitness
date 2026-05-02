@@ -6,6 +6,16 @@ import { sendAiChatMessage, loadChatHistory } from "../../../services/ai/chat.se
 import "./ChatPage.css";
 
 const SETTINGS_KEY = "shapeCertoSettings";
+const PROFILE_PHOTO_KEY = "shapeCertoProfilePhoto";
+
+function loadUserPhoto() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(PROFILE_PHOTO_KEY));
+    return stored?.dataUrl || null;
+  } catch {
+    return null;
+  }
+}
 
 const suggestedQuestions = [
   "Compare minha evolucao de peso e medidas dos ultimos check-ins.",
@@ -79,6 +89,7 @@ export default function ChatPage() {
   const textareaRef = useRef(null);
 
   const [personalSettings, setPersonalSettings] = useState(() => loadPersonalSettings());
+  const [userPhotoUrl, setUserPhotoUrl] = useState(() => loadUserPhoto());
   const [context, setContext] = useState(null);
   const [isLoadingContext, setIsLoadingContext] = useState(true);
   const [contextError, setContextError] = useState("");
@@ -100,7 +111,6 @@ export default function ChatPage() {
 
   const userProfile = context?.profile || {};
   const userName = userProfile.full_name || context?.account?.email || "Voce";
-  const userAvatarUrl = userProfile.avatar_url || null;
 
   // Carrega contexto + histórico em paralelo
   useEffect(() => {
@@ -146,7 +156,7 @@ export default function ChatPage() {
     return () => { mounted = false; };
   }, []);
 
-  // Sync personal settings from storage events
+  // Sync personal settings + user photo from storage events
   useEffect(() => {
     function sync(e) {
       if (e.detail?.personal) {
@@ -157,6 +167,7 @@ export default function ChatPage() {
         return;
       }
       setPersonalSettings(loadPersonalSettings());
+      setUserPhotoUrl(loadUserPhoto());
     }
     window.addEventListener("shape-certo-settings-updated", sync);
     window.addEventListener("storage", sync);
@@ -308,7 +319,7 @@ export default function ChatPage() {
             onClick={() => setActiveParticipant(activeParticipant === "user" ? null : "user")}
           >
             <div className="mono-chat__participant-avatar-wrap">
-              <UserInitials name={userName} avatarUrl={userAvatarUrl} size={40} />
+              <UserInitials name={userName} avatarUrl={userPhotoUrl} size={40} />
             </div>
             <div className="mono-chat__participant-info">
               <strong>{userName.split(" ")[0]}</strong>
@@ -366,7 +377,7 @@ export default function ChatPage() {
                     <span className="mono-chat__msg-avatar mono-chat__msg-avatar--fallback">P</span>
                   )
                 ) : (
-                  <UserInitials name={userName} avatarUrl={userAvatarUrl} size={36} />
+                  <UserInitials name={userName} avatarUrl={userPhotoUrl} size={36} />
                 );
 
                 return (
