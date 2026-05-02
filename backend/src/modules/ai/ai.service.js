@@ -239,12 +239,12 @@ async function failRun(runId, error) {
  * O contexto é inserido no system message — nunca exposto no user message —
  * garantindo que o modelo só enxerga dados do accountId autenticado.
  */
-function buildSystemMessage(instructions, context, accountId) {
-  const personalName = context?.settings?.personal_name || "Personal Virtual";
+function buildSystemMessage(instructions, context, accountId, personalNameOverride = null) {
+  const personalName = personalNameOverride || context?.settings?.personal_name || "Personal Virtual";
 
   const scopeRules = [
-    `Seu nome é "${personalName}". Você é o Personal Virtual do Shape Certo.`,
-    `Sempre que se apresentar ou for perguntado quem você é, responda com seu nome: ${personalName}, e diga que é o Personal Virtual do Shape Certo.`,
+    `IDENTIDADE: Seu nome é ${personalName}. Você é o Personal Virtual do Shape Certo.`,
+    `REGRA OBRIGATÓRIA: Sempre que se apresentar ou for perguntado seu nome, use EXATAMENTE: "${personalName}". Nunca se apresente como "Personal Virtual" sem incluir o nome ${personalName}.`,
     `Responda SOMENTE com base nos dados do usuário autenticado (account_id: ${accountId}).`,
     `Nunca invente dados clínicos. Nunca prescreva condutas médicas.`,
     `Se faltar informação, sinalize claramente.`,
@@ -267,14 +267,14 @@ function buildSystemMessage(instructions, context, accountId) {
  * @param {Array}    [opts.history]        - histórico de conversa [{role, text}]
  * @param {boolean}  [opts.expectJson]    - true para dieta/treino (extrai JSON da resposta)
  */
-async function callOpenAi({ accountId, generationType, instructions, input, history = [], expectJson = false }) {
+async function callOpenAi({ accountId, generationType, instructions, input, history = [], expectJson = false, personalNameOverride = null }) {
   requireOpenAiKey();
 
   const context = compactContext(await loadAssistantContext(accountId));
   const model = defaultModel;
 
   // Monta array de mensagens no formato Chat Completions
-  const systemContent = buildSystemMessage(instructions, context, accountId);
+  const systemContent = buildSystemMessage(instructions, context, accountId, personalNameOverride);
 
   // Limita histórico a 20 mensagens (10 trocas) para não explodir o contexto
   const recentHistory = history.slice(-20);
@@ -344,7 +344,7 @@ async function callOpenAi({ accountId, generationType, instructions, input, hist
   }
 }
 
-export async function generateAiChatResponse(accountId, { message, history = [] }) {
+export async function generateAiChatResponse(accountId, { message, history = [], personalName = null }) {
   if (!String(message || "").trim()) {
     const error = new Error("Informe uma mensagem para o Personal Virtual.");
     error.status = 400;
@@ -358,6 +358,7 @@ export async function generateAiChatResponse(accountId, { message, history = [] 
       "Você é o Personal Virtual do Shape Certo. Analise o contexto do usuário e responda de forma precisa, prática e motivadora. Use os dados reais disponíveis. Quando não houver dados suficientes, sinalize e sugira como preencher a lacuna.",
     input: String(message).trim(),
     history,
+    personalNameOverride: personalName,
   });
 
   return {

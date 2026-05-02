@@ -8,13 +8,13 @@ import { loadChatHistory, saveMessagePair } from "../chat/chat.service.js";
 export async function handleAiChat(req, res, next) {
   try {
     const accountId = req.auth.sub;
-    const { message } = req.body;
+    const { message, personalName } = req.body;
 
     // Carrega histórico persistido do banco (respeitando limite de 10k tokens)
     const dbHistory = await loadChatHistory(accountId);
     const history = dbHistory.map((m) => ({ role: m.role, text: m.content }));
 
-    const result = await generateAiChatResponse(accountId, { message, history });
+    const result = await generateAiChatResponse(accountId, { message, history, personalName });
 
     // Persiste o par user → assistant no banco
     await saveMessagePair(accountId, {
