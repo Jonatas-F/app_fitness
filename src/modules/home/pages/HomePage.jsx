@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PricingCard from "@/components/ui/pricing-card";
-import HeroVideoScroll from "@/components/ui/HeroVideoScroll";
 import logo from "../../../assets/logo.svg";
 import { getAnnualPrice, subscriptionPlans } from "../../../data/plans";
 import {
@@ -157,112 +156,111 @@ export default function HomePage() {
         </nav>
       </header>
 
-      <HeroVideoScroll>
-        <section className="home-hero">
-          <div className="home-hero__content">
-            <span className="home-eyebrow">Treino, dieta e evolucao no mesmo lugar</span>
-            <h1>Uma plataforma para transformar check-ins em protocolos personalizados.</h1>
-            <p>
-              O Shape Certo organiza dados corporais, rotina, aparelhos disponiveis, preferencias
-              alimentares e historico de treino para o Personal Virtual montar orientacoes mais precisas.
-            </p>
+      <section className="home-hero">
+        <div className="home-hero__content">
+          <span className="home-eyebrow">Treino, dieta e evolucao no mesmo lugar</span>
+          <h1>Uma plataforma para transformar check-ins em protocolos personalizados.</h1>
+          <p>
+            O Shape Certo organiza dados corporais, rotina, aparelhos disponiveis, preferencias
+            alimentares e historico de treino para o Personal Virtual montar orientacoes mais precisas.
+          </p>
 
-            <div className="home-hero__actions">
-              <a className="primary-button" href="#acesso">
-                Comecar agora
-              </a>
-              <a className="secondary-button" href="#planos">
-                Ver planos
-              </a>
-            </div>
+          <div className="home-hero__actions">
+            <a className="primary-button" href="#acesso">
+              Comecar agora
+            </a>
+            <a className="secondary-button" href="#planos">
+              Ver planos
+            </a>
+          </div>
+        </div>
+
+        <aside className="home-auth-panel glass-panel" id="acesso">
+          <div className="home-auth-panel__tabs">
+            <button
+              type="button"
+              className={authMode === "login" ? "is-active" : ""}
+              onClick={() => setAuthMode("login")}
+            >
+              Login
+            </button>
+            <button
+              type="button"
+              className={authMode === "signup" ? "is-active" : ""}
+              onClick={() => setAuthMode("signup")}
+            >
+              Criar conta
+            </button>
           </div>
 
-          <aside className="home-auth-panel glass-panel" id="acesso">
-            <div className="home-auth-panel__tabs">
-              <button
-                type="button"
-                className={authMode === "login" ? "is-active" : ""}
-                onClick={() => setAuthMode("login")}
-              >
-                Login
-              </button>
-              <button
-                type="button"
-                className={authMode === "signup" ? "is-active" : ""}
-                onClick={() => setAuthMode("signup")}
-              >
-                Criar conta
-              </button>
-            </div>
-
-            <form className="home-auth-form" onSubmit={handleSubmit}>
-              {authMode === "signup" ? (
-                <label>
-                  <span>Nome completo</span>
-                  <input
-                    type="text"
-                    name="fullName"
-                    value={authForm.fullName}
-                    onChange={handleAuthChange}
-                    placeholder="Seu nome"
-                  />
-                </label>
-              ) : null}
-
+          <form className="home-auth-form" onSubmit={handleSubmit}>
+            {authMode === "signup" ? (
               <label>
-                <span>Email</span>
+                <span>Nome completo</span>
                 <input
-                  type="email"
-                  name="email"
-                  value={authForm.email}
+                  type="text"
+                  name="fullName"
+                  value={authForm.fullName}
                   onChange={handleAuthChange}
-                  placeholder="usuario@gmail.com"
+                  placeholder="Seu nome"
                 />
               </label>
+            ) : null}
 
+            <label>
+              <span>Email</span>
+              <input
+                type="email"
+                name="email"
+                value={authForm.email}
+                onChange={handleAuthChange}
+                placeholder="usuario@gmail.com"
+              />
+            </label>
+
+            <label>
+              <span>Senha</span>
+              <input
+                type="password"
+                name="password"
+                value={authForm.password}
+                onChange={handleAuthChange}
+                placeholder="Digite sua senha"
+              />
+            </label>
+
+            {authMode === "signup" ? (
               <label>
-                <span>Senha</span>
-                <input
-                  type="password"
-                  name="password"
-                  value={authForm.password}
-                  onChange={handleAuthChange}
-                  placeholder="Digite sua senha"
-                />
+                <span>Plano inicial</span>
+                <select value={selectedPlan} onChange={(event) => setSelectedPlan(event.target.value)}>
+                  {plans.map((plan) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.name}
+                    </option>
+                  ))}
+                </select>
               </label>
+            ) : null}
 
-              {authMode === "signup" ? (
-                <label>
-                  <span>Plano inicial</span>
-                  <select value={selectedPlan} onChange={(event) => setSelectedPlan(event.target.value)}>
-                    {plans.map((plan) => (
-                      <option key={plan.id} value={plan.id}>
-                        {plan.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
+            <button type="submit" className="primary-button">
+              {authMode === "login" ? "Entrar na plataforma" : "Criar conta"}
+            </button>
 
-              <button type="submit" className="primary-button">
-                {authMode === "login" ? "Entrar na plataforma" : "Criar conta"}
-              </button>
+            <a
+              href={googleSignInUrl || "#"}
+              role="button"
+              className="home-google-button"
+              onClick={googleSignInUrl ? handleGoogleLinkClick : handleGoogleLogin}
+              aria-disabled={isGoogleLoading}
+            >
+              {isGoogleLoading ? "Abrindo Google..." : "Continuar com Google"}
+            </a>
 
-              <a
-                href={googleSignInUrl || "#"}
-                role="button"
-                className="home-google-button"
-                onClick={googleSignInUrl ? handleGoogleLinkClick : handleGoogleLogin}
-                aria-disabled={isGoogleLoading}
-              >
-                {isGoogleLoading ? "Abrindo Google..." : "Continuar com Google"}
-              </a>
+            {authMessage ? <small className="home-auth-message">{authMessage}</small> : null}
+          </form>
+        </aside>
 
-              {authMessage ? <small className="home-auth-message">{authMessage}</small> : null}
-            </form>
-          </aside>
-        </section>
-      </HeroVideoScroll>
+      </section>
 
       <section className="home-section" id="quem-somos">
         <div className="home-section__copy">
