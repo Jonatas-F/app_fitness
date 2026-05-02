@@ -1,0 +1,54 @@
+.section-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.section-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.section-card__copy {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.section-card__eyebrow {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.section-card__title {
+  color: #fff;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.section-card__description {
+  color: rgba(255, 255, 255, 0.66);
+  line-height: 1.45;
+}
+
+.section-card__body {
+  display: grid;
+  gap: 12px;
+}
+
+@media (max-width: 760px) {
+  .section-card {
+    padding: 16px;
+  }
+
+  .section-card__header {
+    flex-direction: column;
+  }
+}

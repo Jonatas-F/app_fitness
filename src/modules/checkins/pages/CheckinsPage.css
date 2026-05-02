@@ -1356,33 +1356,27 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.checkins-history-overview article,
+.checkins-history-overview .checkins-history-card,
 .checkins-history-insight {
-  display: grid;
-  gap: 8px;
   min-height: 96px;
-  padding: 14px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.checkins-history-overview span,
-.checkins-history-insight span {
+.checkins-history-overview .section-card__eyebrow,
+.checkins-history-insight .section-card__eyebrow {
   color: rgba(255, 255, 255, 0.6);
   font-size: 0.74rem;
   font-weight: 900;
   text-transform: uppercase;
 }
 
-.checkins-history-overview strong,
-.checkins-history-insight strong {
+.checkins-history-overview .section-card__title,
+.checkins-history-insight .section-card__title {
   color: #fff;
   font-size: 1rem;
 }
 
-.checkins-history-overview small,
-.checkins-history-insight small {
+.checkins-history-overview .section-card__description,
+.checkins-history-insight .section-card__description {
   color: rgba(255, 255, 255, 0.66);
   line-height: 1.5;
 }
@@ -1424,26 +1418,19 @@
 }
 
 .checkins-table-pill {
-  min-height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 10px;
-  border-radius: 999px;
-  font-size: 0.76rem;
-  font-weight: 900;
+  min-width: 72px;
 }
 
 .checkins-table-pill.is-completed {
-  color: #fff;
-  background: rgba(34, 197, 94, 0.16);
-  border: 1px solid rgba(34, 197, 94, 0.28);
+  color: inherit;
+  background: inherit;
+  border-color: inherit;
 }
 
 .checkins-table-pill.is-missed {
-  color: #fff;
-  background: rgba(255, 46, 46, 0.16);
-  border: 1px solid rgba(255, 46, 46, 0.28);
+  color: inherit;
+  background: inherit;
+  border-color: inherit;
 }
 
 .checkins-history-table__notes-head,

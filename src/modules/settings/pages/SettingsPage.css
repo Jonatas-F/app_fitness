@@ -1,6 +1,6 @@
 .settings-page {
   display: grid;
-  gap: 18px;
+  gap: 24px;
   --settings-avatar-card-size: 162px;
 }
 
@@ -16,8 +16,8 @@
 
 .settings-hero {
   display: grid;
-  gap: 10px;
-  padding: 22px;
+  gap: 14px;
+  padding: 24px;
 }
 
 .settings-hero > span,
@@ -39,6 +39,7 @@
   margin: 0;
   font-size: clamp(2rem, 4vw, 3.2rem);
   line-height: 1.04;
+  max-width: 900px;
 }
 
 .settings-hero p,
@@ -49,6 +50,10 @@
   margin: 0;
   color: rgba(255, 255, 255, 0.68);
   line-height: 1.5;
+}
+
+.settings-hero p {
+  max-width: 980px;
 }
 
 .settings-hero__notice {
@@ -63,36 +68,33 @@
 
 .settings-stack {
   display: grid;
-  gap: 12px;
+  gap: 16px;
 }
 
 .settings-overview-grid,
 .settings-loading-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 14px;
 }
 
 .settings-overview-card {
-  display: grid;
-  gap: 8px;
-  min-height: 104px;
-  padding: 16px;
+  min-height: 112px;
 }
 
-.settings-overview-card span {
+.settings-overview-card .section-card__eyebrow {
   color: rgba(255, 255, 255, 0.62);
   font-size: 0.74rem;
   font-weight: 900;
   text-transform: uppercase;
 }
 
-.settings-overview-card strong {
+.settings-overview-card .section-card__title {
   color: #fff;
   font-size: 1rem;
 }
 
-.settings-overview-card small {
+.settings-overview-card .section-card__description {
   color: rgba(255, 255, 255, 0.66);
   line-height: 1.45;
 }
@@ -121,19 +123,20 @@
 
 .settings-tabs-root {
   display: grid;
-  gap: 14px;
+  gap: 18px;
 }
 
 .settings-tab-panel {
   display: grid;
-  gap: 12px;
+  gap: 18px;
 }
 
 .settings-tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  padding: 6px;
+  gap: 12px;
+  padding: 8px;
+  align-items: stretch;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -141,22 +144,23 @@
 
 .settings-tab-trigger {
   display: grid;
-  gap: 4px;
-  min-height: 62px;
-  padding: 10px 12px;
+  gap: 6px;
+  min-height: 72px;
+  padding: 12px 14px;
   border-radius: 8px;
   text-align: left;
+  align-content: center;
+  overflow: hidden;
 }
 
 .settings-tab-trigger strong {
   color: #fff;
   font-size: 0.92rem;
+  line-height: 1.2;
 }
 
-.settings-tab-trigger span {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.76rem;
-  font-weight: 800;
+.settings-tab-trigger .status-pill {
+  max-width: 100%;
 }
 
 .settings-section {
@@ -171,9 +175,9 @@
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
-  min-height: 74px;
-  padding: 14px 16px;
+  gap: 14px;
+  min-height: 82px;
+  padding: 18px 18px 16px;
   cursor: pointer;
   list-style: none;
 }
@@ -203,7 +207,7 @@
 
 .settings-section summary > span:nth-child(2) {
   display: grid;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -229,8 +233,8 @@
 
 .settings-section__body {
   display: grid;
-  gap: 14px;
-  padding: 0 16px 16px;
+  gap: 18px;
+  padding: 0 18px 18px;
   overflow: visible;
 }
 
@@ -240,16 +244,16 @@
 
 .settings-list {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .settings-toggle-row {
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr) auto;
-  gap: 12px;
+  gap: 14px;
   align-items: center;
-  min-height: 76px;
-  padding: 12px;
+  min-height: 88px;
+  padding: 16px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -282,7 +286,7 @@
 
 .settings-toggle-row strong {
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
   color: #fff;
 }
 
@@ -336,7 +340,7 @@
 .settings-personal-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(240px, 340px);
-  gap: 12px;
+  gap: 16px;
 }
 
 .settings-personal-grid--single {
@@ -346,8 +350,8 @@
 .settings-personal-grid label,
 .settings-personal-grid article {
   display: grid;
-  gap: 8px;
-  padding: 12px;
+  gap: 10px;
+  padding: 16px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -406,7 +410,7 @@
 .settings-avatar-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(var(--settings-avatar-card-size), var(--settings-avatar-card-size)));
-  gap: 10px;
+  gap: 12px;
   align-items: stretch;
 }
 
@@ -471,12 +475,12 @@
 
 .settings-option-groups {
   display: grid;
-  gap: 12px;
+  gap: 16px;
 }
 
 .settings-option-group {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .settings-option-group h3 {
@@ -488,14 +492,14 @@
 .settings-option-group > div {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 8px;
+  gap: 10px;
 }
 
 .settings-option-group button {
   display: grid;
-  gap: 5px;
-  min-height: 82px;
-  padding: 12px;
+  gap: 6px;
+  min-height: 92px;
+  padding: 14px;
   border-radius: 8px;
   color: #fff;
   background: rgba(148, 163, 184, 0.14);
@@ -523,6 +527,7 @@
 .settings-save-actions {
   display: flex;
   justify-content: flex-end;
+  padding-top: 4px;
 }
 
 .settings-save-actions .primary-button {
@@ -543,6 +548,15 @@
 }
 
 @media (max-width: 760px) {
+  .settings-page {
+    gap: 20px;
+  }
+
+  .settings-hero {
+    gap: 12px;
+    padding: 20px 18px;
+  }
+
   .settings-overview-grid,
   .settings-loading-grid,
   .settings-tabs,
@@ -551,6 +565,16 @@
   .settings-personal-grid,
   .settings-avatar-preview {
     grid-template-columns: 1fr;
+  }
+
+  .settings-tabs-root,
+  .settings-tab-panel,
+  .settings-stack {
+    gap: 14px;
+  }
+
+  .settings-section__body {
+    padding: 0 14px 14px;
   }
 
   .settings-section summary mark {

@@ -126,21 +126,22 @@
 }
 
 .dashboard-metric {
-  display: grid;
-  align-content: start;
-  gap: 10px;
-  min-width: 0;
-  padding: 18px;
-}
-
-.dashboard-metric__top {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
   min-width: 0;
 }
 
-.dashboard-metric__icon {
+.dashboard-metric.section-card {
+  gap: 12px;
+}
+
+.dashboard-metric .section-card__header {
+  align-items: center;
+}
+
+.dashboard-metric .section-card__copy {
+  gap: 8px;
+}
+
+.dashboard-metric__badge {
   display: inline-flex;
   width: 36px;
   height: 36px;
@@ -148,33 +149,27 @@
   justify-content: center;
   flex-shrink: 0;
   border-radius: 8px;
+  padding: 0;
   color: #ffe2de;
-  background: rgba(255, 77, 61, 0.14);
-  border: 1px solid rgba(255, 77, 61, 0.22);
 }
 
-.dashboard-metric__icon svg {
+.dashboard-metric__badge svg {
   width: 16px;
   height: 16px;
 }
 
-.dashboard-metric__label,
-.dashboard-metric__helper {
-  color: rgba(255, 255, 255, 0.62);
-}
-
-.dashboard-metric__label {
+.dashboard-metric .section-card__eyebrow {
   min-width: 0;
   line-height: 1.35;
 }
 
-.dashboard-metric__value {
+.dashboard-metric .section-card__title {
   font-size: clamp(1.5rem, 2vw, 2rem);
   line-height: 1.05;
   white-space: nowrap;
 }
 
-.dashboard-metric__helper {
+.dashboard-metric .section-card__description {
   line-height: 1.35;
 }
 

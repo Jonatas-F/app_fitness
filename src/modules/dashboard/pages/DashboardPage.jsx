@@ -27,6 +27,8 @@ import {
   YAxis,
 } from "recharts";
 import SectionCollapsible from "@/components/ui/SectionCollapsible";
+import SectionCard from "@/components/ui/SectionCard";
+import StatusPill from "@/components/ui/StatusPill";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { loadCheckins } from "../../../data/checkinStorage";
 import { loadTrainingHistory } from "../../../data/trainingStorage";
@@ -1208,16 +1210,18 @@ export default function DashboardPage() {
 
       <section className="dashboard-metrics">
         {metrics.map((item) => (
-          <article key={item.label} className="dashboard-metric glass-panel">
-            <div className="dashboard-metric__top">
-              <span className="dashboard-metric__icon">
-                <item.icon aria-hidden="true" />
-              </span>
-              <span className="dashboard-metric__label">{item.label}</span>
-            </div>
-            <strong className="dashboard-metric__value">{item.value}</strong>
-            <span className="dashboard-metric__helper">{item.helper}</span>
-          </article>
+          <SectionCard
+            key={item.label}
+            className="dashboard-metric glass-panel"
+            eyebrow={item.label}
+            title={item.value}
+            description={item.helper}
+            badge={
+              <StatusPill tone="danger" className="dashboard-metric__badge" aria-hidden="true">
+                <item.icon />
+              </StatusPill>
+            }
+          />
         ))}
       </section>
 

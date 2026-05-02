@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@iconify/react";
+import SectionCard from "@/components/ui/SectionCard";
 import Skeleton from "@/components/ui/skeleton";
+import StatusPill from "@/components/ui/StatusPill";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { loadCheckins } from "../../../data/checkinStorage";
 import { getPersonalAvatarById, personalAvatarCatalog } from "../../../data/platformImageCatalog";
@@ -447,11 +449,13 @@ export default function SettingsPage() {
         <>
           <section className="settings-overview-grid">
             {overviewCards.map((item) => (
-              <article key={item.label} className="settings-overview-card glass-panel">
-                <span>{item.label}</span>
-                <strong>{item.value}</strong>
-                <small>{item.helper}</small>
-              </article>
+              <SectionCard
+                key={item.label}
+                className="settings-overview-card glass-panel"
+                eyebrow={item.label}
+                title={item.value}
+                description={item.helper}
+              />
             ))}
           </section>
 
@@ -459,15 +463,15 @@ export default function SettingsPage() {
             <TabsList className="settings-tabs" variant="line">
               <TabsTrigger value="notifications" className="settings-tab-trigger">
                 <strong>Notificacoes</strong>
-                <span>{activeNotificationCount} ativas</span>
+                <StatusPill tone="danger">{activeNotificationCount} ativas</StatusPill>
               </TabsTrigger>
               <TabsTrigger value="personal" className="settings-tab-trigger">
                 <strong>Personal</strong>
-                <span>{settings.personal.name || "Personal"}</span>
+                <StatusPill tone="neutral">{settings.personal.name || "Personal"}</StatusPill>
               </TabsTrigger>
               <TabsTrigger value="privacy" className="settings-tab-trigger">
                 <strong>Privacidade</strong>
-                <span>{enabledPrivacyRules} regra(s)</span>
+                <StatusPill tone="warning">{enabledPrivacyRules} regra(s)</StatusPill>
               </TabsTrigger>
             </TabsList>
 

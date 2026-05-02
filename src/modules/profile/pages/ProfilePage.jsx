@@ -36,6 +36,7 @@ import {
 import { Input } from "@/components/ui/input";
 import Skeleton from "@/components/ui/skeleton";
 import SectionCollapsible from "@/components/ui/SectionCollapsible";
+import StatusPill from "@/components/ui/StatusPill";
 import PaymentCard3D from "../../../components/ui/PaymentCard3D";
 import logo from "../../../assets/logo.svg";
 import { foodMarkOptions, foodPreferencesCatalog } from "../../../data/foodPreferencesCatalog";
@@ -197,6 +198,13 @@ function clampNumber(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+function mapFoodToneToPillTone(tone) {
+  if (tone === "positive") return "success";
+  if (tone === "warning") return "warning";
+  if (tone === "danger") return "danger";
+  return "neutral";
+}
+
 function getStatusTone(message) {
   const normalizedMessage = String(message || "").toLowerCase();
 
@@ -280,9 +288,9 @@ function EquipmentCard({ item, selected, onToggle }) {
       <label className="profile-equipment-card__control">
         <input type="checkbox" checked={selected} onChange={() => onToggle(item.id)} />
         <span>
-          <em className={`profile-equipment-card__pill ${selected ? "is-selected" : ""}`}>
+          <StatusPill tone={selected ? "success" : "neutral"} className="profile-equipment-card__pill">
             {selected ? "Liberado" : "Ignorar"}
-          </em>
+          </StatusPill>
           <strong>{item.name}</strong>
           <small>{selected ? "Disponivel para o treino" : "Nao usar no treino"}</small>
         </span>
@@ -314,9 +322,12 @@ function FoodPreferenceCard({ item, selectedMark, onChange }) {
           <strong>{item.name}</strong>
           <small>{activeMark ? "Ajuste se precisar mudar a dieta." : "Sem marcacao definida ainda."}</small>
         </div>
-        <span className={`food-card__status ${activeMark ? `is-${activeMark.tone}` : ""}`}>
+        <StatusPill
+          tone={mapFoodToneToPillTone(activeMark?.tone)}
+          className={`food-card__status ${activeMark ? `is-${activeMark.tone}` : ""}`}
+        >
           {activeMark ? activeMark.label : "Sem marcacao"}
-        </span>
+        </StatusPill>
       </div>
 
       <div className="food-card__marks">
@@ -1353,7 +1364,7 @@ export default function ProfilePage() {
 
                 <CardContent className="profile-plan-card__content">
                   <div className="profile-plan-card__current">
-                    <span>{activePlan.name}</span>
+                    <StatusPill tone="danger">{activePlan.name}</StatusPill>
                     <strong>{activePlan.tokens}</strong>
                     <small>
                       {activePlan.workouts} | {account.billingCycle === "annual" ? "Anual" : "Mensal"}

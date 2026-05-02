@@ -7,7 +7,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import SectionCard from "@/components/ui/SectionCard";
 import Skeleton from "@/components/ui/skeleton";
+import StatusPill from "@/components/ui/StatusPill";
 import {
   checkinCadences,
   defaultCheckinForm,
@@ -1760,33 +1762,45 @@ export default function CheckinsPage() {
           <>
             <div className="checkins-history-overview">
               {metrics.map((item) => (
-                <article key={item.label}>
-                  <span>{item.label}</span>
-                  <strong>{item.value}</strong>
-                  <small>{item.trend}</small>
-                </article>
+                <SectionCard
+                  key={item.label}
+                  className="checkins-history-card"
+                  eyebrow={item.label}
+                  title={item.value}
+                  description={item.trend}
+                />
               ))}
             </div>
 
             <div className="checkins-history-insights">
-              <article className="checkins-history-insight">
-                <span>Leitura semanal para IA</span>
-                <strong>{weeklyAiDataset.usableEntries} registro(s) uteis</strong>
-                <small>
+              <SectionCard
+                className="checkins-history-insight"
+                eyebrow="Leitura semanal para IA"
+                title={`${weeklyAiDataset.usableEntries} registro(s) uteis`}
+                description={
+                  <>
                   {weeklyAiDataset.ignoredGaps} gap(s) ignorado(s) nas medias. Energia {weeklyAiDataset.averages.energy},
                   sono {weeklyAiDataset.averages.sleep}h e aderencia {weeklyAiDataset.averages.adherence}%.
-                </small>
-              </article>
+                  </>
+                }
+                badge={
+                  <StatusPill tone={weeklyAiDataset.ignoredGaps ? "warning" : "success"}>
+                    {weeklyAiDataset.ignoredGaps ? "Com gaps" : "Dataset limpo"}
+                  </StatusPill>
+                }
+              />
 
-              <article className="checkins-history-insight">
-                <span>Reavaliacao do ciclo</span>
-                <strong>
-                  {monthlyReevaluation.reevaluationNeeded ? "Atencao necessaria" : "Ciclo em acompanhamento"}
-                </strong>
-                <small>
-                  Treino: {monthlyReevaluation.training.cycle.label}. Dieta: {monthlyReevaluation.diet.cycle.label}.
-                </small>
-              </article>
+              <SectionCard
+                className="checkins-history-insight"
+                eyebrow="Reavaliacao do ciclo"
+                title={monthlyReevaluation.reevaluationNeeded ? "Atencao necessaria" : "Ciclo em acompanhamento"}
+                description={`Treino: ${monthlyReevaluation.training.cycle.label}. Dieta: ${monthlyReevaluation.diet.cycle.label}.`}
+                badge={
+                  <StatusPill tone={monthlyReevaluation.reevaluationNeeded ? "danger" : "success"}>
+                    {monthlyReevaluation.reevaluationNeeded ? "Revisar" : "Em dia"}
+                  </StatusPill>
+                }
+              />
             </div>
 
             <div className="checkins-cadence-table-shell">
@@ -1849,9 +1863,12 @@ export default function CheckinsPage() {
                       <TableCell>{formatCompactDateTime(item.createdAt)}</TableCell>
                       <TableCell>{checkinCadences[cadence].label}</TableCell>
                       <TableCell>
-                        <span className={`checkins-table-pill ${isMissed ? "is-missed" : "is-completed"}`}>
+                        <StatusPill
+                          tone={isMissed ? "danger" : "success"}
+                          className={`checkins-table-pill ${isMissed ? "is-missed" : "is-completed"}`}
+                        >
                           {isMissed ? "Gap" : `${item.completeness ?? "--"}%`}
-                        </span>
+                        </StatusPill>
                       </TableCell>
                       <TableCell>{formatValue(item.weight)}</TableCell>
                       <TableCell>{formatValue(item.sleep, "h")}</TableCell>
