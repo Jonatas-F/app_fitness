@@ -155,6 +155,10 @@ export default function DashboardWorkoutEvolution({ workouts, sessions }) {
           </TabsList>
 
           {enabledWorkouts.map((workout) => {
+            if (workout.id !== openWorkoutId) {
+              return null;
+            }
+
             const evolution = buildWorkoutEvolution(workout, sessions);
 
             return (
