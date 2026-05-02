@@ -498,123 +498,94 @@ function syncSavedCheckin(localCheckins, localCheckin, remoteCheckin) {
 
 function StickmanPose({ pose, title }) {
   const isBack = pose === "back" || pose === "double-back";
-  const isDoubleBiceps = pose === "double-front" || pose === "double-back";
   const isSide = pose === "side";
+  const isDoubleBiceps = pose === "double-front" || pose === "double-back";
 
-  /* ── Side profile ───────────────────────────────────────────── */
+  /* Filled silhouette palette — warm white on dark red bg */
+  const fig = "rgba(255, 228, 215, 0.94)";
+  const figFaded = "rgba(255, 228, 215, 0.40)";
+  const joint = "rgba(255, 170, 148, 1)";
+  const spineColor = "rgba(200, 90, 70, 0.50)";
+
+  const base = {
+    className: "photo-pose-card__stickman",
+    role: "img",
+    "aria-label": `Pose ${title}`,
+  };
+
+  /* ── Side profile ─────────────────────────────────────────── */
   if (isSide) {
     return (
-      <svg
-        className="photo-pose-card__stickman"
-        viewBox="0 0 80 108"
-        role="img"
-        aria-label={`Pose ${title}`}
-      >
-        {/* Head */}
-        <circle cx="44" cy="11" r="9" className="pose-head" />
-        {/* Neck */}
-        <line x1="44" y1="20" x2="42" y2="27" />
-        {/* Torso (slight forward-lean profile) */}
-        <path
-          className="pose-torso"
-          d="M37 27 Q35 42 34 60 Q40 64 46 60 Q47 42 47 27 Z"
-        />
-        {/* Front arm (hanging forward) */}
-        <path d="M37 32 Q28 48 30 66" />
-        {/* Back arm (receding) */}
-        <path className="pose-faded" d="M46 32 Q52 46 50 62" />
+      <svg {...base} viewBox="0 0 60 114">
+        <ellipse cx="34" cy="9" rx="8" ry="9" style={{ fill: fig }} />
+        <rect x="30" y="18" width="7" height="6" rx="3" style={{ fill: fig }} />
+        <path d="M22 23 Q17 24 16 40 Q16 56 20 61 Q32 65 41 61 Q44 54 43 38 Q42 23 36 22 Z" style={{ fill: fig }} />
+        {/* Front arm */}
+        <path d="M22 28 Q13 42 12 60 Q12 64 16 64 Q19 64 20 60 Q20 44 27 31 Z" style={{ fill: fig }} />
+        {/* Rear arm (faded for depth) */}
+        <path d="M37 28 Q43 40 43 57 Q43 60 40 60 Q38 60 38 57 Q37 42 31 30 Z" style={{ fill: figFaded }} />
         {/* Front leg */}
-        <path d="M38 60 Q34 80 30 100" />
-        {/* Back leg (receding) */}
-        <path className="pose-faded" d="M43 60 Q45 80 48 96" />
-        {/* Front foot */}
-        <path d="M26 100 L36 100" />
-        {/* Back foot */}
-        <path className="pose-faded" d="M44 96 L52 96" />
+        <path d="M21 61 Q16 79 14 98 Q14 102 19 102 Q23 102 24 98 Q24 82 29 65 Z" style={{ fill: fig }} />
+        {/* Rear leg (faded) */}
+        <path d="M33 61 Q37 79 38 96 Q38 99 34 99 Q31 99 30 96 Q30 80 29 63 Z" style={{ fill: figFaded }} />
+        <ellipse cx="15" cy="105" rx="10" ry="4.5" style={{ fill: fig }} />
+        <ellipse cx="35" cy="101" rx="8" ry="4" style={{ fill: figFaded }} />
       </svg>
     );
   }
 
-  /* ── Double biceps (front or back) ─────────────────────────── */
+  /* ── Double biceps (front or back) ──────────────────────────── */
   if (isDoubleBiceps) {
     return (
-      <svg
-        className="photo-pose-card__stickman"
-        viewBox="0 0 100 108"
-        role="img"
-        aria-label={`Pose ${title}`}
-      >
-        {/* Head */}
-        <circle cx="50" cy="11" r="9" className="pose-head" />
-        {/* Neck */}
-        <line x1="50" y1="20" x2="50" y2="27" />
-        {/* Torso */}
-        <path
-          className="pose-torso"
-          d="M36 28 Q33 44 34 62 Q50 66 66 62 Q67 44 64 28 Z"
-        />
-        {/* Shoulder line */}
-        <line x1="36" y1="30" x2="64" y2="30" />
-        {/* Left arm: shoulder → elbow (out-down) → fist (up) */}
-        <path d="M36 30 L16 46 L22 24" />
-        {/* Right arm: mirror */}
-        <path d="M64 30 L84 46 L78 24" />
-        {/* Elbow joints */}
-        <circle className="pose-joint" cx="16" cy="46" r="3" />
-        <circle className="pose-joint" cx="84" cy="46" r="3" />
-        {/* Spine line for back view */}
+      <svg {...base} viewBox="0 0 74 114">
+        <ellipse cx="37" cy="9" rx="8" ry="9" style={{ fill: fig }} />
+        <rect x="33" y="18" width="8" height="6" rx="3.5" style={{ fill: fig }} />
+        <path d="M24 24 Q20 24 19 40 Q19 57 23 61 Q37 65 51 61 Q55 57 55 40 Q54 24 50 24 Z" style={{ fill: fig }} />
         {isBack && (
-          <line className="pose-faded" x1="50" y1="30" x2="50" y2="62" />
+          <line x1="37" y1="25" x2="37" y2="61" style={{ stroke: spineColor, strokeWidth: 2.5, fill: "none", strokeLinecap: "round" }} />
         )}
-        {/* Hip line */}
-        <line x1="38" y1="62" x2="62" y2="62" />
+        {/* Left upper arm: shoulder → elbow */}
+        <path d="M24 27 Q15 30 7 40 Q6 44 9 46 Q12 47 13 44 Q20 34 27 29 Z" style={{ fill: fig }} />
+        {/* Left forearm: elbow → fist (upward flex) */}
+        <path d="M7 40 Q3 29 8 20 Q10 17 13 18 Q16 19 14 23 Q10 31 9 44 Z" style={{ fill: fig }} />
+        <circle cx="9" cy="43" r="4.5" style={{ fill: joint }} />
+        {/* Right upper arm */}
+        <path d="M50 27 Q59 30 67 40 Q68 44 65 46 Q62 47 61 44 Q54 34 47 29 Z" style={{ fill: fig }} />
+        {/* Right forearm */}
+        <path d="M67 40 Q71 29 66 20 Q64 17 61 18 Q58 19 60 23 Q64 31 65 44 Z" style={{ fill: fig }} />
+        <circle cx="65" cy="43" r="4.5" style={{ fill: joint }} />
         {/* Left leg */}
-        <path d="M44 62 Q40 82 36 102" />
+        <path d="M26 61 Q21 79 19 98 Q19 102 24 102 Q28 102 29 98 Q29 82 33 65 Z" style={{ fill: fig }} />
         {/* Right leg */}
-        <path d="M56 62 Q60 82 64 102" />
-        {/* Feet */}
-        <path d="M30 102 L44 102" />
-        <path d="M56 102 L70 102" />
+        <path d="M48 61 Q53 79 55 98 Q55 102 50 102 Q46 102 45 98 Q45 82 41 65 Z" style={{ fill: fig }} />
+        <ellipse cx="21" cy="105" rx="10" ry="4.5" style={{ fill: fig }} />
+        <ellipse cx="53" cy="105" rx="10" ry="4.5" style={{ fill: fig }} />
       </svg>
     );
   }
 
-  /* ── Front / Back relaxed (arms at sides) ───────────────────── */
+  /* ── Front / Back relaxed ────────────────────────────────────── */
   return (
-    <svg
-      className="photo-pose-card__stickman"
-      viewBox="0 0 80 108"
-      role="img"
-      aria-label={`Pose ${title}`}
-    >
-      {/* Head */}
-      <circle cx="40" cy="11" r="9" className="pose-head" />
-      {/* Neck */}
-      <line x1="40" y1="20" x2="40" y2="27" />
+    <svg {...base} viewBox="0 0 60 114">
+      <ellipse cx="30" cy="9" rx="8" ry="9" style={{ fill: fig }} />
+      <rect x="26" y="18" width="8" height="6" rx="3.5" style={{ fill: fig }} />
       {/* Torso */}
-      <path
-        className="pose-torso"
-        d="M28 28 Q26 44 26 62 Q40 66 54 62 Q54 44 52 28 Z"
-      />
-      {/* Shoulder line */}
-      <line x1="28" y1="30" x2="52" y2="30" />
-      {/* Left arm (hanging naturally with slight forearm bend) */}
-      <path d="M28 30 L22 62 L24 72" />
-      {/* Right arm */}
-      <path d="M52 30 L58 62 L56 72" />
-      {/* Spine line for back view */}
+      <path d="M17 24 Q13 24 12 40 Q12 56 16 61 Q30 65 44 61 Q48 56 48 40 Q47 24 43 24 Z" style={{ fill: fig }} />
       {isBack && (
-        <line className="pose-faded" x1="40" y1="30" x2="40" y2="62" />
+        <line x1="30" y1="25" x2="30" y2="61" style={{ stroke: spineColor, strokeWidth: 2.5, fill: "none", strokeLinecap: "round" }} />
       )}
-      {/* Hip line */}
-      <line x1="30" y1="62" x2="50" y2="62" />
+      {/* Left arm */}
+      <path d="M17 28 Q9 42 8 61 Q8 65 12 65 Q15 65 16 61 Q16 44 22 31 Z" style={{ fill: fig }} />
+      <ellipse cx="10" cy="67" rx="4" ry="4.5" style={{ fill: fig }} />
+      {/* Right arm */}
+      <path d="M43 28 Q51 42 52 61 Q52 65 48 65 Q45 65 44 61 Q44 44 38 31 Z" style={{ fill: fig }} />
+      <ellipse cx="50" cy="67" rx="4" ry="4.5" style={{ fill: fig }} />
       {/* Left leg */}
-      <path d="M35 62 Q31 82 28 102" />
+      <path d="M19 61 Q14 79 12 98 Q12 102 17 102 Q21 102 22 98 Q22 82 27 65 Z" style={{ fill: fig }} />
       {/* Right leg */}
-      <path d="M45 62 Q49 82 52 102" />
-      {/* Feet */}
-      <path d="M22 102 L36 102" />
-      <path d="M44 102 L58 102" />
+      <path d="M41 61 Q46 79 48 98 Q48 102 43 102 Q39 102 38 98 Q38 82 33 65 Z" style={{ fill: fig }} />
+      <ellipse cx="14" cy="105" rx="10" ry="4.5" style={{ fill: fig }} />
+      <ellipse cx="46" cy="105" rx="10" ry="4.5" style={{ fill: fig }} />
     </svg>
   );
 }
