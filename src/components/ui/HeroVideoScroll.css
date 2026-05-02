@@ -1,0 +1,131 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   HeroVideoScroll
+   ─────────────────────────────────────────────────────────────────────────
+   Hierarquia de camadas:
+
+   .hvs-wrapper   → div externa; cria o "trilho" de scroll (height grande)
+   .hvs-sticky    → filho sticky; fica preso no viewport (height: 100vh)
+   .hvs-bg        → posição absolute; contém os 3 vídeos empilhados
+   .hvs-video     → cada elemento <video>
+   .hvs-content   → posição relative z-index:2; o conteúdo da hero
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Wrapper (define o orçamento de scroll) ──────────────────────────────── */
+
+.hvs-wrapper {
+  position: relative;
+  /*
+   * Contrabalança o padding: 22px de .home-page para que o vídeo vá borda
+   * a borda horizontalmente. O padding vertical superior é mantido para
+   * que o conteúdo fique abaixo do header flutuante.
+   */
+  margin: 0 -22px;
+  /* height é sobrescrito inline pelo componente após loadedmetadata */
+}
+
+/* ── Filho sticky (prende na viewport) ───────────────────────────────────── */
+
+.hvs-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100dvh; /* dynamic viewport height — mais preciso em mobile */
+  overflow: hidden;
+
+  /*
+   * Fundo preto puro é ESSENCIAL para mix-blend-mode: screen funcionar.
+   * Com fundo preto, pixels pretos do vídeo = transparentes (0 + qualquer = qualquer).
+   */
+  background: #000;
+
+  /* Garante que o sticky não crie z-index que interfira com o header */
+  isolation: isolate;
+}
+
+/* ── Camada de vídeo ─────────────────────────────────────────────────────── */
+
+.hvs-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.hvs-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+
+  /*
+   * screen: combina as cores pela fórmula (A + B - A×B).
+   * Resultado: preto (0,0,0) do vídeo = invisível, cores claras acumulam.
+   * Ideal para vídeos com fundo preto sem alpha real.
+   */
+  mix-blend-mode: screen;
+
+  /*
+   * will-change: opacity avisa o compositor que esse elemento muda frequentemente.
+   * Promove o elemento para sua própria camada de GPU.
+   */
+  will-change: opacity;
+
+  /*
+   * Sem transição CSS — o scrub.js já faz interpolação frame a frame via rAF.
+   * Uma transição CSS em cima causaria dupla interpolação e travamentos.
+   */
+  transition: none;
+}
+
+/* ── Camada de conteúdo ──────────────────────────────────────────────────── */
+
+.hvs-content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+
+  /*
+   * Restaura o padding horizontal que foi removido pelo margin negativo
+   * do wrapper. O padding vertical (top) dá espaço para o header flutuante.
+   */
+  padding: 0 22px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ── Mobile ──────────────────────────────────────────────────────────────── */
+
+@media (hover: none) and (pointer: coarse) {
+  .hvs-sticky {
+    /*
+     * Em mobile, o vídeo toca em loop (sem scrubbing).
+     * Mantemos position:sticky mas a altura do wrapper = 100svh,
+     * então o "sticky" só dura o comprimento da seção — sem scroll extra.
+     */
+    height: 100svh;
+  }
+
+  .hvs-video {
+    /*
+     * No mobile com autoplay loop, uma transição suave de opacidade
+     * entre loops pode ser agradável (não há scrub, então não interfere).
+     */
+    transition: opacity 0.3s ease;
+  }
+}
+
+/* ── Acessibilidade: redução de movimento ────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .hvs-video {
+    /* Remove o vídeo animado para quem prefere menos movimento */
+    display: none;
+  }
+
+  .hvs-sticky {
+    background: #0a0a0b;
+  }
+}
