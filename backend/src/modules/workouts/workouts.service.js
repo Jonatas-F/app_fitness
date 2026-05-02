@@ -131,6 +131,57 @@ export async function saveWorkoutPlan(accountId, plan) {
   return toWorkoutProtocol(result.rows[0]);
 }
 
+export async function listWorkoutHistory(accountId) {
+  const result = await pool.query(
+    `
+      select *
+      from training_plans
+      where account_id = $1
+        and plan_status = 'archived'
+      order by updated_at desc, id desc
+      limit 20;
+    `,
+    [accountId]
+  );
+
+  return result.rows.map(toWorkoutProtocol);
+}
+
+export async function restoreWorkoutPlan(accountId, planId) {
+  // Arquiva o plano ativo atual
+  await pool.query(
+    `
+      update training_plans
+      set plan_status = 'archived',
+          updated_at = current_timestamp
+      where account_id = $1
+        and plan_status = 'active';
+    `,
+    [accountId]
+  );
+
+  // Reativa o plano escolhido
+  const result = await pool.query(
+    `
+      update training_plans
+      set plan_status = 'active',
+          updated_at = current_timestamp
+      where id = $1
+        and account_id = $2
+      returning *;
+    `,
+    [planId, accountId]
+  );
+
+  if (!result.rows[0]) {
+    const error = new Error("Protocolo de treino nao encontrado.");
+    error.status = 404;
+    throw error;
+  }
+
+  return toWorkoutProtocol(result.rows[0]);
+}
+
 export async function listWorkoutSessions(accountId) {
   const result = await pool.query(
     `

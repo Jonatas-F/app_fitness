@@ -1,3 +1,66 @@
+/* ── Workout Protocol History ────────────────────────────── */
+.workout-protocol-history {
+  padding: 18px 20px;
+  margin-top: 20px;
+  border-radius: 12px;
+  display: grid;
+  gap: 14px;
+}
+
+.workout-protocol-history__header strong {
+  display: block;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.workout-protocol-history__header p {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.5);
+  margin: 0;
+}
+
+.workout-protocol-history__list {
+  display: grid;
+  gap: 8px;
+}
+
+.workout-protocol-history__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.04);
+}
+
+.workout-protocol-history__item > div {
+  display: grid;
+  gap: 2px;
+}
+
+.workout-protocol-history__item strong {
+  font-size: 0.9rem;
+}
+
+.workout-protocol-history__item span {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.5);
+}
+
+/* ── Nutrition Protocol History ─────────────────────────── */
+.nutrition-protocol-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nutrition-protocol-history-item > div {
+  display: grid;
+  gap: 2px;
+}
+
 .workouts-page {
   display: grid;
   gap: 20px;

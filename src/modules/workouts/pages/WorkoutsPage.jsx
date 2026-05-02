@@ -193,6 +193,8 @@ function WorkoutExecutionSection() {
   const [activeTab, setActiveTab] = useState("treino");
   const [workoutState, setWorkoutState] = useState(() => getInitialWorkoutState());
   const [sessionHistory, setSessionHistory] = useState(() => loadWorkoutSessionHistory());
+  const [workoutHistory, setWorkoutHistory] = useState([]);
+  const [isRestoringWorkout, setIsRestoringWorkout] = useState(null);
   const [activeSessionWorkoutId, setActiveSessionWorkoutId] = useState("");
   const [sessionStartedAt, setSessionStartedAt] = useState("");
   const [expandedExerciseIndex, setExpandedExerciseIndex] = useState(null);
@@ -229,8 +231,15 @@ function WorkoutExecutionSection() {
     async function hydrateWorkouts() {
       setIsHydrating(true);
 
-      const result = await hydrateWorkoutExecutionFromApi();
-      const sessionResult = await hydrateWorkoutSessionsFromApi();
+      const [result, sessionResult, historyRes] = await Promise.all([
+        hydrateWorkoutExecutionFromApi(),
+        hydrateWorkoutSessionsFromApi(),
+        import("../../../services/api/client").then(({ apiRequest }) =>
+          import("../../../services/api/endpoints").then(({ apiEndpoints }) =>
+            apiRequest(apiEndpoints.workoutHistory).catch(() => ({ history: [] }))
+          )
+        ),
+      ]);
 
       if (ignore || result.error) {
         setIsHydrating(false);
@@ -249,6 +258,9 @@ function WorkoutExecutionSection() {
       });
       if (!sessionResult.error) {
         setSessionHistory(sessionResult.sessions);
+      }
+      if (historyRes?.history) {
+        setWorkoutHistory(historyRes.history);
       }
       setIsHydrating(false);
     }
@@ -364,6 +376,31 @@ function WorkoutExecutionSection() {
     setFeedback(
       `${selectedWorkout.title} finalizado. A sessao foi salva, alimentou o dashboard e criou o registro diario automatico.`
     );
+  }
+
+  async function handleRestoreWorkoutPlan(planId) {
+    setIsRestoringWorkout(planId);
+    try {
+      const { apiRequest } = await import("../../../services/api/client");
+      await apiRequest(`/workouts/restore/${planId}`, { method: "POST" });
+      const result = await hydrateWorkoutExecutionFromApi();
+      if (!result.error) {
+        const nextPlan = result.plan;
+        setWorkoutState({
+          plan: nextPlan,
+          selectedWorkoutId: nextPlan.workouts.find((w) => w.enabled)?.id || nextPlan.workouts[0]?.id || "",
+        });
+      }
+      // Atualiza a lista de histórico
+      const { apiEndpoints } = await import("../../../services/api/endpoints");
+      const historyRes = await apiRequest(apiEndpoints.workoutHistory).catch(() => ({ history: [] }));
+      setWorkoutHistory(historyRes?.history || []);
+      setFeedback("Protocolo de treino restaurado com sucesso.");
+    } catch (err) {
+      setFeedback("Erro ao restaurar protocolo: " + (err.message || ""));
+    } finally {
+      setIsRestoringWorkout(null);
+    }
   }
 
   function handleRequestExerciseFeedback(workoutId, exerciseId, source) {
@@ -793,6 +830,38 @@ function WorkoutExecutionSection() {
               title="Sem historico para este treino"
               description="Finalize pelo menos uma sessao para ver duracao, series e volume aqui."
             />
+          )}
+
+          {/* Protocolos anteriores */}
+          {workoutHistory.length > 0 && (
+            <div className="workout-protocol-history glass-panel">
+              <div className="workout-protocol-history__header">
+                <strong>Protocolos anteriores</strong>
+                <p>Restaure um protocolo arquivado para usá-lo novamente como plano ativo.</p>
+              </div>
+              <div className="workout-protocol-history__list">
+                {workoutHistory.map((item) => (
+                  <div key={item.id} className="workout-protocol-history__item">
+                    <div>
+                      <strong>{item.title || "Protocolo arquivado"}</strong>
+                      <span>
+                        {item.created_at
+                          ? new Date(item.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })
+                          : "--"}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      disabled={isRestoringWorkout === item.id}
+                      onClick={() => handleRestoreWorkoutPlan(item.id)}
+                    >
+                      {isRestoringWorkout === item.id ? "Restaurando..." : "Restaurar"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </TabsContent>
       </Tabs>

@@ -8,10 +8,17 @@ const stripe = process.env.STRIPE_SECRET_KEY
   : null;
 
 const plans = {
-  basico: { name: "Basico", monthlyPrice: 6, tokenLimit: 25000 },
-  intermediario: { name: "Intermediario", monthlyPrice: 79, tokenLimit: 90000 },
-  avancado: { name: "Avancado", monthlyPrice: 149, tokenLimit: 250000 },
+  basico:        { name: "Basico",        monthlyPrice: 29.90, tokenLimit: 260_000   },
+  intermediario: { name: "Intermediario", monthlyPrice: 59.90, tokenLimit: 1_500_000 },
+  pro:           { name: "Pro",           monthlyPrice: 99.90, tokenLimit: 4_500_000 },
+  // Alias para registros antigos que usam 'avancado' no banco
+  avancado:      { name: "Pro",           monthlyPrice: 99.90, tokenLimit: 4_500_000 },
 };
+
+/** Normaliza 'avancado' → 'pro' para novas gravações no banco. */
+function normalizePlanId(planId) {
+  return planId === "avancado" ? "pro" : planId;
+}
 
 function requireStripe() {
   if (!stripe) {
@@ -123,6 +130,31 @@ export async function ensureLocalBillingTables() {
 
     create index if not exists idx_subscriptions_account_status
       on subscriptions (account_id, status);
+  `);
+
+  // Migration: expandir CHECK constraints para incluir 'pro' (idempotente)
+  await pool.query(`
+    DO $$
+    BEGIN
+      ALTER TABLE subscriptions
+        DROP CONSTRAINT IF EXISTS subscriptions_plan_check;
+      ALTER TABLE subscriptions
+        ADD CONSTRAINT subscriptions_plan_check
+          CHECK (plan IN ('basico','intermediario','avancado','pro'));
+
+      ALTER TABLE plan_change_acceptances
+        DROP CONSTRAINT IF EXISTS plan_change_acceptances_previous_plan_check;
+      ALTER TABLE plan_change_acceptances
+        ADD CONSTRAINT plan_change_acceptances_previous_plan_check
+          CHECK (previous_plan IN ('basico','intermediario','avancado','pro'));
+
+      ALTER TABLE plan_change_acceptances
+        DROP CONSTRAINT IF EXISTS plan_change_acceptances_next_plan_check;
+      ALTER TABLE plan_change_acceptances
+        ADD CONSTRAINT plan_change_acceptances_next_plan_check
+          CHECK (next_plan IN ('basico','intermediario','avancado','pro'));
+    EXCEPTION WHEN OTHERS THEN NULL;
+    END $$;
   `);
 }
 
@@ -251,7 +283,7 @@ export async function createCheckoutSession(
   accountId,
   { planId, billingCycle, installments, appOrigin: requestedAppOrigin, returnMode }
 ) {
-  const safePlanId = plans[planId] ? planId : "intermediario";
+  const safePlanId = normalizePlanId(plans[planId] ? planId : "intermediario");
   const safeBillingCycle = billingCycle === "annual" ? "annual" : "monthly";
 
   // If an active subscription already exists, change the plan instead of creating a new one.
@@ -526,7 +558,7 @@ export async function createSubscriptionChangeSession(
   accountId,
   { planId, billingCycle, appOrigin: requestedAppOrigin, returnMode }
 ) {
-  const safePlanId = plans[planId] ? planId : "intermediario";
+  const safePlanId = normalizePlanId(plans[planId] ? planId : "intermediario");
   const safeBillingCycle = billingCycle === "annual" ? "annual" : "monthly";
   const localSubscription = await getActiveLocalSubscription(accountId);
 
@@ -844,7 +876,7 @@ export async function upsertSubscriptionFromStripe(subscription) {
     await cancelOtherSubscriptions(accountId, subscription.id);
   }
 
-  const planId = plans[subscription.metadata?.planId] ? subscription.metadata.planId : "intermediario";
+  const planId = normalizePlanId(plans[subscription.metadata?.planId] ? subscription.metadata.planId : "intermediario");
   const billingCycle = subscription.metadata?.billingCycle === "annual" ? "annual" : "monthly";
   const plan = getPlan(planId);
 

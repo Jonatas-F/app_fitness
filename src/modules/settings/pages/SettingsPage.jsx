@@ -102,12 +102,6 @@ const notificationItems = [
 
 const privacyItems = [
   {
-    key: "useOnlyOwnData",
-    title: "Usar apenas dados do proprio usuario",
-    description: "Regra fixa para impedir cruzamento de dados entre contas, mesmo quando a IA consultar historicos e anexos.",
-    locked: true,
-  },
-  {
     key: "allowMediaAnalysis",
     title: "Permitir analise de imagens e videos",
     description: "Autoriza usar anexos enviados no chat para feedback tecnico e progresso visual.",

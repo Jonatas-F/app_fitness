@@ -35,16 +35,19 @@ import {
 import { ensureLocalBillingTables } from "./modules/billing/billing.service.js";
 import { handleLoadProfile, handleSaveProfile } from "./modules/users/users.controller.js";
 import {
+  handleListWorkoutHistory,
   handleListWorkoutSessions,
   handleLoadWorkoutPlan,
+  handleRestoreWorkoutPlan,
   handleSaveWorkoutPlan,
   handleSaveWorkoutSession,
 } from "./modules/workouts/workouts.controller.js";
 import { ensureLocalWorkoutTables } from "./modules/workouts/workouts.service.js";
 import {
-  handleListDietMealLogs,
   handleListDietHistory,
+  handleListDietMealLogs,
   handleLoadDietPlan,
+  handleRestoreDietPlan,
   handleSaveDietMealLog,
   handleSaveDietPlan,
 } from "./modules/diets/diets.controller.js";
@@ -151,11 +154,14 @@ app.post("/billing/stripe/payment-method-session", requireAuth, handleCreateStri
 app.post("/billing/stripe/portal-session", requireAuth, handleCreateStripePortalSession);
 app.get("/workouts/active", requireAuth, handleLoadWorkoutPlan);
 app.put("/workouts/active", requireAuth, handleSaveWorkoutPlan);
+app.get("/workouts/history", requireAuth, handleListWorkoutHistory);
+app.post("/workouts/restore/:id", requireAuth, handleRestoreWorkoutPlan);
 app.get("/workout-sessions", requireAuth, handleListWorkoutSessions);
 app.post("/workout-sessions", requireAuth, handleSaveWorkoutSession);
 app.get("/diets/active", requireAuth, handleLoadDietPlan);
 app.put("/diets/active", requireAuth, handleSaveDietPlan);
 app.get("/diets/history", requireAuth, handleListDietHistory);
+app.post("/diets/restore/:id", requireAuth, handleRestoreDietPlan);
 app.get("/diets/meal-logs", requireAuth, handleListDietMealLogs);
 app.post("/diets/meal-logs", requireAuth, handleSaveDietMealLog);
 app.get("/preferences/foods", requireAuth, handleLoadFoodPreferences);

@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from "react";
+import { usePlan } from "../../../hooks/usePlan";
 import {
   Activity,
   CalendarRange,
@@ -309,8 +310,17 @@ const bodyChartGroups = [
 ];
 
 export default function DashboardPage() {
+  const { canAccess } = usePlan();
   const [activeTab, setActiveTab] = useState("resumo");
   const [, setRemoteRefresh] = useState(0);
+
+  // Garante que o activeTab não fique travado em uma aba bloqueada para o plano atual
+  useEffect(() => {
+    const gatedTabs = ["corpo", "cargas", "mensal"];
+    if (gatedTabs.includes(activeTab) && !canAccess(`dashboard_${activeTab}`)) {
+      setActiveTab("resumo");
+    }
+  }, [activeTab, canAccess]);
   const allCheckins = loadCheckins();
   const checkins = completedCheckins(allCheckins);
   const missedCheckins = allCheckins.filter((item) => item.status === "missed");
@@ -452,18 +462,24 @@ export default function DashboardPage() {
             <strong>Resumo</strong>
             <StatusPill tone="neutral">{weeklyCheckins.length} check-ins</StatusPill>
           </TabsTrigger>
+          {canAccess("dashboard_corpo") && (
           <TabsTrigger value="corpo" className="dashboard-tab-trigger">
             <strong>Corpo</strong>
             <StatusPill tone="neutral">{checkins.length} registros</StatusPill>
           </TabsTrigger>
+          )}
+          {canAccess("dashboard_cargas") && (
           <TabsTrigger value="cargas" className="dashboard-tab-trigger">
             <strong>Cargas</strong>
             <StatusPill tone="neutral">{monthSessions.length} treinos</StatusPill>
           </TabsTrigger>
+          )}
+          {canAccess("dashboard_mensal") && (
           <TabsTrigger value="mensal" className="dashboard-tab-trigger">
             <strong>Mensal</strong>
             <StatusPill tone="neutral">{monthlyCheckins.length} registros</StatusPill>
           </TabsTrigger>
+          )}
           <TabsTrigger value="feedback" className="dashboard-tab-trigger">
             <strong>Feedback</strong>
             <StatusPill tone="warning">{feedbacks.length} alertas</StatusPill>

@@ -2,6 +2,7 @@ import {
   listDietHistory,
   listDietMealLogs,
   loadActiveDietPlan,
+  restoreDietPlan,
   saveDietMealLog,
   saveDietPlan,
 } from "./diets.service.js";
@@ -46,6 +47,15 @@ export async function handleSaveDietMealLog(req, res, next) {
   try {
     const log = await saveDietMealLog(req.auth.sub, req.body);
     res.status(201).json({ log });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function handleRestoreDietPlan(req, res, next) {
+  try {
+    const protocol = await restoreDietPlan(req.auth.sub, req.params.id);
+    res.json({ protocol });
   } catch (error) {
     next(error);
   }
