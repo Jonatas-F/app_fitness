@@ -99,6 +99,12 @@ const notificationItems = [
 
 const privacyItems = [
   {
+    key: "useOnlyOwnData",
+    title: "Usar apenas dados do proprio usuario",
+    description: "Regra fixa para impedir cruzamento de dados entre contas, mesmo quando a IA consultar historicos e anexos.",
+    locked: true,
+  },
+  {
     key: "allowMediaAnalysis",
     title: "Permitir analise de imagens e videos",
     description: "Autoriza usar anexos enviados no chat para feedback tecnico e progresso visual.",
@@ -213,9 +219,9 @@ function getSuggestedSchedule(item, routineCheckin) {
   return "";
 }
 
-function SettingsSection({ eyebrow, title, description, status, children }) {
+function SettingsSection({ eyebrow, title, description, status, children, defaultOpen = true }) {
   return (
-    <details className="settings-section">
+    <details className="settings-section" open={defaultOpen}>
       <summary>
         <span className="settings-section__icon">+</span>
         <span>
@@ -465,7 +471,7 @@ export default function SettingsPage() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="notifications">
+            <TabsContent value="notifications" className="settings-tab-panel">
               <div className="settings-stack">
                 <SettingsSection
                   eyebrow="01"
@@ -490,7 +496,7 @@ export default function SettingsPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="personal">
+            <TabsContent value="personal" className="settings-tab-panel">
               <div className="settings-stack">
                 <SettingsSection
                   eyebrow="02"
@@ -558,7 +564,7 @@ export default function SettingsPage() {
               </div>
             </TabsContent>
 
-            <TabsContent value="privacy">
+            <TabsContent value="privacy" className="settings-tab-panel">
               <div className="settings-stack">
                 <SettingsSection
                   eyebrow="03"
@@ -573,7 +579,7 @@ export default function SettingsPage() {
                         title={item.title}
                         description={item.description}
                         checked={settings.privacy[item.key]}
-                        disabled={item.locked}
+                        disabled={Boolean(item.locked)}
                         onChange={() => togglePrivacy(item.key)}
                       />
                     ))}

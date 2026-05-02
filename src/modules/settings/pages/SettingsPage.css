@@ -124,6 +124,11 @@
   gap: 14px;
 }
 
+.settings-tab-panel {
+  display: grid;
+  gap: 12px;
+}
+
 .settings-tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -227,6 +232,10 @@
   gap: 14px;
   padding: 0 16px 16px;
   overflow: visible;
+}
+
+.settings-section:not([open]) .settings-section__body {
+  display: none;
 }
 
 .settings-list {
