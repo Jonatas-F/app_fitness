@@ -12,7 +12,7 @@
   gap: 20px;
   padding: 18px 22px;
   border: 1px solid var(--border);
-  border-radius: 22px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(18px);
   box-shadow: var(--shadow-soft);
@@ -154,7 +154,7 @@
   justify-content: center;
   width: 52px;
   height: 52px;
-  border-radius: 16px;
+  border-radius: 8px;
   background: rgba(255, 46, 46, 0.14);
   border: 1px solid rgba(255, 46, 46, 0.22);
   color: #fff;

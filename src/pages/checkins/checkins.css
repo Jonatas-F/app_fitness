@@ -16,7 +16,7 @@
 
 .checkins-reeval-card {
   padding: 16px;
-  border-radius: 16px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
@@ -47,7 +47,7 @@
 .checkins-closure-box {
   margin-top: 18px;
   padding: 16px;
-  border-radius: 16px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
@@ -69,7 +69,7 @@
 
 .checkins-empty {
   padding: 18px;
-  border-radius: 16px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px dashed rgba(255, 255, 255, 0.12);
   color: var(--text-secondary);
@@ -82,7 +82,7 @@
 
 .checkins-history-card {
   padding: 18px;
-  border-radius: 18px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -113,7 +113,7 @@
 .checkins-notes-box {
   margin-top: 16px;
   padding: 14px 16px;
-  border-radius: 16px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.06);
 }

@@ -24,7 +24,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 16px;
-  border-radius: 16px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
@@ -51,7 +51,7 @@
 
 .training-empty-history {
   padding: 18px;
-  border-radius: 16px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px dashed rgba(255, 255, 255, 0.12);
   color: var(--text-secondary);
@@ -64,7 +64,7 @@
 
 .training-history-card {
   padding: 18px;
-  border-radius: 18px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -100,7 +100,7 @@
 
 .training-history-division {
   padding: 14px 16px;
-  border-radius: 16px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
