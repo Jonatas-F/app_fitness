@@ -1051,6 +1051,47 @@ ol {
   to { background-position: 0% 0%; }
 }
 
+/* ── Shine border global: abas ativas ───────────────────────────
+   Aplica automaticamente a qualquer tab trigger com as classes
+   .dashboard-tab-trigger ou .settings-tab-trigger quando ativa.
+   • ::before  → borda animada (radial-gradient + mask xor)
+   • ::after   → oculto (seria o indicador de linha do Tailwind)
+   ─────────────────────────────────────────────────────────────── */
+.dashboard-tab-trigger,
+.settings-tab-trigger {
+  position: relative;
+}
+
+.dashboard-tab-trigger::after,
+.settings-tab-trigger::after {
+  display: none !important;
+}
+
+.dashboard-tab-trigger[data-state="active"]::before,
+.dashboard-tab-trigger[aria-selected="true"]::before,
+.settings-tab-trigger[data-state="active"]::before,
+.settings-tab-trigger[aria-selected="true"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background-image: radial-gradient(
+    transparent, transparent,
+    #ff4d3d, rgba(255, 46, 46, 0.85), #e50914,
+    transparent, transparent
+  );
+  background-size: 300% 300%;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: shine-pulse 12s infinite linear;
+  pointer-events: none;
+  z-index: 0;
+}
+
 @theme inline {
   --font-heading: var(--font-sans);
   --font-sans: 'Geist Variable', sans-serif;
