@@ -212,12 +212,48 @@ export async function listDietHistory(accountId) {
       from diet_plans
       where account_id = $1
         and plan_status = 'archived'
-      order by updated_at desc, id desc;
+      order by updated_at desc, id desc
+      limit 20;
     `,
     [accountId]
   );
 
   return result.rows.map(toDietProtocol);
+}
+
+export async function restoreDietPlan(accountId, planId) {
+  // Arquiva o plano ativo atual
+  await pool.query(
+    `
+      update diet_plans
+      set plan_status = 'archived',
+          updated_at = current_timestamp
+      where account_id = $1
+        and plan_status = 'active';
+    `,
+    [accountId]
+  );
+
+  // Reativa o plano escolhido
+  const result = await pool.query(
+    `
+      update diet_plans
+      set plan_status = 'active',
+          updated_at = current_timestamp
+      where id = $1
+        and account_id = $2
+      returning *;
+    `,
+    [planId, accountId]
+  );
+
+  if (!result.rows[0]) {
+    const error = new Error("Protocolo de dieta nao encontrado.");
+    error.status = 404;
+    throw error;
+  }
+
+  return toDietProtocol(result.rows[0]);
 }
 
 function toMealLog(row) {

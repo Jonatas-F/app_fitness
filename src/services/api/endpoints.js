@@ -16,6 +16,7 @@ export const apiEndpoints = {
   stripeDefaultPaymentMethod: "/billing/stripe/default-payment-method",
   stripePortalSession: "/billing/stripe/portal-session",
   activeWorkout: "/workouts/active",
+  workoutHistory: "/workouts/history",
   workoutSessions: "/workout-sessions",
   activeDiet: "/diets/active",
   dietHistory: "/diets/history",

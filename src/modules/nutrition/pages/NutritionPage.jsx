@@ -225,6 +225,7 @@ export default function NutritionPage() {
   const [dietHistory, setDietHistory] = useState(() => loadDietHistory());
   const [mealLogs, setMealLogs] = useState(() => loadDietMealLogs());
   const [feedback, setFeedback] = useState("");
+  const [isRestoringDiet, setIsRestoringDiet] = useState(null);
   const [selectedDayId, setSelectedDayId] = useState("segunda");
   const [openMeals, setOpenMeals] = useState([]);
   const [mealCompletionModal, setMealCompletionModal] = useState(null);
@@ -353,6 +354,26 @@ export default function NutritionPage() {
 
   function updateDiet(nextDiet) {
     setDiet(saveDietProtocol(nextDiet));
+  }
+
+  async function handleRestoreDietPlan(planId) {
+    setIsRestoringDiet(planId);
+    try {
+      const { apiRequest } = await import("../../../services/api/client");
+      await apiRequest(`/diets/restore/${planId}`, { method: "POST" });
+      const { hydrateDietProtocolFromApi, hydrateDietHistoryFromApi } = await import("../../../data/dietStorage");
+      const [protocolResult, historyResult] = await Promise.all([
+        hydrateDietProtocolFromApi(),
+        hydrateDietHistoryFromApi(),
+      ]);
+      if (!protocolResult.error) setDiet(protocolResult.diet);
+      if (!historyResult.error) setDietHistory(historyResult.history);
+      setFeedback("Protocolo de dieta restaurado com sucesso.");
+    } catch (err) {
+      setFeedback("Erro ao restaurar protocolo: " + (err.message || ""));
+    } finally {
+      setIsRestoringDiet(null);
+    }
   }
 
   function handleDietField(field, value) {
@@ -547,12 +568,24 @@ export default function NutritionPage() {
           <div className="nutrition-history-list">
             <h3>Dietas anteriores</h3>
             {dietHistory.length ? (
-              dietHistory.slice(0, 5).map((item) => (
-                <article key={item.id || item.metadata?.closedAt}>
-                  <strong>{item.title || "Dieta arquivada"}</strong>
-                  <span>
-                    {item.startDate || "--"} ate {item.endDate || "--"}
-                  </span>
+              dietHistory.slice(0, 10).map((item) => (
+                <article key={item.id || item.metadata?.closedAt} className="nutrition-protocol-history-item">
+                  <div>
+                    <strong>{item.title || "Dieta arquivada"}</strong>
+                    <span>
+                      {item.created_at
+                        ? new Date(item.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })
+                        : (item.startDate || "--")}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    disabled={isRestoringDiet === item.id}
+                    onClick={() => handleRestoreDietPlan(item.id)}
+                  >
+                    {isRestoringDiet === item.id ? "Restaurando..." : "Restaurar"}
+                  </button>
                 </article>
               ))
             ) : (

@@ -3,6 +3,95 @@
   gap: 20px;
 }
 
+/* ── Field validation state ─────────────────────────────────── */
+.checkin-field.is-invalid .checkin-field__label {
+  color: #f87171;
+}
+
+.checkin-field.is-invalid .checkin-field__label strong {
+  color: #f87171;
+}
+
+.checkin-field.is-invalid .checkin-field__control select,
+.checkin-field.is-invalid .checkin-field__control input,
+.checkin-field.is-invalid .checkin-field__control textarea {
+  border-color: #f87171 !important;
+  box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.22);
+  background: rgba(248, 113, 113, 0.06);
+}
+
+/* Photo panel invalid highlight */
+.photo-checkin-panel.is-invalid {
+  outline: 2px solid #f87171;
+  border-radius: 10px;
+  box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.12);
+}
+
+/* ── AI Protocol Update Panel ──────────────────────────────── */
+.checkins-ai-update-panel {
+  padding: 18px 20px;
+  display: grid;
+  gap: 14px;
+  border-radius: 12px;
+}
+
+.checkins-ai-update-panel__header strong {
+  display: block;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+
+.checkins-ai-update-panel__header p {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.55);
+  margin: 0;
+}
+
+.checkins-ai-update-panel__checks {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.checkins-ai-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.85);
+}
+
+.checkins-ai-checkbox input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  accent-color: #e50914;
+  cursor: pointer;
+}
+
+.checkins-ai-update-panel__status {
+  font-size: 0.88rem;
+  color: rgba(255,200,0,0.85);
+  margin: 0;
+}
+
+.checkins-ai-update-panel__result {
+  display: grid;
+  gap: 6px;
+}
+
+.checkins-ai-update-panel__ok {
+  font-size: 0.88rem;
+  color: #4ade80;
+  margin: 0;
+}
+
+.checkins-ai-update-panel__err {
+  font-size: 0.88rem;
+  color: #f87171;
+  margin: 0;
+}
+
 .checkins-page button:focus-visible,
 .checkins-page input:focus-visible,
 .checkins-page select:focus-visible,
@@ -1656,3 +1745,4 @@
 .checkins-history {
   padding: 22px;
 }
+

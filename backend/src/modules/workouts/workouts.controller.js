@@ -1,6 +1,8 @@
 import {
+  listWorkoutHistory,
   listWorkoutSessions,
   loadActiveWorkoutPlan,
+  restoreWorkoutPlan,
   saveWorkoutPlan,
   saveWorkoutSession,
 } from "./workouts.service.js";
@@ -36,6 +38,24 @@ export async function handleSaveWorkoutSession(req, res, next) {
   try {
     const session = await saveWorkoutSession(req.auth.sub, req.body);
     res.status(201).json({ session });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function handleListWorkoutHistory(req, res, next) {
+  try {
+    const history = await listWorkoutHistory(req.auth.sub);
+    res.json({ history });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function handleRestoreWorkoutPlan(req, res, next) {
+  try {
+    const protocol = await restoreWorkoutPlan(req.auth.sub, req.params.id);
+    res.json({ protocol });
   } catch (error) {
     next(error);
   }

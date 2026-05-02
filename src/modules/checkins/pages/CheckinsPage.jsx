@@ -1,4 +1,5 @@
 import { Children, isValidElement, useEffect, useMemo, useRef, useState } from "react";
+import { usePlan } from "../../../hooks/usePlan";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -30,8 +31,10 @@ import {
   loadRemoteCheckins,
   saveRemoteCheckin,
 } from "../../../services/checkinService";
-import { loadDietProtocol } from "../../../data/dietStorage";
-import { loadWorkoutSessionHistory } from "../../../data/workoutExecutionStorage";
+import { loadDietProtocol, hydrateDietProtocolFromApi } from "../../../data/dietStorage";
+import { hydrateWorkoutExecutionFromApi, loadWorkoutSessionHistory } from "../../../data/workoutExecutionStorage";
+import { generateDietWithAi } from "../../../services/ai/diet.service";
+import { generateWorkoutWithAi } from "../../../services/ai/workout.service";
 import "./CheckinsPage.css";
 
 const goalOptions = [
@@ -207,14 +210,14 @@ function getChildrenValue(children) {
   return value;
 }
 
-function Field({ label, required = false, hint, children, className = "" }) {
+function Field({ label, required = false, hint, children, className = "", invalid = false }) {
   const fieldValue = getChildrenValue(children);
   const isFilled = Array.isArray(fieldValue)
     ? fieldValue.length > 0
     : String(fieldValue ?? "").trim().length > 0;
 
   return (
-    <label className={`checkin-field ${className} ${isFilled ? "is-filled" : ""}`.trim()}>
+    <label className={`checkin-field ${className} ${isFilled ? "is-filled" : ""} ${invalid ? "is-invalid" : ""}`.trim()}>
       <span className="checkin-field__label">
         {label}
         {required ? <strong>Obrigatorio</strong> : <em>Opcional</em>}
@@ -777,6 +780,13 @@ function getCadenceIntro(cadence) {
 }
 
 export default function CheckinsPage() {
+  const { canAccess, getLimit } = usePlan();
+  const maxPhotos = getLimit("photo_limit");
+  const canDoMonthly = canAccess("checkin_monthly");
+  const canDoDaily   = canAccess("checkin_daily");
+  const canDoBodyMeasurements = canAccess("body_measurements");
+  const canDoBioimpedance     = canAccess("bioimpedance");
+
   const todayKey = toDateKey(new Date());
   const [activeTab, setActiveTab] = useState("formulario");
   const [activeCadence, setActiveCadence] = useState("weekly");
@@ -791,6 +801,11 @@ export default function CheckinsPage() {
   const [saveConfirmOpen, setSaveConfirmOpen] = useState(false);
   const [pendingPayload, setPendingPayload] = useState(null);
   const confirmButtonRef = useRef(null);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [updateWorkoutWithAi, setUpdateWorkoutWithAi] = useState(false);
+  const [updateDietWithAi, setUpdateDietWithAi] = useState(false);
+  const [isGeneratingProtocols, setIsGeneratingProtocols] = useState(false);
+  const [protocolUpdateResult, setProtocolUpdateResult] = useState(null);
   const cancelButtonRef = useRef(null);
   const [isHydratingCheckins, setIsHydratingCheckins] = useState(true);
 
@@ -932,6 +947,7 @@ export default function CheckinsPage() {
     setFormData(makePrefilledCheckinForm(checkins, cadence));
     setPhotoUploads({});
     setFeedback("");
+    setSubmitAttempted(false);
   }
 
   function handleChange(event) {
@@ -995,8 +1011,9 @@ export default function CheckinsPage() {
 
     setFormData(makePrefilledCheckinForm(updated, activeCadence));
     setPhotoUploads({});
+    setSubmitAttempted(false);
     setFeedback(
-      `${checkinCadences[activeCadence].label} salvo em ${formatDateKey(selectedDateKey)}. O historico foi atualizado sem regenerar treino ou dieta automaticamente.`
+      `${checkinCadences[activeCadence].label} salvo em ${formatDateKey(selectedDateKey)}. O historico foi atualizado.`
     );
     showToast(`${checkinCadences[activeCadence].label} salvo com sucesso.`);
     setSyncStatus(
@@ -1007,6 +1024,44 @@ export default function CheckinsPage() {
         remote,
       })
     );
+
+    // Se o usuário pediu para atualizar protocolos com IA após o check-in
+    if (updateWorkoutWithAi || updateDietWithAi) {
+      setIsGeneratingProtocols(true);
+      setProtocolUpdateResult(null);
+      const results = { workout: null, diet: null, errors: [] };
+
+      try {
+        if (updateWorkoutWithAi) {
+          try {
+            const res = await generateWorkoutWithAi({ persist: true });
+            if (res?.protocol) {
+              await hydrateWorkoutExecutionFromApi();
+              results.workout = res.protocol?.title || "Protocolo de treino atualizado";
+            }
+          } catch (err) {
+            results.errors.push("Treino: " + (err.message || "erro desconhecido"));
+          }
+        }
+
+        if (updateDietWithAi) {
+          try {
+            const res = await generateDietWithAi({ persist: true });
+            if (res?.protocol) {
+              await hydrateDietProtocolFromApi();
+              results.diet = res.protocol?.title || "Protocolo de dieta atualizado";
+            }
+          } catch (err) {
+            results.errors.push("Dieta: " + (err.message || "erro desconhecido"));
+          }
+        }
+      } finally {
+        setIsGeneratingProtocols(false);
+        setProtocolUpdateResult(results);
+        setUpdateWorkoutWithAi(false);
+        setUpdateDietWithAi(false);
+      }
+    }
   }
 
   async function handleSubmit(event) {
@@ -1015,10 +1070,16 @@ export default function CheckinsPage() {
     const validation = validateCheckinForm(payload);
 
     if (!validation.isValid) {
+      setSubmitAttempted(true);
       setFeedback(validation.message);
+      // Scroll feedback into view so the user sees what is missing
+      requestAnimationFrame(() => {
+        document.querySelector(".checkin-field.is-invalid")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
       return;
     }
 
+    setSubmitAttempted(false);
     setPendingPayload(payload);
     setSaveConfirmOpen(true);
   }
@@ -1214,7 +1275,7 @@ export default function CheckinsPage() {
           </p>
         </div>
         <div className="checkins-tabs checkins-tabs--compact" role="tablist" aria-label="Tipo de check-in">
-          {["weekly", "monthly"].map((cadence) => (
+          {["weekly", ...(canDoMonthly ? ["monthly"] : []), ...(canDoDaily ? ["daily"] : [])].map((cadence) => (
             <button
               key={cadence}
               type="button"
@@ -1248,6 +1309,7 @@ export default function CheckinsPage() {
               <span style={{ width: `${requiredPercent}%` }} />
             </div>
           </div>
+          {canDoBioimpedance && (
           <div className="checkins-progress-row checkins-progress-row--optional">
             <div>
               <strong>Opcionais de bioimpedancia</strong>
@@ -1257,6 +1319,7 @@ export default function CheckinsPage() {
               <span style={{ width: `${optionalBioPercent}%` }} />
             </div>
           </div>
+          )}
         </div>
         <div className="checkins-schedule-grid" aria-label="Datas dos check-ins">
           <article>
@@ -1552,7 +1615,7 @@ export default function CheckinsPage() {
             </Section>
           ) : null}
 
-          {showBodyComposition ? (
+          {showBodyComposition && canDoBodyMeasurements ? (
             <Section
               eyebrow="03"
               title="Antropometria editavel"
@@ -1605,7 +1668,7 @@ export default function CheckinsPage() {
             </Section>
           ) : null}
 
-          {showBodyComposition ? (
+          {showBodyComposition && canDoBioimpedance ? (
             <Section
               eyebrow="04"
               title="Bioimpedancia opcional"
@@ -1692,7 +1755,7 @@ export default function CheckinsPage() {
             }
           >
             <div className="checkins-grid checkins-grid--three">
-              <Field label="Altura" required>
+              <Field label="Altura" required invalid={submitAttempted && !hasValue(formData.height)}>
                 <input
                   name="height"
                   value={formData.height}
@@ -1702,7 +1765,7 @@ export default function CheckinsPage() {
                 />
               </Field>
 
-              <Field label="Peso atual" required>
+              <Field label="Peso atual" required invalid={submitAttempted && !hasValue(formData.weight)}>
                 <input
                   name="weight"
                   value={formData.weight}
@@ -1712,7 +1775,7 @@ export default function CheckinsPage() {
                 />
               </Field>
 
-              <Field label="Fome" required>
+              <Field label="Fome" required invalid={submitAttempted && !hasValue(formData.hunger)}>
                 <select name="hunger" value={formData.hunger} onChange={handleChange}>
                   <option value="">Selecione</option>
                   <option value="baixa">Baixa</option>
@@ -1721,7 +1784,7 @@ export default function CheckinsPage() {
                 </select>
               </Field>
 
-              <Field label="Estresse" required>
+              <Field label="Estresse" required invalid={submitAttempted && !hasValue(formData.stress)}>
                 <select name="stress" value={formData.stress} onChange={handleChange}>
                   <option value="">Selecione</option>
                   <option value="baixo">Baixo</option>
@@ -1730,7 +1793,7 @@ export default function CheckinsPage() {
                 </select>
               </Field>
 
-              <Field label="Digestao" required>
+              <Field label="Digestao" required invalid={submitAttempted && !hasValue(formData.digestion)}>
                 <select name="digestion" value={formData.digestion} onChange={handleChange}>
                   <option value="">Selecione</option>
                   <option value="boa">Boa</option>
@@ -1739,7 +1802,7 @@ export default function CheckinsPage() {
                 </select>
               </Field>
 
-              <Field label="Qualidade do sono" required>
+              <Field label="Qualidade do sono" required invalid={submitAttempted && !hasValue(formData.sleepQuality)}>
                 <select name="sleepQuality" value={formData.sleepQuality} onChange={handleChange}>
                   {sleepQualityOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -1749,7 +1812,7 @@ export default function CheckinsPage() {
                 </select>
               </Field>
 
-              <Field label="Nivel de fadiga" required>
+              <Field label="Nivel de fadiga" required invalid={submitAttempted && !hasValue(formData.fatigueLevel)}>
                 <select name="fatigueLevel" value={formData.fatigueLevel} onChange={handleChange}>
                   <option value="">Selecione</option>
                   {Array.from({ length: 10 }, (_, index) => String(index + 1)).map((value) => (
@@ -1760,7 +1823,7 @@ export default function CheckinsPage() {
                 </select>
               </Field>
 
-              <Field label="Performance no treino" required>
+              <Field label="Performance no treino" required invalid={submitAttempted && !hasValue(formData.trainingPerformance)}>
                 <select
                   name="trainingPerformance"
                   value={formData.trainingPerformance}
@@ -1783,6 +1846,22 @@ export default function CheckinsPage() {
                   <option value="alta">Alta variacao</option>
                 </select>
               </Field>
+
+              {showWeekly ? (
+              <Field
+                label="Dias disponiveis para treinar esta semana"
+                hint="Quantos dias voce conseguira treinar de fato nesta semana (1 a 7)."
+              >
+                <select name="weeklyTrainingDays" value={formData.weeklyTrainingDays} onChange={handleChange}>
+                  <option value="">Selecione</option>
+                  {weeklyTrainingDayOptions.map((value) => (
+                    <option key={value} value={value}>
+                      {value} dia{value === "1" ? "" : "s"} por semana
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              ) : null}
             </div>
 
             <div className="checkins-routine-block">
@@ -1862,7 +1941,7 @@ export default function CheckinsPage() {
               </div>
             ) : null}
 
-            <Field label="Feedback da semana" required>
+            <Field label="Feedback da semana" required invalid={submitAttempted && !hasValue(formData.notes)}>
               <textarea
                 name="notes"
                 value={formData.notes}
@@ -1871,21 +1950,21 @@ export default function CheckinsPage() {
               />
             </Field>
 
-            <div className="photo-checkin-panel">
+            <div className={`photo-checkin-panel${submitAttempted && selectedPhotoCount === 0 ? " is-invalid" : ""}`}>
               <div className="photo-checkin-panel__header">
                 <div>
                   <h3>Fotos de progresso obrigatorias</h3>
                   <p>
-                    Envie ate cinco fotos de corpo inteiro seguindo as poses
+                    Envie ate {maxPhotos === Infinity ? "cinco" : maxPhotos} fotos de corpo inteiro seguindo as poses
                     marcadas. Use o mesmo local, luz e distancia sempre que
                     possivel.
                   </p>
                 </div>
-                <span>{selectedPhotoCount}/5 fotos</span>
+                <span>{selectedPhotoCount}/{maxPhotos === Infinity ? 5 : maxPhotos} fotos</span>
               </div>
 
               <div className="photo-pose-grid">
-                {photoPoseSlots.map((slot) => (
+                {photoPoseSlots.slice(0, maxPhotos === Infinity ? photoPoseSlots.length : maxPhotos).map((slot) => (
                   <PhotoPoseCard
                     key={slot.id}
                     slot={slot}
@@ -1896,15 +1975,64 @@ export default function CheckinsPage() {
               </div>
             </div>
 
+            {/* Painel de atualização com IA após salvar */}
+            <div className="checkins-ai-update-panel glass-panel">
+              <div className="checkins-ai-update-panel__header">
+                <strong>Atualizar protocolos com IA após este check-in</strong>
+                <p>
+                  Se marcado, a IA vai analisar todos os dados deste check-in e gerar
+                  novos protocolos automaticamente ao salvar.
+                </p>
+              </div>
+              <div className="checkins-ai-update-panel__checks">
+                <label className="checkins-ai-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={updateWorkoutWithAi}
+                    onChange={(e) => setUpdateWorkoutWithAi(e.target.checked)}
+                    disabled={isGeneratingProtocols}
+                  />
+                  <span>Atualizar protocolo de treino</span>
+                </label>
+                <label className="checkins-ai-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={updateDietWithAi}
+                    onChange={(e) => setUpdateDietWithAi(e.target.checked)}
+                    disabled={isGeneratingProtocols}
+                  />
+                  <span>Atualizar protocolo de dieta</span>
+                </label>
+              </div>
+              {isGeneratingProtocols && (
+                <p className="checkins-ai-update-panel__status">
+                  ⏳ Gerando protocolos com IA... isso pode levar alguns segundos.
+                </p>
+              )}
+              {protocolUpdateResult && (
+                <div className="checkins-ai-update-panel__result">
+                  {protocolUpdateResult.workout && (
+                    <p className="checkins-ai-update-panel__ok">✓ Treino: {protocolUpdateResult.workout}</p>
+                  )}
+                  {protocolUpdateResult.diet && (
+                    <p className="checkins-ai-update-panel__ok">✓ Dieta: {protocolUpdateResult.diet}</p>
+                  )}
+                  {protocolUpdateResult.errors?.map((err) => (
+                    <p key={err} className="checkins-ai-update-panel__err">✗ {err}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="checkins-inline-actions">
               <div>
                 <strong>Salvar em {formatDateKey(selectedDateKey)}</strong>
                 <span>Ao salvar, voce pode confirmar hoje ou escolher uma data retroativa.</span>
               </div>
-              <button type="submit" className="primary-button">
+              <button type="submit" className="primary-button" disabled={isGeneratingProtocols}>
                 Salvar check-in
               </button>
-              <button type="button" className="ghost-button" onClick={handleReset}>
+              <button type="button" className="ghost-button" onClick={handleReset} disabled={isGeneratingProtocols}>
                 Reiniciar check-in
               </button>
             </div>
