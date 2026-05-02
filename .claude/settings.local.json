@@ -28,7 +28,13 @@
       "Bash(git fetch *)",
       "Bash(git log *)",
       "Bash(git merge *)",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(findstr /i \"gsap typescript vite react\")",
+      "Bash(git revert *)",
+      "Bash(findstr /V \"KEY\\\\|SECRET\\\\|PASSWORD\")",
+      "Bash(findstr /V \"KEY SECRET PASSWORD\")",
+      "Bash(curl -s http://localhost:3333/health)",
+      "Bash(curl -s -X POST http://localhost:3333/ai/chat -H 'Content-Type: application/json' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4IiwiZW1haWwiOiJqb25hdGFzLmZyZWlyZS5wQGdtYWlsLmNvbSIsInN2IjoxLCJpYXQiOjE3Nzc3NTYzNzgsImV4cCI6MTc3Nzc1OTk3OH0.2UhhybJ7v7UQFoTZBs0NaKGPcT3aIhIyOss_X_bc5b8' -d '{\"message\":\"Olá! Qual é o meu objetivo de treino atual e quantas sessões já registrei?\",\"history\":[]}')"
     ]
   }
 }

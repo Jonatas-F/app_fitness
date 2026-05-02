@@ -2,29 +2,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import { getPersonalAvatarById } from "../../../data/platformImageCatalog";
 import { loadAssistantContext } from "../../../services/assistantService";
-import { sendAiChatMessage } from "../../../services/ai/chat.service";
+import { sendAiChatMessage, loadChatHistory } from "../../../services/ai/chat.service";
 import "./ChatPage.css";
 
 const SETTINGS_KEY = "shapeCertoSettings";
-
-const contextChips = [
-  { label: "@dashboard", value: "@dashboard ", helper: "peso, medidas, aderencia e evolucao" },
-  { label: "@treino", value: "@treino ", helper: "protocolo, cargas, sessoes e tecnica" },
-  { label: "@dieta", value: "@dieta ", helper: "refeicoes, agua, restricoes e ajustes" },
-  { label: "@checkin", value: "@checkin ", helper: "historico semanal, mensal e fotos" },
-  { label: "#comparar", value: "#comparar ", helper: "comparar periodos do proprio usuario" },
-  { label: "#video", value: "#video ", helper: "pedir feedback de execucao anexada" },
-];
 
 const suggestedQuestions = [
   "Compare minha evolucao de peso e medidas dos ultimos check-ins.",
   "Com base nos meus treinos recentes, onde posso evoluir carga com seguranca?",
   "Minha dieta atual esta coerente com meu objetivo e rotina?",
-  "Analise este video curto e me diga pontos de ajuste na execucao.",
   "Quais dados ainda faltam para melhorar a precisao do meu proximo protocolo?",
 ];
 
-// Bloqueio client-side de perguntas explicitamente fora de escopo
 const blockedPatterns = [
   /outro(s)? usuario(s)?/i,
   /email(s)? de (clientes|usuarios|terceiros)/i,
@@ -35,359 +24,416 @@ const blockedPatterns = [
   /token(s)? secreto(s)?/i,
 ];
 
-function buildContextSummary(context) {
-  const latestCheckin = Array.isArray(context?.checkins) ? context.checkins[0] : null;
-  const enabledWorkouts = (context?.workout?.activePlan?.payload?.workouts || []).filter((w) => w.enabled).length;
-  const enabledMeals = (context?.diet?.activePlan?.payload?.meals || []).filter((m) => m.enabled).length;
-  const subscription = context?.billing?.subscription;
-
-  return [
-    {
-      label: "Usuario",
-      value: context?.profile?.full_name || context?.account?.email || "--",
-      helper: "Perfil ativo",
-    },
-    {
-      label: "Check-ins",
-      value: String(context?.checkins?.length || 0),
-      helper: latestCheckin ? `Ultimo: ${new Date(latestCheckin.created_at).toLocaleDateString("pt-BR")}` : "Sem registro",
-    },
-    {
-      label: "Treinos",
-      value: String(enabledWorkouts),
-      helper: `${context?.workout?.recentSessions?.length || 0} sessoes recentes`,
-    },
-    {
-      label: "Dieta",
-      value: String(enabledMeals),
-      helper: "Refeicoes ativas no protocolo",
-    },
-    {
-      label: "Plano",
-      value: subscription?.plan || context?.account?.plan_type || "--",
-      helper: subscription?.token_balance ? `${subscription.token_balance} tokens` : "Consumo futuro",
-    },
-  ];
-}
-
 function isBlockedQuestion(text) {
-  return blockedPatterns.some((pattern) => pattern.test(text));
+  return blockedPatterns.some((p) => p.test(text));
 }
-
 
 function loadPersonalSettings() {
   try {
-    const settings = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+    const s = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+    return {
+      name: s?.personal?.name || "Personal Virtual",
+      avatarId: s?.personal?.avatarId || "default-personal",
+    };
+  } catch {
+    return { name: "Personal Virtual", avatarId: "default-personal" };
+  }
+}
 
-    return {
-      name: settings?.personal?.name || "Personal Virtual",
-      avatarId: settings?.personal?.avatarId || "default-personal",
-    };
-  } catch (error) {
-    return {
-      name: "Personal Virtual",
-      avatarId: "default-personal",
-    };
+function UserInitials({ name, avatarUrl, size = 40 }) {
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={name}
+        className="chat-avatar-img"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+
+  const initials = (name || "U")
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() || "")
+    .join("");
+
+  return (
+    <span className="chat-avatar-initials" style={{ width: size, height: size, fontSize: size * 0.38 }}>
+      {initials}
+    </span>
+  );
+}
+
+function formatTime(dateStr) {
+  if (!dateStr) return "";
+  try {
+    return new Date(dateStr).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return "";
   }
 }
 
 export default function ChatPage() {
-  const fileInputRef = useRef(null);
   const threadRef = useRef(null);
+  const textareaRef = useRef(null);
+
   const [personalSettings, setPersonalSettings] = useState(() => loadPersonalSettings());
   const [context, setContext] = useState(null);
   const [isLoadingContext, setIsLoadingContext] = useState(true);
   const [contextError, setContextError] = useState("");
-  const [message, setMessage] = useState("");
-  const [attachments, setAttachments] = useState([]);
+
   const [conversation, setConversation] = useState([]);
+  const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState("");
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+
+  // Filtro de participante (null = todos)
+  const [activeParticipant, setActiveParticipant] = useState(null);
+
   const personalAvatar = useMemo(
     () => getPersonalAvatarById(personalSettings.avatarId),
     [personalSettings.avatarId]
   );
   const personalName = personalSettings.name || "Personal Virtual";
 
+  const userProfile = context?.profile || {};
+  const userName = userProfile.full_name || context?.account?.email || "Voce";
+  const userAvatarUrl = userProfile.avatar_url || null;
+
+  // Carrega contexto + histórico em paralelo
   useEffect(() => {
-    let isMounted = true;
+    let mounted = true;
 
-    async function hydrateContext() {
-      const result = await loadAssistantContext();
+    async function init() {
+      const [contextResult, historyResult] = await Promise.all([
+        loadAssistantContext(),
+        loadChatHistory(),
+      ]);
 
-      if (!isMounted) {
-        return;
-      }
+      if (!mounted) return;
 
       setIsLoadingContext(false);
+      setIsLoadingHistory(false);
 
-      if (result.error) {
-        setContextError(result.error.message);
-        return;
+      if (contextResult.error) {
+        setContextError(contextResult.error.message);
+      } else if (contextResult.skipped) {
+        setContextError("Entre na conta para ativar o Personal Virtual.");
+      } else {
+        setContext(contextResult.context);
+        if (contextResult.context?.settings) {
+          setPersonalSettings({
+            name: contextResult.context.settings.personal_name || "Personal Virtual",
+            avatarId: contextResult.context.settings.avatar_id || "default-personal",
+          });
+        }
       }
 
-      if (result.skipped) {
-        setContextError("Entre na conta para liberar consultas seguras ao banco.");
-        return;
-      }
-
-      setContext(result.context);
-
-      if (result.context?.settings) {
-        setPersonalSettings({
-          name: result.context.settings.personal_name || "Personal Virtual",
-          avatarId: result.context.settings.avatar_id || "default-personal",
-        });
+      if (historyResult?.messages?.length) {
+        const loaded = historyResult.messages.map((m) => ({
+          role: m.role,
+          text: m.content,
+          createdAt: m.created_at,
+          fromDb: true,
+        }));
+        setConversation(loaded);
       }
     }
 
-    hydrateContext();
-
-    return () => {
-      isMounted = false;
-    };
+    init();
+    return () => { mounted = false; };
   }, []);
 
+  // Sync personal settings from storage events
   useEffect(() => {
-    function syncPersonalSettings(event) {
-      if (event.detail?.personal) {
+    function sync(e) {
+      if (e.detail?.personal) {
         setPersonalSettings({
-          name: event.detail.personal.name || "Personal Virtual",
-          avatarId: event.detail.personal.avatarId || "default-personal",
+          name: e.detail.personal.name || "Personal Virtual",
+          avatarId: e.detail.personal.avatarId || "default-personal",
         });
         return;
       }
-
       setPersonalSettings(loadPersonalSettings());
     }
-
-    window.addEventListener("shape-certo-settings-updated", syncPersonalSettings);
-    window.addEventListener("storage", syncPersonalSettings);
-
+    window.addEventListener("shape-certo-settings-updated", sync);
+    window.addEventListener("storage", sync);
     return () => {
-      window.removeEventListener("shape-certo-settings-updated", syncPersonalSettings);
-      window.removeEventListener("storage", syncPersonalSettings);
+      window.removeEventListener("shape-certo-settings-updated", sync);
+      window.removeEventListener("storage", sync);
     };
   }, []);
 
-  // Rola thread para o fim sempre que chega uma nova mensagem
+  // Scroll para o fim quando chega mensagem nova
   useEffect(() => {
     if (threadRef.current) {
       threadRef.current.scrollTop = threadRef.current.scrollHeight;
     }
   }, [conversation, isSending]);
 
-  const summary = useMemo(() => buildContextSummary(context), [context]);
+  const filteredConversation = useMemo(() => {
+    if (!activeParticipant) return conversation;
+    return conversation.filter((m) => {
+      if (activeParticipant === "assistant") return m.role === "assistant";
+      if (activeParticipant === "user") return m.role === "user";
+      return true;
+    });
+  }, [conversation, activeParticipant]);
 
-  function appendShortcut(value) {
-    setMessage((current) => `${current}${value}`.trimStart());
-  }
-
-  function handleFiles(event) {
-    const files = Array.from(event.target.files || []);
-    const safeFiles = files
-      .filter((file) => file.type.startsWith("image/") || file.type.startsWith("video/"))
-      .slice(0, 4)
-      .map((file) => ({
-        id: `${file.name}-${file.lastModified}`,
-        name: file.name,
-        type: file.type.startsWith("video/") ? "video" : "imagem",
-        size: file.size,
-      }));
-
-    setAttachments((current) => [...current, ...safeFiles].slice(0, 4));
-    event.target.value = "";
-  }
-
-  function removeAttachment(id) {
-    setAttachments((current) => current.filter((item) => item.id !== id));
-  }
-
-  async function handleSubmit(event) {
-    event.preventDefault();
+  async function handleSubmit(e) {
+    e.preventDefault();
     const trimmed = message.trim();
-
-    if (!trimmed || !context || isSending) {
-      return;
-    }
+    if (!trimmed || isSending) return;
 
     setSendError("");
 
-    // Bloqueio client-side: resposta imediata sem chamar a API
     if (isBlockedQuestion(trimmed)) {
-      const userMessage = { role: "user", text: trimmed, attachments };
-      const blockedReply = {
-        role: "assistant",
-        text: "Nao posso consultar ou inferir dados de outros usuarios, credenciais, tokens secretos ou dados completos de pagamento. Posso analisar apenas os dados da sua propria conta logada.",
-      };
-      setConversation((current) => [...current, userMessage, blockedReply]);
+      setConversation((prev) => [
+        ...prev,
+        { role: "user", text: trimmed, createdAt: new Date().toISOString() },
+        {
+          role: "assistant",
+          text: "Nao posso consultar dados de outros usuarios, credenciais ou informacoes sensiveis. Posso analisar apenas os dados da sua conta logada.",
+          createdAt: new Date().toISOString(),
+        },
+      ]);
       setMessage("");
-      setAttachments([]);
       return;
     }
 
-    const userMessage = { role: "user", text: trimmed, attachments };
-
-    // Adiciona mensagem do usuário imediatamente e limpa o campo
-    setConversation((current) => [...current, userMessage]);
+    const userMsg = { role: "user", text: trimmed, createdAt: new Date().toISOString() };
+    setConversation((prev) => [...prev, userMsg]);
     setMessage("");
-    setAttachments([]);
     setIsSending(true);
 
     try {
-      // Passa o histórico atual (sem a mensagem recém-adicionada — o backend a recebe no campo `message`)
-      const historyForApi = conversation.map((m) => ({ role: m.role, text: m.text || "" }));
-      const result = await sendAiChatMessage(trimmed, historyForApi);
+      const result = await sendAiChatMessage(trimmed);
 
       if (result.error) {
-        setSendError(result.error.message || "Erro ao chamar o Personal Virtual.");
+        setSendError(result.error.message || "Erro ao conectar com o Personal Virtual.");
         return;
       }
 
-      const assistantReply = {
-        role: "assistant",
-        text: result.text || "Sem resposta.",
-        run: result.run,
-      };
-
-      setConversation((current) => [...current, assistantReply]);
-    } catch (error) {
-      setSendError(error.message || "Erro de conexao com o servidor.");
+      setConversation((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          text: result.text || "Sem resposta.",
+          createdAt: new Date().toISOString(),
+          run: result.run,
+        },
+      ]);
+    } catch (err) {
+      setSendError(err.message || "Erro de conexao com o servidor.");
     } finally {
       setIsSending(false);
     }
   }
 
+  function handleKeyDown(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  }
+
+  function handleSuggestion(q) {
+    setMessage(q);
+    textareaRef.current?.focus();
+  }
+
+  const isLoading = isLoadingContext || isLoadingHistory;
+
   return (
-    <div className="chat-page">
-      <section className="chat-hero">
-        <div className="chat-hero__identity">
-          {personalAvatar ? (
-            <img className="chat-hero__avatar" src={personalAvatar.url} alt={`Avatar ${personalName}`} />
-          ) : null}
+    <div className="mono-chat">
+      {/* ── Header ─────────────────────────────────── */}
+      <header className="mono-chat__header">
+        <div className="mono-chat__header-identity">
+          <div className="mono-chat__header-avatar-wrap">
+            {personalAvatar ? (
+              <img src={personalAvatar.url} alt={personalName} className="mono-chat__header-avatar" />
+            ) : (
+              <span className="mono-chat__header-avatar-fallback">P</span>
+            )}
+            <span className="mono-chat__online-dot" />
+          </div>
           <div>
-            <span>Personal Virtual</span>
-            <strong>{personalName}</strong>
+            <strong className="mono-chat__header-name">{personalName}</strong>
+            <span className="mono-chat__header-sub">
+              {isLoading ? "Sincronizando..." : contextError ? "Offline" : "Online · Personal Virtual"}
+            </span>
           </div>
         </div>
 
-        <div className="chat-hero__copy">
-          <h1>Converse com seus dados de treino, dieta e evolucao.</h1>
-          <p>
-            Consulte treino, dieta, check-ins e dashboard em uma conversa focada no seu progresso.
-          </p>
+        <div className="mono-chat__header-meta">
+          <span className="mono-chat__msg-count">
+            {conversation.length} {conversation.length === 1 ? "mensagem" : "mensagens"}
+          </span>
+          <Icon icon="solar:chat-dots-bold" width={20} className="mono-chat__header-icon" />
         </div>
-      </section>
+      </header>
 
-      <section className="chat-grid">
-        <aside className="chat-context-panel">
-          <div className="chat-panel-header">
-            <span>Contexto seguro</span>
-            <strong>{isLoadingContext ? "Sincronizando" : context ? "Ativo" : "Pendente"}</strong>
-          </div>
+      {/* ── Body ───────────────────────────────────── */}
+      <div className="mono-chat__body">
+        {/* Sidebar de participantes */}
+        <aside className="mono-chat__sidebar">
+          <p className="mono-chat__sidebar-label">Participantes</p>
 
-          {contextError ? <p className="chat-alert">{contextError}</p> : null}
+          {/* Personal */}
+          <button
+            type="button"
+            className={`mono-chat__participant ${activeParticipant === "assistant" ? "is-active" : ""}`}
+            onClick={() => setActiveParticipant(activeParticipant === "assistant" ? null : "assistant")}
+          >
+            <div className="mono-chat__participant-avatar-wrap">
+              {personalAvatar ? (
+                <img src={personalAvatar.url} alt={personalName} className="mono-chat__participant-avatar" />
+              ) : (
+                <span className="mono-chat__participant-fallback">P</span>
+              )}
+              <span className="mono-chat__online-dot mono-chat__online-dot--sm" />
+            </div>
+            <div className="mono-chat__participant-info">
+              <strong>{personalName}</strong>
+              <span>Personal Virtual</span>
+            </div>
+          </button>
 
-          <div className="chat-context-cards">
-            {summary.map((item) => (
-              <article key={item.label}>
-                <small>{item.label}</small>
-                <strong>{item.value}</strong>
-                <span>{item.helper}</span>
-              </article>
-            ))}
-          </div>
+          {/* User */}
+          <button
+            type="button"
+            className={`mono-chat__participant ${activeParticipant === "user" ? "is-active" : ""}`}
+            onClick={() => setActiveParticipant(activeParticipant === "user" ? null : "user")}
+          >
+            <div className="mono-chat__participant-avatar-wrap">
+              <UserInitials name={userName} avatarUrl={userAvatarUrl} size={40} />
+            </div>
+            <div className="mono-chat__participant-info">
+              <strong>{userName.split(" ")[0]}</strong>
+              <span>Voce</span>
+            </div>
+          </button>
 
-          <div className="chat-shortcuts">
-            <h2>Atalhos</h2>
-            {contextChips.map((chip) => (
-              <button key={chip.label} type="button" onClick={() => appendShortcut(chip.value)}>
-                <strong>{chip.label}</strong>
-                <span>{chip.helper}</span>
+          {activeParticipant && (
+            <button
+              type="button"
+              className="mono-chat__clear-filter"
+              onClick={() => setActiveParticipant(null)}
+            >
+              Ver todas
+            </button>
+          )}
+
+          {/* Sugestões */}
+          <div className="mono-chat__suggestions">
+            <p className="mono-chat__sidebar-label">Sugestoes</p>
+            {suggestedQuestions.map((q) => (
+              <button key={q} type="button" className="mono-chat__suggestion" onClick={() => handleSuggestion(q)}>
+                {q}
               </button>
             ))}
           </div>
         </aside>
 
-        <main className="chat-console">
-          <div className="chat-suggestions">
-            {suggestedQuestions.map((question) => (
-              <button key={question} type="button" onClick={() => setMessage(question)}>
-                {question}
-              </button>
-            ))}
-          </div>
-
-          <div className="chat-thread" aria-live="polite" ref={threadRef}>
-            {conversation.map((item, index) => (
-              <article key={`${item.role}-${index}`} className={`chat-message is-${item.role}`}>
-                <span>{item.role === "assistant" ? personalName : "Voce"}</span>
-                <p>{item.text}</p>
-                {item.attachments?.length ? (
-                  <div className="chat-message-attachments">
-                    {item.attachments.map((attachment) => (
-                      <small key={attachment.id}>{attachment.type}: {attachment.name}</small>
-                    ))}
-                  </div>
-                ) : null}
-              </article>
-            ))}
-
-            {isSending ? (
-              <article className="chat-message is-assistant is-typing">
-                <span>{personalName}</span>
-                <p className="chat-typing-indicator">
-                  <span />
-                  <span />
-                  <span />
-                </p>
-              </article>
-            ) : null}
-
-            {sendError ? (
-              <p className="chat-send-error">{sendError}</p>
-            ) : null}
-          </div>
-
-          <form className="chat-composer" onSubmit={handleSubmit}>
-            {attachments.length ? (
-              <div className="chat-attachments">
-                {attachments.map((attachment) => (
-                  <button key={attachment.id} type="button" onClick={() => removeAttachment(attachment.id)}>
-                    <Icon icon={attachment.type === "video" ? "solar:videocamera-bold" : "solar:gallery-bold"} />
-                    {attachment.name}
-                    <span>remover</span>
-                  </button>
-                ))}
+        {/* Thread de mensagens */}
+        <section className="mono-chat__thread-wrap">
+          <div className="mono-chat__thread" ref={threadRef} aria-live="polite">
+            {isLoading ? (
+              <div className="mono-chat__loading">
+                <span className="mono-chat__spinner" />
+                <span>Carregando historico...</span>
               </div>
-            ) : null}
+            ) : contextError ? (
+              <div className="mono-chat__empty">
+                <Icon icon="solar:shield-warning-bold" width={32} />
+                <p>{contextError}</p>
+              </div>
+            ) : filteredConversation.length === 0 ? (
+              <div className="mono-chat__empty">
+                <Icon icon="solar:chat-round-dots-bold" width={36} />
+                <p>Nenhuma mensagem ainda. Comece uma conversa!</p>
+              </div>
+            ) : (
+              filteredConversation.map((msg, index) => {
+                const isPersonal = msg.role === "assistant";
+                const senderName = isPersonal ? personalName : userName.split(" ")[0];
+                const avatarEl = isPersonal ? (
+                  personalAvatar ? (
+                    <img src={personalAvatar.url} alt={personalName} className="mono-chat__msg-avatar" />
+                  ) : (
+                    <span className="mono-chat__msg-avatar mono-chat__msg-avatar--fallback">P</span>
+                  )
+                ) : (
+                  <UserInitials name={userName} avatarUrl={userAvatarUrl} size={36} />
+                );
 
+                return (
+                  <article key={index} className={`mono-chat__msg ${isPersonal ? "is-assistant" : "is-user"}`}>
+                    <div className="mono-chat__msg-avatar-col">{avatarEl}</div>
+                    <div className="mono-chat__msg-body">
+                      <div className="mono-chat__msg-meta">
+                        <strong>{senderName}</strong>
+                        <time>{formatTime(msg.createdAt)}</time>
+                      </div>
+                      <p className="mono-chat__msg-text">{msg.text}</p>
+                    </div>
+                  </article>
+                );
+              })
+            )}
+
+            {isSending && (
+              <article className="mono-chat__msg is-assistant is-typing">
+                <div className="mono-chat__msg-avatar-col">
+                  {personalAvatar ? (
+                    <img src={personalAvatar.url} alt={personalName} className="mono-chat__msg-avatar" />
+                  ) : (
+                    <span className="mono-chat__msg-avatar mono-chat__msg-avatar--fallback">P</span>
+                  )}
+                </div>
+                <div className="mono-chat__msg-body">
+                  <div className="mono-chat__msg-meta">
+                    <strong>{personalName}</strong>
+                  </div>
+                  <div className="mono-chat__typing">
+                    <span /><span /><span />
+                  </div>
+                </div>
+              </article>
+            )}
+
+            {sendError && <p className="mono-chat__error">{sendError}</p>}
+          </div>
+
+          {/* Composer */}
+          <form className="mono-chat__composer" onSubmit={handleSubmit}>
             <textarea
+              ref={textareaRef}
               value={message}
-              onChange={(event) => setMessage(event.target.value)}
-              placeholder="Ex: @treino compare minha carga no supino das ultimas sessoes..."
-              rows={4}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Escreva sua mensagem... (Enter para enviar)"
+              rows={1}
+              disabled={isSending || !!contextError}
+              className="mono-chat__input"
             />
-
-            <div className="chat-composer-actions">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,video/*"
-                multiple
-                onChange={handleFiles}
-              />
-              <button type="button" className="secondary-button" onClick={() => fileInputRef.current?.click()}>
-                <Icon icon="solar:paperclip-bold" aria-hidden="true" />
-                Anexar imagem ou video curto
-              </button>
-              <button type="submit" className="primary-button" disabled={!context || !message.trim() || isSending}>
-                {isSending ? "Aguardando..." : "Enviar pergunta"}
-              </button>
-            </div>
+            <button
+              type="submit"
+              className="mono-chat__send primary-button"
+              disabled={!message.trim() || isSending || !!contextError}
+              aria-label="Enviar mensagem"
+            >
+              {isSending ? (
+                <span className="mono-chat__spinner mono-chat__spinner--sm" />
+              ) : (
+                <Icon icon="solar:arrow-up-bold" width={20} />
+              )}
+            </button>
           </form>
-        </main>
-      </section>
+        </section>
+      </div>
     </div>
   );
 }
