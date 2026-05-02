@@ -134,8 +134,6 @@ html {
 body {
   min-width: 320px;
   background:
-    radial-gradient(circle at top left, rgba(255, 46, 46, 0.12), transparent 30%),
-    radial-gradient(circle at top right, rgba(120, 24, 24, 0.12), transparent 28%),
     linear-gradient(180deg, #0b0b0d 0%, #050506 55%, #020203 100%);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
@@ -153,7 +151,7 @@ body::before {
       rgba(255, 255, 255, 0.03) 0%,
       transparent 30%,
       transparent 70%,
-      rgba(255, 46, 46, 0.05) 100%
+      transparent 100%
     );
   z-index: -2;
 }
@@ -272,8 +270,8 @@ ol {
   padding: 0 12px;
   border-radius: 999px;
   color: #fff;
-  background: rgba(255, 46, 46, 0.16);
-  border: 1px solid rgba(255, 46, 46, 0.26);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.11);
   font-size: 0.78rem;
   font-weight: 900;
 }
@@ -476,7 +474,7 @@ ol {
     rgba(255, 255, 255, 0.08) 0%,
     transparent 40%,
     transparent 70%,
-    rgba(255, 46, 46, 0.06) 100%
+    transparent 100%
   );
   pointer-events: none;
 }
@@ -515,7 +513,6 @@ ol {
   padding: 28px;
   border-radius: var(--radius-lg);
   background:
-    radial-gradient(circle at right top, rgba(255, 46, 46, 0.22), transparent 28%),
     linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04));
   border: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(18px);
@@ -529,9 +526,9 @@ ol {
   min-height: 32px;
   padding: 6px 12px;
   border-radius: 999px;
-  background: var(--primary-soft);
-  color: #ffd6d6;
-  border: 1px solid rgba(255, 46, 46, 0.16);
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255,255,255,0.80);
+  border: 1px solid rgba(255, 255, 255, 0.10);
   font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -602,8 +599,8 @@ ol {
 .ghost-button:hover {
   transform: scale(1.03);
   color: var(--text-primary);
-  border-color: rgba(255, 46, 46, 0.22);
-  background: rgba(255, 46, 46, 0.08);
+  border-color: rgba(255, 255, 255, 0.20);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .grid {
@@ -651,7 +648,7 @@ ol {
 
 .metric-trend {
   margin-top: 8px;
-  color: #ffd7d7;
+  color: rgba(255, 255, 255, 0.70);
   font-size: 0.86rem;
   font-weight: 600;
 }
@@ -670,8 +667,8 @@ ol {
 
 .badge-primary {
   color: #fff;
-  background: rgba(255, 46, 46, 0.16);
-  border-color: rgba(255, 46, 46, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.13);
 }
 
 .badge-success {
@@ -788,7 +785,7 @@ ol {
 }
 
 .highlight {
-  color: #ffb4b4;
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .divider {

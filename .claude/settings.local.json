@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs wc *)",
+      "Bash(git rm *)",
+      "Bash(rm -f \"\\(\" \"{\" \"loadProfileData\\(\\)\\)\")",
+      "Bash(npm install *)",
+      "Bash(npm audit *)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(netstat -ano)",
+      "Bash(xargs grep *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git add *)",
+      "Bash(gh pr *)",
+      "Bash(gh repo *)",
+      "Bash(gh issue *)",
+      "Bash(gh api *)",
+      "Bash(copy \"C:\\\\Users\\\\jonat\\\\Documents\\\\Projetos-Git\\\\shape-certo\\\\src\\\\assets\\\\logo_sp.svg\" \"C:\\\\Users\\\\jonat\\\\Documents\\\\Projetos-Git\\\\shape-certo\\\\shape-certo\\\\keen-greider-d6ff33\\\\src\\\\assets\\\\logo_sp.svg\")",
+      "Bash(ls backend/src/routes/)",
+      "Bash(ls backend/)",
+      "Bash(node -e ' *)",
+      "Bash(awk '{print $2}')",
+      "Bash(grep -v \"^$\")",
+      "Bash(npm run *)",
+      "Bash(echo \"Backend iniciado em background PID=$!\")",
+      "Bash(echo \"PID=$!\")",
+      "Bash(git fetch *)",
+      "Bash(git log *)",
+      "Bash(git merge *)",
+      "Bash(git checkout *)"
+    ]
+  }
+}

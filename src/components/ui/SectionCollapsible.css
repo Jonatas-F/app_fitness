@@ -69,9 +69,9 @@
   align-items: center;
   padding: 0 9px;
   border-radius: 999px;
-  color: #ffd7d7;
-  background: rgba(255, 46, 46, 0.14);
-  border: 1px solid rgba(255, 46, 46, 0.22);
+  color: rgba(255, 255, 255, 0.80);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
   font-size: 0.72rem;
   font-weight: 900;
 }

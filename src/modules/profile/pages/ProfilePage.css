@@ -372,9 +372,9 @@
   min-height: 30px;
   padding: 0 12px;
   border-radius: 999px;
-  color: #ffe2de;
-  background: rgba(255, 77, 61, 0.14);
-  border: 1px solid rgba(255, 77, 61, 0.22);
+  color: rgba(255, 255, 255, 0.80);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
   font-size: 0.76rem;
   font-weight: 800;
 }
@@ -456,13 +456,13 @@
 }
 
 .profile-google-card.is-linked {
-  background: linear-gradient(135deg, rgba(255, 46, 46, 0.14), rgba(255, 255, 255, 0.045));
-  border-color: rgba(255, 46, 46, 0.3);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.035));
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .profile-plan-card {
-  background: linear-gradient(135deg, rgba(255, 46, 46, 0.12), rgba(255, 255, 255, 0.045));
-  border-color: rgba(255, 46, 46, 0.24);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.035));
+  border-color: rgba(255, 255, 255, 0.11);
 }
 
 .profile-payment-card__content,
@@ -531,8 +531,8 @@
   gap: 5px;
   padding: 14px;
   border-radius: 8px;
-  background: rgba(255, 46, 46, 0.12);
-  border: 1px solid rgba(255, 46, 46, 0.22);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
 }
 
 .profile-plan-card__confirm span {
@@ -618,9 +618,9 @@
   gap: 12px;
   padding: 12px;
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(255, 46, 46, 0.1), rgba(255, 255, 255, 0.035));
-  border-color: rgba(255, 46, 46, 0.24);
-  border: 1px solid rgba(255, 46, 46, 0.2);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.025));
+  border-color: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.09);
 }
 
 .profile-logout-card div {
@@ -680,8 +680,8 @@
 }
 
 .profile-status-banner.is-danger {
-  border-color: rgba(255, 77, 61, 0.24);
-  background: rgba(255, 77, 61, 0.12);
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .profile-status-banner.is-danger svg {
@@ -750,8 +750,8 @@
   gap: 12px;
   padding: 14px;
   border-radius: 8px;
-  background: linear-gradient(135deg, rgba(255, 46, 46, 0.1), rgba(255, 255, 255, 0.045));
-  border: 1px solid rgba(255, 46, 46, 0.22);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.035));
+  border: 1px solid rgba(255, 255, 255, 0.09);
 }
 
 .payment-add-form__heading {
@@ -785,9 +785,8 @@
   gap: 16px;
   color: #fff;
   background:
-    radial-gradient(circle at 94% 0%, rgba(255, 46, 46, 0.18), transparent 34%),
     linear-gradient(145deg, rgba(21, 21, 22, 0.98), rgba(6, 6, 7, 0.98));
-  border: 1px solid rgba(255, 46, 46, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
 }
 
@@ -825,9 +824,8 @@
   border-radius: 8px;
   color: #fff;
   background:
-    radial-gradient(circle at 94% 0%, rgba(255, 46, 46, 0.18), transparent 34%),
     linear-gradient(145deg, rgba(21, 21, 22, 0.98), rgba(6, 6, 7, 0.98));
-  border: 1px solid rgba(255, 46, 46, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.13);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
 }
 
@@ -850,9 +848,9 @@
   align-items: center;
   padding: 0 10px;
   border-radius: 999px;
-  color: #ffd7d7;
-  background: rgba(255, 46, 46, 0.16);
-  border: 1px solid rgba(255, 46, 46, 0.26);
+  color: rgba(255, 255, 255, 0.80);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   font-size: 0.74rem;
   font-weight: 900;
 }
@@ -889,9 +887,8 @@
   padding: 16px;
   border-radius: 8px;
   background:
-    radial-gradient(circle at 90% 8%, rgba(255, 46, 46, 0.3), transparent 36%),
-    linear-gradient(135deg, rgba(35, 15, 15, 0.98), rgba(10, 10, 11, 0.98));
-  border: 1px solid rgba(255, 46, 46, 0.28);
+    linear-gradient(135deg, rgba(20, 20, 22, 0.98), rgba(10, 10, 11, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow:
     0 18px 44px rgba(0, 0, 0, 0.32),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
@@ -947,9 +944,9 @@
   align-items: center;
   justify-content: center;
   padding: 0 14px;
-  color: #ffd7d7;
-  background: rgba(255, 46, 46, 0.12);
-  border: 1px solid rgba(255, 46, 46, 0.28);
+  color: rgba(255, 255, 255, 0.80);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   font-weight: 900;
 }
 
@@ -975,8 +972,8 @@
   gap: 10px;
   padding: 12px;
   border-radius: 8px;
-  background: rgba(255, 46, 46, 0.08);
-  border: 1px solid rgba(255, 46, 46, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .plan-confirm-modal__proration div {
@@ -1004,8 +1001,8 @@
   align-items: flex-start;
   padding: 12px;
   border-radius: 8px;
-  background: rgba(255, 46, 46, 0.1);
-  border: 1px solid rgba(255, 46, 46, 0.2);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   color: rgba(255, 255, 255, 0.74);
   line-height: 1.45;
 }
@@ -1358,8 +1355,8 @@
 }
 
 .food-card.is-positive {
-  background: linear-gradient(135deg, rgba(255, 46, 46, 0.14), rgba(255, 255, 255, 0.045));
-  border-color: rgba(255, 46, 46, 0.3);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.035));
+  border-color: rgba(255, 255, 255, 0.13);
 }
 
 .food-card.is-negative,
@@ -1369,13 +1366,13 @@
 }
 
 .food-card.is-danger {
-  background: linear-gradient(135deg, rgba(255, 46, 46, 0.18), rgba(255, 255, 255, 0.045));
-  border-color: rgba(255, 46, 46, 0.32);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.035));
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .food-card.is-warning {
-  background: linear-gradient(135deg, rgba(255, 46, 46, 0.18), rgba(255, 255, 255, 0.045));
-  border-color: rgba(255, 46, 46, 0.28);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.035));
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .food-card__heading {
