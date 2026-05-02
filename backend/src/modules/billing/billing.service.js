@@ -253,6 +253,19 @@ export async function createCheckoutSession(
 ) {
   const safePlanId = plans[planId] ? planId : "intermediario";
   const safeBillingCycle = billingCycle === "annual" ? "annual" : "monthly";
+
+  // If an active subscription already exists, change the plan instead of creating a new one.
+  // This prevents duplicate subscriptions on the same account.
+  const existingSubscription = await getActiveLocalSubscription(accountId);
+  if (existingSubscription?.gateway_subscription_id) {
+    return createSubscriptionChangeSession(accountId, {
+      planId: safePlanId,
+      billingCycle: safeBillingCycle,
+      appOrigin: requestedAppOrigin,
+      returnMode,
+    });
+  }
+
   const plan = getPlan(safePlanId);
   const customerId = await getOrCreateStripeCustomer(accountId);
   const client = requireStripe();
@@ -439,6 +452,50 @@ async function getActiveLocalSubscription(accountId) {
   );
 
   return result.rows[0] || null;
+}
+
+/**
+ * Cancels every active Stripe subscription for this account EXCEPT the one
+ * identified by `keepSubscriptionId`. Also marks them as "canceled" locally.
+ * Called whenever a new subscription becomes active so only one can exist at a time.
+ */
+async function cancelOtherSubscriptions(accountId, keepSubscriptionId) {
+  const oldRows = await pool.query(
+    `
+      select gateway_subscription_id
+      from subscriptions
+      where account_id = $1
+        and status in ('active', 'trialing', 'past_due', 'incomplete')
+        and gateway_subscription_id is not null
+        and gateway_subscription_id != $2;
+    `,
+    [accountId, keepSubscriptionId]
+  );
+
+  if (!oldRows.rows.length) return;
+
+  const client = stripe; // may be null in dev without Stripe key
+
+  for (const row of oldRows.rows) {
+    const gatewayId = row.gateway_subscription_id;
+
+    if (client) {
+      try {
+        await client.subscriptions.cancel(gatewayId, { prorate: false });
+      } catch {
+        // Already canceled in Stripe or not found — continue to DB update.
+      }
+    }
+
+    await pool.query(
+      `
+        update subscriptions
+        set status = 'canceled', updated_at = current_timestamp
+        where gateway_subscription_id = $1;
+      `,
+      [gatewayId]
+    );
+  }
 }
 
 async function createRecurringPrice(accountId, planId, billingCycle) {
@@ -713,6 +770,12 @@ export async function upsertSubscriptionFromStripe(subscription) {
 
   if (!accountId) {
     return null;
+  }
+
+  // When a subscription becomes active or trialing, cancel every other subscription
+  // on this account to ensure only one plan is active at a time.
+  if (["active", "trialing"].includes(subscription.status)) {
+    await cancelOtherSubscriptions(accountId, subscription.id);
   }
 
   const planId = plans[subscription.metadata?.planId] ? subscription.metadata.planId : "intermediario";
