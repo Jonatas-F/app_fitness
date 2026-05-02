@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import { getPersonalAvatarById } from "../../../data/platformImageCatalog";
 import { loadAssistantContext } from "../../../services/assistantService";
+import { sendAiChatMessage } from "../../../services/ai/chat.service";
 import "./ChatPage.css";
 
 const SETTINGS_KEY = "shapeCertoSettings";
@@ -23,6 +24,7 @@ const suggestedQuestions = [
   "Quais dados ainda faltam para melhorar a precisao do meu proximo protocolo?",
 ];
 
+// Bloqueio client-side de perguntas explicitamente fora de escopo
 const blockedPatterns = [
   /outro(s)? usuario(s)?/i,
   /email(s)? de (clientes|usuarios|terceiros)/i,
@@ -33,22 +35,10 @@ const blockedPatterns = [
   /token(s)? secreto(s)?/i,
 ];
 
-function getLatestCheckin(context) {
-  return Array.isArray(context?.checkins) ? context.checkins[0] : null;
-}
-
-function getEnabledWorkoutCount(context) {
-  const workouts = context?.workout?.activePlan?.payload?.workouts || [];
-  return workouts.filter((item) => item.enabled).length;
-}
-
-function getEnabledMealCount(context) {
-  const meals = context?.diet?.activePlan?.payload?.meals || [];
-  return meals.filter((item) => item.enabled).length;
-}
-
 function buildContextSummary(context) {
-  const latestCheckin = getLatestCheckin(context);
+  const latestCheckin = Array.isArray(context?.checkins) ? context.checkins[0] : null;
+  const enabledWorkouts = (context?.workout?.activePlan?.payload?.workouts || []).filter((w) => w.enabled).length;
+  const enabledMeals = (context?.diet?.activePlan?.payload?.meals || []).filter((m) => m.enabled).length;
   const subscription = context?.billing?.subscription;
 
   return [
@@ -64,12 +54,12 @@ function buildContextSummary(context) {
     },
     {
       label: "Treinos",
-      value: String(getEnabledWorkoutCount(context)),
+      value: String(enabledWorkouts),
       helper: `${context?.workout?.recentSessions?.length || 0} sessoes recentes`,
     },
     {
       label: "Dieta",
-      value: String(getEnabledMealCount(context)),
+      value: String(enabledMeals),
       helper: "Refeicoes ativas no protocolo",
     },
     {
@@ -84,52 +74,6 @@ function isBlockedQuestion(text) {
   return blockedPatterns.some((pattern) => pattern.test(text));
 }
 
-function createLocalAssistantReply(question, context, attachments) {
-  if (isBlockedQuestion(question)) {
-    return {
-      role: "assistant",
-      text:
-        "Nao posso consultar ou inferir dados de outros usuarios, credenciais, tokens secretos ou dados completos de pagamento. Posso analisar apenas os dados da sua propria conta logada.",
-    };
-  }
-
-  const latestCheckin = getLatestCheckin(context);
-  const attachmentText = attachments.length
-    ? ` Recebi ${attachments.length} anexo(s). Quando a API de visao estiver conectada, eu uso esses arquivos para avaliar pose, execucao ou progresso visual.`
-    : "";
-
-  if (/@treino|carga|execucao|video|serie/i.test(question)) {
-    return {
-      role: "assistant",
-      text: `Consultei somente seu protocolo e suas sessoes recentes. Hoje existem ${getEnabledWorkoutCount(
-        context
-      )} treinos habilitados e ${context?.workout?.recentSessions?.length || 0} sessoes registradas para comparacao.${attachmentText}`,
-    };
-  }
-
-  if (/@dieta|refeicao|agua|alimento|restricao/i.test(question)) {
-    return {
-      role: "assistant",
-      text: `Consultei somente sua dieta ativa e preferencias alimentares. O protocolo atual tem ${getEnabledMealCount(
-        context
-      )} refeicoes habilitadas. Posso cruzar isso com check-ins para sugerir ajustes quando a geracao por IA estiver conectada.${attachmentText}`,
-    };
-  }
-
-  if (/@dashboard|evolucao|peso|medida|bioimpedancia|checkin/i.test(question)) {
-    return {
-      role: "assistant",
-      text: `Consultei seu historico de check-ins. O ultimo registro ${
-        latestCheckin ? `foi em ${new Date(latestCheckin.created_at).toLocaleDateString("pt-BR")}` : "ainda nao existe"
-      }. Posso comparar peso, medidas, aderencia, sono e bioimpedancia quando esses campos estiverem preenchidos.${attachmentText}`,
-    };
-  }
-
-  return {
-    role: "assistant",
-    text: `Entendi. Vou responder usando apenas seus dados autenticados: perfil, check-ins, treino, dieta, dashboard e preferencias. Para uma consulta mais precisa, use @treino, @dieta, @dashboard ou @checkin.${attachmentText}`,
-  };
-}
 
 function loadPersonalSettings() {
   try {
@@ -149,6 +93,7 @@ function loadPersonalSettings() {
 
 export default function ChatPage() {
   const fileInputRef = useRef(null);
+  const threadRef = useRef(null);
   const [personalSettings, setPersonalSettings] = useState(() => loadPersonalSettings());
   const [context, setContext] = useState(null);
   const [isLoadingContext, setIsLoadingContext] = useState(true);
@@ -156,6 +101,8 @@ export default function ChatPage() {
   const [message, setMessage] = useState("");
   const [attachments, setAttachments] = useState([]);
   const [conversation, setConversation] = useState([]);
+  const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState("");
   const personalAvatar = useMemo(
     () => getPersonalAvatarById(personalSettings.avatarId),
     [personalSettings.avatarId]
@@ -223,6 +170,13 @@ export default function ChatPage() {
     };
   }, []);
 
+  // Rola thread para o fim sempre que chega uma nova mensagem
+  useEffect(() => {
+    if (threadRef.current) {
+      threadRef.current.scrollTop = threadRef.current.scrollHeight;
+    }
+  }, [conversation, isSending]);
+
   const summary = useMemo(() => buildContextSummary(context), [context]);
 
   function appendShortcut(value) {
@@ -249,24 +203,59 @@ export default function ChatPage() {
     setAttachments((current) => current.filter((item) => item.id !== id));
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     const trimmed = message.trim();
 
-    if (!trimmed || !context) {
+    if (!trimmed || !context || isSending) {
       return;
     }
 
-    const userMessage = {
-      role: "user",
-      text: trimmed,
-      attachments,
-    };
-    const assistantReply = createLocalAssistantReply(trimmed, context, attachments);
+    setSendError("");
 
-    setConversation((current) => [...current, userMessage, assistantReply]);
+    // Bloqueio client-side: resposta imediata sem chamar a API
+    if (isBlockedQuestion(trimmed)) {
+      const userMessage = { role: "user", text: trimmed, attachments };
+      const blockedReply = {
+        role: "assistant",
+        text: "Nao posso consultar ou inferir dados de outros usuarios, credenciais, tokens secretos ou dados completos de pagamento. Posso analisar apenas os dados da sua propria conta logada.",
+      };
+      setConversation((current) => [...current, userMessage, blockedReply]);
+      setMessage("");
+      setAttachments([]);
+      return;
+    }
+
+    const userMessage = { role: "user", text: trimmed, attachments };
+
+    // Adiciona mensagem do usuário imediatamente e limpa o campo
+    setConversation((current) => [...current, userMessage]);
     setMessage("");
     setAttachments([]);
+    setIsSending(true);
+
+    try {
+      // Passa o histórico atual (sem a mensagem recém-adicionada — o backend a recebe no campo `message`)
+      const historyForApi = conversation.map((m) => ({ role: m.role, text: m.text || "" }));
+      const result = await sendAiChatMessage(trimmed, historyForApi);
+
+      if (result.error) {
+        setSendError(result.error.message || "Erro ao chamar o Personal Virtual.");
+        return;
+      }
+
+      const assistantReply = {
+        role: "assistant",
+        text: result.text || "Sem resposta.",
+        run: result.run,
+      };
+
+      setConversation((current) => [...current, assistantReply]);
+    } catch (error) {
+      setSendError(error.message || "Erro de conexao com o servidor.");
+    } finally {
+      setIsSending(false);
+    }
   }
 
   return (
@@ -329,7 +318,7 @@ export default function ChatPage() {
             ))}
           </div>
 
-          <div className="chat-thread" aria-live="polite">
+          <div className="chat-thread" aria-live="polite" ref={threadRef}>
             {conversation.map((item, index) => (
               <article key={`${item.role}-${index}`} className={`chat-message is-${item.role}`}>
                 <span>{item.role === "assistant" ? personalName : "Voce"}</span>
@@ -343,6 +332,21 @@ export default function ChatPage() {
                 ) : null}
               </article>
             ))}
+
+            {isSending ? (
+              <article className="chat-message is-assistant is-typing">
+                <span>{personalName}</span>
+                <p className="chat-typing-indicator">
+                  <span />
+                  <span />
+                  <span />
+                </p>
+              </article>
+            ) : null}
+
+            {sendError ? (
+              <p className="chat-send-error">{sendError}</p>
+            ) : null}
           </div>
 
           <form className="chat-composer" onSubmit={handleSubmit}>
@@ -377,8 +381,8 @@ export default function ChatPage() {
                 <Icon icon="solar:paperclip-bold" aria-hidden="true" />
                 Anexar imagem ou video curto
               </button>
-              <button type="submit" className="primary-button" disabled={!context || !message.trim()}>
-                Enviar pergunta
+              <button type="submit" className="primary-button" disabled={!context || !message.trim() || isSending}>
+                {isSending ? "Aguardando..." : "Enviar pergunta"}
               </button>
             </div>
           </form>
