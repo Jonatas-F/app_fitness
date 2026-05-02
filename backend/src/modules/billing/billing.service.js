@@ -542,7 +542,8 @@ export async function createSubscriptionChangeSession(
 
   const client = requireStripe();
   const appOrigin = resolveAppOrigin(requestedAppOrigin);
-  const price = await createRecurringPrice(accountId, safePlanId, safeBillingCycle);
+
+  // Retrieve the current subscription with full price details.
   const subscription = await client.subscriptions.retrieve(
     localSubscription.gateway_subscription_id,
     { expand: ["items.data.price"] }
@@ -553,14 +554,54 @@ export async function createSubscriptionChangeSession(
     return createPortalSession(accountId);
   }
 
+  // Lock the proration date to the exact moment of the change request.
+  // This guarantees the unused-time credit is calculated from right now,
+  // not from whenever Stripe processes the request internally.
+  const prorationDate = Math.floor(Date.now() / 1000);
+
+  // Build (or reuse) the price object for the new plan/cycle.
+  const price = await createRecurringPrice(accountId, safePlanId, safeBillingCycle);
+
+  // ─── Preview the proration BEFORE applying the change ────────────────────
+  // Stripe calculates:
+  //   credit  = (unused days / total days) × price of current plan
+  //   debit   = (remaining days / total days) × price of new plan
+  //   net     = debit − credit  (positive = user pays; negative = user earns credit)
+  const customerId =
+    typeof subscription.customer === "string" ? subscription.customer : subscription.customer?.id;
+
+  let prorationSummary = { creditAmountCents: 0, debitAmountCents: 0, netAmountCents: 0, currency: "brl" };
+
+  try {
+    const preview = await client.invoices.retrieveUpcoming({
+      customer: customerId,
+      subscription: subscription.id,
+      subscription_items: [{ id: item.id, price: price.id }],
+      subscription_proration_behavior: "always_invoice",
+      subscription_proration_date: prorationDate,
+    });
+
+    prorationSummary.netAmountCents = preview.amount_due;
+    prorationSummary.currency = preview.currency ?? "brl";
+
+    for (const line of preview.lines?.data ?? []) {
+      if (line.amount < 0) {
+        // Negative line = credit for unused time on the old plan
+        prorationSummary.creditAmountCents += Math.abs(line.amount);
+      } else if (line.proration) {
+        // Positive proration line = charge for remaining time on the new plan
+        prorationSummary.debitAmountCents += line.amount;
+      }
+    }
+  } catch {
+    // Preview is best-effort; the update still proceeds if it fails.
+  }
+
+  // ─── Apply the subscription update with the locked proration date ─────────
   const updatedSubscription = await client.subscriptions.update(subscription.id, {
-    items: [
-      {
-        id: item.id,
-        price: price.id,
-      },
-    ],
+    items: [{ id: item.id, price: price.id }],
     proration_behavior: "always_invoice",
+    proration_date: prorationDate,
     payment_behavior: "default_incomplete",
     metadata: {
       ...subscription.metadata,
@@ -568,11 +609,13 @@ export async function createSubscriptionChangeSession(
       planId: safePlanId,
       billingCycle: safeBillingCycle,
       changeSource: "profile",
+      prorationDate: String(prorationDate),
     },
     expand: ["latest_invoice"],
   });
   const latestInvoice = updatedSubscription.latest_invoice;
 
+  // ─── Persist the change locally without waiting for the webhook ───────────
   await pool.query(
     `
       insert into subscriptions (
@@ -608,24 +651,47 @@ export async function createSubscriptionChangeSession(
     ]
   );
 
-  if (typeof latestInvoice === "string") {
-    const invoice = await client.invoices.retrieve(latestInvoice);
+  // Also update the accounts table immediately so the UI reflects the new plan
+  // before the webhook arrives.
+  await pool.query(
+    `
+      update accounts
+      set plan_type = $2,
+          billing_cycle = $3,
+          updated_at = current_timestamp
+      where id = $1;
+    `,
+    [accountId, safePlanId, safeBillingCycle]
+  );
 
-    if (invoice.hosted_invoice_url) {
-      return { url: invoice.hosted_invoice_url, id: invoice.id, mode: "subscription_update" };
+  // ─── Resolve the invoice URL where the user pays the net proration ────────
+  const resolveInvoiceUrl = async (invoice) => {
+    if (!invoice) return null;
+    if (typeof invoice === "string") {
+      const fetched = await client.invoices.retrieve(invoice);
+      return fetched.hosted_invoice_url ? { url: fetched.hosted_invoice_url, id: fetched.id } : null;
     }
+    return invoice.hosted_invoice_url ? { url: invoice.hosted_invoice_url, id: invoice.id } : null;
+  };
+
+  const invoiceRef = await resolveInvoiceUrl(latestInvoice);
+
+  if (invoiceRef) {
+    return {
+      url: invoiceRef.url,
+      id: invoiceRef.id,
+      mode: "subscription_update",
+      proration: prorationSummary,
+    };
   }
 
-  if (latestInvoice?.hosted_invoice_url) {
-    return { url: latestInvoice.hosted_invoice_url, id: latestInvoice.id, mode: "subscription_update" };
-  }
-
+  // Fallback: send the user to the Stripe billing portal.
   const portal = await client.billingPortal.sessions.create({
-    customer: typeof subscription.customer === "string" ? subscription.customer : subscription.customer?.id,
+    customer: customerId,
     return_url: appendPopupFlag(`${appOrigin}/perfil?stripe_portal=returned`, returnMode),
   });
 
-  return { url: portal.url, id: portal.id, mode: "portal" };
+  return { url: portal.url, id: portal.id, mode: "portal", proration: prorationSummary };
 }
 
 export async function loadBillingSummary(accountId) {
