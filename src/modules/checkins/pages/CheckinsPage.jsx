@@ -501,60 +501,120 @@ function StickmanPose({ pose, title }) {
   const isDoubleBiceps = pose === "double-front" || pose === "double-back";
   const isSide = pose === "side";
 
+  /* ── Side profile ───────────────────────────────────────────── */
   if (isSide) {
     return (
       <svg
         className="photo-pose-card__stickman"
-        viewBox="0 0 120 112"
+        viewBox="0 0 80 108"
         role="img"
         aria-label={`Pose ${title}`}
       >
-        <circle cx="60" cy="19" r="5" />
-        <path d="M60 25 L60 70" />
-        <path d="M58 31 L54 58" />
-        <path d="M62 31 L66 58" />
-        <path d="M60 70 L55 98" />
-        <path d="M60 70 L65 98" />
-        <path d="M52 98 H58" />
-        <path d="M62 98 H68" />
+        {/* Head */}
+        <circle cx="44" cy="11" r="9" className="pose-head" />
+        {/* Neck */}
+        <line x1="44" y1="20" x2="42" y2="27" />
+        {/* Torso (slight forward-lean profile) */}
+        <path
+          className="pose-torso"
+          d="M37 27 Q35 42 34 60 Q40 64 46 60 Q47 42 47 27 Z"
+        />
+        {/* Front arm (hanging forward) */}
+        <path d="M37 32 Q28 48 30 66" />
+        {/* Back arm (receding) */}
+        <path className="pose-faded" d="M46 32 Q52 46 50 62" />
+        {/* Front leg */}
+        <path d="M38 60 Q34 80 30 100" />
+        {/* Back leg (receding) */}
+        <path className="pose-faded" d="M43 60 Q45 80 48 96" />
+        {/* Front foot */}
+        <path d="M26 100 L36 100" />
+        {/* Back foot */}
+        <path className="pose-faded" d="M44 96 L52 96" />
       </svg>
     );
   }
 
+  /* ── Double biceps (front or back) ─────────────────────────── */
+  if (isDoubleBiceps) {
+    return (
+      <svg
+        className="photo-pose-card__stickman"
+        viewBox="0 0 100 108"
+        role="img"
+        aria-label={`Pose ${title}`}
+      >
+        {/* Head */}
+        <circle cx="50" cy="11" r="9" className="pose-head" />
+        {/* Neck */}
+        <line x1="50" y1="20" x2="50" y2="27" />
+        {/* Torso */}
+        <path
+          className="pose-torso"
+          d="M36 28 Q33 44 34 62 Q50 66 66 62 Q67 44 64 28 Z"
+        />
+        {/* Shoulder line */}
+        <line x1="36" y1="30" x2="64" y2="30" />
+        {/* Left arm: shoulder → elbow (out-down) → fist (up) */}
+        <path d="M36 30 L16 46 L22 24" />
+        {/* Right arm: mirror */}
+        <path d="M64 30 L84 46 L78 24" />
+        {/* Elbow joints */}
+        <circle className="pose-joint" cx="16" cy="46" r="3" />
+        <circle className="pose-joint" cx="84" cy="46" r="3" />
+        {/* Spine line for back view */}
+        {isBack && (
+          <line className="pose-faded" x1="50" y1="30" x2="50" y2="62" />
+        )}
+        {/* Hip line */}
+        <line x1="38" y1="62" x2="62" y2="62" />
+        {/* Left leg */}
+        <path d="M44 62 Q40 82 36 102" />
+        {/* Right leg */}
+        <path d="M56 62 Q60 82 64 102" />
+        {/* Feet */}
+        <path d="M30 102 L44 102" />
+        <path d="M56 102 L70 102" />
+      </svg>
+    );
+  }
+
+  /* ── Front / Back relaxed (arms at sides) ───────────────────── */
   return (
     <svg
       className="photo-pose-card__stickman"
-      viewBox="0 0 120 112"
+      viewBox="0 0 80 108"
       role="img"
       aria-label={`Pose ${title}`}
     >
-      <circle cx="60" cy="18" r="5" />
-      <path d="M54 27 L66 27" />
-      <path d="M55 27 L53 55" />
-      <path d="M65 27 L67 55" />
-      <path d="M53 55 H67" />
-      {isBack ? <path className="stickman-backline" d="M60 28 V55" /> : null}
-
-      {isDoubleBiceps ? (
-        <>
-          <path d="M54 28 L42 19" />
-          <path d="M42 19 L37 30" />
-          <path d="M66 28 L78 19" />
-          <path d="M78 19 L83 30" />
-          <circle className="stickman-joint" cx="37" cy="30" r="2" />
-          <circle className="stickman-joint" cx="83" cy="30" r="2" />
-        </>
-      ) : (
-        <>
-          <path d="M54 29 L50 61" />
-          <path d="M66 29 L70 61" />
-        </>
+      {/* Head */}
+      <circle cx="40" cy="11" r="9" className="pose-head" />
+      {/* Neck */}
+      <line x1="40" y1="20" x2="40" y2="27" />
+      {/* Torso */}
+      <path
+        className="pose-torso"
+        d="M28 28 Q26 44 26 62 Q40 66 54 62 Q54 44 52 28 Z"
+      />
+      {/* Shoulder line */}
+      <line x1="28" y1="30" x2="52" y2="30" />
+      {/* Left arm (hanging naturally with slight forearm bend) */}
+      <path d="M28 30 L22 62 L24 72" />
+      {/* Right arm */}
+      <path d="M52 30 L58 62 L56 72" />
+      {/* Spine line for back view */}
+      {isBack && (
+        <line className="pose-faded" x1="40" y1="30" x2="40" y2="62" />
       )}
-
-      <path d="M56 55 L51 98" />
-      <path d="M64 55 L69 98" />
-      <path d="M48 98 H54" />
-      <path d="M66 98 H72" />
+      {/* Hip line */}
+      <line x1="30" y1="62" x2="50" y2="62" />
+      {/* Left leg */}
+      <path d="M35 62 Q31 82 28 102" />
+      {/* Right leg */}
+      <path d="M45 62 Q49 82 52 102" />
+      {/* Feet */}
+      <path d="M22 102 L36 102" />
+      <path d="M44 102 L58 102" />
     </svg>
   );
 }

@@ -1236,17 +1236,43 @@
   height: 96px;
   overflow: visible;
   fill: none;
-  stroke: rgba(255, 255, 255, 0.72);
-  stroke-width: 2.8;
+  stroke: rgba(255, 220, 210, 0.84);
+  stroke-width: 2.6;
   stroke-linecap: round;
   stroke-linejoin: round;
-  filter: drop-shadow(0 7px 14px rgba(0, 0, 0, 0.22));
+  filter: drop-shadow(0 6px 18px rgba(255, 46, 46, 0.22)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
+/* Pose figure — shared base (stroke inherited from .photo-pose-card__stickman) */
 .photo-pose-card__stickman circle {
   fill: rgba(255, 255, 255, 0.055);
 }
 
+/* Head: filled with brand-red tint */
+.photo-pose-card__stickman .pose-head {
+  fill: rgba(255, 60, 46, 0.36);
+  stroke-width: 2;
+}
+
+/* Torso: subtle red fill, thinner stroke */
+.photo-pose-card__stickman .pose-torso {
+  fill: rgba(255, 46, 46, 0.16);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+/* Faded elements (back arm/leg in side view, spine in back poses) */
+.photo-pose-card__stickman .pose-faded {
+  stroke-opacity: 0.38;
+}
+
+/* Elbow / knee joints */
+.photo-pose-card__stickman .pose-joint {
+  fill: rgba(255, 190, 180, 0.8);
+  stroke: none;
+}
+
+/* Legacy classes kept for safety */
 .photo-pose-card__stickman .stickman-joint {
   fill: rgba(255, 255, 255, 0.22);
   stroke-width: 2;
@@ -1258,22 +1284,13 @@
   stroke-width: 1.8;
 }
 
-.photo-pose-card__stickman .stickman-floor {
-  stroke: rgba(255, 255, 255, 0.22);
-  stroke-width: 2;
-}
-
+/* Double-biceps figure is slightly wider (arms extend beyond torso) */
 .photo-pose-card__silhouette--double-front .photo-pose-card__stickman,
 .photo-pose-card__silhouette--double-back .photo-pose-card__stickman {
-  width: 96px;
+  width: 110px;
   height: 96px;
 }
 
-.photo-pose-card__silhouette--front .photo-pose-card__stickman,
-.photo-pose-card__silhouette--side .photo-pose-card__stickman,
-.photo-pose-card__silhouette--back .photo-pose-card__stickman {
-  stroke: rgba(255, 255, 255, 0.68);
-}
 
 .photo-pose-card__silhouette--back,
 .photo-pose-card__silhouette--double-back {
