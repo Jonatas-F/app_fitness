@@ -1,5 +1,5 @@
 import { Children, isValidElement, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -230,17 +230,14 @@ function Field({ label, required = false, hint, children, className = "" }) {
 
 function Section({ eyebrow, title, description, children }) {
   return (
-    <details className="checkin-section checkins-collapsible glass-panel">
-      <summary className="checkins-collapsible__summary">
-        <span className="checkins-collapsible__icon"><ChevronDown aria-hidden="true" /></span>
-        <span>
-          <small>{eyebrow}</small>
-          <strong>{title}</strong>
-          {description ? <em>{description}</em> : null}
-        </span>
-      </summary>
-      <div className="checkins-collapsible__body">{children}</div>
-    </details>
+    <div className="checkin-section glass-panel">
+      <div className="checkin-section__header">
+        <small>{eyebrow}</small>
+        <strong>{title}</strong>
+        {description ? <em>{description}</em> : null}
+      </div>
+      <div className="checkin-section__body">{children}</div>
+    </div>
   );
 }
 
@@ -586,32 +583,27 @@ function CheckinCalendar({
   const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 
   return (
-    <details className="checkins-calendar checkins-collapsible glass-panel" open>
-      <summary className="checkins-collapsible__summary">
-        <span className="checkins-collapsible__icon"><ChevronDown aria-hidden="true" /></span>
-        <span>
+    <div className="checkins-calendar glass-panel">
+      <div className="checkins-calendar__header">
+        <div>
           <small>Calendario</small>
           <strong>Consultar ou lancar data retroativa</strong>
           <em>Selecione um dia para ver registros anteriores ou salvar o proximo check-in nessa data.</em>
-        </span>
-        <mark>{formatDateKey(selectedDateKey)}</mark>
-      </summary>
-
-      <div className="checkins-collapsible__body">
-      <div className="checkins-calendar__header">
-
-        <div className="checkins-calendar__controls">
-          <button type="button" onClick={() => onChangeMonth(-1)}>
-            Anterior
-          </button>
-          <strong>{monthLabel}</strong>
-          <button type="button" onClick={() => onChangeMonth(1)}>
-            Proximo
-          </button>
-          <button type="button" onClick={onToday}>
-            Hoje
-          </button>
         </div>
+        <mark>{formatDateKey(selectedDateKey)}</mark>
+      </div>
+
+      <div className="checkins-calendar__controls">
+        <button type="button" onClick={() => onChangeMonth(-1)}>
+          Anterior
+        </button>
+        <strong>{monthLabel}</strong>
+        <button type="button" onClick={() => onChangeMonth(1)}>
+          Proximo
+        </button>
+        <button type="button" onClick={onToday}>
+          Hoje
+        </button>
       </div>
 
       <div className="checkins-calendar__body">
@@ -668,8 +660,7 @@ function CheckinCalendar({
           )}
         </aside>
       </div>
-      </div>
-    </details>
+    </div>
   );
 }
 
@@ -738,6 +729,7 @@ function getCadenceIntro(cadence) {
 
 export default function CheckinsPage() {
   const todayKey = toDateKey(new Date());
+  const [activeTab, setActiveTab] = useState("formulario");
   const [activeCadence, setActiveCadence] = useState("weekly");
   const [selectedDateKey, setSelectedDateKey] = useState(todayKey);
   const [calendarMonth, setCalendarMonth] = useState(() => parseDateKey(todayKey));
@@ -1254,14 +1246,14 @@ export default function CheckinsPage() {
         </p>
       ) : null}
 
-      <form
-        className="checkins-form"
-        onSubmit={handleSubmit}
-        id={`checkins-panel-${activeCadence}`}
-        role="tabpanel"
-        aria-labelledby={`checkins-tab-${activeCadence}`}
-      >
-        <div className="checkins-form__main">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="checkins-content-tabs">
+        <TabsList className="dashboard-tabs checkins-tabs-nav">
+          <TabsTrigger value="formulario" className="dashboard-tab-trigger">Formulario</TabsTrigger>
+          <TabsTrigger value="calendario" className="dashboard-tab-trigger">Calendario</TabsTrigger>
+          <TabsTrigger value="historico" className="dashboard-tab-trigger">Historico</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="calendario">
           <CheckinCalendar
             checkins={checkins}
             selectedDateKey={selectedDateKey}
@@ -1270,7 +1262,17 @@ export default function CheckinsPage() {
             onChangeMonth={handleCalendarMonthChange}
             onToday={handleCalendarToday}
           />
+        </TabsContent>
 
+        <TabsContent value="formulario">
+      <form
+        className="checkins-form"
+        onSubmit={handleSubmit}
+        id={`checkins-panel-${activeCadence}`}
+        role="tabpanel"
+        aria-labelledby={`checkins-tab-${activeCadence}`}
+      >
+        <div className="checkins-form__main">
           {showProtocolBase ? (
             <Section
               eyebrow="02"
@@ -1860,19 +1862,16 @@ export default function CheckinsPage() {
           </Section>
         </div>
       </form>
+        </TabsContent>
 
-      <details className="checkins-history checkins-collapsible glass-panel">
-        <summary className="checkins-collapsible__summary">
-          <span className="checkins-collapsible__icon"><ChevronDown aria-hidden="true" /></span>
-          <span>
+        <TabsContent value="historico">
+          <div className="checkins-history glass-panel">
+          <div className="checkins-history__header">
             <small>Historico</small>
             <strong>Check-ins registrados</strong>
             <em>Linha do tempo de realizados, gaps e payloads salvos.</em>
-          </span>
-          <mark>{checkins.length}</mark>
-        </summary>
-
-        <div className="checkins-collapsible__body">
+            <mark>{checkins.length}</mark>
+          </div>
         {isHydratingCheckins ? (
           <CheckinsLoadingSkeleton />
         ) : (
@@ -2003,8 +2002,9 @@ export default function CheckinsPage() {
             </Table>
           </div>
         )}
-        </div>
-      </details>
+          </div>
+        </TabsContent>
+      </Tabs>
     </section>
   );
 }

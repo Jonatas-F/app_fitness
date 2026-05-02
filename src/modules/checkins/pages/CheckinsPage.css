@@ -1660,3 +1660,21 @@
     justify-self: start;
   }
 }
+
+/* ============================================================
+   Checkins — Tabs navigation (Formulario | Calendario | Historico)
+   ============================================================ */
+
+.checkins-content-tabs {
+  display: grid;
+  gap: 16px;
+}
+
+.checkin-section__body {
+  display: grid;
+  gap: 18px;
+}
+
+.checkins-history {
+  padding: 22px;
+}

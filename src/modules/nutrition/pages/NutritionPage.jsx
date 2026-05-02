@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import StatusPill from "@/components/ui/StatusPill";
 import { loadCheckins } from "../../../data/checkinStorage";
 import {
   dietDays,
@@ -218,6 +220,7 @@ function NutritionEmptyState({ title, description, helper }) {
 }
 
 export default function NutritionPage() {
+  const [activeTab, setActiveTab] = useState("refeicoes");
   const [diet, setDiet] = useState(() => loadDietProtocol());
   const [dietHistory, setDietHistory] = useState(() => loadDietHistory());
   const [mealLogs, setMealLogs] = useState(() => loadDietMealLogs());
@@ -482,12 +485,24 @@ export default function NutritionPage() {
         ))}
       </section>
 
-      <NutritionCollapsible
-        eyebrow="Historico"
-        title="Calendario alimentar"
-        summary="Refeicoes realizadas, automaticas e dietas anteriores ficam registradas para consulta."
-        badge={`${mealLogs.length} registros`}
-      >
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="nutrition-tabs-root">
+        <TabsList className="nutrition-tabs dashboard-tabs" variant="line">
+          <TabsTrigger value="refeicoes" className="nutrition-tab-trigger dashboard-tab-trigger">
+            <strong>Refeicoes</strong>
+            <StatusPill tone="neutral">{selectedDayActiveMeals} ativas</StatusPill>
+          </TabsTrigger>
+          <TabsTrigger value="historico" className="nutrition-tab-trigger dashboard-tab-trigger">
+            <strong>Historico</strong>
+            <StatusPill tone="neutral">{mealLogs.length} registros</StatusPill>
+          </TabsTrigger>
+          <TabsTrigger value="config" className="nutrition-tab-trigger dashboard-tab-trigger">
+            <strong>Config</strong>
+            <StatusPill tone="neutral">{diet.userAvailableMeals || "--"} refeicoes</StatusPill>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="historico" className="nutrition-tab-panel dashboard-tab-panel">
+        {/* === HISTORICO === */}
         <section className="nutrition-history-panel">
           <div>
             <h2>Ultimos registros de refeicao</h2>
@@ -548,14 +563,10 @@ export default function NutritionPage() {
             )}
           </div>
         </section>
-      </NutritionCollapsible>
+        </TabsContent>
 
-      <NutritionCollapsible
-        eyebrow="Config"
-        title="Agenda alimentar e restricoes"
-        summary="Disponibilidade de refeicoes, restricoes e preferencias."
-        badge={`${diet.userAvailableMeals || "--"} refeicoes`}
-      >
+        <TabsContent value="config" className="nutrition-tab-panel dashboard-tab-panel">
+        {/* === CONFIG === */}
       <section className="nutrition-config">
         <div>
           <h2>Agenda alimentar e restrições</h2>
@@ -613,14 +624,10 @@ export default function NutritionPage() {
           Solicitar ajuste do Personal Virtual
         </button>
       </section>
-      </NutritionCollapsible>
+        </TabsContent>
 
-      <NutritionCollapsible
-        eyebrow="Refeicoes"
-        title="Refeicoes do protocolo"
-        summary="Selecione o dia da semana e abra somente a refeicao que deseja consultar ou ajustar."
-        badge={`${selectedDayActiveMeals} ativas`}
-      >
+        <TabsContent value="refeicoes" className="nutrition-tab-panel dashboard-tab-panel">
+        {/* === REFEICOES === */}
       <section className="nutrition-week-panel">
         <div>
           <h2>Dietas por dia da semana</h2>
@@ -838,7 +845,8 @@ export default function NutritionPage() {
           );
         })}
       </section>
-      </NutritionCollapsible>
+        </TabsContent>
+      </Tabs>
 
       {mealCompletionModal ? (
         <div className="nutrition-modal-backdrop" role="presentation" onClick={closeMealDoneModal}>

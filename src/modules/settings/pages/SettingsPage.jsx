@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown } from "lucide-react";
 import { Icon } from "@iconify/react";
 import SectionCard from "@/components/ui/SectionCard";
 import Skeleton from "@/components/ui/skeleton";
@@ -221,23 +220,6 @@ function getSuggestedSchedule(item, routineCheckin) {
   }
 
   return "";
-}
-
-function SettingsSection({ eyebrow, title, description, status, children, defaultOpen = true }) {
-  return (
-    <details className="settings-section" open={defaultOpen}>
-      <summary>
-        {eyebrow && <small>{eyebrow}</small>}
-        <span className="settings-section__icon"><ChevronDown aria-hidden="true" /></span>
-        <span>
-          <strong>{title}</strong>
-          <em>{description}</em>
-        </span>
-        <mark>{status}</mark>
-      </summary>
-      <div className="settings-section__body">{children}</div>
-    </details>
-  );
 }
 
 function ToggleRow({ icon, title, description, schedule, checked, disabled = false, onChange }) {
@@ -492,118 +474,97 @@ export default function SettingsPage() {
 
             <TabsContent value="notifications" className="settings-tab-panel">
               <div className="settings-stack">
-                <SettingsSection
-                  eyebrow="01"
-                  title="Notificacoes"
-                  description="Treino, refeicoes, agua, progresso e check-ins."
-                  status={`${activeNotificationCount}/${notificationItems.length} ativas`}
-                >
-                  <div className="settings-list">
-                    {notificationItems.map((item) => (
-                      <ToggleRow
-                        key={item.key}
-                        icon={item.icon}
-                        title={item.title}
-                        description={item.description}
-                        schedule={getSuggestedSchedule(item, latestRoutineCheckin)}
-                        checked={settings.notifications[item.key]}
-                        onChange={() => toggleNotification(item.key)}
-                      />
-                    ))}
-                  </div>
-                </SettingsSection>
+                <div className="settings-list">
+                  {notificationItems.map((item) => (
+                    <ToggleRow
+                      key={item.key}
+                      icon={item.icon}
+                      title={item.title}
+                      description={item.description}
+                      schedule={getSuggestedSchedule(item, latestRoutineCheckin)}
+                      checked={settings.notifications[item.key]}
+                      onChange={() => toggleNotification(item.key)}
+                    />
+                  ))}
+                </div>
               </div>
             </TabsContent>
 
             <TabsContent value="personal" className="settings-tab-panel">
               <div className="settings-stack">
-                <SettingsSection
-                  eyebrow="02"
-                  title="Personal Virtual"
-                  description="Nome, avatar e personalidade do agente que acompanha seu treino e dieta."
-                  status={settings.personal.name || "Personal"}
-                >
-                  <div className="settings-personal-grid">
-                    <label>
-                      <span>Nome do Personal Virtual</span>
-                      <input
-                        type="text"
-                        value={settings.personal.name}
-                        onChange={handlePersonalNameChange}
-                        placeholder="Ex.: Ricardo, Ana, Coach Max"
-                        maxLength={60}
-                      />
-                    </label>
-
-                    <article className="settings-avatar-preview">
-                      {selectedAvatar ? <img src={selectedAvatar.url} alt={`Avatar ${selectedAvatar.label}`} /> : null}
-                      <div>
-                        <strong>{settings.personal.name || "Personal Virtual"}</strong>
-                        <p>Avatar selecionado para o chat e pontos-chave da experiencia.</p>
-                      </div>
-                    </article>
-                  </div>
-
-                  <div className="settings-avatar-grid">
-                    {personalAvatarCatalog.map((avatar) => (
-                      <button
-                        key={avatar.id}
-                        type="button"
-                        className={settings.personal.avatarId === avatar.id ? "is-selected" : ""}
-                        onClick={() => handlePersonalOptionChange("avatarId", avatar.id)}
-                      >
-                        <img src={avatar.url} alt={avatar.label} />
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="settings-option-groups">
-                    <SettingsOptionGroup
-                      title="Tom de linguagem"
-                      options={languageToneOptions}
-                      value={settings.personal.languageTone}
-                      onChange={(value) => handlePersonalOptionChange("languageTone", value)}
+                <div className="settings-personal-grid">
+                  <label>
+                    <span>Nome do Personal Virtual</span>
+                    <input
+                      type="text"
+                      value={settings.personal.name}
+                      onChange={handlePersonalNameChange}
+                      placeholder="Ex.: Ricardo, Ana, Coach Max"
+                      maxLength={60}
                     />
-                    <SettingsOptionGroup
-                      title="Nivel de animo"
-                      options={motivationStyleOptions}
-                      value={settings.personal.motivationStyle}
-                      onChange={(value) => handlePersonalOptionChange("motivationStyle", value)}
-                    />
-                    <SettingsOptionGroup
-                      title="Profundidade do feedback"
-                      options={feedbackDepthOptions}
-                      value={settings.personal.feedbackDepth}
-                      onChange={(value) => handlePersonalOptionChange("feedbackDepth", value)}
-                    />
-                  </div>
+                  </label>
 
-                  {saveMessage ? <small className="settings-save-message">{saveMessage}</small> : null}
-                </SettingsSection>
+                  <article className="settings-avatar-preview">
+                    {selectedAvatar ? <img src={selectedAvatar.url} alt={`Avatar ${selectedAvatar.label}`} /> : null}
+                    <div>
+                      <strong>{settings.personal.name || "Personal Virtual"}</strong>
+                      <p>Avatar selecionado para o chat e pontos-chave da experiencia.</p>
+                    </div>
+                  </article>
+                </div>
+
+                <div className="settings-avatar-grid">
+                  {personalAvatarCatalog.map((avatar) => (
+                    <button
+                      key={avatar.id}
+                      type="button"
+                      className={settings.personal.avatarId === avatar.id ? "is-selected" : ""}
+                      onClick={() => handlePersonalOptionChange("avatarId", avatar.id)}
+                    >
+                      <img src={avatar.url} alt={avatar.label} />
+                    </button>
+                  ))}
+                </div>
+
+                <div className="settings-option-groups">
+                  <SettingsOptionGroup
+                    title="Tom de linguagem"
+                    options={languageToneOptions}
+                    value={settings.personal.languageTone}
+                    onChange={(value) => handlePersonalOptionChange("languageTone", value)}
+                  />
+                  <SettingsOptionGroup
+                    title="Nivel de animo"
+                    options={motivationStyleOptions}
+                    value={settings.personal.motivationStyle}
+                    onChange={(value) => handlePersonalOptionChange("motivationStyle", value)}
+                  />
+                  <SettingsOptionGroup
+                    title="Profundidade do feedback"
+                    options={feedbackDepthOptions}
+                    value={settings.personal.feedbackDepth}
+                    onChange={(value) => handlePersonalOptionChange("feedbackDepth", value)}
+                  />
+                </div>
+
+                {saveMessage ? <small className="settings-save-message">{saveMessage}</small> : null}
               </div>
             </TabsContent>
 
             <TabsContent value="privacy" className="settings-tab-panel">
               <div className="settings-stack">
-                <SettingsSection
-                  eyebrow="03"
-                  title="Privacidade e IA"
-                  description="Regras de uso dos dados pelo Personal Virtual."
-                  status="Protegido"
-                >
-                  <div className="settings-list">
-                    {privacyItems.map((item) => (
-                      <ToggleRow
-                        key={item.key}
-                        title={item.title}
-                        description={item.description}
-                        checked={settings.privacy[item.key]}
-                        disabled={Boolean(item.locked)}
-                        onChange={() => togglePrivacy(item.key)}
-                      />
-                    ))}
-                  </div>
-                </SettingsSection>
+                <div className="settings-list">
+                  {privacyItems.map((item) => (
+                    <ToggleRow
+                      key={item.key}
+                      title={item.title}
+                      description={item.description}
+                      checked={settings.privacy[item.key]}
+                      disabled={Boolean(item.locked)}
+                      onChange={() => togglePrivacy(item.key)}
+                    />
+                  ))}
+                </div>
               </div>
             </TabsContent>
           </Tabs>

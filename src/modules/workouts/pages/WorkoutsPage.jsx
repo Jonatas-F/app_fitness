@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
-import SectionCollapsible from "@/components/ui/SectionCollapsible";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import StatusPill from "@/components/ui/StatusPill";
 import Skeleton from "@/components/ui/skeleton";
 import {
   Table,
@@ -189,6 +190,7 @@ function WorkoutLoadingSkeleton() {
 }
 
 function WorkoutExecutionSection() {
+  const [activeTab, setActiveTab] = useState("treino");
   const [workoutState, setWorkoutState] = useState(() => getInitialWorkoutState());
   const [sessionHistory, setSessionHistory] = useState(() => loadWorkoutSessionHistory());
   const [activeSessionWorkoutId, setActiveSessionWorkoutId] = useState("");
@@ -504,294 +506,296 @@ function WorkoutExecutionSection() {
         ))}
       </nav>
 
-      <SectionCollapsible
-        className="workout-section-collapsible glass-panel"
-        eyebrow="Historico"
-        title={`Ultimos registros de ${selectedWorkout.title}`}
-        summary="Tabela com sessoes salvas, series registradas e volume estimado."
-        badge={`${selectedWorkoutSessions.length} sessao${selectedWorkoutSessions.length === 1 ? "" : "es"}`}
-        defaultOpen
-      >
-        <div className="workout-history-overview">
-          <article>
-            <span>Ultima execucao</span>
-            <strong>{previousSession ? formatWorkoutDate(previousSession.createdAt) : "--"}</strong>
-          </article>
-          <article>
-            <span>Series registradas</span>
-            <strong>{previousSession ? getRegisteredSets(previousSession) : 0}</strong>
-          </article>
-          <article>
-            <span>Volume ultimo treino</span>
-            <strong>{previousSession ? Math.round(getSessionVolume(previousSession)) : 0}</strong>
-          </article>
-        </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="workout-content-tabs">
+        <TabsList className="dashboard-tabs workout-tabs">
+          <TabsTrigger value="treino" className="dashboard-tab-trigger">Treino</TabsTrigger>
+          <TabsTrigger value="historico" className="dashboard-tab-trigger">Historico</TabsTrigger>
+        </TabsList>
 
-        {selectedWorkoutSessions.length ? (
-          <WorkoutSessionHistoryTable sessions={recentSessions} />
-        ) : (
-          <WorkoutEmptyState
-            title="Sem historico para este treino"
-            description="Finalize pelo menos uma sessao para ver duracao, series e volume aqui."
-          />
-        )}
-      </SectionCollapsible>
-
-      {isSessionActive && selectedExercise ? (
-        <div className="live-session-overlay" role="dialog" aria-modal="true">
-          <section className="live-session-panel">
-            <div className="live-session-panel__top">
-              <span>Sessao ao vivo</span>
-              <button type="button" onClick={() => setActiveSessionWorkoutId("")}>
-                Fechar
-              </button>
-            </div>
-
-            <div className="live-session-panel__exercise">
-              <small>
-                Exercicio atual - {sessionExerciseIndex + 1} de {selectedWorkout.exercises.length}
-              </small>
-              <h3>{selectedExercise.name}</h3>
-              <p>
-                {selectedExercise.suggestedSets} x {selectedExercise.suggestedReps} - descanso{" "}
-                {formatTimer(getExerciseRestSeconds(selectedExercise))}
-              </p>
-            </div>
-
-            <div className="live-session-timers">
-              <article>
-                <span>Cronometro</span>
-                <strong>{formatTimer(sessionElapsedSeconds)}</strong>
-              </article>
-              <article className={restRemainingSeconds > 0 ? "is-resting" : ""}>
-                <span>Descanso</span>
-                <strong>
-                  {restRemainingSeconds > 0
-                    ? formatTimer(restRemainingSeconds)
-                    : formatTimer(getExerciseRestSeconds(selectedExercise))}
-                </strong>
-              </article>
-            </div>
-
-            <div className="live-session-sets">
-              {selectedExercise.sets
-                .filter((set) => set.enabled !== false)
-                .map((set, index) => (
-                  <button
-                    key={set.set}
-                    type="button"
-                    className={activeSetIndex === index ? "is-selected" : ""}
-                    onClick={() => setActiveSetIndex(index)}
-                  >
-                    <strong>Serie {set.set}</strong>
-                    <span>{set.weight || "--"} kg</span>
+        <TabsContent value="treino">
+          {isSessionActive && selectedExercise ? (
+            <div className="live-session-overlay" role="dialog" aria-modal="true">
+              <section className="live-session-panel">
+                <div className="live-session-panel__top">
+                  <span>Sessao ao vivo</span>
+                  <button type="button" onClick={() => setActiveSessionWorkoutId("")}>
+                    Fechar
                   </button>
-                ))}
-            </div>
-
-            <div className="live-session-inputs">
-              <label>
-                Carga (kg)
-                <input
-                  value={selectedSet?.weight || ""}
-                  onChange={(event) =>
-                    handleSetChange(
-                      selectedWorkout.id,
-                      selectedExercise.id,
-                      activeSetIndex,
-                      "weight",
-                      event.target.value
-                    )
-                  }
-                  placeholder="Ex.: 72"
-                />
-              </label>
-              <label>
-                Repeticoes
-                <input
-                  value={selectedSet?.reps || ""}
-                  onChange={(event) =>
-                    handleSetChange(
-                      selectedWorkout.id,
-                      selectedExercise.id,
-                      activeSetIndex,
-                      "reps",
-                      event.target.value
-                    )
-                  }
-                  placeholder="Ex.: 10"
-                />
-              </label>
-            </div>
-
-            <div className="live-session-footer">
-              <span>RPE alvo 8</span>
-              <button type="button" onClick={handleCompleteCurrentSet}>
-                Encerrar serie
-              </button>
-            </div>
-          </section>
-        </div>
-      ) : null}
-
-      <article className="workout-protocol-panel">
-        <header>
-          <div>
-            <h3>Exercicios</h3>
-            <p>
-              {completedExercises}/{selectedWorkout.exercises.length} completos - marque conforme avanca
-            </p>
-          </div>
-          <button type="button">Adicionar exercicio</button>
-        </header>
-
-        <div className="exercise-list">
-          <div className="workout-history-panel">{renderPreviousSession()}</div>
-
-          {selectedWorkout.exercises.map((exercise, exerciseIndex) => (
-            <section
-              key={exercise.id}
-              className={`exercise-card ${
-                expandedExerciseIndex === exerciseIndex ? "is-selected" : ""
-              }`}
-            >
-              <div className="exercise-card__top">
-                <span className="exercise-card__index">{exerciseIndex + 1}</span>
-                <div className="exercise-card__main">
-                  <h4>{exercise.name}</h4>
-                  <span>
-                    {getExerciseSetCount(exercise)} series - {exercise.suggestedReps} reps
-                  </span>
-                  <small>Descanso ideal: {formatTimer(getExerciseRestSeconds(exercise))}</small>
                 </div>
-                <div className="exercise-card__actions">
-                  <button
-                    type="button"
-                    className="exercise-select-button"
-                    onClick={() => {
-                      setExpandedExerciseIndex((current) =>
-                        current === exerciseIndex ? null : exerciseIndex
-                      );
-                    }}
-                  >
-                    {expandedExerciseIndex === exerciseIndex ? "Recolher" : "Ver detalhes"}
-                  </button>
-                  <label className="exercise-video-upload">
-                    Enviar video
-                    <input
-                      type="file"
-                      accept="video/*"
-                      onChange={(event) =>
-                        handleVideoUpload(
-                          selectedWorkout.id,
-                          exercise.id,
-                          event.target.files?.[0]
-                        )
-                      }
-                    />
-                  </label>
-                </div>
-              </div>
 
-              {expandedExerciseIndex === exerciseIndex ? (
-                <>
-                  <div className="exercise-fields">
-                    <div className="exercise-video-preview">
-                      <button
-                        type="button"
-                        onClick={() => setActiveVideo(exercise)}
-                        disabled={!exercise.executionVideoUrl}
-                      >
-                        <span>{exercise.executionVideoUrl ? "Ver video" : "Sem video"}</span>
-                      </button>
-                      <small>Miniatura do video demonstrativo</small>
-                    </div>
-
-                    <div className="exercise-prescription">
-                      <span>Prescricao do Personal Virtual</span>
-                      <strong>{exercise.suggestedSets} series</strong>
-                      <strong>{exercise.suggestedReps} reps</strong>
-                      <strong>Descanso {formatTimer(getExerciseRestSeconds(exercise))}</strong>
-                      <small>Somente o Personal Virtual altera series e repeticoes prescritas.</small>
-                    </div>
-
-                    <label>
-                      Video demonstrativo
-                      <input
-                        value={exercise.executionVideoUrl}
-                        onChange={(event) =>
-                          handleExerciseChange(
-                            selectedWorkout.id,
-                            exercise.id,
-                            "executionVideoUrl",
-                            event.target.value
-                          )
-                        }
-                        placeholder="URL do video de execucao"
-                      />
-                    </label>
-                    <label>
-                      Feedback do Personal Virtual
-                      <textarea
-                        value={exercise.aiFeedback}
-                        onChange={(event) =>
-                          handleExerciseChange(
-                            selectedWorkout.id,
-                            exercise.id,
-                            "aiFeedback",
-                            event.target.value
-                          )
-                        }
-                        placeholder="Feedback tecnico gerado pelo Personal Virtual apos analisar o video ou as anotacoes"
-                      />
-                      <button
-                        type="button"
-                        className="feedback-request-button"
-                        onClick={() =>
-                          handleRequestExerciseFeedback(selectedWorkout.id, exercise.id, "video")
-                        }
-                      >
-                        Solicitar feedback do video
-                      </button>
-                    </label>
-                  </div>
-
-                  <p className="set-log-locked">
-                    {isSessionActive
-                      ? "Use o painel de sessao acima para registrar a serie atual."
-                      : "Clique em Iniciar sessao para registrar series, cargas e repeticoes."}
+                <div className="live-session-panel__exercise">
+                  <small>
+                    Exercicio atual - {sessionExerciseIndex + 1} de {selectedWorkout.exercises.length}
+                  </small>
+                  <h3>{selectedExercise.name}</h3>
+                  <p>
+                    {selectedExercise.suggestedSets} x {selectedExercise.suggestedReps} - descanso{" "}
+                    {formatTimer(getExerciseRestSeconds(selectedExercise))}
                   </p>
+                </div>
 
-                  <label className="exercise-notes">
-                    Anotacoes
-                    <textarea
-                      value={exercise.notes}
+                <div className="live-session-timers">
+                  <article>
+                    <span>Cronometro</span>
+                    <strong>{formatTimer(sessionElapsedSeconds)}</strong>
+                  </article>
+                  <article className={restRemainingSeconds > 0 ? "is-resting" : ""}>
+                    <span>Descanso</span>
+                    <strong>
+                      {restRemainingSeconds > 0
+                        ? formatTimer(restRemainingSeconds)
+                        : formatTimer(getExerciseRestSeconds(selectedExercise))}
+                    </strong>
+                  </article>
+                </div>
+
+                <div className="live-session-sets">
+                  {selectedExercise.sets
+                    .filter((set) => set.enabled !== false)
+                    .map((set, index) => (
+                      <button
+                        key={set.set}
+                        type="button"
+                        className={activeSetIndex === index ? "is-selected" : ""}
+                        onClick={() => setActiveSetIndex(index)}
+                      >
+                        <strong>Serie {set.set}</strong>
+                        <span>{set.weight || "--"} kg</span>
+                      </button>
+                    ))}
+                </div>
+
+                <div className="live-session-inputs">
+                  <label>
+                    Carga (kg)
+                    <input
+                      value={selectedSet?.weight || ""}
                       onChange={(event) =>
-                        handleExerciseChange(
+                        handleSetChange(
                           selectedWorkout.id,
-                          exercise.id,
-                          "notes",
+                          selectedExercise.id,
+                          activeSetIndex,
+                          "weight",
                           event.target.value
                         )
                       }
-                      placeholder="Carga sentida, dor, RPE, ajuste de tecnica..."
+                      placeholder="Ex.: 72"
                     />
-                    <button
-                      type="button"
-                      className="feedback-request-button"
-                      onClick={() =>
-                        handleRequestExerciseFeedback(selectedWorkout.id, exercise.id, "notes")
-                      }
-                    >
-                      Solicitar feedback das anotacoes
-                    </button>
                   </label>
-                </>
-              ) : null}
-            </section>
-          ))}
-        </div>
-      </article>
+                  <label>
+                    Repeticoes
+                    <input
+                      value={selectedSet?.reps || ""}
+                      onChange={(event) =>
+                        handleSetChange(
+                          selectedWorkout.id,
+                          selectedExercise.id,
+                          activeSetIndex,
+                          "reps",
+                          event.target.value
+                        )
+                      }
+                      placeholder="Ex.: 10"
+                    />
+                  </label>
+                </div>
+
+                <div className="live-session-footer">
+                  <span>RPE alvo 8</span>
+                  <button type="button" onClick={handleCompleteCurrentSet}>
+                    Encerrar serie
+                  </button>
+                </div>
+              </section>
+            </div>
+          ) : null}
+
+          <article className="workout-protocol-panel">
+            <header>
+              <div>
+                <h3>Exercicios</h3>
+                <p>
+                  {completedExercises}/{selectedWorkout.exercises.length} completos - marque conforme avanca
+                </p>
+              </div>
+              <button type="button">Adicionar exercicio</button>
+            </header>
+
+            <div className="exercise-list">
+              <div className="workout-history-panel">{renderPreviousSession()}</div>
+
+              {selectedWorkout.exercises.map((exercise, exerciseIndex) => (
+                <section
+                  key={exercise.id}
+                  className={`exercise-card ${
+                    expandedExerciseIndex === exerciseIndex ? "is-selected" : ""
+                  }`}
+                >
+                  <div className="exercise-card__top">
+                    <span className="exercise-card__index">{exerciseIndex + 1}</span>
+                    <div className="exercise-card__main">
+                      <h4>{exercise.name}</h4>
+                      <span>
+                        {getExerciseSetCount(exercise)} series - {exercise.suggestedReps} reps
+                      </span>
+                      <small>Descanso ideal: {formatTimer(getExerciseRestSeconds(exercise))}</small>
+                    </div>
+                    <div className="exercise-card__actions">
+                      <button
+                        type="button"
+                        className="exercise-select-button"
+                        onClick={() => {
+                          setExpandedExerciseIndex((current) =>
+                            current === exerciseIndex ? null : exerciseIndex
+                          );
+                        }}
+                      >
+                        {expandedExerciseIndex === exerciseIndex ? "Recolher" : "Ver detalhes"}
+                      </button>
+                      <label className="exercise-video-upload">
+                        Enviar video
+                        <input
+                          type="file"
+                          accept="video/*"
+                          onChange={(event) =>
+                            handleVideoUpload(
+                              selectedWorkout.id,
+                              exercise.id,
+                              event.target.files?.[0]
+                            )
+                          }
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {expandedExerciseIndex === exerciseIndex ? (
+                    <>
+                      <div className="exercise-fields">
+                        <div className="exercise-video-preview">
+                          <button
+                            type="button"
+                            onClick={() => setActiveVideo(exercise)}
+                            disabled={!exercise.executionVideoUrl}
+                          >
+                            <span>{exercise.executionVideoUrl ? "Ver video" : "Sem video"}</span>
+                          </button>
+                          <small>Miniatura do video demonstrativo</small>
+                        </div>
+
+                        <div className="exercise-prescription">
+                          <span>Prescricao do Personal Virtual</span>
+                          <strong>{exercise.suggestedSets} series</strong>
+                          <strong>{exercise.suggestedReps} reps</strong>
+                          <strong>Descanso {formatTimer(getExerciseRestSeconds(exercise))}</strong>
+                          <small>Somente o Personal Virtual altera series e repeticoes prescritas.</small>
+                        </div>
+
+                        <label>
+                          Video demonstrativo
+                          <input
+                            value={exercise.executionVideoUrl}
+                            onChange={(event) =>
+                              handleExerciseChange(
+                                selectedWorkout.id,
+                                exercise.id,
+                                "executionVideoUrl",
+                                event.target.value
+                              )
+                            }
+                            placeholder="URL do video de execucao"
+                          />
+                        </label>
+                        <label>
+                          Feedback do Personal Virtual
+                          <textarea
+                            value={exercise.aiFeedback}
+                            onChange={(event) =>
+                              handleExerciseChange(
+                                selectedWorkout.id,
+                                exercise.id,
+                                "aiFeedback",
+                                event.target.value
+                              )
+                            }
+                            placeholder="Feedback tecnico gerado pelo Personal Virtual apos analisar o video ou as anotacoes"
+                          />
+                          <button
+                            type="button"
+                            className="feedback-request-button"
+                            onClick={() =>
+                              handleRequestExerciseFeedback(selectedWorkout.id, exercise.id, "video")
+                            }
+                          >
+                            Solicitar feedback do video
+                          </button>
+                        </label>
+                      </div>
+
+                      <p className="set-log-locked">
+                        {isSessionActive
+                          ? "Use o painel de sessao acima para registrar a serie atual."
+                          : "Clique em Iniciar sessao para registrar series, cargas e repeticoes."}
+                      </p>
+
+                      <label className="exercise-notes">
+                        Anotacoes
+                        <textarea
+                          value={exercise.notes}
+                          onChange={(event) =>
+                            handleExerciseChange(
+                              selectedWorkout.id,
+                              exercise.id,
+                              "notes",
+                              event.target.value
+                            )
+                          }
+                          placeholder="Carga sentida, dor, RPE, ajuste de tecnica..."
+                        />
+                        <button
+                          type="button"
+                          className="feedback-request-button"
+                          onClick={() =>
+                            handleRequestExerciseFeedback(selectedWorkout.id, exercise.id, "notes")
+                          }
+                        >
+                          Solicitar feedback das anotacoes
+                        </button>
+                      </label>
+                    </>
+                  ) : null}
+                </section>
+              ))}
+            </div>
+          </article>
+        </TabsContent>
+
+        <TabsContent value="historico">
+          <div className="workout-history-overview">
+            <article>
+              <span>Ultima execucao</span>
+              <strong>{previousSession ? formatWorkoutDate(previousSession.createdAt) : "--"}</strong>
+            </article>
+            <article>
+              <span>Series registradas</span>
+              <strong>{previousSession ? getRegisteredSets(previousSession) : 0}</strong>
+            </article>
+            <article>
+              <span>Volume ultimo treino</span>
+              <strong>{previousSession ? Math.round(getSessionVolume(previousSession)) : 0}</strong>
+            </article>
+          </div>
+
+          {selectedWorkoutSessions.length ? (
+            <WorkoutSessionHistoryTable sessions={recentSessions} />
+          ) : (
+            <WorkoutEmptyState
+              title="Sem historico para este treino"
+              description="Finalize pelo menos uma sessao para ver duracao, series e volume aqui."
+            />
+          )}
+        </TabsContent>
+      </Tabs>
 
       {activeVideo ? (
         <div className="video-modal" role="dialog" aria-modal="true">
