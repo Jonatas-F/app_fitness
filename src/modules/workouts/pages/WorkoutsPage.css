@@ -1300,6 +1300,7 @@
     align-items: flex-start;
     gap: 3px;
     min-height: 56px;
+    padding: 10px 12px; /* padding vertical para o dot não tocar a borda */
   }
 
   /* Permite quebra de linha — sem truncamento */
