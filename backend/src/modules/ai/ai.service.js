@@ -465,8 +465,16 @@ export async function generateAiWorkoutPlan(accountId, { goal, persist = false, 
   const instructions = `
 Gere um plano de treino personalizado em JSON valido para o Shape Certo.
 
+=== PRIORIDADE ABSOLUTA — DIAS DE TREINO ===
+Se "trainingAvailableDays" for fornecido na requisicao (campo nao vazio):
+  - Use EXATAMENTE esses dias como "enabled": true no JSON de saida.
+  - TODOS os outros dias da semana devem ter "enabled": false e "exercises": [].
+  - NAO redistribua, NAO adicione e NAO remova nenhum dia. A selecao do usuario e definitiva.
+  - As regras de distribuicao da secao A abaixo so se aplicam quando trainingAvailableDays NAO for fornecido.
+=== FIM PRIORIDADE ===
+
 DADOS OBRIGATORIOS A LER NO CONTEXTO:
-1. DIAS DISPONIVEIS: leia "trainingAvailableDays" no payload do check-in mais recente (checkins[0].payload.trainingAvailableDays). Este campo contem os dias da semana em que o usuario tem disponibilidade real, separados por virgula (ex: "monday,wednesday,friday"). Use EXATAMENTE esses dias como dias de treino habilitados. Se estiver vazio, leia "weeklyTrainingDays" e distribua os dias de forma equilibrada conforme as regras abaixo.
+1. DIAS DISPONIVEIS: se "trainingAvailableDays" nao foi fornecido na requisicao, leia-o no payload do check-in mais recente (checkins[0].payload.trainingAvailableDays). Se ainda vazio, leia "weeklyTrainingDays" e distribua os dias de forma equilibrada conforme as regras da secao A.
 2. EQUIPAMENTOS: leia "preferences.gymEquipment" e use SOMENTE os com "available: true". Se vazio, use maquinas de academia padrao (chest press, leg press, puxada, remada, shoulder press, cadeira extensora, mesa flexora).
 3. NIVEL: leia "trainingExperience" do check-in mais recente — "iniciante", "intermediario" ou "avancado". Calibre complexidade tecnica, numero de exercicios e volume total.
 4. SINAIS DE RECUPERACAO: leia fatigueLevel, sleepQuality, trainingPerformance do check-in mais recente:
@@ -477,15 +485,14 @@ DADOS OBRIGATORIOS A LER NO CONTEXTO:
 
 PRINCIPIOS CIENTIFICOS OBRIGATORIOS (evidence-based):
 
-A. DISTRIBUICAO DOS DIAS DE DESCANSO (Schoenfeld 2016 - muscle recovery):
+A. DISTRIBUICAO DOS DIAS DE DESCANSO — so aplique quando trainingAvailableDays NAO for informado (Schoenfeld 2016 - muscle recovery):
    - Cada grupo muscular precisa de 48-72h de recuperacao entre estimulos
    - NUNCA concentre todos os dias de descanso ao final da semana
-   - Regras por frequencia semanal:
+   - Sugestoes de distribuicao quando o usuario nao especificou os dias:
      * 3 dias: distribua com 1 dia de folga entre treinos — SEG/QUA/SEX ou TER/QUI/SAB
-     * 4 dias: distribua em blocos — SEG/TER/QUI/SEX (folga QUA e fim de semana)
+     * 4 dias: distribua em blocos — SEG/TER/QUI/SEX ou TER/QUA/SEX/SAB
      * 5 dias: SEG a SEX (folga SAB e DOM)
      * 6 dias: 6 dias consecutivos mais proximos, 1 dia de descanso isolado
-   - Se "trainingAvailableDays" informar dias especificos, RESPEITE esses dias exatamente
    - Verifique se ha pelo menos 1 dia de descanso a cada 3 dias de treino consecutivos
 
 B. VOLUME SEMANAL POR GRUPO MUSCULAR (Krieger 2010, Ralston 2017):
@@ -549,6 +556,11 @@ Gere entre 5 e 8 exercicios por dia de treino ativo.
 Nao inclua texto fora do JSON.
 `.trim();
 
+  const trainingDayList = trainingAvailableDays
+    ? trainingAvailableDays.split(",").map((d) => d.trim()).filter(Boolean)
+    : [];
+  const trainingDayCount = trainingDayList.length;
+
   const result = await callOpenAi({
     accountId,
     generationType: "workout",
@@ -557,8 +569,13 @@ Nao inclua texto fora do JSON.
     input: [
       `Gere um protocolo de treino completo e atualizado.`,
       goal ? `Objetivo principal: ${goal}.` : "",
-      trainingAvailableDays
-        ? `DIAS DISPONIVEIS PARA TREINAR (use EXATAMENTE estes dias como enabled:true no JSON, sem adicionar outros): ${trainingAvailableDays}. Os demais dias da semana devem ter enabled:false e exercises:[].`
+      trainingDayCount > 0
+        ? [
+            `DIAS DE TREINO SELECIONADOS PELO USUARIO (${trainingDayCount} dias — OBRIGATORIO):`,
+            `  Dias com "enabled": true: ${trainingDayList.join(", ")}.`,
+            `  Dias com "enabled": false e "exercises": []: todos os outros (${["monday","tuesday","wednesday","thursday","friday","saturday","sunday"].filter((d) => !trainingDayList.includes(d)).join(", ")}).`,
+            `  NAO altere esta selecao. NAO redistribua os dias. Use exatamente esses ${trainingDayCount} dias como dias de treino.`,
+          ].join(" ")
         : "Distribua os dias de treino de forma equilibrada, nunca concentrando todos os descansos no final da semana.",
       `Use os equipamentos disponiveis (preferences.gymEquipment), o nivel de treino, os sinais de fadiga/sono/performance do ultimo check-in e o historico de sessoes para montar o protocolo.`,
     ].filter(Boolean).join(" "),
