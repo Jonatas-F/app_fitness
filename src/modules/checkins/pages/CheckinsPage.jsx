@@ -890,6 +890,7 @@ export default function CheckinsPage() {
   const [protocolUpdateResult, setProtocolUpdateResult] = useState(null);
   const [showAiModal, setShowAiModal] = useState(false);
   const [aiGoal, setAiGoal] = useState("");
+  const [aiTrainingDays, setAiTrainingDays] = useState("");
   const cancelButtonRef = useRef(null);
   const [isHydratingCheckins, setIsHydratingCheckins] = useState(true);
 
@@ -1093,8 +1094,9 @@ export default function CheckinsPage() {
       setCheckins(syncSavedCheckin(updated, localCheckin, remote.data));
     }
 
-    // Captura o objetivo ANTES de resetar o formulário
+    // Captura objetivo e dias disponíveis ANTES de resetar o formulário
     setAiGoal(payload.goal || "");
+    setAiTrainingDays(payload.trainingAvailableDays || "");
 
     setFormData(makePrefilledCheckinForm(updated, activeCadence));
     setPhotoUploads({});
@@ -1139,7 +1141,7 @@ export default function CheckinsPage() {
     try {
       if (updateWorkoutWithAi) {
         try {
-          const res = await withTimeout(generateWorkoutWithAi({ persist: true, goal: aiGoal }));
+          const res = await withTimeout(generateWorkoutWithAi({ persist: true, goal: aiGoal, trainingAvailableDays: aiTrainingDays }));
           if (res?.protocol) {
             await hydrateWorkoutExecutionFromApi();
             results.workout = res.protocol?.title || "Protocolo de treino atualizado";
@@ -1267,7 +1269,7 @@ export default function CheckinsPage() {
   const showDaily = activeCadence === "daily";
   const showWeekly = activeCadence === "weekly";
   const showMonthly = activeCadence === "monthly";
-  const showProtocolBase = showMonthly;
+  const showProtocolBase = showMonthly || showWeekly;
   const showBodyComposition = showMonthly;
   const metrics = useMemo(() => getCheckinMetrics(checkins), [checkins]);
   const cadenceSummary = useMemo(() => getCheckinCadenceSummary(checkins), [checkins]);
@@ -2135,26 +2137,6 @@ export default function CheckinsPage() {
                 </Field>
               </div>
             </div>
-
-            {(showWeekly || showMonthly) ? (
-              <div className="checkins-grid checkins-grid--two">
-                <Field
-                  label="Acao sobre protocolo"
-                  required
-                  hint="Sinaliza necessidade, mas nao gera dieta ou treino automaticamente."
-                >
-                  <select
-                    name="protocolAction"
-                    value={formData.protocolAction}
-                    onChange={handleChange}
-                  >
-                    <option value="none">Manter protocolo atual</option>
-                    <option value="monitor">Acompanhar sem alterar</option>
-                    <option value="request-adjustment">Sinalizar ajuste manual/IA</option>
-                  </select>
-                </Field>
-              </div>
-            ) : null}
 
             <Field label="Feedback da semana" required invalid={submitAttempted && !hasValue(formData.notes)}>
               <textarea

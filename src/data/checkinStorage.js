@@ -115,7 +115,6 @@ const requiredFieldsByCadence = {
     "sleepQuality",
     "fatigueLevel",
     "trainingPerformance",
-    "protocolAction",
     "notes",
   ],
   monthly: [
@@ -127,7 +126,6 @@ const requiredFieldsByCadence = {
     "sleepQuality",
     "fatigueLevel",
     "trainingPerformance",
-    "protocolAction",
     "notes",
   ],
 };

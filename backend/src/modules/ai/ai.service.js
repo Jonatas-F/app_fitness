@@ -461,7 +461,7 @@ Nao inclua texto fora do JSON.
   };
 }
 
-export async function generateAiWorkoutPlan(accountId, { goal, persist = false } = {}) {
+export async function generateAiWorkoutPlan(accountId, { goal, persist = false, trainingAvailableDays = "" } = {}) {
   const instructions = `
 Gere um plano de treino personalizado em JSON valido para o Shape Certo.
 
@@ -554,7 +554,14 @@ Nao inclua texto fora do JSON.
     generationType: "workout",
     expectJson: true,
     instructions,
-    input: `Gere um protocolo de treino completo e atualizado com base em todos os dados do usuario.${goal ? ` Objetivo principal: ${goal}.` : ""} Consulte os equipamentos disponiveis, o nivel de treino, os sinais do ultimo check-in e o historico de sessoes.`,
+    input: [
+      `Gere um protocolo de treino completo e atualizado.`,
+      goal ? `Objetivo principal: ${goal}.` : "",
+      trainingAvailableDays
+        ? `DIAS DISPONIVEIS PARA TREINAR (use EXATAMENTE estes dias como enabled:true no JSON, sem adicionar outros): ${trainingAvailableDays}. Os demais dias da semana devem ter enabled:false e exercises:[].`
+        : "Distribua os dias de treino de forma equilibrada, nunca concentrando todos os descansos no final da semana.",
+      `Use os equipamentos disponiveis (preferences.gymEquipment), o nivel de treino, os sinais de fadiga/sono/performance do ultimo check-in e o historico de sessoes para montar o protocolo.`,
+    ].filter(Boolean).join(" "),
   });
 
   if (persist && result.json) {
