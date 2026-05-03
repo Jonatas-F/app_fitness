@@ -130,7 +130,7 @@ const requiredFieldsByCadence = {
   ],
 };
 
-const checkinFieldLabels = {
+export const checkinFieldLabels = {
   age: "idade",
   sex: "sexo",
   goal: "objetivo",
@@ -592,6 +592,7 @@ export function saveCheckin(checkinData, options = {}) {
     injuryTags,
     trainingBackgroundTags,
     weeklyTrainingDays: checkinData.weeklyTrainingDays || "",
+    trainingAvailableDays: checkinData.trainingAvailableDays || "",
     trainingShift: checkinData.trainingShift || "",
     wakeTime: checkinData.wakeTime || "",
     sleepTime: checkinData.sleepTime || "",

@@ -682,24 +682,59 @@
   gap: 18px;
 }
 
-.checkins-calendar__header span,
+/* Empilha os elementos de texto (small / strong / em) com grid */
+.checkins-calendar__header > div {
+  display: grid;
+  gap: 5px;
+}
+
+.checkins-calendar__header > div small,
 .checkins-calendar__details > span {
   display: inline-flex;
   width: fit-content;
-  min-height: 28px;
+  min-height: 26px;
   align-items: center;
   padding: 0 10px;
   border-radius: 999px;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.80);
+  background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.09);
-  font-size: 0.76rem;
+  font-size: 0.75rem;
   font-weight: 800;
+  letter-spacing: 0.01em;
 }
 
-.checkins-calendar__header h2 {
-  margin: 10px 0 6px;
-  font-size: 1.18rem;
+.checkins-calendar__header > div strong {
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.checkins-calendar__header > div em {
+  display: block;
+  font-style: normal;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.52);
+  line-height: 1.5;
+}
+
+/* Data selecionada — badge vermelho discreto em vez do amarelo nativo do <mark> */
+.checkins-calendar__header mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(229, 9, 20, 0.10);
+  color: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(229, 9, 20, 0.28);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1.35;
+  text-align: center;
 }
 
 .checkins-calendar__header p,
@@ -726,7 +761,7 @@
   color: #fff;
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.09);
-  text-transform: capitalize;
+  text-transform: none;
 }
 
 .checkins-calendar__controls button {
@@ -835,8 +870,8 @@
 
 .checkins-calendar__details h3 {
   margin: 0;
-  font-size: 1.25rem;
-  text-transform: capitalize;
+  font-size: 1.15rem;
+  text-transform: none;
 }
 
 .checkins-calendar__entries {
@@ -1136,12 +1171,20 @@
 
 .checkins-modal__panel {
   display: grid;
-  gap: 16px;
+  gap: 24px;
   width: min(980px, 100%);
   max-height: min(860px, calc(100vh - 36px));
   overflow: auto;
-  padding: 18px;
+  padding: 28px 32px;
   border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Calendário dentro do modal não precisa de glass duplo */
+.checkins-modal__panel .checkins-calendar {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
 }
 
 .checkins-modal__header {
@@ -1149,6 +1192,8 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 .checkins-modal__header span {
@@ -1167,31 +1212,88 @@
 
 .checkins-modal__header h2 {
   margin: 10px 0 6px;
+  font-size: 1.45rem;
+  font-weight: 900;
+  line-height: 1.2;
 }
 
 .checkins-modal__header p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.68);
-  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.55;
+  font-size: 0.88rem;
 }
 
 .checkins-modal__close {
   display: grid;
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   place-items: center;
   flex-shrink: 0;
   border-radius: 8px;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   font-weight: 900;
+  font-size: 0.9rem;
+  transition: background 0.15s, color 0.15s;
+}
+
+.checkins-modal__close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
 }
 
 .checkins-modal__actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* ── Validation error popup ─────────────────────────────────── */
+.checkins-modal__panel--error {
+  border-color: rgba(248, 113, 113, 0.28);
+  box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.14), 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+.checkins-modal__validation-desc {
+  margin: 0;
+  font-size: 0.92rem;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.checkins-modal__validation-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.checkins-modal__validation-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.88);
+  text-transform: capitalize;
+}
+
+.checkins-modal__validation-bullet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(248, 113, 113, 0.18);
+  color: #f87171;
+  font-size: 0.8rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  border: 1px solid rgba(248, 113, 113, 0.32);
 }
 
 .checkins-subsection {

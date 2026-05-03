@@ -14,6 +14,7 @@ import Skeleton from "@/components/ui/skeleton";
 import StatusPill from "@/components/ui/StatusPill";
 import {
   checkinCadences,
+  checkinFieldLabels,
   defaultCheckinForm,
   getCheckinCadenceSummary,
   getCheckinMetrics,
@@ -927,6 +928,7 @@ export default function CheckinsPage() {
   const [pendingPayload, setPendingPayload] = useState(null);
   const confirmButtonRef = useRef(null);
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [validationErrorPopup, setValidationErrorPopup] = useState(null);
   const [updateWorkoutWithAi, setUpdateWorkoutWithAi] = useState(true);
   const [updateDietWithAi, setUpdateDietWithAi] = useState(true);
   const [isGeneratingProtocols, setIsGeneratingProtocols] = useState(false);
@@ -1236,8 +1238,9 @@ export default function CheckinsPage() {
 
     if (!validation.isValid) {
       setSubmitAttempted(true);
-      setFeedback(validation.message);
-      // Scroll feedback into view so the user sees what is missing
+      setValidationErrorPopup(
+        validation.missingFields.map((f) => checkinFieldLabels[f] || f)
+      );
       requestAnimationFrame(() => {
         document.querySelector(".checkin-field.is-invalid")?.scrollIntoView({ behavior: "smooth", block: "center" });
       });
@@ -1396,6 +1399,56 @@ export default function CheckinsPage() {
               </button>
               <button ref={confirmButtonRef} type="button" className="primary-button" onClick={handleConfirmSave}>
                 Confirmar e salvar
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {validationErrorPopup ? (
+        <div
+          className="checkins-modal"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="checkin-validation-title"
+          onClick={(e) => { if (e.target === e.currentTarget) setValidationErrorPopup(null); }}
+        >
+          <div className="checkins-modal__panel checkins-modal__panel--error glass-panel">
+            <div className="checkins-modal__header">
+              <div>
+                <span>Campos obrigatorios</span>
+                <h2 id="checkin-validation-title">Check-in incompleto</h2>
+              </div>
+              <button
+                type="button"
+                className="checkins-modal__close"
+                onClick={() => setValidationErrorPopup(null)}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="checkins-modal__validation-desc">
+              Preencha os campos abaixo antes de salvar o check-in:
+            </p>
+
+            <ul className="checkins-modal__validation-list">
+              {validationErrorPopup.map((label) => (
+                <li key={label}>
+                  <span className="checkins-modal__validation-bullet" aria-hidden="true">!</span>
+                  {label}
+                </li>
+              ))}
+            </ul>
+
+            <div className="checkins-modal__actions">
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => setValidationErrorPopup(null)}
+              >
+                Entendi, vou preencher
               </button>
             </div>
           </div>
