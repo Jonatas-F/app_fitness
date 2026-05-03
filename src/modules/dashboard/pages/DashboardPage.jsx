@@ -122,7 +122,7 @@ function compareLatestCheckins(checkins) {
       bodyFat: "--",
       muscleMass: "--",
       leanMass: "--",
-      message: "Salve pelo menos dois check-ins para comparar evolucao.",
+      message: "Salve pelo menos dois check-ins para comparar evolução.",
     };
   }
 
@@ -137,7 +137,7 @@ function compareLatestCheckins(checkins) {
     bodyFat: diff("bodyFat"),
     muscleMass: diff("muscleMass"),
     leanMass: diff("leanMass"),
-    message: "Comparacao entre os dois check-ins realizados mais recentes.",
+    message: "Comparação entre os dois check-ins realizados mais recentes.",
   };
 }
 
@@ -228,40 +228,40 @@ function makeFeedbacks({ weekSessions, monthSessions, checkins, trainingHistory 
 
   const protocolDirection =
     monthSessions.length >= 12 && Number(adherence) >= 80
-      ? "O proximo protocolo pode evoluir em volume, carga ou complexidade, porque a execucao recente indica boa aderencia."
+      ? "O próximo protocolo pode evoluir em volume, carga ou complexidade, porque a execução recente indica boa aderência."
       : monthSessions.length < 6 || Number(adherence) < 65
-        ? "O proximo protocolo deve ser facilitado ou reorganizado, porque houve baixa frequencia, baixa aderencia ou pouco dado confiavel."
-        : "O protocolo pode ser mantido com ajustes pontuais enquanto mais dados sao registrados.";
+        ? "O próximo protocolo deve ser facilitado ou reorganizado, porque houve baixa frequência, baixa aderência ou pouco dado confiável."
+        : "O protocolo pode ser mantido com ajustes pontuais enquanto mais dados são registrados.";
 
   return [
     {
-      title: "Sono e recuperacao",
+      title: "Sono e recuperação",
       text:
         sleep === "--"
-          ? "Ainda nao ha dados suficientes de sono para orientar recuperacao."
-          : `Sono medio registrado: ${sleep}h. O Personal Virtual deve considerar esse dado antes de aumentar volume.`,
+          ? "Ainda não há dados suficientes de sono para orientar recuperação."
+          : `Sono médio registrado: ${sleep}h. O Personal Virtual deve considerar esse dado antes de aumentar volume.`,
     },
     {
-      title: "Alimentacao e aderencia",
+      title: "Alimentação e aderência",
       text:
         adherence === "--"
-          ? "Registre aderencia nos check-ins para cruzar dieta, treino e progresso."
-          : `Aderencia media: ${adherence}%. Esse valor ajuda a decidir se o protocolo progride ou fica mais simples.`,
+          ? "Registre aderência nos check-ins para cruzar dieta, treino e progresso."
+          : `Aderência média: ${adherence}%. Esse valor ajuda a decidir se o protocolo progride ou fica mais simples.`,
     },
     {
-      title: "Mudanca de protocolo",
+      title: "Mudança de protocolo",
       text: protocolDirection,
     },
     {
-      title: "Evolucao corporal",
+      title: "Evolução corporal",
       text:
         weightDiff === null
           ? "Dois check-ins completos permitem comparar peso, gordura e massa muscular."
-          : `Variacao recente de peso: ${weightDiff.toFixed(1)} kg. Combine com bioimpedancia antes de concluir ganho ou perda real.`,
+          : `Variação recente de peso: ${weightDiff.toFixed(1)} kg. Combine com bioimpedância antes de concluir ganho ou perda real.`,
     },
     {
-      title: "Historico mensal",
-      text: `${trainingHistory.length} protocolo(s) anterior(es) arquivado(s). Esses registros ajudam a explicar progresso, regressao ou troca de estimulo.`,
+      title: "Histórico mensal",
+      text: `${trainingHistory.length} protocolo(s) anterior(es) arquivado(s). Esses registros ajudam a explicar progresso, regressão ou troca de estímulo.`,
     },
   ];
 }
@@ -375,7 +375,7 @@ export default function DashboardPage() {
       icon: Dumbbell,
     },
     {
-      label: "Treinos no mes",
+      label: "Treinos no mês",
       value: `${monthSessions.length}`,
       helper: `${sessions.length} no total`,
       icon: CalendarRange,
@@ -383,13 +383,13 @@ export default function DashboardPage() {
     {
       label: "Treinos no ano",
       value: `${yearSessions.length}`,
-      helper: "Sessoes registradas",
+      helper: "Sessões registradas",
       icon: Activity,
     },
     {
       label: "Maior carga",
       value: `${workoutSummary.maxWeight || "--"} kg`,
-      helper: `${workoutSummary.completedSets} series registradas`,
+      helper: `${workoutSummary.completedSets} séries registradas`,
       icon: Gauge,
     },
   ];
@@ -402,16 +402,16 @@ export default function DashboardPage() {
         </div>
         <div>
           <span>Dashboard</span>
-          <h1>Acompanhamento semanal, mensal e historico.</h1>
+          <h1>Acompanhamento semanal, mensal e histórico.</h1>
           <p>
-            Evolucao de treinos, cargas, sono, alimentacao, check-ins e composicao corporal em um unico painel.
+            Evolução de treinos, cargas, sono, alimentação, check-ins e composição corporal em um único painel.
           </p>
           <div className="dashboard-hero__meta">
             <div className="dashboard-hero__metric">
               <ClipboardCheck aria-hidden="true" />
               <span>
                 <strong>{weeklyCheckins.length} check-ins</strong>
-                <small>{adherencePercent(weeklyCheckins.length, weeklyCheckinTotal)} de aderencia semanal</small>
+                <small>{adherencePercent(weeklyCheckins.length, weeklyCheckinTotal)} de aderência semanal</small>
               </span>
             </div>
             <div className="dashboard-hero__metric">
@@ -432,7 +432,7 @@ export default function DashboardPage() {
               <TrendingUp aria-hidden="true" />
               <span>
                 <strong>{monthSessions.length} treinos</strong>
-                <small>sessoes registradas nos ultimos 30 dias</small>
+                <small>sessões registradas nos últimos 30 dias</small>
               </span>
             </div>
           </div>
@@ -522,7 +522,7 @@ export default function DashboardPage() {
         <TabsContent value="resumo" className="dashboard-tab-panel">
           <section className="dashboard-grid dashboard-grid--nested">
             <article className="dashboard-card dashboard-card--nested glass-panel">
-              <h2>Comparacao corporal</h2>
+              <h2>Comparação corporal</h2>
               <p>{comparison.message}</p>
               <div className="dashboard-comparison">
                 <div>
@@ -553,14 +553,14 @@ export default function DashboardPage() {
                   <strong>{average(weeklyCheckins, "sleep")}h</strong>
                 </div>
                 <div>
-                  <span>Aderencia</span>
+                  <span>Aderência</span>
                   <strong>{average(weeklyCheckins, "adherence")}%</strong>
                 </div>
               </div>
             </article>
 
             <article className="dashboard-card dashboard-card--nested glass-panel">
-              <h2>Aderencia aos check-ins</h2>
+              <h2>Aderência aos check-ins</h2>
               <p>Realizados e gaps registrados ficam concentrados aqui para consulta.</p>
               <div className="dashboard-comparison">
                 <div>
@@ -572,14 +572,14 @@ export default function DashboardPage() {
                   <strong>{weeklyMissedCheckins.length}</strong>
                 </div>
                 <div>
-                  <span>Mes</span>
+                  <span>Mês</span>
                   <strong>{adherencePercent(monthlyCheckins.length, monthlyCheckinTotal)}</strong>
                 </div>
               </div>
             </article>
           </section>
 
-          <Suspense fallback={<DashboardChartLoading label="Carregando aderencia..." />}>
+          <Suspense fallback={<DashboardChartLoading label="Carregando aderência..." />}>
             <DashboardCharts
               type="adherence"
               weeklyCheckins={weeklyCheckins.length}
@@ -600,15 +600,15 @@ export default function DashboardPage() {
         <TabsContent value="cargas" className="dashboard-tab-panel">
           <section className="dashboard-grid dashboard-grid--wide dashboard-grid--nested">
             <article className="dashboard-card dashboard-card--nested glass-panel">
-              <h2>Evolucao de cargas</h2>
-              <p>Volume estimado por sessoes salvas: peso x repeticoes.</p>
+              <h2>Evolução de cargas</h2>
+              <p>Volume estimado por sessões salvas: peso x repetições.</p>
               <Suspense fallback={<DashboardChartLoading label="Carregando cargas..." />}>
                 <DashboardCharts type="load" data={loadsByDate} />
               </Suspense>
             </article>
 
             <article className="dashboard-card dashboard-card--nested glass-panel">
-              <h2>Calendario do mes</h2>
+              <h2>Calendário do mês</h2>
               <p>Treino realizado, check-in preenchido e ausencia registrada.</p>
               <div className="training-calendar">
                 {calendarDays.map((item) => (
@@ -629,10 +629,10 @@ export default function DashboardPage() {
         <TabsContent value="mensal" className="dashboard-tab-panel">
           <section className="dashboard-grid dashboard-grid--nested">
             <article className="dashboard-card dashboard-card--nested glass-panel">
-              <h2>Evolucao mensal</h2>
+              <h2>Evolução mensal</h2>
               <div className="dashboard-comparison">
                 <div>
-                  <span>Check-ins no mes</span>
+                  <span>Check-ins no mês</span>
                   <strong>{monthlyCheckins.length}</strong>
                 </div>
                 <div>
@@ -652,14 +652,14 @@ export default function DashboardPage() {
                 {workoutPlan.workouts.map((workout) => (
                   <div key={workout.id}>
                     <strong>{workout.title}</strong>
-                    <span>{workout.enabled ? "Habilitado" : "Desabilitado"} | {workout.exercises.length} exercicios</span>
+                    <span>{workout.enabled ? "Habilitado" : "Desabilitado"} | {workout.exercises.length} exercícios</span>
                   </div>
                 ))}
               </div>
             </article>
           </section>
 
-          <Suspense fallback={<DashboardChartLoading label="Carregando evolucao dos treinos..." />}>
+          <Suspense fallback={<DashboardChartLoading label="Carregando evolução dos treinos..." />}>
             <DashboardCharts
               type="workoutEvolution"
               workouts={workoutPlan.workouts}

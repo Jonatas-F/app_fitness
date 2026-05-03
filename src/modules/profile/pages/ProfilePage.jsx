@@ -96,7 +96,7 @@ const addPaymentMethodOption = {
   id: "novo",
   brand: "+",
   ending: "novo",
-  label: "Adicionar novo cartao",
+  label: "Adicionar novo cartão",
 };
 
 function loadProfilePhoto() {
@@ -213,7 +213,7 @@ function getStatusTone(message) {
   }
 
   if (
-    normalizedMessage.includes("nao foi possivel") ||
+    normalizedMessage.includes("não foi possível") ||
     normalizedMessage.includes("bloqueou") ||
     normalizedMessage.includes("cancelad") ||
     normalizedMessage.includes("tente novamente")
@@ -292,7 +292,7 @@ function EquipmentCard({ item, selected, onToggle }) {
             {selected ? "Liberado" : "Ignorar"}
           </StatusPill>
           <strong>{item.name}</strong>
-          <small>{selected ? "Disponivel para o treino" : "Nao usar no treino"}</small>
+          <small>{selected ? "Disponível para o treino" : "Não usar no treino"}</small>
         </span>
       </label>
 
@@ -320,13 +320,13 @@ function FoodPreferenceCard({ item, selectedMark, onChange }) {
       <div className="food-card__heading">
         <div className="food-card__title">
           <strong>{item.name}</strong>
-          <small>{activeMark ? "Ajuste se precisar mudar a dieta." : "Sem marcacao definida ainda."}</small>
+          <small>{activeMark ? "Ajuste se precisar mudar a dieta." : "Sem marcação definida ainda."}</small>
         </div>
         <StatusPill
           tone={mapFoodToneToPillTone(activeMark?.tone)}
           className={`food-card__status ${activeMark ? `is-${activeMark.tone}` : ""}`}
         >
-          {activeMark ? activeMark.label : "Sem marcacao"}
+          {activeMark ? activeMark.label : "Sem marcação"}
         </StatusPill>
       </div>
 
@@ -531,12 +531,12 @@ export default function ProfilePage({ embedded = false }) {
     }
 
     if (paymentMethodStatus === "success") {
-      setAccountMessage("Metodo de pagamento enviado para a Stripe. Atualizando cartoes salvos...");
-      refreshStripePaymentMethods("Metodo de pagamento salvo e sincronizado com a Stripe.");
+      setAccountMessage("Método de pagamento enviado para a Stripe. Atualizando cartões salvos...");
+      refreshStripePaymentMethods("Método de pagamento salvo e sincronizado com a Stripe.");
     }
 
     if (paymentMethodStatus === "cancelled") {
-      setAccountMessage("Cadastro de metodo de pagamento cancelado antes de concluir na Stripe.");
+      setAccountMessage("Cadastro de método de pagamento cancelado antes de concluir na Stripe.");
     }
   }, [searchParams]);
 
@@ -570,7 +570,7 @@ export default function ProfilePage({ embedded = false }) {
       }
 
       if (payload.paymentMethodStatus === "cancelled") {
-        setAccountMessage("Cadastro de metodo de pagamento cancelado antes de concluir na Stripe.");
+        setAccountMessage("Cadastro de método de pagamento cancelado antes de concluir na Stripe.");
       }
     }
 
@@ -583,7 +583,7 @@ export default function ProfilePage({ embedded = false }) {
     const result = await loadBillingSubscription();
 
     if (result.error || !result.data) {
-      setAccountMessage(result.error?.message || "Nao foi possivel atualizar os cartoes salvos agora.");
+      setAccountMessage(result.error?.message || "Não foi possível atualizar os cartões salvos agora.");
       return;
     }
 
@@ -601,7 +601,7 @@ export default function ProfilePage({ embedded = false }) {
       setAccount((current) => saveProfileAccount({ ...current, paymentMethod: defaultMethod.id }));
     }
 
-    setAccountMessage(successMessage || "Cartoes salvos na Stripe atualizados.");
+    setAccountMessage(successMessage || "Cartões salvos na Stripe atualizados.");
   }
 
   async function handlePhotoUpload(event) {
@@ -671,12 +671,12 @@ export default function ProfilePage({ embedded = false }) {
     }
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setPasswordMessage("A confirmacao precisa ser igual a nova senha.");
+      setPasswordMessage("A confirmação precisa ser igual à nova senha.");
       return;
     }
 
     setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    setPasswordMessage("Solicitacao de alteracao preparada para a integracao de conta.");
+    setPasswordMessage("Solicitação de alteração preparada para a integração de conta.");
   }
 
   function toggleGoogleLink() {
@@ -685,30 +685,30 @@ export default function ProfilePage({ embedded = false }) {
     setAccountMessage(
       nextAccount.googleLinked
         ? "Conta marcada como vinculada ao Google."
-        : "Vinculo com Google removido neste dispositivo."
+        : "Vínculo com Google removido neste dispositivo."
     );
   }
 
   async function handlePaymentMethodSelect(method) {
     if (method.id === "novo") {
-      await openStripePaymentMethodSession("Abrindo Stripe para adicionar um novo metodo de pagamento...");
+      await openStripePaymentMethodSession("Abrindo Stripe para adicionar um novo método de pagamento...");
       return;
     }
 
     if (account.paymentMethod === method.id || method.isDefault) {
-      setAccountMessage(`${method.label} ja esta selecionado como cartao padrao.`);
+      setAccountMessage(`${method.label} já está selecionado como cartão padrão.`);
       return;
     }
 
     setIsUpdatingPaymentMethod(true);
-    setAccountMessage(`Definindo ${method.label} como cartao padrao...`);
+    setAccountMessage(`Definindo ${method.label} como cartão padrão...`);
 
     const result = await setStripeDefaultPaymentMethod(method.id);
 
     if (result.error || !result.data) {
       setIsUpdatingPaymentMethod(false);
       setAccountMessage(
-        `Nao foi possivel selecionar este cartao. ${result.error?.message || "Tente novamente em alguns instantes."}`
+        `Não foi possível selecionar este cartão. ${result.error?.message || "Tente novamente em alguns instantes."}`
       );
       return;
     }
@@ -727,12 +727,12 @@ export default function ProfilePage({ embedded = false }) {
       },
     }));
     setIsUpdatingPaymentMethod(false);
-    setAccountMessage("Cartao padrao atualizado com seguranca pela Stripe.");
+    setAccountMessage("Cartão padrão atualizado com segurança pela Stripe.");
   }
 
   function openPlanChangeConfirmation() {
     if (!hasPendingPlanChanges) {
-      setAccountMessage("Escolha um novo plano ou ciclo antes de confirmar a alteracao.");
+      setAccountMessage("Escolha um novo plano ou ciclo antes de confirmar a alteração.");
       return;
     }
 
@@ -742,7 +742,7 @@ export default function ProfilePage({ embedded = false }) {
 
   async function confirmPlanChange() {
     if (!planTermsAccepted) {
-      setAccountMessage("Aceite os termos da alteracao do plano para continuar.");
+      setAccountMessage("Aceite os termos da alteração do plano para continuar.");
       return;
     }
 
@@ -762,11 +762,11 @@ export default function ProfilePage({ embedded = false }) {
       }
 
       setIsChangingPlan(false);
-      setAccountMessage("Janela da Stripe fechada. Se a alteracao foi concluida, o webhook atualizara o plano.");
+      setAccountMessage("Janela da Stripe fechada. Se a alteração foi concluída, o webhook atualizará o plano.");
     });
 
     const acceptedTermsText =
-      "Li e aceito que a alteracao do plano pode mudar valores, recorrencia, limites de tokens, acessos disponiveis e gerar cobranca proporcional calculada pela Stripe.";
+      "Li e aceito que a alteração do plano pode mudar valores, recorrência, limites de tokens, acessos disponíveis e gerar cobrança proporcional calculada pela Stripe.";
     const acceptanceRecord = {
       previousPlan: account.activePlan,
       previousBillingCycle: account.billingCycle,
@@ -797,9 +797,9 @@ export default function ProfilePage({ embedded = false }) {
       stopWatchingPopup();
       closeStripePopup(stripePopup);
       setAccountMessage(
-        `Aceite registrado, mas nao foi possivel abrir o Stripe. ${
+        `Aceite registrado, mas não foi possível abrir o Stripe. ${
           result.error?.message || "Tente novamente em alguns instantes."
-        }${acceptanceResult.error ? ` Historico local salvo; erro: ${acceptanceResult.error.message}` : ""}`
+        }${acceptanceResult.error ? ` Histórico local salvo; erro: ${acceptanceResult.error.message}` : ""}`
       );
       return;
     }
@@ -834,7 +834,7 @@ export default function ProfilePage({ embedded = false }) {
       stopWatchingPopup();
       closeStripePopup(stripePopup);
       setAccountMessage(
-        `Nao foi possivel abrir o portal Stripe. ${
+        `Não foi possível abrir o portal Stripe. ${
           result.error?.message || "Finalize uma assinatura pelo checkout primeiro."
         }`
       );
@@ -850,7 +850,7 @@ export default function ProfilePage({ embedded = false }) {
     const stripePopup = openPendingStripePopup();
 
     if (!stripePopup) {
-      setAccountMessage("O navegador bloqueou o popup da Stripe. Libere popups para gerenciar cartoes.");
+      setAccountMessage("O navegador bloqueou o popup da Stripe. Libere popups para gerenciar cartões.");
       return;
     }
 
@@ -859,7 +859,7 @@ export default function ProfilePage({ embedded = false }) {
         return;
       }
 
-      setAccountMessage("Janela da Stripe fechada. Atualizando cartoes salvos...");
+      setAccountMessage("Janela da Stripe fechada. Atualizando cartões salvos...");
       refreshStripePaymentMethods();
     });
 
@@ -869,7 +869,7 @@ export default function ProfilePage({ embedded = false }) {
       stopWatchingPopup();
       closeStripePopup(stripePopup);
       setAccountMessage(
-        `Nao foi possivel abrir a tela segura da Stripe. ${
+        `Não foi possível abrir a tela segura da Stripe. ${
           result.error?.message || "Tente novamente em alguns instantes."
         }`
       );
@@ -962,9 +962,9 @@ export default function ProfilePage({ embedded = false }) {
       <header className="profile-hero glass-panel">
         <div className="profile-hero__copy">
           <span>{embedded ? "Conta e perfil" : "Perfil"}</span>
-          <h1>{embedded ? "Conta, pagamento e dados permanentes." : "Dados permanentes para treino, dieta e preferencias."}</h1>
+          <h1>{embedded ? "Conta, pagamento e dados permanentes." : "Dados permanentes para treino, dieta e preferências."}</h1>
           <p>
-            Centralize foto, aparelhos disponiveis na academia e preferencias alimentares para o Personal
+            Centralize foto, aparelhos disponíveis na academia e preferências alimentares para o Personal
             Virtual montar protocolos mais coerentes.
           </p>
 
@@ -989,7 +989,7 @@ export default function ProfilePage({ embedded = false }) {
               <div className="profile-hero__metric">
                 <Salad aria-hidden="true" />
                 <span>
-                  <strong>{foodContext.selectedPreferences.length} marcacoes</strong>
+                  <strong>{foodContext.selectedPreferences.length} marcações</strong>
                   <small>alimentares salvas</small>
                 </span>
               </div>
@@ -1016,7 +1016,7 @@ export default function ProfilePage({ embedded = false }) {
               )}
             </div>
             <div className="profile-photo-card__details">
-              <strong>{profilePhoto?.name || "Foto do usuario"}</strong>
+              <strong>{profilePhoto?.name || "Foto do usuário"}</strong>
               <small>{account.email || "Imagem principal do perfil"}</small>
             </div>
             <label className="profile-photo-card__button">
@@ -1025,7 +1025,7 @@ export default function ProfilePage({ embedded = false }) {
               <input type="file" accept="image/*" onChange={handlePhotoUpload} />
             </label>
             <small className="profile-photo-card__hint">
-              A imagem ajuda a personalizar a experiencia e deixa o perfil mais reconhecivel.
+              A imagem ajuda a personalizar a experiência e deixa o perfil mais reconhecível.
             </small>
           </aside>
         )}
@@ -1035,7 +1035,7 @@ export default function ProfilePage({ embedded = false }) {
         <div className="profile-section__heading">
           <div>
             <span>Conta e acesso</span>
-            <h2>Perfil, acesso e cobranca</h2>
+            <h2>Perfil, acesso e cobrança</h2>
             <p>
               Os dados ficam organizados em blocos recolhidos para reduzir a rolagem no celular.
             </p>
@@ -1069,7 +1069,7 @@ export default function ProfilePage({ embedded = false }) {
             <summary className="profile-compact-summary">
               <span className="profile-compact-summary__icon"><ChevronDown aria-hidden="true" /></span>
               <span>
-                <strong>Dados do usuario e senha</strong>
+                <strong>Dados do usuário e senha</strong>
                 <small>{account.username || account.fullName || "Editar nome, email e acesso"}</small>
               </span>
               <em>Recolhido</em>
@@ -1082,8 +1082,8 @@ export default function ProfilePage({ embedded = false }) {
                     <UserRound data-icon="inline-start" />
                     <span>Identidade</span>
                   </div>
-                  <CardTitle>Dados do usuario</CardTitle>
-                  <CardDescription>Nome publico, identificadores e email principal da conta.</CardDescription>
+                  <CardTitle>Dados do usuário</CardTitle>
+                  <CardDescription>Nome público, identificadores e email principal da conta.</CardDescription>
                 </CardHeader>
 
                 <CardContent>
@@ -1126,7 +1126,7 @@ export default function ProfilePage({ embedded = false }) {
 
                     <div className="profile-inline-note">
                       <AtSign aria-hidden="true" />
-                      <span>Esse email aparece como referencia principal para login, notificacoes e cobranca.</span>
+                      <span>Esse email aparece como referência principal para login, notificações e cobrança.</span>
                     </div>
 
                     <Button type="submit" className="profile-action-button" disabled={isSavingAccount}>
@@ -1145,10 +1145,10 @@ export default function ProfilePage({ embedded = false }) {
                 <CardHeader className="profile-account-card__header">
                   <div className="profile-card__eyebrow">
                     <KeyRound data-icon="inline-start" />
-                    <span>Seguranca</span>
+                    <span>Segurança</span>
                   </div>
                   <CardTitle>Alterar senha</CardTitle>
-                  <CardDescription>Validacao local por enquanto, pronta para plugar no backend.</CardDescription>
+                  <CardDescription>Validação local por enquanto, pronta para plugar no backend.</CardDescription>
                 </CardHeader>
 
                 <CardContent>
@@ -1172,7 +1172,7 @@ export default function ProfilePage({ embedded = false }) {
                         name="newPassword"
                         value={passwordForm.newPassword}
                         onChange={handlePasswordChange}
-                        placeholder="Minimo de 8 caracteres"
+                        placeholder="Mínimo de 8 caracteres"
                         className="profile-field__control"
                       />
                     </label>
@@ -1191,7 +1191,7 @@ export default function ProfilePage({ embedded = false }) {
 
                     <div className="profile-inline-note">
                       <ShieldAlert aria-hidden="true" />
-                      <span>Use uma senha longa e diferente da que voce usa em outros servicos.</span>
+                      <span>Use uma senha longa e diferente da que você usa em outros serviços.</span>
                     </div>
 
                     {passwordMessage ? (
@@ -1222,7 +1222,7 @@ export default function ProfilePage({ embedded = false }) {
               <span className="profile-compact-summary__icon"><ChevronDown aria-hidden="true" /></span>
               <span>
                 <strong>Vinculo de contas</strong>
-                <small>{account.googleLinked ? "Google conectado" : "Google nao vinculado"}</small>
+                <small>{account.googleLinked ? "Google conectado" : "Google não vinculado"}</small>
               </span>
               <em>{account.googleLinked ? "Ativo" : "Opcional"}</em>
             </summary>
@@ -1238,7 +1238,7 @@ export default function ProfilePage({ embedded = false }) {
                   <CardDescription>
                     {account.googleLinked
                       ? account.email || "Conta Google conectada"
-                      : "Use o Google para facilitar login, recuperacao de acesso e continuidade da conta."}
+                      : "Use o Google para facilitar login, recuperação de acesso e continuidade da conta."}
                   </CardDescription>
                 </CardHeader>
 
@@ -1249,8 +1249,8 @@ export default function ProfilePage({ embedded = false }) {
                       <strong>{account.googleLinked ? "Acesso social ativo" : "Acesso social opcional"}</strong>
                       <small>
                         {account.googleLinked
-                          ? "Essa conta ja pode usar Google como atalho de autenticacao."
-                          : "Ative essa opcao quando quiser reduzir friccao no login."}
+                          ? "Essa conta já pode usar Google como atalho de autenticação."
+                          : "Ative essa opção quando quiser reduzir fricção no login."}
                       </small>
                     </div>
                   </div>
@@ -1259,8 +1259,8 @@ export default function ProfilePage({ embedded = false }) {
                     <ShieldCheck aria-hidden="true" />
                     <span>
                       {account.googleLinked
-                        ? "Ao desvincular, o acesso por email e senha continua disponivel normalmente."
-                        : "Vincular nao muda seu plano nem seus dados; so adiciona uma forma de entrar."}
+                        ? "Ao desvincular, o acesso por email e senha continua disponível normalmente."
+                        : "Vincular não muda seu plano nem seus dados; só adiciona uma forma de entrar."}
                     </span>
                   </div>
 
@@ -1295,8 +1295,8 @@ export default function ProfilePage({ embedded = false }) {
                   <CardTitle>Dados de pagamento</CardTitle>
                   <CardDescription>
                     {isUpdatingPaymentMethod
-                      ? "Atualizando o cartao padrao na Stripe."
-                      : "Clique em um cartao salvo para definir o metodo usado na proxima cobranca."}
+                      ? "Atualizando o cartão padrão na Stripe."
+                      : "Clique em um cartão salvo para definir o método usado na próxima cobrança."}
                   </CardDescription>
                 </CardHeader>
 
@@ -1322,7 +1322,7 @@ export default function ProfilePage({ embedded = false }) {
                     <span>
                       {isUpdatingPaymentMethod
                         ? "Sincronizando o cartao escolhido com a Stripe."
-                        : "A troca completa de cartoes e dados de cobranca abre em popup seguro da Stripe."}
+                        : "A troca completa de cartões e dados de cobrança abre em popup seguro da Stripe."}
                     </span>
                   </div>
 
@@ -1332,7 +1332,7 @@ export default function ProfilePage({ embedded = false }) {
                       className="profile-action-button"
                       onClick={() =>
                         openStripePaymentMethodSession(
-                          "Abrindo Stripe para adicionar ou trocar um metodo de pagamento..."
+                          "Abrindo Stripe para adicionar ou trocar um método de pagamento..."
                         )
                       }
                     >
@@ -1359,7 +1359,7 @@ export default function ProfilePage({ embedded = false }) {
                     <span>Assinatura</span>
                   </div>
                   <CardTitle>Plano ativo</CardTitle>
-                  <CardDescription>Assinatura atual, limites de uso e proxima alteracao.</CardDescription>
+                  <CardDescription>Assinatura atual, limites de uso e próxima alteração.</CardDescription>
                 </CardHeader>
 
                 <CardContent className="profile-plan-card__content">
@@ -1376,7 +1376,7 @@ export default function ProfilePage({ embedded = false }) {
                     <select value={pendingPlan} onChange={(event) => setPendingPlan(event.target.value)}>
                       {subscriptionPlans.map((plan) => (
                         <option key={plan.id} value={plan.id}>
-                          {plan.name} - {formatCurrency(plan.monthlyPrice)}/mes
+                          {plan.name} - {formatCurrency(plan.monthlyPrice)}/mês
                         </option>
                       ))}
                     </select>
@@ -1420,8 +1420,8 @@ export default function ProfilePage({ embedded = false }) {
                     )}
                     <span>
                       {hasPendingPlanChanges
-                        ? "A alteracao sera revisada em popup seguro antes da cobranca."
-                        : "O plano e o ciclo atuais ja estao selecionados."}
+                        ? "A alteração será revisada em popup seguro antes da cobrança."
+                        : "O plano e o ciclo atuais já estão selecionados."}
                     </span>
                   </div>
 
@@ -1436,7 +1436,7 @@ export default function ProfilePage({ embedded = false }) {
                     ) : (
                       <Sparkles data-icon="inline-start" />
                     )}
-                    {hasPendingPlanChanges ? "Revisar alteracao do plano" : "Plano ja selecionado"}
+                    {hasPendingPlanChanges ? "Revisar alteração do plano" : "Plano já selecionado"}
                   </Button>
                 </CardContent>
               </Card>
@@ -1459,7 +1459,7 @@ export default function ProfilePage({ embedded = false }) {
           <article className="profile-logout-card">
             <div>
               <strong>Sair da conta</strong>
-              <small>Encerra a sessao visual e volta para a home.</small>
+              <small>Encerra a sessão visual e volta para a home.</small>
             </div>
 
             <Button type="button" variant="destructive" className="profile-logout-button" onClick={handleLogout}>
@@ -1474,7 +1474,7 @@ export default function ProfilePage({ embedded = false }) {
         className="profile-section profile-collapsible-section glass-panel"
         summaryClassName="profile-section-summary"
         bodyClassName="profile-collapsible-section__body"
-        title="Academia do usuario"
+        title="Academia do usuário"
         summary={`${selectedEquipmentIds.length}/${allGymEquipment.length} aparelhos liberados`}
         badge={`${equipmentContext.unavailableEquipment.length} fora do treino`}
         data-tour="settings-gym"
@@ -1482,10 +1482,10 @@ export default function ProfilePage({ embedded = false }) {
           <div className="profile-section__heading profile-section__heading--compact">
             <div>
               <span>Aparelhos</span>
-              <h2>Aparelhos disponiveis para montar o treino</h2>
+              <h2>Aparelhos disponíveis para montar o treino</h2>
               <p>
-                Tudo comeca selecionado. Desmarque o que nao existe na academia para evitar exercicios
-                impossiveis no protocolo.
+                Tudo começa selecionado. Desmarque o que não existe na academia para evitar exercícios
+                impossíveis no protocolo.
               </p>
             </div>
           </div>
@@ -1540,7 +1540,7 @@ export default function ProfilePage({ embedded = false }) {
                       <span>
                         <strong>{category.title}</strong>
                         <small>
-                          {selectedInCategory}/{category.items.length} disponiveis
+                          {selectedInCategory}/{category.items.length} disponíveis
                         </small>
                       </span>
                     </button>
@@ -1577,17 +1577,17 @@ export default function ProfilePage({ embedded = false }) {
         className="profile-section profile-collapsible-section glass-panel"
         summaryClassName="profile-section-summary"
         bodyClassName="profile-collapsible-section__body"
-        title="Preferencias alimentares"
-        summary={`${foodContext.selectedPreferences.length} marcacoes salvas`}
+        title="Preferências alimentares"
+        summary={`${foodContext.selectedPreferences.length} marcações salvas`}
         badge={`${foodPreferencesCatalog.length} grupos`}
         data-tour="settings-food"
       >
           <div className="profile-section__heading profile-section__heading--compact">
             <div>
               <span>Alimentacao</span>
-              <h2>Gostos, restricoes e alimentos para priorizar</h2>
+              <h2>Gostos, restrições e alimentos para priorizar</h2>
               <p>
-                Marque alergias, intolerancias, itens evitados e alimentos favoritos. Esses dados ficam
+                Marque alergias, intolerâncias, itens evitados e alimentos favoritos. Esses dados ficam
                 prontos para alimentar a dieta personalizada.
               </p>
             </div>
@@ -1604,15 +1604,15 @@ export default function ProfilePage({ embedded = false }) {
             <div className="profile-section-insight">
               <ShieldAlert aria-hidden="true" />
               <span>
-                <strong>{foodRestrictionCount} restricoes</strong>
-                <small>alergias, intolerancias e itens para evitar</small>
+                <strong>{foodRestrictionCount} restrições</strong>
+                <small>alergias, intolerâncias e itens para evitar</small>
               </span>
             </div>
             <div className="profile-section-insight">
               <Salad aria-hidden="true" />
               <span>
-                <strong>{foodMarkedCount} marcacoes</strong>
-                <small>preferencias prontas para alimentar a dieta</small>
+                <strong>{foodMarkedCount} marcações</strong>
+                <small>preferências prontas para alimentar a dieta</small>
               </span>
             </div>
           </div>
@@ -1683,12 +1683,12 @@ export default function ProfilePage({ embedded = false }) {
           <DialogHeader className="profile-dialog-header">
             <div className="profile-card__eyebrow">
               <Sparkles data-icon="inline-start" />
-              <span>Confirmacao do plano</span>
+              <span>Confirmação do plano</span>
             </div>
-            <DialogTitle>Confirmar alteracao da assinatura</DialogTitle>
+            <DialogTitle>Confirmar alteração da assinatura</DialogTitle>
             <DialogDescription>
-              Revise a mudanca antes de ir para a pagina segura da Stripe. O valor final do proporcional
-              sera recalculado no pagamento.
+              Revise a mudança antes de ir para a página segura da Stripe. O valor final do proporcional
+              será recalculado no pagamento.
             </DialogDescription>
           </DialogHeader>
 
@@ -1704,7 +1704,7 @@ export default function ProfilePage({ embedded = false }) {
               <span>{pendingBillingCycle === "annual" ? "Anual" : "Mensal"}</span>
             </div>
             <div>
-              <small>Cobranca</small>
+              <small>Cobrança</small>
               <strong>{formatCurrency(selectedPlanPrice)}</strong>
               <span>
                 {selectedPaymentMethod.label}
@@ -1720,12 +1720,12 @@ export default function ProfilePage({ embedded = false }) {
               <span>{pendingBillingCycle === "annual" ? "Ciclo anual" : "Ciclo mensal"}</span>
             </div>
             <div>
-              <small>Credito proporcional</small>
+              <small>Crédito proporcional</small>
               <strong>{formatCurrency(prorationEstimate.credit)}</strong>
               <span>
                 {prorationEstimate.hasActivePeriod
                   ? `${prorationEstimate.remainingDays} dias restantes no ciclo atual`
-                  : "Sem periodo ativo encontrado"}
+                  : "Sem período ativo encontrado"}
               </span>
             </div>
             <div>
@@ -1746,8 +1746,8 @@ export default function ProfilePage({ embedded = false }) {
               onChange={(event) => setPlanTermsAccepted(event.target.checked)}
             />
             <span>
-              Li e aceito que a alteracao do plano pode mudar valores, recorrencia, limites de tokens e
-              acessos disponiveis na plataforma, incluindo cobranca proporcional calculada pela Stripe.
+              Li e aceito que a alteração do plano pode mudar valores, recorrência, limites de tokens e
+              acessos disponíveis na plataforma, incluindo cobrança proporcional calculada pela Stripe.
             </span>
           </label>
 

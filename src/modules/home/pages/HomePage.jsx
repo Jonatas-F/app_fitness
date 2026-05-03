@@ -15,11 +15,11 @@ import "./HomePage.css";
 const plans = subscriptionPlans;
 
 const platformItems = [
-  "Check-ins diario, semanal e mensal",
-  "Treino ABCDE com series dinamicas",
-  "Dieta por refeicoes habilitadas",
-  "Dashboard de evolucao corporal e performance",
-  "Perfil com academia, preferencias e pagamentos",
+  "Check-ins diário, semanal e mensal",
+  "Treino ABCDE com séries dinâmicas",
+  "Dieta por refeições habilitadas",
+  "Dashboard de evolução corporal e performance",
+  "Perfil com academia, preferências e pagamentos",
 ];
 
 export default function HomePage() {
@@ -80,7 +80,7 @@ export default function HomePage() {
     }
 
     if (result.skipped) {
-      setAuthMessage("Servidor ainda nao disponivel. Entrando em modo local.");
+      setAuthMessage("Servidor ainda não disponível. Entrando em modo local.");
     }
 
     navigate("/dashboard");
@@ -99,7 +99,7 @@ export default function HomePage() {
     }
 
     if (result.skipped) {
-      setAuthMessage("Backend nao configurado. Defina VITE_API_URL no .env.local para ativar Google.");
+      setAuthMessage("Backend não configurado. Defina VITE_API_URL no .env.local para ativar Google.");
       setIsGoogleLoading(false);
     }
   }
@@ -166,7 +166,7 @@ export default function HomePage() {
           </div>
         </Link>
 
-        <nav className="home-header__nav" aria-label="Navegacao da home">
+        <nav className="home-header__nav" aria-label="Navegação da home">
           <a href="#quem-somos">Quem somos</a>
           <a href="#planos">Planos</a>
           <a href="#acesso">Entrar</a>
@@ -175,11 +175,11 @@ export default function HomePage() {
 
       <section className="home-hero">
         <div className="home-hero__content">
-          <span className="home-eyebrow">Treino, dieta e evolucao no mesmo lugar</span>
+          <span className="home-eyebrow">Treino, dieta e evolução no mesmo lugar</span>
           <h1>Uma plataforma para transformar check-ins em protocolos personalizados.</h1>
           <p>
-            O Shape Certo organiza dados corporais, rotina, aparelhos disponiveis, preferencias
-            alimentares e historico de treino para o Personal Virtual montar orientacoes mais precisas.
+            O Shape Certo organiza dados corporais, rotina, aparelhos disponíveis, preferências
+            alimentares e histórico de treino para o Personal Virtual montar orientações mais precisas.
           </p>
 
           <div className="home-hero__actions">
@@ -282,11 +282,11 @@ export default function HomePage() {
       <section className="home-section" id="quem-somos">
         <div className="home-section__copy">
           <span className="home-eyebrow">Quem somos</span>
-          <h2>Um app feito para acompanhar a evolucao real, nao apenas gerar uma ficha solta.</h2>
+          <h2>Um app feito para acompanhar a evolução real, não apenas gerar uma ficha solta.</h2>
           <p>
-            A plataforma conecta check-ins, treino, dieta, bioimpedancia, fotos e videos de execucao
-            para criar uma base de dados continua. Com isso, cada protocolo pode evoluir conforme o
-            usuario treina, descansa, se alimenta e registra seus resultados.
+            A plataforma conecta check-ins, treino, dieta, bioimpedância, fotos e vídeos de execução
+            para criar uma base de dados contínua. Com isso, cada protocolo pode evoluir conforme o
+            usuário treina, descansa, se alimenta e registra seus resultados.
           </p>
         </div>
 
@@ -305,7 +305,7 @@ export default function HomePage() {
           <span className="home-eyebrow">Planos</span>
           <h2>Escolha a quantidade de acompanhamento e tokens que combina com a rotina.</h2>
           <p>
-            Os valores e limites abaixo sao ilustrativos para estruturar o produto antes da integracao
+            Os valores e limites abaixo são ilustrativos para estruturar o produto antes da integração
             com pagamento, backend e controle real de consumo.
           </p>
         </div>

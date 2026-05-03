@@ -41,18 +41,18 @@ import "./CheckinsPage.css";
 const goalOptions = [
   { value: "hipertrofia", label: "Hipertrofia" },
   { value: "emagrecimento", label: "Emagrecimento" },
-  { value: "recomposicao", label: "Recomposicao corporal" },
+  { value: "recomposicao", label: "Recomposição corporal" },
   { value: "cutting", label: "Cutting" },
   { value: "condicionamento", label: "Condicionamento" },
-  { value: "performance", label: "Esporte especifico" },
-  { value: "saude", label: "Saude geral" },
+  { value: "performance", label: "Esporte específico" },
+  { value: "saude", label: "Saúde geral" },
 ];
 
 const experienceOptions = [
   { value: "", label: "Selecione" },
   { value: "iniciante", label: "Iniciante" },
-  { value: "intermediario", label: "Intermediario" },
-  { value: "avancado", label: "Avancado" },
+  { value: "intermediario", label: "Intermediário" },
+  { value: "avancado", label: "Avançado" },
 ];
 
 const weeklyTrainingDayOptions = ["1", "2", "3", "4", "5", "6", "7"];
@@ -145,39 +145,39 @@ const cadenceVisuals = {
   },
   monthly: {
     icon: "◉",
-    action: "Fazer reavaliacao completa",
+    action: "Fazer reavaliação completa",
   },
 };
 
 const photoPoseSlots = [
   {
     id: "front-double-biceps",
-    title: "Frente duplo biceps",
-    instruction: "Corpo inteiro, camera na altura do peito, bracos flexionados.",
+    title: "Frente duplo bíceps",
+    instruction: "Corpo inteiro, câmera na altura do peito, braços flexionados.",
     pose: "double-front",
   },
   {
     id: "side-relaxed",
-    title: "Lateral bracos caidos",
-    instruction: "Corpo inteiro de lado, postura natural, bracos soltos.",
+    title: "Lateral braços caídos",
+    instruction: "Corpo inteiro de lado, postura natural, braços soltos.",
     pose: "side",
   },
   {
     id: "back-double-biceps",
-    title: "Costas duplo biceps",
-    instruction: "Corpo inteiro de costas, bracos flexionados, mesma distancia.",
+    title: "Costas duplo bíceps",
+    instruction: "Corpo inteiro de costas, braços flexionados, mesma distância.",
     pose: "double-back",
   },
   {
     id: "front-relaxed",
     title: "Frente normal",
-    instruction: "Corpo inteiro de frente, bracos relaxados, pes alinhados.",
+    instruction: "Corpo inteiro de frente, braços relaxados, pés alinhados.",
     pose: "front",
   },
   {
     id: "back-relaxed",
     title: "Costas normal",
-    instruction: "Corpo inteiro de costas, bracos relaxados, postura neutra.",
+    instruction: "Corpo inteiro de costas, braços relaxados, postura neutra.",
     pose: "back",
   },
 ];
@@ -284,11 +284,11 @@ const FormStaleContext = createContext(null);
 
 const WEEK_DAYS = [
   { id: "monday",    short: "SEG", label: "Segunda" },
-  { id: "tuesday",   short: "TER", label: "Terca"   },
+  { id: "tuesday",   short: "TER", label: "Terça"   },
   { id: "wednesday", short: "QUA", label: "Quarta"  },
   { id: "thursday",  short: "QUI", label: "Quinta"  },
   { id: "friday",    short: "SEX", label: "Sexta"   },
-  { id: "saturday",  short: "SAB", label: "Sabado"  },
+  { id: "saturday",  short: "SAB", label: "Sábado"  },
   { id: "sunday",    short: "DOM", label: "Domingo" },
 ];
 
@@ -344,7 +344,7 @@ function Field({ label, required = false, hint, children, className = "", invali
     <label className={`checkin-field ${className} ${stateClass} ${invalid ? "is-invalid" : ""}`.trim()}>
       <span className="checkin-field__label">
         {label}
-        {required ? <strong>Obrigatorio</strong> : <em>Opcional</em>}
+        {required ? <strong>Obrigatório</strong> : <em>Opcional</em>}
       </span>
       <span className="checkin-field__control">
         {children}
@@ -494,7 +494,7 @@ function buildSyncStatus({ successMessage, skippedMessage, localFallback, remote
       normalized.includes("timeout") ||
       normalized.includes("failed")
     ) {
-      return `${localFallback} Verifique a conexao e tente sincronizar novamente em alguns instantes.`;
+      return `${localFallback} Verifique a conexão e tente sincronizar novamente em alguns instantes.`;
     }
 
     return `${localFallback} Tente sincronizar novamente daqui a pouco.`;
@@ -775,9 +775,9 @@ function CheckinCalendar({
     <div className="checkins-calendar glass-panel">
       <div className="checkins-calendar__header">
         <div>
-          <small>Calendario</small>
-          <strong>Consultar ou lancar data retroativa</strong>
-          <em>Selecione um dia para ver registros anteriores ou salvar o proximo check-in nessa data.</em>
+          <small>Calendário</small>
+          <strong>Consultar ou lançar data retroativa</strong>
+          <em>Selecione um dia para ver registros anteriores ou salvar o próximo check-in nessa data.</em>
         </div>
         <mark>{formatDateKey(selectedDateKey)}</mark>
       </div>
@@ -788,7 +788,7 @@ function CheckinCalendar({
         </button>
         <strong>{monthLabel}</strong>
         <button type="button" onClick={() => onChangeMonth(1)}>
-          Proximo
+          Próximo
         </button>
         <button type="button" onClick={onToday}>
           Hoje
@@ -839,13 +839,13 @@ function CheckinCalendar({
                 <article key={item.id}>
                   <strong>{checkinCadences[item.cadence || "monthly"].label}</strong>
                   <small>
-                    {item.status === "missed" ? "Nao realizado" : `${item.completeness ?? "--"}% completo`}
+                    {item.status === "missed" ? "Não realizado" : `${item.completeness ?? "--"}% completo`}
                   </small>
                 </article>
               ))}
             </div>
           ) : (
-            <p>Nenhum check-in nessa data. Voce pode salvar o formulario atual para esse dia.</p>
+            <p>Nenhum check-in nessa data. Você pode salvar o formulário atual para esse dia.</p>
           )}
         </aside>
       </div>
@@ -895,9 +895,9 @@ function CheckinsLoadingSkeleton() {
 function getCadenceIntro(cadence) {
   if (cadence === "daily") {
     return {
-      title: "Check-in diario",
+      title: "Check-in diário",
       description:
-        "Registre sinais rapidos. Se faltar um dia, marque como nao realizado; a IA ignora o gap nas medias.",
+        "Registre sinais rápidos. Se faltar um dia, marque como não realizado; a IA ignora o gap nas médias.",
     };
   }
 
@@ -905,14 +905,14 @@ function getCadenceIntro(cadence) {
     return {
       title: "Check-in semanal",
       description:
-        "Feche a semana com peso, sinais medios e necessidade de ajuste. Isso nao regenera dieta ou treino sozinho.",
+        "Feche a semana com peso, sinais médios e necessidade de ajuste. Isso não regenera dieta ou treino sozinho.",
     };
   }
 
   return {
     title: "Check-in mensal",
     description:
-      "Reavaliacao completa com objetivo, medidas, bioimpedancia e contexto para um novo ciclo.",
+      "Reavaliação completa com objetivo, medidas, bioimpedância e contexto para um novo ciclo.",
   };
 }
 
@@ -1026,7 +1026,7 @@ export default function CheckinsPage() {
       if (result.error) {
         setSyncStatus(
           buildSyncStatus({
-            localFallback: "Nao foi possivel sincronizar o historico agora.",
+            localFallback: "Não foi possível sincronizar o histórico agora.",
             skippedMessage: "",
             successMessage: "",
             remote: { error: result.error },
@@ -1056,7 +1056,7 @@ export default function CheckinsPage() {
           cadence: cadenceToUse,
         };
       });
-      setSyncStatus("Historico sincronizado com o servidor. Pode seguir preenchendo normalmente.");
+      setSyncStatus("Histórico sincronizado com o servidor. Pode seguir preenchendo normalmente.");
       setIsHydratingCheckins(false);
     }
 
@@ -1189,14 +1189,14 @@ export default function CheckinsPage() {
     setPhotoUploads({});
     setSubmitAttempted(false);
     setFeedback(
-      `${checkinCadences[activeCadence].label} salvo em ${formatDateKey(selectedDateKey)}. O historico foi atualizado.`
+      `${checkinCadences[activeCadence].label} salvo em ${formatDateKey(selectedDateKey)}. O histórico foi atualizado.`
     );
     showToast(`${checkinCadences[activeCadence].label} salvo com sucesso.`);
     setSyncStatus(
       buildSyncStatus({
         successMessage: "Check-in salvo no servidor.",
         skippedMessage: "Check-in salvo localmente.",
-        localFallback: "Check-in salvo nesta maquina.",
+        localFallback: "Check-in salvo nesta máquina.",
         remote,
       })
     );
@@ -1299,14 +1299,14 @@ export default function CheckinsPage() {
     }
 
     setFeedback(
-      `${checkinCadences[activeCadence].label} marcado como nao realizado em ${formatDateKey(selectedDateKey)}. A IA vai considerar apenas os check-ins preenchidos.`
+      `${checkinCadences[activeCadence].label} marcado como não realizado em ${formatDateKey(selectedDateKey)}. A IA vai considerar apenas os check-ins preenchidos.`
     );
-    showToast("Ausencia registrada no historico.", "warning");
+    showToast("Ausência registrada no histórico.", "warning");
     setSyncStatus(
       buildSyncStatus({
-        successMessage: "Ausencia salva no servidor.",
-        skippedMessage: "Ausencia salva localmente.",
-        localFallback: "Ausencia salva nesta maquina.",
+        successMessage: "Ausência salva no servidor.",
+        skippedMessage: "Ausência salva localmente.",
+        localFallback: "Ausência salva nesta máquina.",
         remote,
       })
     );
@@ -1315,14 +1315,14 @@ export default function CheckinsPage() {
   async function handleReset() {
     const resetData = resetCheckins();
     setCheckins(resetData);
-    setFeedback("Historico de check-ins resetado.");
-    showToast("Historico de check-ins resetado.", "warning");
+    setFeedback("Histórico de check-ins resetado.");
+    showToast("Histórico de check-ins resetado.", "warning");
     const remote = await deleteRemoteCheckins();
     setSyncStatus(
       buildSyncStatus({
-        successMessage: "Historico resetado.",
-        skippedMessage: "Historico local resetado.",
-        localFallback: "Historico local resetado.",
+        successMessage: "Histórico resetado.",
+        skippedMessage: "Histórico local resetado.",
+        localFallback: "Histórico local resetado.",
         remote,
       })
     );
@@ -1440,7 +1440,7 @@ export default function CheckinsPage() {
           <div className="checkins-modal__panel checkins-modal__panel--error glass-panel">
             <div className="checkins-modal__header">
               <div>
-                <span>Campos obrigatorios</span>
+                <span>Campos obrigatórios</span>
                 <h2 id="checkin-validation-title">Check-in incompleto</h2>
               </div>
               <button
@@ -1580,24 +1580,24 @@ export default function CheckinsPage() {
       <header className="checkins-hero glass-panel">
         <div>
           <span className="checkins-hero__eyebrow">Check-in inteligente</span>
-          <h1>Check-in semanal com sessoes de treino no dia a dia.</h1>
+          <h1>Check-in semanal com sessões de treino no dia a dia.</h1>
           <p>
-            Use o fechamento semanal para revisar o ciclo. A presenca diaria,
-            cargas e series passam a vir da sessao iniciada na tela de treinos.
+            Use o fechamento semanal para revisar o ciclo. A presença diária,
+            cargas e séries passam a vir da sessão iniciada na tela de treinos.
           </p>
         </div>
 
         <aside className="checkins-readiness">
-          <span>Obrigatorios preenchidos</span>
+          <span>Obrigatórios preenchidos</span>
           <strong>{requiredPercent}%</strong>
           <div className="checkins-progress">
             <span style={{ width: `${requiredPercent}%` }} />
           </div>
           <small>
-            {requiredCompleted}/{requiredFields.length} campos obrigatorios.
+            {requiredCompleted}/{requiredFields.length} campos obrigatórios.
             {showMonthly
-              ? "Antropometria e bioimpedancia ficam editaveis e opcionais."
-              : "Semanal foca em aderencia, fotos e decisao sobre o protocolo."}
+              ? "Antropometria e bioimpedância ficam editáveis e opcionais."
+              : "Semanal foca em aderência, fotos e decisão sobre o protocolo."}
           </small>
         </aside>
       </header>
@@ -1606,12 +1606,12 @@ export default function CheckinsPage() {
         <div className="checkins-selector__header">
           <span>Tipo de check-in</span>
           <h2>
-            Voce esta preenchendo:{" "}
+            Você está preenchendo:{" "}
             <strong>{checkinCadences[activeCadence].label}</strong>
           </h2>
           <p>
-            Escolha semanal para acompanhar aderencia e feedback rapido. Escolha mensal
-            para revisar medidas, bioimpedancia, fotos e o acumulado do mes.
+            Escolha semanal para acompanhar aderência e feedback rápido. Escolha mensal
+            para revisar medidas, bioimpedância, fotos e o acumulado do mês.
           </p>
         </div>
         <div className="checkins-tabs checkins-tabs--compact" role="tablist" aria-label="Tipo de check-in">
@@ -1622,8 +1622,8 @@ export default function CheckinsPage() {
           ].map(({ id: cadence, allowed }) => {
             const icons = { weekly: "S", monthly: "M", daily: "D" };
             const subtitles = {
-              weekly:  "Aderencia e feedback",
-              monthly: allowed ? "Dados completos do mes" : "Intermediário+",
+              weekly:  "Aderência e feedback",
+              monthly: allowed ? "Dados completos do mês" : "Intermediário+",
               daily:   allowed ? "Sinais diários"        : "Pro",
             };
             return (
@@ -1660,7 +1660,7 @@ export default function CheckinsPage() {
         <div className="checkins-progress-stack">
           <div className="checkins-progress-row">
             <div>
-              <strong>Obrigatorios</strong>
+              <strong>Obrigatórios</strong>
               <span>{requiredCompleted}/{requiredFields.length}</span>
             </div>
             <div className="checkins-progress">
@@ -1670,7 +1670,7 @@ export default function CheckinsPage() {
           {canDoBioimpedance && (
           <div className="checkins-progress-row checkins-progress-row--optional">
             <div>
-              <strong>Opcionais de bioimpedancia</strong>
+              <strong>Opcionais de bioimpedância</strong>
               <span>{optionalBioCompleted}/{optionalBioimpedanceFields.length}</span>
             </div>
             <div className="checkins-progress">
@@ -1681,19 +1681,19 @@ export default function CheckinsPage() {
         </div>
         <div className="checkins-schedule-grid" aria-label="Datas dos check-ins">
           <article>
-            <span>Ultimo check-in</span>
+            <span>Último check-in</span>
             <strong>{checkinSchedule.latestLabel}</strong>
             <small>{checkinSchedule.latestDetail}</small>
           </article>
           <article>
-            <span>Reavaliacao semanal</span>
+            <span>Reavaliação semanal</span>
             <strong>{formatDateKey(checkinSchedule.weeklyDateKey)}</strong>
-            <small>Proximo fechamento semanal previsto</small>
+            <small>Próximo fechamento semanal previsto</small>
           </article>
           <article>
-            <span>Reavaliacao mensal</span>
+            <span>Reavaliação mensal</span>
             <strong>{formatDateKey(checkinSchedule.monthlyDateKey)}</strong>
-            <small>Proxima revisao completa prevista</small>
+            <small>Próxima revisão completa prevista</small>
           </article>
           <article>
             <span>Data selecionada</span>
@@ -1718,9 +1718,9 @@ export default function CheckinsPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="checkins-content-tabs">
         <TabsList className="dashboard-tabs checkins-tabs-nav">
-          <TabsTrigger value="formulario" className="dashboard-tab-trigger">Formulario</TabsTrigger>
-          <TabsTrigger value="calendario" className="dashboard-tab-trigger">Calendario</TabsTrigger>
-          <TabsTrigger value="historico" className="dashboard-tab-trigger">Historico</TabsTrigger>
+          <TabsTrigger value="formulario" className="dashboard-tab-trigger">Formulário</TabsTrigger>
+          <TabsTrigger value="calendario" className="dashboard-tab-trigger">Calendário</TabsTrigger>
+          <TabsTrigger value="historico" className="dashboard-tab-trigger">Histórico</TabsTrigger>
         </TabsList>
 
         <TabsContent value="calendario">
@@ -1747,11 +1747,11 @@ export default function CheckinsPage() {
           {showProtocolBase ? (
             <Section
               eyebrow="02"
-              title={showMonthly ? "Dados gerais do ciclo" : "Dados basicos do check-in semanal"}
+              title={showMonthly ? "Dados gerais do ciclo" : "Dados básicos do check-in semanal"}
               description={
                 showMonthly
-                  ? "Base editavel para o ciclo mensal. Apenas altura e peso travam o envio."
-                  : "Semanal fica enxuto: altura, peso, aderencia e feedback sobre o protocolo."
+                  ? "Base editável para o ciclo mensal. Apenas altura e peso travam o envio."
+                  : "Semanal fica enxuto: altura, peso, aderência e feedback sobre o protocolo."
               }
             >
               <div className="checkins-grid checkins-grid--two">
@@ -1768,12 +1768,12 @@ export default function CheckinsPage() {
                 ) : null}
 
                 {showMonthly ? (
-                <Field label="Sexo biologico">
+                <Field label="Sexo biológico">
                   <select name="sex" value={formData.sex} onChange={handleChange}>
                     <option value="">Selecione</option>
                     <option value="feminino">Feminino</option>
                     <option value="masculino">Masculino</option>
-                    <option value="outro">Outro / prefiro nao informar</option>
+                    <option value="outro">Outro / prefiro não informar</option>
                   </select>
                 </Field>
                 ) : null}
@@ -1811,7 +1811,7 @@ export default function CheckinsPage() {
                 </Field>
 
                 {showMonthly ? (
-                <Field label="Esporte especifico">
+                <Field label="Esporte específico">
                   <input
                     name="sport"
                     value={formData.sport}
@@ -1822,7 +1822,7 @@ export default function CheckinsPage() {
                 ) : null}
 
                 {showMonthly ? (
-                <Field label="Nivel de energia">
+                <Field label="Nível de energia">
                   <select name="energy" value={formData.energy} onChange={handleChange}>
                     <option value="">Selecione</option>
                     {Array.from({ length: 10 }, (_, index) => String(index + 1)).map((value) => (
@@ -1835,7 +1835,7 @@ export default function CheckinsPage() {
                 ) : null}
 
                 {showMonthly ? (
-                <Field label="Sono medio">
+                <Field label="Sono médio">
                   <input
                     name="sleep"
                     value={formData.sleep}
@@ -1847,7 +1847,7 @@ export default function CheckinsPage() {
                 ) : null}
 
                 {showMonthly ? (
-                <Field label="Nivel de treino">
+                <Field label="Nível de treino">
                   <select
                     name="trainingExperience"
                     value={formData.trainingExperience}
@@ -1863,7 +1863,7 @@ export default function CheckinsPage() {
                 ) : null}
 
                 {showMonthly ? (
-                <Field label="Frequencia semanal disponivel">
+                <Field label="Frequência semanal disponível">
                   <select
                     name="weeklyTrainingDays"
                     value={formData.weeklyTrainingDays}
@@ -1880,7 +1880,7 @@ export default function CheckinsPage() {
                 ) : null}
 
                 {showMonthly ? (
-                <Field label="Tempo disponivel por treino">
+                <Field label="Tempo disponível por treino">
                   <select
                     name="availableMinutes"
                     value={formData.availableMinutes}
@@ -1912,7 +1912,7 @@ export default function CheckinsPage() {
                 ) : null}
 
                 {showMonthly ? (
-                <Field label="Refeicoes por dia">
+                <Field label="Refeições por dia">
                   <input
                     name="mealsPerDay"
                     value={formData.mealsPerDay}
@@ -1930,27 +1930,27 @@ export default function CheckinsPage() {
                     onChange={handleChange}
                   >
                     <option value="">Selecione</option>
-                    <option value="manha">Manha</option>
+                    <option value="manha">Manhã</option>
                     <option value="tarde">Tarde</option>
                     <option value="noite">Noite</option>
-                    <option value="variavel">Variavel</option>
+                    <option value="variavel">Variável</option>
                   </select>
                 </Field>
                 ) : null}
 
                 {showMonthly ? (
-                <Field label="Restricoes alimentares">
+                <Field label="Restrições alimentares">
                   <input
                     name="dietaryRestrictions"
                     value={formData.dietaryRestrictions}
                     onChange={handleChange}
-                    placeholder="Ex.: lactose, gluten, vegetariano"
+                    placeholder="Ex.: lactose, glúten, vegetariano"
                   />
                 </Field>
                 ) : null}
 
                 {showMonthly ? (
-                <Field label="Lesoes ou limitacoes fisicas" className="checkin-field--full">
+                <Field label="Lesões ou limitações físicas" className="checkin-field--full">
                   <textarea
                     name="injuries"
                     value={formData.injuries}
@@ -1961,12 +1961,12 @@ export default function CheckinsPage() {
                 ) : null}
 
                 {showMonthly ? (
-                <Field label="Experiencia previa com treino" className="checkin-field--full">
+                <Field label="Experiência prévia com treino" className="checkin-field--full">
                   <textarea
                     name="trainingBackground"
                     value={formData.trainingBackground}
                     onChange={handleChange}
-                    placeholder="Ex.: musculacao desde 2020, ja fez crossfit por 1 ano, pouca experiencia com agachamento livre."
+                    placeholder="Ex.: musculação desde 2020, já fez crossfit por 1 ano, pouca experiência com agachamento livre."
                   />
                 </Field>
                 ) : null}
@@ -1977,8 +1977,8 @@ export default function CheckinsPage() {
           {showBodyComposition && canDoBodyMeasurements ? (
             <Section
               eyebrow="03"
-              title="Antropometria editavel"
-              description="Medidas do mes para comparar evolucao. Todos os campos desta area sao opcionais."
+              title="Antropometria editável"
+              description="Medidas do mês para comparar evolução. Todos os campos desta área são opcionais."
             >
               <div className="checkins-grid checkins-grid--two">
                 <Field label="Cintura">
@@ -1993,16 +1993,16 @@ export default function CheckinsPage() {
                 <Field label="Peito">
                   <input name="chestMeasure" value={formData.chestMeasure} onChange={handleChange} placeholder="Ex.: 104 cm" />
                 </Field>
-                <Field label="Braco relaxado direito">
+                <Field label="Braço relaxado direito">
                   <input name="rightArmMeasure" value={formData.rightArmMeasure} onChange={handleChange} placeholder="Ex.: 37 cm" />
                 </Field>
-                <Field label="Braco relaxado esquerdo">
+                <Field label="Braço relaxado esquerdo">
                   <input name="leftArmMeasure" value={formData.leftArmMeasure} onChange={handleChange} placeholder="Ex.: 36.5 cm" />
                 </Field>
-                <Field label="Braco contraido direito">
+                <Field label="Braço contraído direito">
                   <input name="rightFlexedArmMeasure" value={formData.rightFlexedArmMeasure} onChange={handleChange} placeholder="Ex.: 40 cm" />
                 </Field>
-                <Field label="Braco contraido esquerdo">
+                <Field label="Braço contraído esquerdo">
                   <input name="leftFlexedArmMeasure" value={formData.leftFlexedArmMeasure} onChange={handleChange} placeholder="Ex.: 39.5 cm" />
                 </Field>
                 <Field label="Coxa direita">
@@ -2030,8 +2030,8 @@ export default function CheckinsPage() {
           {showBodyComposition && canDoBioimpedance ? (
             <Section
               eyebrow="04"
-              title="Bioimpedancia opcional"
-              description="Dados da balanca InBody, Tanita ou similar. Quanto mais completo, melhor a analise."
+              title="Bioimpedância opcional"
+              description="Dados da balança InBody, Tanita ou similar. Quanto mais completo, melhor a análise."
             >
               <div className="checkins-grid checkins-grid--three">
                 <Field label="Peso corporal total">
@@ -2040,19 +2040,19 @@ export default function CheckinsPage() {
                 <Field label="% gordura bioimp.">
                   <input name="bioimpedanceBodyFat" value={formData.bioimpedanceBodyFat} onChange={handleChange} placeholder="Ex.: 14.2%" />
                 </Field>
-                <Field label="Massa muscular esqueletica">
+                <Field label="Massa muscular esquelética">
                   <input name="skeletalMuscleMass" value={formData.skeletalMuscleMass} onChange={handleChange} placeholder="Ex.: 38 kg" />
                 </Field>
-                <Field label="Agua corporal total">
+                <Field label="Água corporal total">
                   <input name="totalBodyWater" value={formData.totalBodyWater} onChange={handleChange} placeholder="Ex.: 57%" />
                 </Field>
-                <Field label="Massa ossea">
+                <Field label="Massa óssea">
                   <input name="boneMass" value={formData.boneMass} onChange={handleChange} placeholder="Ex.: 3.4 kg" />
                 </Field>
-                <Field label="Taxa metabolica basal">
+                <Field label="Taxa metabólica basal">
                   <input name="basalMetabolicRate" value={formData.basalMetabolicRate} onChange={handleChange} placeholder="Ex.: 1840 kcal" />
                 </Field>
-                <Field label="Idade metabolica">
+                <Field label="Idade metabólica">
                   <input name="metabolicAge" value={formData.metabolicAge} onChange={handleChange} placeholder="Ex.: 31 anos" />
                 </Field>
                 <Field label="IMC">
@@ -2097,7 +2097,7 @@ export default function CheckinsPage() {
                 <Field label="Gordura visceral">
                   <input name="visceralFat" value={formData.visceralFat} onChange={handleChange} placeholder="Ex.: 8" />
                 </Field>
-                <Field label="Frequencia cardiaca repouso">
+                <Field label="Frequência cardíaca repouso">
                   <input name="restingHeartRate" value={formData.restingHeartRate} onChange={handleChange} placeholder="Ex.: 62 bpm" />
                 </Field>
               </div>
@@ -2109,8 +2109,8 @@ export default function CheckinsPage() {
             title={showMonthly ? "Check-in mensal" : "Check-in semanal"}
             description={
               showMonthly
-                ? "Preencha altura, peso, sinais, fotos e feedback do mes antes de salvar."
-                : "Preencha altura, peso, aderencia percebida, fotos e feedback da semana."
+                ? "Preencha altura, peso, sinais, fotos e feedback do mês antes de salvar."
+                : "Preencha altura, peso, aderência percebida, fotos e feedback da semana."
             }
           >
             <div className="checkins-grid checkins-grid--three">
@@ -2154,7 +2154,7 @@ export default function CheckinsPage() {
                 </select>
               </Field>
 
-              <Field label="Digestao" required invalid={submitAttempted && !hasValue(formData.digestion)}>
+              <Field label="Digestão" required invalid={submitAttempted && !hasValue(formData.digestion)}>
                 <select name="digestion" value={formData.digestion} onChange={handleChange}>
                   <option value="">Selecione</option>
                   <option value="boa">Boa</option>
@@ -2173,7 +2173,7 @@ export default function CheckinsPage() {
                 </select>
               </Field>
 
-              <Field label="Nivel de fadiga" required invalid={submitAttempted && !hasValue(formData.fatigueLevel)}>
+              <Field label="Nível de fadiga" required invalid={submitAttempted && !hasValue(formData.fatigueLevel)}>
                 <select name="fatigueLevel" value={formData.fatigueLevel} onChange={handleChange}>
                   <option value="">Selecione</option>
                   {Array.from({ length: 10 }, (_, index) => String(index + 1)).map((value) => (
@@ -2198,18 +2198,18 @@ export default function CheckinsPage() {
               </Field>
 
               <Field
-                label="Variacao da dieta"
-                hint="Baixa variacao usa menos ingredientes e pratos ao longo da semana. Alta variacao permite mais diversidade entre alimentos e refeicoes."
+                label="Variação da dieta"
+                hint="Baixa variação usa menos ingredientes e pratos ao longo da semana. Alta variação permite mais diversidade entre alimentos e refeições."
               >
                 <select name="dietVariety" value={formData.dietVariety} onChange={handleChange}>
-                  <option value="baixa">Pequena variacao</option>
-                  <option value="media">Media variacao</option>
-                  <option value="alta">Alta variacao</option>
+                  <option value="baixa">Pequena variação</option>
+                  <option value="media">Média variação</option>
+                  <option value="alta">Alta variação</option>
                 </select>
               </Field>
 
               {showWeekly ? (
-              <Field label="Nivel de treino" hint="Usado pela IA para calibrar complexidade e volume dos exercicios">
+              <Field label="Nível de treino" hint="Usado pela IA para calibrar complexidade e volume dos exercícios">
                 <select name="trainingExperience" value={formData.trainingExperience} onChange={handleChange}>
                   {experienceOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -2236,8 +2236,8 @@ export default function CheckinsPage() {
             {(showWeekly || showMonthly) && (
               <div>
                 <Field
-                  label="Quais dias da semana voce pode treinar"
-                  hint="Marque os dias que voce tem disponibilidade real para ir a academia. A IA vai distribuir os treinos nesses dias com folgas bem posicionadas."
+                  label="Quais dias da semana você pode treinar"
+                  hint="Marque os dias que você tem disponibilidade real para ir à academia. A IA vai distribuir os treinos nesses dias com folgas bem posicionadas."
                   stale={isStaleField("trainingAvailableDays")}
                 >
                   <DayPicker
@@ -2258,15 +2258,15 @@ export default function CheckinsPage() {
 
             <div className="checkins-routine-block">
               <div>
-                <h3>{showMonthly ? "Cronograma do mes" : "Cronograma da semana"}</h3>
+                <h3>{showMonthly ? "Cronograma do mês" : "Cronograma da semana"}</h3>
                 <p>
-                  Esses horarios orientam dieta, lembretes de refeicao, agua, treino e janelas de
-                  notificacao sem precisar configurar isso manualmente depois.
+                  Esses horários orientam dieta, lembretes de refeição, água, treino e janelas de
+                  notificação sem precisar configurar isso manualmente depois.
                 </p>
               </div>
 
               <div className="checkins-grid checkins-grid--three">
-                <Field label="Horario que acorda">
+                <Field label="Horário que acorda">
                   <input
                     type="time"
                     name="wakeTime"
@@ -2275,7 +2275,7 @@ export default function CheckinsPage() {
                   />
                 </Field>
 
-                <Field label="Horario que vai dormir">
+                <Field label="Horário que vai dormir">
                   <input
                     type="time"
                     name="sleepTime"
@@ -2284,7 +2284,7 @@ export default function CheckinsPage() {
                   />
                 </Field>
 
-                <Field label="Horario previsto do treino">
+                <Field label="Horário previsto do treino">
                   <input
                     type="time"
                     name="plannedTrainingTime"
@@ -2293,7 +2293,7 @@ export default function CheckinsPage() {
                   />
                 </Field>
 
-                <Field label="Primeira refeicao do dia">
+                <Field label="Primeira refeição do dia">
                   <input
                     type="time"
                     name="firstMealTime"
@@ -2302,7 +2302,7 @@ export default function CheckinsPage() {
                   />
                 </Field>
 
-                <Field label="Ultima refeicao do dia">
+                <Field label="Última refeição do dia">
                   <input
                     type="time"
                     name="lastMealTime"
@@ -2318,7 +2318,7 @@ export default function CheckinsPage() {
                 name="notes"
                 value={formData.notes}
                 onChange={handleChange}
-                placeholder="Ex.: fome a noite, treino rendeu pouco, viagem, dores, refeicoes fora do plano."
+                placeholder="Ex.: fome à noite, treino rendeu pouco, viagem, dores, refeições fora do plano."
               />
             </Field>
 
@@ -2336,7 +2336,7 @@ export default function CheckinsPage() {
                     <h3>Fotos de progresso</h3>
                     <p>
                       Envie fotos de corpo inteiro seguindo as poses marcadas.
-                      Use o mesmo local, luz e distancia sempre que possivel.
+                      Use o mesmo local, luz e distância sempre que possível.
                     </p>
                   </div>
                   <span>{selectedPhotoCount}/{photoPoseSlots.length} fotos</span>
@@ -2358,7 +2358,7 @@ export default function CheckinsPage() {
             <div className="checkins-inline-actions">
               <div>
                 <strong>Salvar em {formatDateKey(selectedDateKey)}</strong>
-                <span>Ao salvar, voce pode confirmar hoje ou escolher uma data retroativa.</span>
+                <span>Ao salvar, você pode confirmar hoje ou escolher uma data retroativa.</span>
               </div>
               <button type="submit" className="primary-button" disabled={isGeneratingProtocols}>
                 Salvar check-in
@@ -2376,7 +2376,7 @@ export default function CheckinsPage() {
         <TabsContent value="historico">
           <div className="checkins-history glass-panel">
           <div className="checkins-history__header">
-            <small>Historico</small>
+            <small>Histórico</small>
             <strong>Check-ins registrados</strong>
             <em>Linha do tempo de realizados, gaps e payloads salvos.</em>
             <mark>{checkins.length}</mark>
@@ -2401,11 +2401,11 @@ export default function CheckinsPage() {
               <SectionCard
                 className="checkins-history-insight"
                 eyebrow="Leitura semanal para IA"
-                title={`${weeklyAiDataset.usableEntries} registro(s) uteis`}
+                title={`${weeklyAiDataset.usableEntries} registro(s) úteis`}
                 description={
                   <>
-                  {weeklyAiDataset.ignoredGaps} gap(s) ignorado(s) nas medias. Energia {weeklyAiDataset.averages.energy},
-                  sono {weeklyAiDataset.averages.sleep}h e aderencia {weeklyAiDataset.averages.adherence}%.
+                  {weeklyAiDataset.ignoredGaps} gap(s) ignorado(s) nas médias. Energia {weeklyAiDataset.averages.energy},
+                  sono {weeklyAiDataset.averages.sleep}h e aderência {weeklyAiDataset.averages.adherence}%.
                   </>
                 }
                 badge={
@@ -2417,8 +2417,8 @@ export default function CheckinsPage() {
 
               <SectionCard
                 className="checkins-history-insight"
-                eyebrow="Reavaliacao do ciclo"
-                title={monthlyReevaluation.reevaluationNeeded ? "Atencao necessaria" : "Ciclo em acompanhamento"}
+                eyebrow="Reavaliação do ciclo"
+                title={monthlyReevaluation.reevaluationNeeded ? "Atenção necessária" : "Ciclo em acompanhamento"}
                 description={`Treino: ${monthlyReevaluation.training.cycle.label}. Dieta: ${monthlyReevaluation.diet.cycle.label}.`}
                 badge={
                   <StatusPill tone={monthlyReevaluation.reevaluationNeeded ? "danger" : "success"}>
@@ -2429,15 +2429,15 @@ export default function CheckinsPage() {
             </div>
 
             <div className="checkins-cadence-table-shell">
-              <Table className="checkins-cadence-table" aria-label="Resumo por cadencia de check-ins">
+              <Table className="checkins-cadence-table" aria-label="Resumo por cadência de check-ins">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Cadencia</TableHead>
+                    <TableHead>Cadência</TableHead>
                     <TableHead>Realizados</TableHead>
                     <TableHead>Gaps</TableHead>
                     <TableHead>Energia</TableHead>
                     <TableHead>Sono</TableHead>
-                    <TableHead>Aderencia</TableHead>
+                    <TableHead>Aderência</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -2459,21 +2459,21 @@ export default function CheckinsPage() {
 
         {checkins.length === 0 ? (
           <p className="checkins-empty">
-            Crie o primeiro check-in ou registre uma ausencia para iniciar a
-            linha do tempo do usuario.
+            Crie o primeiro check-in ou registre uma ausência para iniciar a
+            linha do tempo do usuário.
           </p>
         ) : (
           <div className="checkins-history-table-shell">
-            <Table className="checkins-history-table" aria-label="Historico completo de check-ins">
+            <Table className="checkins-history-table" aria-label="Histórico completo de check-ins">
               <TableHeader>
                 <TableRow>
                   <TableHead>Data</TableHead>
-                  <TableHead>Cadencia</TableHead>
+                  <TableHead>Cadência</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Peso</TableHead>
                   <TableHead>Sono</TableHead>
                   <TableHead>Energia</TableHead>
-                  <TableHead>Aderencia</TableHead>
+                  <TableHead>Aderência</TableHead>
                   <TableHead>Fotos</TableHead>
                   <TableHead className="checkins-history-table__notes-head">Resumo</TableHead>
                 </TableRow>
@@ -2501,8 +2501,8 @@ export default function CheckinsPage() {
                       <TableCell>{formatValue(item.adherence, "%")}</TableCell>
                       <TableCell>{Array.isArray(item.photos) ? item.photos.length : 0}/5</TableCell>
                       <TableCell className="checkins-history-table__notes-cell">
-                        <strong>{isMissed ? "Nao realizado" : item.goal || "Check-in realizado"}</strong>
-                        <span>{item.notes || "Sem observacoes registradas."}</span>
+                        <strong>{isMissed ? "Não realizado" : item.goal || "Check-in realizado"}</strong>
+                        <span>{item.notes || "Sem observações registradas."}</span>
                       </TableCell>
                     </TableRow>
                   );

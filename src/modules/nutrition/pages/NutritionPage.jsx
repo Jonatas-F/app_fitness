@@ -84,8 +84,8 @@ function getWaterRecommendation(checkin) {
   if (!weight) {
     return {
       value: "--",
-      trend: "Peso nao informado no check-in",
-      detail: "Peso, altura e bioimpedancia melhoram a recomendacao.",
+      trend: "Peso não informado no check-in",
+      detail: "Peso, altura e bioimpedância melhoram a recomendação.",
     };
   }
 
@@ -104,7 +104,7 @@ function getWaterRecommendation(checkin) {
   return {
     value: `${rounded.toLocaleString("pt-BR", { minimumFractionDigits: 1 })} L`,
     liters: rounded,
-    trend: "Estimativa pelo ultimo check-in",
+    trend: "Estimativa pelo último check-in",
     detail: `Base: ${checkin.weight || "--"} kg${checkin.bodyFat ? `, gordura ${checkin.bodyFat}` : ""}${
       checkin.muscleMass ? `, massa muscular ${checkin.muscleMass}` : ""
     }.`,
@@ -214,7 +214,7 @@ function getWaterSchedule(waterRecommendation, checkin) {
     return {
       portions: "--",
       window: "Preencha acordar e dormir no check-in.",
-      detail: "As notificacoes de agua usam essa janela quando estiver preenchida.",
+      detail: "As notificações de água usam essa janela quando estiver preenchida.",
     };
   }
 
@@ -227,7 +227,7 @@ function getWaterSchedule(waterRecommendation, checkin) {
 
   return {
     portions: `${portions} lembretes`,
-    window: `${minutesToTime(wakeMinutes)} ate ${minutesToTime(sleepMinutes)}`,
+    window: `${minutesToTime(wakeMinutes)} até ${minutesToTime(sleepMinutes)}`,
     detail: `Aproximadamente ${Math.round(totalMl / portions)} ml a cada ${interval} min.`,
   };
 }
@@ -319,7 +319,7 @@ export default function NutritionPage() {
   const nutritionMetrics = [
     metrics[0],
     {
-      label: "Meta de agua",
+      label: "Meta de água",
       value: waterRecommendation.value,
       trend: waterRecommendation.trend,
       detail: waterRecommendation.detail,
@@ -383,7 +383,7 @@ export default function NutritionPage() {
           status: "auto_completed",
           source: "automatic",
           payload: {
-            reason: "Registro automatico criado porque o horario sugerido ja passou sem confirmacao manual.",
+            reason: "Registro automático criado porque o horário sugerido já passou sem confirmação manual.",
             suggestedTime: todaySchedule[meal.id],
           },
         });
@@ -502,7 +502,7 @@ export default function NutritionPage() {
         ? `todos os "${meal.name}" da semana`
         : `${meal.name} de ${selectedDayPlan.name}`;
     setFeedback(
-      `Solicitacao enviada para ${scopeLabel}: "${text}". O Personal Virtual vai processar e atualizar o plano.`
+      `Solicitação enviada para ${scopeLabel}: "${text}". O Personal Virtual vai processar e atualizar o plano.`
     );
     setAdjustmentText((prev) => ({ ...prev, [meal.id]: "" }));
   }
@@ -584,7 +584,7 @@ export default function NutritionPage() {
     }
     setIsRetroMealLogging(false);
     setFeedback(
-      `${saved.length} refeicao(oes) registrada(s) para ${new Date(
+      `${saved.length} refeição(ões) registrada(s) para ${new Date(
         retroMealDate + "T12:00:00"
       ).toLocaleDateString("pt-BR")}.`
     );
@@ -654,7 +654,7 @@ export default function NutritionPage() {
       saved,
       ...current.filter((item) => `${item.dayId}-${item.slotId}-${item.logDate}` !== `${saved.dayId}-${saved.slotId}-${saved.logDate}`),
     ]);
-    setFeedback(`${meal.name} registrada como realizada as ${formatTime(saved.performedAt)}.`);
+    setFeedback(`${meal.name} registrada como realizada às ${formatTime(saved.performedAt)}.`);
     closeMealDoneModal();
   }
 
@@ -675,7 +675,7 @@ export default function NutritionPage() {
         {nutritionMetrics.map((item) => (
           <article
             key={item.label}
-            className={`module-stat glass-panel ${item.label === "Meta de agua" ? "nutrition-water-card" : ""}`}
+            className={`module-stat glass-panel ${item.label === "Meta de água" ? "nutrition-water-card" : ""}`}
           >
             <span className="module-stat__label">{item.label}</span>
             <strong className="module-stat__value">{item.value}</strong>
@@ -688,29 +688,29 @@ export default function NutritionPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="nutrition-tabs-root">
         <TabsList className="nutrition-tabs dashboard-tabs" variant="line">
           <TabsTrigger value="refeicoes" className="nutrition-tab-trigger dashboard-tab-trigger">
-            <strong>Refeicoes</strong>
+            <strong>Refeições</strong>
             <StatusPill tone="neutral">{selectedDayActiveMeals} ativas</StatusPill>
           </TabsTrigger>
           <TabsTrigger value="historico" className="nutrition-tab-trigger dashboard-tab-trigger">
-            <strong>Historico</strong>
+            <strong>Histórico</strong>
             <StatusPill tone="neutral">{mealLogs.length} registros</StatusPill>
           </TabsTrigger>
           <TabsTrigger value="config" className="nutrition-tab-trigger dashboard-tab-trigger">
             <strong>Config</strong>
-            <StatusPill tone="neutral">{diet.userAvailableMeals || "--"} refeicoes</StatusPill>
+            <StatusPill tone="neutral">{diet.userAvailableMeals || "--"} refeições</StatusPill>
           </TabsTrigger>
           <TabsTrigger value="calendario" className="nutrition-tab-trigger dashboard-tab-trigger">
-            <strong>Calendario</strong>
+            <strong>Calendário</strong>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="historico" className="nutrition-tab-panel dashboard-tab-panel">
-        {/* === HISTORICO === */}
+        {/* === HISTÓRICO === */}
         <section className="nutrition-history-panel">
           <div>
-            <h2>Ultimos registros de refeicao</h2>
+            <h2>Últimos registros de refeição</h2>
             <p>
-              Dias com confirmacao manual ou automatica alimentam o dashboard, check-ins e futuras analises do Personal Virtual.
+              Dias com confirmação manual ou automática alimentam o dashboard, check-ins e futuras análises do Personal Virtual.
             </p>
           </div>
 
@@ -732,7 +732,7 @@ export default function NutritionPage() {
             {selectedDayMealLogs.length ? (
               selectedDayMealLogs.map((log) => (
                 <article key={log.id || `${log.dayId}-${log.slotId}-${log.logDate}`}>
-                  <strong>{log.mealName || "Refeicao registrada"}</strong>
+                  <strong>{log.mealName || "Refeição registrada"}</strong>
                   <span>
                     {log.logDate}
                   </span>
@@ -740,9 +740,9 @@ export default function NutritionPage() {
               ))
             ) : (
               <NutritionEmptyState
-                title="Nenhuma refeicao registrada neste dia"
-                description="Ao confirmar uma refeicao, ela aparece aqui e passa a alimentar o dashboard e a IA."
-                helper="Use o botao de check nas refeicoes habilitadas para registrar a execucao."
+                title="Nenhuma refeição registrada neste dia"
+                description="Ao confirmar uma refeição, ela aparece aqui e passa a alimentar o dashboard e a IA."
+                helper="Use o botão de check nas refeições habilitadas para registrar a execução."
               />
             )}
           </div>
@@ -773,7 +773,7 @@ export default function NutritionPage() {
             ) : (
               <NutritionEmptyState
                 title="Nenhuma dieta arquivada"
-                description="Quando um protocolo alimentar for substituido, o historico antigo fica salvo aqui."
+                description="Quando um protocolo alimentar for substituído, o histórico antigo fica salvo aqui."
               />
             )}
           </div>
@@ -842,12 +842,12 @@ export default function NutritionPage() {
         </TabsContent>
 
         <TabsContent value="refeicoes" className="nutrition-tab-panel dashboard-tab-panel">
-        {/* === REFEICOES === */}
+        {/* === REFEIÇÕES === */}
       <section className="nutrition-week-panel">
         <div>
           <h2>Dietas por dia da semana</h2>
           <p>
-            A IA usa a variacao definida no check-in para decidir se repete pratos
+            A IA usa a variação definida no check-in para decidir se repete pratos
             ao longo da semana ou cria mais diversidade entre os dias.
           </p>
         </div>
@@ -869,7 +869,7 @@ export default function NutritionPage() {
               >
                 <strong>{day.short}</strong>
                 <span>{day.name}</span>
-                <em>{enabledMeals} refeicoes</em>
+                <em>{enabledMeals} refeições</em>
               </button>
             );
           })}
@@ -881,7 +881,7 @@ export default function NutritionPage() {
             <strong>Dieta de {selectedDayPlan.name}</strong>
           </div>
           <div>
-            <span>Refeicoes ativas</span>
+            <span>Refeições ativas</span>
             <strong>{selectedDayActiveMeals}/{selectedDayPlan.meals.length}</strong>
           </div>
         </div>
@@ -891,10 +891,10 @@ export default function NutritionPage() {
             <span>Janela alimentar</span>
             <strong>
               {latestCheckin?.firstMealTime && latestCheckin?.lastMealTime
-                ? `${latestCheckin.firstMealTime} ate ${latestCheckin.lastMealTime}`
+                ? `${latestCheckin.firstMealTime} até ${latestCheckin.lastMealTime}`
                 : "Falta preencher"}
             </strong>
-            <p>Usada para distribuir os horarios das refeicoes ativas.</p>
+            <p>Usada para distribuir os horários das refeições ativas.</p>
           </article>
           <article>
             <span>Agua no dia</span>
@@ -904,9 +904,9 @@ export default function NutritionPage() {
             </p>
           </article>
           <article>
-            <span>Espacamento</span>
+            <span>Espaçamento</span>
             <strong>{waterSchedule.detail}</strong>
-            <p>Esses horarios alimentam as notificacoes configuradas.</p>
+            <p>Esses horários alimentam as notificações configuradas.</p>
           </article>
         </div>
       </section>
@@ -938,7 +938,7 @@ export default function NutritionPage() {
                   <h2>{meal.name}</h2>
                   <p>
                     {mealLog
-                      ? `Refeicao realizada ${formatTime(mealLog.performedAt || mealLog.scheduledAt)}`
+                      ? `Refeição realizada ${formatTime(mealLog.performedAt || mealLog.scheduledAt)}`
                       : meal.enabled
                         ? "Habilitada no plano"
                         : "Desabilitada neste protocolo"}
@@ -946,9 +946,9 @@ export default function NutritionPage() {
                   <small>
                     {meal.enabled
                       ? suggestedTime
-                        ? `Horario sugerido: ${suggestedTime}`
-                        : "Horario pendente no check-in"
-                      : "Sem horario neste protocolo"}
+                        ? `Horário sugerido: ${suggestedTime}`
+                        : "Horário pendente no check-in"
+                      : "Sem horário neste protocolo"}
                   </small>
                 </div>
               </button>
@@ -962,17 +962,17 @@ export default function NutritionPage() {
               <>
                 <div className="meal-card__tracking">
                   <article>
-                    <span>Horario recomendado</span>
+                    <span>Horário recomendado</span>
                     <strong>{suggestedTime || "Pendente"}</strong>
                   </article>
                   <article>
                     <span>Status de hoje</span>
                     <strong>
                       {mealLog
-                        ? `${mealLog.source === "automatic" ? "Automatico" : "Manual"} as ${formatTime(
+                        ? `${mealLog.source === "automatic" ? "Automático" : "Manual"} às ${formatTime(
                             mealLog.performedAt || mealLog.scheduledAt
                           )}`
-                        : "Nao registrado"}
+                        : "Não registrado"}
                     </strong>
                   </article>
                   <button
@@ -981,7 +981,7 @@ export default function NutritionPage() {
                     disabled={!meal.enabled}
                     onClick={() => openMealDoneModal(meal)}
                   >
-                    {mealLog ? "Atualizar refeicao realizada" : "Marcar refeicao realizada"}
+                    {mealLog ? "Atualizar refeição realizada" : "Marcar refeição realizada"}
                   </button>
                 </div>
 
@@ -1036,17 +1036,17 @@ export default function NutritionPage() {
                     readOnly
                     value={meal.foods || ""}
                     className="meal-field--readonly"
-                    placeholder="O Personal Virtual preenchera os alimentos desta refeicao."
+                    placeholder="O Personal Virtual preencherá os alimentos desta refeição."
                   />
                 </label>
 
                 <label className="meal-card__textarea">
-                  Observacoes
+                  Observações
                   <textarea
                     readOnly
                     value={meal.notes || ""}
                     className="meal-field--readonly"
-                    placeholder="Substituicoes, horarios, preparo..."
+                    placeholder="Substituições, horários, preparo..."
                   />
                 </label>
 
@@ -1199,7 +1199,7 @@ export default function NutritionPage() {
                     }
                     title={
                       !cell.outside && enabledCount
-                        ? `${dayPlan?.name || ""} — ${enabledCount} refeicao(oes)`
+                        ? `${dayPlan?.name || ""} — ${enabledCount} refeição(ões)`
                         : undefined
                     }
                   >
@@ -1220,7 +1220,7 @@ export default function NutritionPage() {
               <span className="diet-legend-item is-done">✓ Registrado</span>
               <span className="diet-legend-item is-missed">✗ Perdido</span>
               <span className="diet-legend-item is-future">○ Previsto</span>
-              <span className="diet-legend-item is-rest">· Sem refeicoes</span>
+              <span className="diet-legend-item is-rest">· Sem refeições</span>
             </div>
           </div>
         </TabsContent>
@@ -1241,7 +1241,7 @@ export default function NutritionPage() {
           >
             <header>
               <div>
-                <span>Registrar refeicoes retroativas</span>
+                <span>Registrar refeições retroativas</span>
                 <strong>
                   {retroMealDayPlan.name} —{" "}
                   {retroMealDate
@@ -1260,8 +1260,8 @@ export default function NutritionPage() {
 
             <div className="nutrition-modal__content retro-meal-list">
               <p className="retro-meal-hint">
-                Marque as refeicoes realizadas e informe o horario aproximado. Os dados
-                alimentarao o historico e os dashboards.
+                Marque as refeições realizadas e informe o horário aproximado. Os dados
+                alimentarão o histórico e os dashboards.
               </p>
               {retroMealEntries.map((entry, idx) => (
                 <div key={entry.meal.id} className="retro-meal-row">
@@ -1280,7 +1280,7 @@ export default function NutritionPage() {
                   </label>
                   {entry.done && (
                     <label className="retro-meal-row__time">
-                      Horario
+                      Horário
                       <input
                         type="time"
                         value={entry.time}
@@ -1325,7 +1325,7 @@ export default function NutritionPage() {
             onClick={(event) => event.stopPropagation()}
           >
             <header>
-              <span>Registro de refeicao</span>
+              <span>Registro de refeição</span>
               <button type="button" onClick={closeMealDoneModal} aria-label="Fechar">
                 x
               </button>
@@ -1335,21 +1335,21 @@ export default function NutritionPage() {
               <div>
                 <h2 id="nutrition-meal-modal-title">{mealCompletionModal.meal.name}</h2>
                 <p>
-                  {mealCompletionModal.dayName} · horario recomendado{" "}
+                  {mealCompletionModal.dayName} · horário recomendado{" "}
                   <strong>{mealCompletionModal.suggestedTime || "pendente"}</strong>
                 </p>
               </div>
 
               {mealCompletionModal.existingLog ? (
                 <p className="nutrition-modal__notice">
-                  Esta refeicao ja estava registrada as{" "}
+                  Esta refeição já estava registrada às{" "}
                   {formatTime(mealCompletionModal.existingLog.performedAt || mealCompletionModal.existingLog.scheduledAt)}.
-                  Ao confirmar, o horario sera substituido.
+                  Ao confirmar, o horário será substituído.
                 </p>
               ) : null}
 
               <label>
-                Horario em que a refeicao foi realizada
+                Horário em que a refeição foi realizada
                 <input
                   type="time"
                   value={mealCompletionModal.performedTime}
@@ -1368,7 +1368,7 @@ export default function NutritionPage() {
                 Cancelar
               </button>
               <button type="button" className="primary-button" onClick={confirmMealDone}>
-                Confirmar refeicao
+                Confirmar refeição
               </button>
             </footer>
           </section>

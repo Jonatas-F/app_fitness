@@ -18,10 +18,10 @@ function loadUserPhoto() {
 }
 
 const suggestedQuestions = [
-  "Compare minha evolucao de peso e medidas dos ultimos check-ins.",
-  "Com base nos meus treinos recentes, onde posso evoluir carga com seguranca?",
-  "Minha dieta atual esta coerente com meu objetivo e rotina?",
-  "Quais dados ainda faltam para melhorar a precisao do meu proximo protocolo?",
+  "Compare minha evolução de peso e medidas dos últimos check-ins.",
+  "Com base nos meus treinos recentes, onde posso evoluir carga com segurança?",
+  "Minha dieta atual está coerente com meu objetivo e rotina?",
+  "Quais dados ainda faltam para melhorar a precisão do meu próximo protocolo?",
 ];
 
 const blockedPatterns = [
@@ -110,7 +110,7 @@ export default function ChatPage() {
   const personalName = personalSettings.name || "Personal Virtual";
 
   const userProfile = context?.profile || {};
-  const userName = userProfile.full_name || context?.account?.email || "Voce";
+  const userName = userProfile.full_name || context?.account?.email || "Você";
 
   // Carrega contexto + histórico em paralelo
   useEffect(() => {
@@ -206,7 +206,7 @@ export default function ChatPage() {
         { role: "user", text: trimmed, createdAt: new Date().toISOString() },
         {
           role: "assistant",
-          text: "Nao posso consultar dados de outros usuarios, credenciais ou informacoes sensiveis. Posso analisar apenas os dados da sua conta logada.",
+          text: "Não posso consultar dados de outros usuários, credenciais ou informações sensíveis. Posso analisar apenas os dados da sua conta logada.",
           createdAt: new Date().toISOString(),
         },
       ]);
@@ -237,7 +237,7 @@ export default function ChatPage() {
         },
       ]);
     } catch (err) {
-      setSendError(err.message || "Erro de conexao com o servidor.");
+      setSendError(err.message || "Erro de conexão com o servidor.");
     } finally {
       setIsSending(false);
     }
@@ -323,7 +323,7 @@ export default function ChatPage() {
             </div>
             <div className="mono-chat__participant-info">
               <strong>{userName.split(" ")[0]}</strong>
-              <span>Voce</span>
+              <span>Você</span>
             </div>
           </button>
 
@@ -339,7 +339,7 @@ export default function ChatPage() {
 
           {/* Sugestões */}
           <div className="mono-chat__suggestions">
-            <p className="mono-chat__sidebar-label">Sugestoes</p>
+            <p className="mono-chat__sidebar-label">Sugestões</p>
             {suggestedQuestions.map((q) => (
               <button key={q} type="button" className="mono-chat__suggestion" onClick={() => handleSuggestion(q)}>
                 {q}
@@ -354,7 +354,7 @@ export default function ChatPage() {
             {isLoading ? (
               <div className="mono-chat__loading">
                 <span className="mono-chat__spinner" />
-                <span>Carregando historico...</span>
+                <span>Carregando histórico...</span>
               </div>
             ) : contextError ? (
               <div className="mono-chat__empty">

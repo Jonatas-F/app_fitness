@@ -237,8 +237,8 @@ function WorkoutSessionHistoryTable({ sessions }) {
           <TableRow>
             <TableHead>Data</TableHead>
             <TableHead>Treino</TableHead>
-            <TableHead>Duracao</TableHead>
-            <TableHead>Series</TableHead>
+            <TableHead>Duração</TableHead>
+            <TableHead>Séries</TableHead>
             <TableHead>Volume</TableHead>
             <TableHead className="workout-history-table__summary-head">Resumo</TableHead>
           </TableRow>
@@ -252,9 +252,9 @@ function WorkoutSessionHistoryTable({ sessions }) {
               <TableCell>{getRegisteredSets(session)}</TableCell>
               <TableCell>{Math.round(getSessionVolume(session))}</TableCell>
               <TableCell className="workout-history-table__summary-cell">
-                <strong>{formatExerciseSummary(session) || "Sem exercicios registrados"}</strong>
+                <strong>{formatExerciseSummary(session) || "Sem exercícios registrados"}</strong>
                 <span>
-                  {session.exercises.length} exercicio(s) no registro
+                  {session.exercises.length} exercício(s) no registro
                 </span>
               </TableCell>
             </TableRow>
@@ -491,7 +491,7 @@ function WorkoutExecutionSection() {
       setWaitingForNextExercise(saved.waitingForNextExercise ?? false);
       setRestRemainingSeconds(0);
       setActiveSessionWorkoutId(selectedWorkout.id);
-      setFeedback("Sessao retomada de onde parou.");
+      setFeedback("Sessão retomada de onde parou.");
       return;
     }
 
@@ -529,7 +529,7 @@ function WorkoutExecutionSection() {
     setSessionElapsedSeconds(0);
     setRestRemainingSeconds(0);
     setWaitingForNextExercise(false);
-    setFeedback(`Sessao de ${selectedWorkout.title} iniciada.`);
+    setFeedback(`Sessão de ${selectedWorkout.title} iniciada.`);
   }
 
   function handleFinishWorkoutSession() {
@@ -543,7 +543,7 @@ function WorkoutExecutionSection() {
     setRestRemainingSeconds(0);
     setWaitingForNextExercise(false);
     setFeedback(
-      `${selectedWorkout.title} finalizado. A sessao foi salva, alimentou o dashboard e criou o registro diario automatico.`
+      `${selectedWorkout.title} finalizado. A sessão foi salva, alimentou o dashboard e criou o registro diário automático.`
     );
   }
 
@@ -552,7 +552,7 @@ function WorkoutExecutionSection() {
     setActiveSetIndex(0);
     setRestRemainingSeconds(0);
     setWaitingForNextExercise(false);
-    setFeedback("Proximo exercicio iniciado.");
+    setFeedback("Próximo exercício iniciado.");
   }
 
   function handleResetSession() {
@@ -562,7 +562,7 @@ function WorkoutExecutionSection() {
     setRestRemainingSeconds(0);
     setWaitingForNextExercise(false);
     clearActiveSession();
-    setFeedback("Sessao resetada. Comecando do inicio.");
+    setFeedback("Sessão resetada. Começando do início.");
   }
 
   function handleJumpToExercise(index) {
@@ -757,7 +757,7 @@ function WorkoutExecutionSection() {
     setRetroPickerMode(null);
     setRetroPickerSearch("");
     setFeedback(
-      `Sessao retroativa de ${retroWorkout.title} registrada para ${new Date(
+      `Sessão retroativa de ${retroWorkout.title} registrada para ${new Date(
         retroDate + "T12:00:00"
       ).toLocaleDateString("pt-BR")}.`
     );
@@ -791,8 +791,8 @@ function WorkoutExecutionSection() {
   function handleRequestExerciseFeedback(workoutId, exerciseId, source) {
     const message =
       source === "video"
-        ? "Feedback solicitado com base no video enviado."
-        : "Feedback solicitado com base nas anotacoes do exercicio.";
+        ? "Feedback solicitado com base no vídeo enviado."
+        : "Feedback solicitado com base nas anotações do exercício.";
 
     handleExerciseChange(workoutId, exerciseId, "aiFeedback", message);
     setFeedback(message);
@@ -809,7 +809,7 @@ function WorkoutExecutionSection() {
       // Ainda há séries neste exercício
       setActiveSetIndex(nextSetIndex);
       setRestRemainingSeconds(getExerciseRestSeconds(selectedExercise));
-      setFeedback("Serie encerrada. Descanso iniciado.");
+      setFeedback("Série encerrada. Descanso iniciado.");
       return;
     }
 
@@ -818,7 +818,7 @@ function WorkoutExecutionSection() {
       // Há mais exercícios — pausa e aguarda ação do usuário
       setRestRemainingSeconds(0);
       setWaitingForNextExercise(true);
-      setFeedback("Exercicio concluido! Confirme para passar ao proximo.");
+      setFeedback("Exercício concluído! Confirme para passar ao próximo.");
       return;
     }
 
@@ -834,7 +834,7 @@ function WorkoutExecutionSection() {
     return (
       <div className="previous-session">
         <strong>
-          Ultimo registro: {new Date(previousSession.createdAt).toLocaleDateString("pt-BR")}
+          Último registro: {new Date(previousSession.createdAt).toLocaleDateString("pt-BR")}
         </strong>
         {previousSession.exercises.slice(0, 3).map((exercise) => (
           <div key={exercise.id} className="previous-session__exercise">
@@ -859,7 +859,7 @@ function WorkoutExecutionSection() {
     <section className="workout-execution glass-panel">
       <header className="workout-execution__header">
         <div>
-          <span>Protocolo recomposicao 04</span>
+          <span>Protocolo recomposição 04</span>
           <h2>{selectedWorkout.title}</h2>
           <p>
             Foco: {selectedWorkout.focus} - {plan.split}
@@ -878,10 +878,10 @@ function WorkoutExecutionSection() {
             onClick={isSessionActive ? handleFinishWorkoutSession : handleStartWorkoutSession}
           >
             {isSessionActive
-              ? "Finalizar sessao"
+              ? "Finalizar sessão"
               : loadActiveSession(selectedWorkout?.id)
-                ? "Retomar sessao"
-                : "Iniciar sessao"}
+                ? "Retomar sessão"
+                : "Iniciar sessão"}
           </button>
         </div>
       </header>
@@ -893,10 +893,10 @@ function WorkoutExecutionSection() {
       <div className="workout-protocol-stats">
         <article>
           <span>Volume estimado</span>
-          <strong>{estimatedVolume} series</strong>
+          <strong>{estimatedVolume} séries</strong>
         </article>
         <article>
-          <span>Duracao</span>
+          <span>Duração</span>
           <strong>{Math.max(selectedWorkout.exercises.length, 1) * 8} min</strong>
         </article>
         <article>
@@ -904,7 +904,7 @@ function WorkoutExecutionSection() {
           <strong>7 - 8.5</strong>
         </article>
         <article>
-          <span>Ultima sessao</span>
+          <span>Última sessão</span>
           <strong>
             {previousSession
               ? new Date(previousSession.createdAt).toLocaleDateString("pt-BR")
@@ -912,7 +912,7 @@ function WorkoutExecutionSection() {
           </strong>
         </article>
         <article>
-          <span>Aderencia ciclo</span>
+          <span>Aderência ciclo</span>
           <strong>{adherence}%</strong>
         </article>
       </div>
@@ -937,8 +937,8 @@ function WorkoutExecutionSection() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="workout-content-tabs">
         <TabsList className="dashboard-tabs workout-tabs">
           <TabsTrigger value="treino" className="dashboard-tab-trigger">Treino</TabsTrigger>
-          <TabsTrigger value="historico" className="dashboard-tab-trigger">Historico</TabsTrigger>
-          <TabsTrigger value="calendario" className="dashboard-tab-trigger">Calendario</TabsTrigger>
+          <TabsTrigger value="historico" className="dashboard-tab-trigger">Histórico</TabsTrigger>
+          <TabsTrigger value="calendario" className="dashboard-tab-trigger">Calendário</TabsTrigger>
         </TabsList>
 
         <TabsContent value="treino">
@@ -947,7 +947,7 @@ function WorkoutExecutionSection() {
               <section className="live-session-panel">
                 {/* Cabeçalho: pill + resetar + fechar */}
                 <div className="live-session-panel__top">
-                  <span>Sessao ao vivo</span>
+                  <span>Sessão ao vivo</span>
                   <div className="live-session-panel__top-actions">
                     <button
                       type="button"
@@ -980,7 +980,7 @@ function WorkoutExecutionSection() {
 
                 <div className="live-session-panel__exercise">
                   <small>
-                    Exercicio atual - {sessionExerciseIndex + 1} de {selectedWorkout.exercises.length}
+                    Exercício atual - {sessionExerciseIndex + 1} de {selectedWorkout.exercises.length}
                   </small>
                   <h3>{selectedExercise.name}</h3>
                   <p>
@@ -991,7 +991,7 @@ function WorkoutExecutionSection() {
 
                 <div className="live-session-timers">
                   <article>
-                    <span>Cronometro</span>
+                    <span>Cronômetro</span>
                     <strong>{formatTimer(sessionElapsedSeconds)}</strong>
                   </article>
                   <article className={restRemainingSeconds > 0 ? "is-resting" : ""}>
@@ -1086,7 +1086,7 @@ function WorkoutExecutionSection() {
                 <div className="live-session-footer">
                   <span>RPE alvo 8</span>
                   <button type="button" onClick={handleCompleteCurrentSet}>
-                    Encerrar serie
+                    Encerrar série
                   </button>
                 </div>
               </section>
@@ -1256,9 +1256,9 @@ function WorkoutExecutionSection() {
           <article className="workout-protocol-panel" data-tour="workout-exercises">
             <header>
               <div>
-                <h3>Exercicios</h3>
+                <h3>Exercícios</h3>
                 <p>
-                  {completedExercises}/{selectedWorkout.exercises.length} completos - marque conforme avanca
+                  {completedExercises}/{selectedWorkout.exercises.length} completos - marque conforme avança
                 </p>
               </div>
             </header>
@@ -1282,7 +1282,7 @@ function WorkoutExecutionSection() {
                     <div className="exercise-card__main">
                       <h4>{exercise.name}</h4>
                       <span>
-                        {getExerciseSetCount(exercise)} series - {exercise.suggestedReps} reps
+                        {getExerciseSetCount(exercise)} séries - {exercise.suggestedReps} reps
                       </span>
                       <small>Descanso ideal: {formatTimer(getExerciseRestSeconds(exercise))}</small>
                     </div>
@@ -1318,7 +1318,7 @@ function WorkoutExecutionSection() {
                       </button>
                       {isPro && (
                         <label className="exercise-video-upload">
-                          Enviar video
+                          Enviar vídeo
                           <input
                             type="file"
                             accept="video/*"
@@ -1347,21 +1347,21 @@ function WorkoutExecutionSection() {
                               onClick={() => setActiveVideo(exercise)}
                               disabled={!exercise.executionVideoUrl}
                             >
-                              <span>{exercise.executionVideoUrl ? "Ver video" : "Sem video"}</span>
+                              <span>{exercise.executionVideoUrl ? "Ver vídeo" : "Sem vídeo"}</span>
                             </button>
-                            <small>Video demonstrativo</small>
+                            <small>Vídeo demonstrativo</small>
                           </div>
 
                           {/* Coluna direita: prescrição + URL + feedback */}
                           <div className="exercise-detail__meta">
                             <div className="exercise-prescription">
-                              <span>Prescricao do Personal Virtual</span>
+                              <span>Prescrição do Personal Virtual</span>
                               <div className="exercise-prescription__badges">
-                                <strong>{exercise.suggestedSets} series</strong>
+                                <strong>{exercise.suggestedSets} séries</strong>
                                 <strong>{exercise.suggestedReps} reps</strong>
                                 <strong>Descanso {formatTimer(getExerciseRestSeconds(exercise))}</strong>
                               </div>
-                              <small>Somente o Personal Virtual altera series e repeticoes prescritas.</small>
+                              <small>Somente o Personal Virtual altera séries e repetições prescritas.</small>
                             </div>
 
                             <label>
@@ -1376,7 +1376,7 @@ function WorkoutExecutionSection() {
                                     event.target.value
                                   )
                                 }
-                                placeholder="Feedback tecnico gerado pelo Personal Virtual apos analisar o video ou as anotacoes"
+                                placeholder="Feedback técnico gerado pelo Personal Virtual após analisar o vídeo ou as anotações"
                               />
                               {isPro && (
                                 <button
@@ -1386,7 +1386,7 @@ function WorkoutExecutionSection() {
                                     handleRequestExerciseFeedback(selectedWorkout.id, exercise.id, "video")
                                   }
                                 >
-                                  Solicitar feedback do video
+                                  Solicitar feedback do vídeo
                                 </button>
                               )}
                             </label>
@@ -1395,7 +1395,7 @@ function WorkoutExecutionSection() {
                       </div>
 
                       <label className="exercise-notes">
-                        Anotacoes
+                        Anotações
                         <textarea
                           value={exercise.notes}
                           onChange={(event) =>
@@ -1406,7 +1406,7 @@ function WorkoutExecutionSection() {
                               event.target.value
                             )
                           }
-                          placeholder="Carga sentida, dor, RPE, ajuste de tecnica..."
+                          placeholder="Carga sentida, dor, RPE, ajuste de técnica..."
                         />
                         <button
                           type="button"
@@ -1415,7 +1415,7 @@ function WorkoutExecutionSection() {
                             handleRequestExerciseFeedback(selectedWorkout.id, exercise.id, "notes")
                           }
                         >
-                          Solicitar feedback das anotacoes
+                          Solicitar feedback das anotações
                         </button>
                       </label>
                     </>
@@ -1430,15 +1430,15 @@ function WorkoutExecutionSection() {
         <TabsContent value="historico">
           <div className="workout-history-overview">
             <article>
-              <span>Ultima execucao</span>
+              <span>Última execução</span>
               <strong>{previousSession ? formatWorkoutDate(previousSession.createdAt) : "--"}</strong>
             </article>
             <article>
-              <span>Series registradas</span>
+              <span>Séries registradas</span>
               <strong>{previousSession ? getRegisteredSets(previousSession) : 0}</strong>
             </article>
             <article>
-              <span>Volume ultimo treino</span>
+              <span>Volume último treino</span>
               <strong>{previousSession ? Math.round(getSessionVolume(previousSession)) : 0}</strong>
             </article>
           </div>
@@ -1447,8 +1447,8 @@ function WorkoutExecutionSection() {
             <WorkoutSessionHistoryTable sessions={recentSessions} />
           ) : (
             <WorkoutEmptyState
-              title="Sem historico para este treino"
-              description="Finalize pelo menos uma sessao para ver duracao, series e volume aqui."
+              title="Sem histórico para este treino"
+              description="Finalize pelo menos uma sessão para ver duração, séries e volume aqui."
             />
           )}
 
@@ -1595,7 +1595,7 @@ function WorkoutExecutionSection() {
           <section className="workout-edit-panel">
             <div className="workout-edit-panel__header">
               <div>
-                <h3 className="workout-edit-panel__title">Registrar sessao retroativa</h3>
+                <h3 className="workout-edit-panel__title">Registrar sessão retroativa</h3>
                 <p className="workout-edit-panel__sub">
                   {retroWorkout.title} —{" "}
                   {new Date(retroDate + "T12:00:00").toLocaleDateString("pt-BR")}
@@ -1612,7 +1612,7 @@ function WorkoutExecutionSection() {
 
             <div className="workout-edit-panel__body">
               <p className="retro-session-hint">
-                Registre os pesos e repeticoes. Use Substituir para trocar exercicios ou
+                Registre os pesos e repetições. Use Substituir para trocar exercícios ou
                 adicione extras abaixo da lista.
               </p>
 
@@ -1690,7 +1690,7 @@ function WorkoutExecutionSection() {
                     <span>
                       {retroPickerMode.mode === "replace"
                         ? `Substituir: ${retroExercises[retroPickerMode.index]?.name}`
-                        : "Adicionar exercicio"}
+                        : "Adicionar exercício"}
                     </span>
                     <button
                       type="button"
@@ -1703,14 +1703,14 @@ function WorkoutExecutionSection() {
                     className="exercise-picker__search"
                     value={retroPickerSearch}
                     onChange={(e) => setRetroPickerSearch(e.target.value)}
-                    placeholder="Buscar exercicio..."
+                    placeholder="Buscar exercício..."
                     autoFocus
                   />
                   <div className="exercise-picker__list">
                     {availableExerciseGroups.length === 0 ? (
                       <p className="exercise-picker__empty">
-                        Nenhum aparelho ativo nas configuracoes. Configure sua academia em
-                        Configuracoes → Aparelhos.
+                        Nenhum aparelho ativo nas configurações. Configure sua academia em
+                        Configurações → Aparelhos.
                       </p>
                     ) : (
                       availableExerciseGroups
@@ -1740,7 +1740,7 @@ function WorkoutExecutionSection() {
                   className="workout-edit-add-btn"
                   onClick={() => setRetroPickerMode({ mode: "add" })}
                 >
-                  + Adicionar exercicio
+                  + Adicionar exercício
                 </button>
               )}
             </div>
@@ -1758,7 +1758,7 @@ function WorkoutExecutionSection() {
                 className="workout-edit-save-all-btn"
                 onClick={handleSaveRetroSession}
               >
-                Salvar sessao
+                Salvar sessão
               </button>
             </div>
           </section>
@@ -1776,12 +1776,12 @@ function WorkoutExecutionSection() {
             {activeVideo.executionVideoUrl ? (
               <iframe
                 src={activeVideo.executionVideoUrl}
-                title={`Video de execucao ${activeVideo.name}`}
+                title={`Vídeo de execução ${activeVideo.name}`}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />
             ) : (
-              <p>Adicione uma URL de video demonstrativo para visualizar.</p>
+              <p>Adicione uma URL de vídeo demonstrativo para visualizar.</p>
             )}
           </div>
         </div>
@@ -1841,9 +1841,9 @@ function WorkoutHistorySection() {
     <section className="workout-execution glass-panel">
       <header className="workout-execution__header">
         <div>
-          <span>Historico salvo</span>
-          <h2>Comparativo de execucoes</h2>
-          <p>Consulte sessoes salvas por treino, volume estimado e quantidade de series registradas.</p>
+          <span>Histórico salvo</span>
+          <h2>Comparativo de execuções</h2>
+          <p>Consulte sessões salvas por treino, volume estimado e quantidade de séries registradas.</p>
         </div>
       </header>
 
@@ -1851,11 +1851,11 @@ function WorkoutHistorySection() {
 
       <div className="workout-protocol-stats">
         <article>
-          <span>Sessoes</span>
+          <span>Sessões</span>
           <strong>{filteredSessions.length}</strong>
         </article>
         <article>
-          <span>Series registradas</span>
+          <span>Séries registradas</span>
           <strong>{totalRegisteredSets}</strong>
         </article>
         <article>
@@ -1867,12 +1867,12 @@ function WorkoutHistorySection() {
           <strong>{enabledWorkouts.length}</strong>
         </article>
         <article>
-          <span>Ultimo registro</span>
+          <span>Último registro</span>
           <strong>{filteredSessions[0] ? formatWorkoutDate(filteredSessions[0].createdAt) : "--"}</strong>
         </article>
       </div>
 
-      <nav className="workout-week-tabs" aria-label="Filtro do historico de treinos">
+      <nav className="workout-week-tabs" aria-label="Filtro do histórico de treinos">
         <button
           type="button"
           className={selectedWorkoutId === "all" ? "is-selected is-enabled" : "is-enabled"}
@@ -1906,7 +1906,7 @@ function WorkoutHistorySection() {
       ) : (
         <WorkoutEmptyState
           title="Nada salvo neste filtro ainda"
-          description="Finalize uma sessao em Treinos para começar a construir o historico comparativo."
+          description="Finalize uma sessão em Treinos para começar a construir o histórico comparativo."
         />
       )}
     </section>
@@ -1922,7 +1922,7 @@ export default function WorkoutsPage() {
 
   if (workoutId) {
     content.title = `Treino de ${workoutId}`;
-    content.footerNote = `Rota dinamica funcionando em /treinos/${workoutId}. Depois ela deve buscar o dia de treino real pelo id no backend.`;
+    content.footerNote = `Rota dinâmica funcionando em /treinos/${workoutId}. Depois ela deve buscar o dia de treino real pelo id no backend.`;
   }
 
   return (
@@ -1930,7 +1930,7 @@ export default function WorkoutsPage() {
       <header className="workouts-clean-hero glass-panel">
         <span>{content.badge}</span>
         <h1>{content.title}</h1>
-        <p>Plano de treino, execucao, videos e historico de cargas do protocolo atual.</p>
+        <p>Plano de treino, execução, vídeos e histórico de cargas do protocolo atual.</p>
       </header>
       {["list", "generate", "detail"].includes(viewKey) ? <WorkoutExecutionSection /> : null}
       {viewKey === "history" ? <WorkoutHistorySection /> : null}

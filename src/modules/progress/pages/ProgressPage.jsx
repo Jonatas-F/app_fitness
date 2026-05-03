@@ -67,9 +67,9 @@ function buildOverviewMetrics(checkins) {
 
   return [
     {
-      label: "Check-ins validos",
+      label: "Check-ins válidos",
       value: `${checkins.length}`,
-      helper: latest ? `Ultimo em ${formatDate(latest.createdAt)}` : "Sem registro ainda",
+      helper: latest ? `Último em ${formatDate(latest.createdAt)}` : "Sem registro ainda",
     },
     {
       label: "Peso",
@@ -150,7 +150,7 @@ function buildPhotoRows(checkins) {
       date: formatDate(item.createdAt),
       cadence: item.cadence || "weekly",
       count: item.photos.length,
-      note: item.photoNote || item.notes || "Sem observacoes adicionais.",
+      note: item.photoNote || item.notes || "Sem observações adicionais.",
     }));
 }
 
@@ -188,14 +188,14 @@ function OverviewSection({ checkins }) {
       className="progress-collapsible glass-panel"
       eyebrow="Resumo"
       title="Comparativo mais recente"
-      summary="Peso, composicao corporal e observacoes dos ultimos registros."
+      summary="Peso, composição corporal e observações dos últimos registros."
       badge={`${checkins.length} registro(s)`}
       defaultOpen
     >
       {latest ? (
         <div className="progress-compare-grid">
           <article>
-            <span>Ultimo check-in</span>
+            <span>Último check-in</span>
             <strong>{formatDate(latest.createdAt)}</strong>
             <small>{latest.goal || "Sem objetivo informado"}</small>
           </article>
@@ -241,7 +241,7 @@ function CompareSection({ checkins }) {
       className="progress-collapsible glass-panel"
       eyebrow="Comparar"
       title="Dois check-ins mais recentes"
-      summary="Leitura rapida das mudancas corporais mais importantes."
+      summary="Leitura rápida das mudanças corporais mais importantes."
       badge={previous ? "2 bases ativas" : "1 base ativa"}
       defaultOpen
     >
@@ -258,7 +258,7 @@ function CompareSection({ checkins }) {
             <small>{formatMetric(previous.waist, " cm")} para {formatMetric(latest.waist, " cm")}</small>
           </article>
           <article>
-            <span>Abdomen</span>
+            <span>Abdômen</span>
             <strong>{formatSignedDifference(latest.abdomen, previous.abdomen, " cm")}</strong>
             <small>{formatMetric(previous.abdomen, " cm")} para {formatMetric(latest.abdomen, " cm")}</small>
           </article>
@@ -283,23 +283,23 @@ function MeasurementsSection({ rows }) {
     <SectionCollapsible
       className="progress-collapsible glass-panel"
       eyebrow="Medidas"
-      title="Historico de medidas"
-      summary="Cintura, abdomen, quadril, bracos e coxas extraidos dos check-ins."
+      title="Histórico de medidas"
+      summary="Cintura, abdômen, quadril, braços e coxas extraídos dos check-ins."
       badge={`${rows.length} registro(s)`}
       defaultOpen
     >
       {rows.length ? (
         <div className="progress-table-shell">
           <Table className="progress-table">
-            <caption className="progress-table__caption">Historico de medidas corporais salvas nos check-ins.</caption>
+            <caption className="progress-table__caption">Histórico de medidas corporais salvas nos check-ins.</caption>
             <TableHeader>
               <TableRow>
                 <TableHead>Data</TableHead>
                 <TableHead>Cintura</TableHead>
-                <TableHead>Abdomen</TableHead>
+                <TableHead>Abdômen</TableHead>
                 <TableHead>Quadril</TableHead>
-                <TableHead>Braco D</TableHead>
-                <TableHead>Braco E</TableHead>
+                <TableHead>Braço D</TableHead>
+                <TableHead>Braço E</TableHead>
                 <TableHead>Coxa D</TableHead>
                 <TableHead>Coxa E</TableHead>
               </TableRow>
@@ -334,16 +334,16 @@ function BioSection({ rows }) {
   return (
     <SectionCollapsible
       className="progress-collapsible glass-panel"
-      eyebrow="Bioimpedancia"
-      title="Historico corporal"
-      summary="Peso, gordura, massa magra e leituras de composicao corporal."
+      eyebrow="Bioimpedância"
+      title="Histórico corporal"
+      summary="Peso, gordura, massa magra e leituras de composição corporal."
       badge={`${rows.length} leitura(s)`}
       defaultOpen
     >
       {rows.length ? (
         <div className="progress-table-shell">
           <Table className="progress-table">
-            <caption className="progress-table__caption">Historico de bioimpedancia e composicao corporal.</caption>
+            <caption className="progress-table__caption">Histórico de bioimpedância e composição corporal.</caption>
             <TableHeader>
               <TableRow>
                 <TableHead>Data</TableHead>
@@ -372,8 +372,8 @@ function BioSection({ rows }) {
         </div>
       ) : (
         <ProgressEmptyState
-          title="Sem bioimpedancia salva"
-          description="Quando esse bloco for preenchido no check-in mensal, o historico aparece aqui."
+          title="Sem bioimpedância salva"
+          description="Quando esse bloco for preenchido no check-in mensal, o histórico aparece aqui."
         />
       )}
     </SectionCollapsible>
@@ -386,20 +386,20 @@ function PhotosSection({ rows }) {
       className="progress-collapsible glass-panel"
       eyebrow="Fotos"
       title="Registros visuais"
-      summary="Check-ins com fotos anexadas e notas do usuario."
+      summary="Check-ins com fotos anexadas e notas do usuário."
       badge={`${rows.length} registro(s)`}
       defaultOpen
     >
       {rows.length ? (
         <div className="progress-table-shell">
           <Table className="progress-table">
-            <caption className="progress-table__caption">Historico de registros com fotos anexadas.</caption>
+            <caption className="progress-table__caption">Histórico de registros com fotos anexadas.</caption>
             <TableHeader>
               <TableRow>
                 <TableHead>Data</TableHead>
-                <TableHead>Cadencia</TableHead>
+                <TableHead>Cadência</TableHead>
                 <TableHead>Fotos</TableHead>
-                <TableHead className="progress-table__notes-head">Observacao</TableHead>
+                <TableHead className="progress-table__notes-head">Observação</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -423,8 +423,8 @@ function PhotosSection({ rows }) {
         </div>
       ) : (
         <ProgressEmptyState
-          title="Sem fotos no historico"
-          description="As fotos obrigatorias do check-in semanal ou mensal começam a aparecer aqui quando forem salvas."
+          title="Sem fotos no histórico"
+          description="As fotos obrigatórias do check-in semanal ou mensal começam a aparecer aqui quando forem salvas."
         />
       )}
     </SectionCollapsible>
@@ -444,9 +444,9 @@ export default function ProgressPage() {
     <section className="progress-page">
       <header className="progress-hero glass-panel">
         <span>Progresso</span>
-        <h1>Historico corporal, comparativos e leitura do ciclo.</h1>
+        <h1>Histórico corporal, comparativos e leitura do ciclo.</h1>
         <p>
-          Tudo aqui sai dos check-ins ja salvos: medidas, bioimpedancia, peso, fotos e comparativos
+          Tudo aqui sai dos check-ins já salvos: medidas, bioimpedância, peso, fotos e comparativos
           entre os registros mais recentes.
         </p>
       </header>

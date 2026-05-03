@@ -36,51 +36,51 @@ const defaultSettings = {
 };
 
 const languageToneOptions = [
-  { value: "leve", label: "Leve", description: "Respostas tranquilas, acolhedoras e sem pressao." },
-  { value: "direto", label: "Direto", description: "Objetivo, pratico e com pouco rodeio." },
-  { value: "intenso", label: "Mais agressivo", description: "Mais cobranca, energia alta e foco em execucao." },
-  { value: "tecnico", label: "Tecnico", description: "Mais explicacoes sobre treino, dieta e dados." },
+  { value: "leve", label: "Leve", description: "Respostas tranquilas, acolhedoras e sem pressão." },
+  { value: "direto", label: "Direto", description: "Objetivo, prático e com pouco rodeio." },
+  { value: "intenso", label: "Mais agressivo", description: "Mais cobrança, energia alta e foco em execução." },
+  { value: "tecnico", label: "Técnico", description: "Mais explicações sobre treino, dieta e dados." },
 ];
 
 const motivationStyleOptions = [
-  { value: "calmo", label: "Calmo", description: "Tom sereno para manter consistencia." },
-  { value: "equilibrado", label: "Equilibrado", description: "Mistura incentivo, cobranca e clareza." },
-  { value: "animado", label: "Animado", description: "Mais entusiasmo e reforco positivo." },
-  { value: "disciplinador", label: "Disciplinador", description: "Mais firmeza quando houver queda de aderencia." },
+  { value: "calmo", label: "Calmo", description: "Tom sereno para manter consistência." },
+  { value: "equilibrado", label: "Equilibrado", description: "Mistura incentivo, cobrança e clareza." },
+  { value: "animado", label: "Animado", description: "Mais entusiasmo e reforço positivo." },
+  { value: "disciplinador", label: "Disciplinador", description: "Mais firmeza quando houver queda de aderência." },
 ];
 
 const feedbackDepthOptions = [
-  { value: "curto", label: "Curto", description: "Feedback rapido e facil de aplicar." },
-  { value: "objetivo", label: "Objetivo", description: "Explica o suficiente e ja indica a acao." },
-  { value: "detalhado", label: "Detalhado", description: "Traz contexto, motivos e proximos passos." },
+  { value: "curto", label: "Curto", description: "Feedback rápido e fácil de aplicar." },
+  { value: "objetivo", label: "Objetivo", description: "Explica o suficiente e já indica a ação." },
+  { value: "detalhado", label: "Detalhado", description: "Traz contexto, motivos e próximos passos." },
 ];
 
 const notificationItems = [
   {
     key: "workoutReminder",
     title: "Hora do treino",
-    description: "Lembretes baseados no horario previsto do treino informado no check-in.",
+    description: "Lembretes baseados no horário previsto do treino informado no check-in.",
     icon: "solar:dumbbell-large-bold",
     scheduleKey: "plannedTrainingTime",
   },
   {
     key: "mealReminder",
-    title: "Hora da refeicao",
-    description: "Avisos entre a primeira e a ultima refeicao cadastradas no check-in.",
+    title: "Hora da refeição",
+    description: "Avisos entre a primeira e a última refeição cadastradas no check-in.",
     icon: "solar:chef-hat-bold",
     scheduleKey: "mealWindow",
   },
   {
     key: "waterReminder",
-    title: "Beber agua",
-    description: "Lembretes distribuidos entre acordar e dormir, respeitando a rotina informada.",
+    title: "Beber água",
+    description: "Lembretes distribuídos entre acordar e dormir, respeitando a rotina informada.",
     icon: "solar:waterdrops-bold",
     scheduleKey: "wakeWindow",
   },
   {
     key: "progressReminder",
-    title: "Evolucao e progresso",
-    description: "Avisos sobre comparativos, carga, peso, medidas e bioimpedancia.",
+    title: "Evolução e progresso",
+    description: "Avisos sobre comparativos, carga, peso, medidas e bioimpedância.",
     icon: "solar:chart-2-bold",
     scheduleKey: "progress",
   },
@@ -93,8 +93,8 @@ const notificationItems = [
   },
   {
     key: "monthlyReevaluation",
-    title: "Reavaliacao mensal",
-    description: "Lembrete para atualizar antropometria, bioimpedancia e fotos do ciclo.",
+    title: "Reavaliação mensal",
+    description: "Lembrete para atualizar antropometria, bioimpedância e fotos do ciclo.",
     icon: "solar:clipboard-check-bold",
     scheduleKey: "monthly",
   },
@@ -103,13 +103,13 @@ const notificationItems = [
 const privacyItems = [
   {
     key: "allowMediaAnalysis",
-    title: "Permitir analise de imagens e videos",
-    description: "Autoriza usar anexos enviados no chat para feedback tecnico e progresso visual.",
+    title: "Permitir análise de imagens e vídeos",
+    description: "Autoriza usar anexos enviados no chat para feedback técnico e progresso visual.",
   },
   {
     key: "saveChatHistory",
-    title: "Salvar historico do chat",
-    description: "Quando ativado, conversas futuras poderao ser consultadas pelo usuario.",
+    title: "Salvar histórico do chat",
+    description: "Quando ativado, conversas futuras poderão ser consultadas pelo usuário.",
   },
 ];
 
@@ -186,23 +186,23 @@ function getSuggestedSchedule(item, routineCheckin) {
   if (item.scheduleKey === "plannedTrainingTime") {
     return routineCheckin.plannedTrainingTime
       ? `Sugerido: ${formatTime(routineCheckin.plannedTrainingTime)}`
-      : "Falta informar o horario do treino no check-in.";
+      : "Falta informar o horário do treino no check-in.";
   }
 
   if (item.scheduleKey === "mealWindow") {
     return routineCheckin.firstMealTime && routineCheckin.lastMealTime
       ? `Entre ${formatTime(routineCheckin.firstMealTime)} e ${formatTime(routineCheckin.lastMealTime)}`
-      : "Falta informar primeira e ultima refeicao no check-in.";
+      : "Falta informar primeira e última refeição no check-in.";
   }
 
   if (item.scheduleKey === "wakeWindow") {
     return routineCheckin.wakeTime && routineCheckin.sleepTime
       ? `Entre ${formatTime(routineCheckin.wakeTime)} e ${formatTime(routineCheckin.sleepTime)}`
-      : "Falta informar horario de acordar e dormir no check-in.";
+      : "Falta informar horário de acordar e dormir no check-in.";
   }
 
   if (item.scheduleKey === "progress") {
-    return routineCheckin.sleepTime ? `Sugerido: ${formatTime(routineCheckin.sleepTime)}` : "Sugerido apos o fim do dia.";
+    return routineCheckin.sleepTime ? `Sugerido: ${formatTime(routineCheckin.sleepTime)}` : "Sugerido após o fim do dia.";
   }
 
   if (item.scheduleKey === "weekly") {
@@ -283,10 +283,10 @@ export default function SettingsPage() {
     {
       label: "Conta e perfil",
       value: "Unificado",
-      helper: "Dados, pagamento, academia e preferencias",
+      helper: "Dados, pagamento, academia e preferências",
     },
     {
-      label: "Notificacoes ativas",
+      label: "Notificações ativas",
       value: `${activeNotificationCount}/${notificationItems.length}`,
       helper: latestRoutineCheckin ? "Baseadas na rotina mais recente" : "Falta rotina no check-in",
     },
@@ -364,7 +364,7 @@ export default function SettingsPage() {
     const next = persistSettings(normalizeSettings(settings));
     setSettings(next);
     setIsSaving(true);
-    setSaveMessage("Salvando configuracoes...");
+    setSaveMessage("Salvando configurações...");
 
     const result = await saveRemoteSettings(next);
     setIsSaving(false);
@@ -381,7 +381,7 @@ export default function SettingsPage() {
     setSettings(storedSettings);
     persistSettings(storedSettings);
     window.dispatchEvent(new CustomEvent("shape-certo-settings-updated", { detail: storedSettings }));
-    setSaveMessage(result.skipped ? "Salvo neste dispositivo." : "Configuracoes salvas no banco SQL.");
+    setSaveMessage(result.skipped ? "Salvo neste dispositivo." : "Configurações salvas no banco SQL.");
   }
 
   function toggleNotification(key) {
@@ -432,15 +432,15 @@ export default function SettingsPage() {
   return (
     <section className="settings-page">
       <header className="settings-hero">
-        <span>Configuracoes</span>
+        <span>Configurações</span>
         <h1>Ajustes do Shape Certo.</h1>
         <p>
-          Controle conta, pagamento, perfil, notificacoes, comportamento do Personal Virtual e
-          permissoes de uso dos seus dados em um unico lugar.
+          Controle conta, pagamento, perfil, notificações, comportamento do Personal Virtual e
+          permissões de uso dos seus dados em um único lugar.
         </p>
         {!latestRoutineCheckin ? (
           <strong className="settings-hero__notice">
-            Preencha os horarios de rotina no check-in semanal ou mensal para ativar sugestoes de horario.
+            Preencha os horários de rotina no check-in semanal ou mensal para ativar sugestões de horário.
           </strong>
         ) : null}
       </header>
@@ -476,7 +476,7 @@ export default function SettingsPage() {
                 <StatusPill tone="neutral">Unificado</StatusPill>
               </TabsTrigger>
               <TabsTrigger value="notifications" className="settings-tab-trigger">
-                <strong>Notificacoes</strong>
+                <strong>Notificações</strong>
                 <StatusPill tone="danger">{activeNotificationCount} ativas</StatusPill>
               </TabsTrigger>
               <TabsTrigger value="personal" className="settings-tab-trigger" data-tour="settings-personal-tab">
@@ -529,7 +529,7 @@ export default function SettingsPage() {
                     {selectedAvatar ? <img src={selectedAvatar.url} alt={`Avatar ${selectedAvatar.label}`} /> : null}
                     <div>
                       <strong>{settings.personal.name || "Personal Virtual"}</strong>
-                      <p>Avatar selecionado para o chat e pontos-chave da experiencia.</p>
+                      <p>Avatar selecionado para o chat e pontos-chave da experiência.</p>
                     </div>
                   </article>
                 </div>
@@ -555,7 +555,7 @@ export default function SettingsPage() {
                     onChange={(value) => handlePersonalOptionChange("languageTone", value)}
                   />
                   <SettingsOptionGroup
-                    title="Nivel de animo"
+                    title="Nível de ânimo"
                     options={motivationStyleOptions}
                     value={settings.personal.motivationStyle}
                     onChange={(value) => handlePersonalOptionChange("motivationStyle", value)}
@@ -600,7 +600,7 @@ export default function SettingsPage() {
             disabled={isSaving || !hasUnsavedChanges}
             onClick={handleSaveSettings}
           >
-            {isSaving ? "Salvando..." : "Salvar alteracoes"}
+            {isSaving ? "Salvando..." : "Salvar alterações"}
           </button>
         </div>
       ) : null}

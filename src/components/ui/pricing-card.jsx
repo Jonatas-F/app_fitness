@@ -89,19 +89,19 @@ function PricingCard({
               onCycleChange(value)
             }
           }}
-          aria-label="Selecionar ciclo de cobranca"
+          aria-label="Selecionar ciclo de cobrança"
           className="pricing-card__toggle"
         >
           <ToggleGroupItem
             value="monthly"
-            aria-label="Cobranca mensal"
+            aria-label="Cobrança mensal"
             className="pricing-card__toggle-item"
           >
             Mensal
           </ToggleGroupItem>
           <ToggleGroupItem
             value="annually"
-            aria-label="Cobranca anual"
+            aria-label="Cobrança anual"
             className="pricing-card__toggle-item"
           >
             Anual
@@ -116,7 +116,7 @@ function PricingCard({
         {plans.map((plan) => {
           const isFeatured = plan.isPopular
           const currentPrice = billingCycle === "monthly" ? plan.priceMonthly : plan.priceAnnually
-          const suffix = billingCycle === "monthly" ? "/mes" : "/ano"
+          const suffix = billingCycle === "monthly" ? "/mês" : "/ano"
           // Use highlights for the card if provided, otherwise fall back to first 6 features
           const cardItems = plan.highlights ?? plan.features.slice(0, 6)
 
@@ -148,7 +148,7 @@ function PricingCard({
                   </p>
                   {billingCycle === "annually" ? (
                     <small>
-                      Equivale a {formatPlanPrice(currentPrice / 12, locale, currency)}/mes
+                      Equivale a {formatPlanPrice(currentPrice / 12, locale, currency)}/mês
                     </small>
                   ) : null}
                 </div>
@@ -236,7 +236,7 @@ function PricingCard({
                                     "pricing-card__table-icon",
                                     isIncluded ? "is-included" : "is-muted"
                                   )}
-                                  aria-label={isIncluded ? "Incluido" : "Nao incluido"}
+                                  aria-label={isIncluded ? "Incluído" : "Não incluído"}
                                 />
                               </td>
                             )
@@ -273,7 +273,7 @@ function PricingCard({
                                 "pricing-card__table-icon",
                                 isIncluded ? "is-included" : "is-muted"
                               )}
-                              aria-label={isIncluded ? "Incluido" : "Nao incluido"}
+                              aria-label={isIncluded ? "Incluído" : "Não incluído"}
                             />
                           </td>
                         )
