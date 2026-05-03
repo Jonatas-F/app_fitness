@@ -1622,13 +1622,20 @@
 }
 
 .checkins-cadence-table [data-slot="table-head"] {
-  color: rgba(255, 255, 255, 0.45);
-  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.38);
+  font-size: 0.65rem;
   font-weight: 900;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding-top: 14px;
-  padding-bottom: 14px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+/* colunas numéricas da tabela de cadência alinhadas à direita */
+.checkins-cadence-table [data-slot="table-head"]:not(:first-child),
+.checkins-cadence-table [data-slot="table-cell"]:not(:first-child) {
+  text-align: right;
 }
 
 .checkins-cadence-table [data-slot="table-row"] {
@@ -1640,34 +1647,65 @@
 }
 
 .checkins-cadence-table [data-slot="table-cell"] {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 0.88rem;
-  padding-top: 12px;
-  padding-bottom: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.86rem;
+  padding: 13px 16px;
   font-variant-numeric: tabular-nums;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
 }
 
-/* primeiro td = rótulo de cadência */
+/* primeiro td = rótulo de cadência — destaque */
 .checkins-cadence-table [data-slot="table-cell"]:first-child {
   font-weight: 700;
   color: #fff;
+  font-size: 0.88rem;
 }
 
 /* ── Tabela histórico completo ────────────────────────────────────────────── */
 .checkins-history-table {
-  min-width: 1020px;
+  min-width: 1100px;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
+/* Cabeçalho ─────────────────────────────────────────────────────────────── */
 .checkins-history-table [data-slot="table-head"] {
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.38);
+  font-size: 0.65rem;
   font-weight: 900;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding-top: 14px;
-  padding-bottom: 14px;
+  padding: 14px 16px;
   white-space: nowrap;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
 }
+
+/* Larguras mínimas por coluna ───────────────────────────────────────────── */
+/* col 1 — Data */
+.checkins-history-table [data-slot="table-head"]:nth-child(1),
+.checkins-history-table [data-slot="table-cell"]:nth-child(1) { min-width: 148px; }
+/* col 2 — Cadência */
+.checkins-history-table [data-slot="table-head"]:nth-child(2),
+.checkins-history-table [data-slot="table-cell"]:nth-child(2) { min-width: 90px; }
+/* col 3 — Status */
+.checkins-history-table [data-slot="table-head"]:nth-child(3),
+.checkins-history-table [data-slot="table-cell"]:nth-child(3) { min-width: 84px; }
+/* col 4 — Peso */
+.checkins-history-table [data-slot="table-head"]:nth-child(4),
+.checkins-history-table [data-slot="table-cell"]:nth-child(4) { min-width: 68px; }
+/* col 5 — Sono */
+.checkins-history-table [data-slot="table-head"]:nth-child(5),
+.checkins-history-table [data-slot="table-cell"]:nth-child(5) { min-width: 64px; }
+/* col 6 — Energia */
+.checkins-history-table [data-slot="table-head"]:nth-child(6),
+.checkins-history-table [data-slot="table-cell"]:nth-child(6) { min-width: 72px; }
+/* col 7 — Aderência */
+.checkins-history-table [data-slot="table-head"]:nth-child(7),
+.checkins-history-table [data-slot="table-cell"]:nth-child(7) { min-width: 84px; }
+/* col 8 — Fotos */
+.checkins-history-table [data-slot="table-head"]:nth-child(8),
+.checkins-history-table [data-slot="table-cell"]:nth-child(8) { min-width: 56px; }
 
 /* Linhas ─────────────────────────────────────────────────────────────────── */
 .checkins-history-table [data-slot="table-row"] {
@@ -1676,13 +1714,13 @@
 }
 
 .checkins-history-table [data-slot="table-row"]:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.045);
 }
 
 /* Zebra stripes suaves */
 .checkins-history-table [data-slot="table-body"]
   > [data-slot="table-row"]:nth-child(even) {
-  background: rgba(255, 255, 255, 0.018);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 /* Células ────────────────────────────────────────────────────────────────── */
@@ -1690,18 +1728,39 @@
   color: rgba(255, 255, 255, 0.82);
   font-size: 0.84rem;
   vertical-align: middle;
-  padding-top: 13px;
-  padding-bottom: 13px;
+  padding: 14px 16px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
 }
 
-/* Coluna de data — monoespaçada para alinhamento */
-.checkins-history-table [data-slot="table-cell"]:first-child {
-  font-size: 0.78rem;
-  color: rgba(255, 255, 255, 0.55);
-  font-family: ui-monospace, monospace;
-  white-space: nowrap;
+/* col 1 — Data: monoespaçada, mais discreta */
+.checkins-history-table [data-slot="table-cell"]:nth-child(1) {
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.45);
+  font-family: ui-monospace, "Cascadia Code", monospace;
+  letter-spacing: -0.01em;
+}
+
+/* col 2 — Cadência: levemente destacada */
+.checkins-history-table [data-slot="table-cell"]:nth-child(2) {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* cols 4-8 — Números: alinhados à direita com peso visual */
+.checkins-history-table [data-slot="table-head"]:nth-child(4),
+.checkins-history-table [data-slot="table-head"]:nth-child(5),
+.checkins-history-table [data-slot="table-head"]:nth-child(6),
+.checkins-history-table [data-slot="table-head"]:nth-child(7),
+.checkins-history-table [data-slot="table-head"]:nth-child(8),
+.checkins-history-table [data-slot="table-cell"]:nth-child(4),
+.checkins-history-table [data-slot="table-cell"]:nth-child(5),
+.checkins-history-table [data-slot="table-cell"]:nth-child(6),
+.checkins-history-table [data-slot="table-cell"]:nth-child(7),
+.checkins-history-table [data-slot="table-cell"]:nth-child(8) {
+  text-align: right;
 }
 
 /* ── Status pill — restaura cores do StatusPill (success/danger) ──────────── */
