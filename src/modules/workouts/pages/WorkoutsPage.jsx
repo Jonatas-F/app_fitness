@@ -26,6 +26,8 @@ import {
   clearActiveSession,
 } from "../../../data/workoutExecutionStorage";
 import { getStoredApiUser } from "../../../services/api/client";
+import { gymEquipmentCatalog } from "../../../data/gymEquipmentCatalog";
+import { loadGymEquipmentSelection } from "../../../data/gymEquipmentStorage";
 
 const ADMIN_PLAN_OVERRIDE_KEY = "shapeCertoAdminPlanOverride";
 
@@ -35,18 +37,18 @@ function getActivePlanId() {
   return getStoredApiUser()?.plan_type || "intermediario";
 }
 
-// ── Base de exercícios disponíveis para edição ───────────────────────────────
-const EXERCISE_BASE = [
-  { group: "Peito",          exercises: ["Supino maquina", "Chest press", "Crucifixo maquina", "Pec deck", "Cable crossover"] },
-  { group: "Costas",         exercises: ["Puxada alta", "Remada baixa", "Pullover machine", "Seated row", "Remada cavalinho"] },
-  { group: "Biceps",         exercises: ["Biceps curl machine", "Rosca direta", "Rosca concentrada", "Rosca martelo machine"] },
-  { group: "Triceps",        exercises: ["Triceps extension machine", "Triceps pulley", "Mergulho maquina", "Triceps testa"] },
-  { group: "Ombros",         exercises: ["Desenvolvimento maquina", "Elevacao lateral machine", "Face pull", "Shrug machine", "Reverse fly machine"] },
-  { group: "Pernas",         exercises: ["Leg press 45", "Leg press horizontal", "Cadeira extensora", "Mesa flexora", "Agachamento maquina", "Hack squat", "Panturrilha sentada"] },
-  { group: "Gluteos",        exercises: ["Hip thrust machine", "Abdutora", "Adutora", "Gluteo maquina"] },
-  { group: "Core",           exercises: ["Abdominal crunch machine", "Rotary torso", "Roman chair", "Back extension machine"] },
-  { group: "Condicionamento",exercises: ["Functional trainer", "Esteira", "Bike ergometrica", "Remo ergometro"] },
-];
+// ── Base dinâmica de aparelhos: construída a partir das configurações ─────────
+function buildActiveExerciseGroups() {
+  const activeIds = new Set(loadGymEquipmentSelection());
+  return gymEquipmentCatalog
+    .map((cat) => ({
+      group: cat.title,
+      exercises: cat.items
+        .filter((item) => activeIds.has(item.id))
+        .map((item) => item.name),
+    }))
+    .filter((cat) => cat.exercises.length > 0);
+}
 
 function createEditExercise(workoutId, name, sourceEx = null) {
   const prescribedSets = Number(sourceEx?.suggestedSets || 3);
@@ -245,6 +247,7 @@ function WorkoutExecutionSection() {
   const [editReplacements, setEditReplacements] = useState({});
   const [pickerMode, setPickerMode] = useState(null);
   const [pickerSearch, setPickerSearch] = useState("");
+  const [availableExerciseGroups, setAvailableExerciseGroups] = useState([]);
   const [sessionHistory, setSessionHistory] = useState(() => loadWorkoutSessionHistory());
   const [workoutHistory, setWorkoutHistory] = useState([]);
   const [isRestoringWorkout, setIsRestoringWorkout] = useState(null);
@@ -541,6 +544,7 @@ function WorkoutExecutionSection() {
     setEditReplacements({});
     setPickerMode(null);
     setPickerSearch("");
+    setAvailableExerciseGroups(buildActiveExerciseGroups());
     setIsEditingWorkout(true);
   }
 
@@ -1045,23 +1049,29 @@ function WorkoutExecutionSection() {
                         autoFocus
                       />
                       <div className="exercise-picker__list">
-                        {EXERCISE_BASE
-                          .flatMap((g) => g.exercises.map((name) => ({ name, group: g.group })))
-                          .filter(({ name }) =>
-                            !pickerSearch ||
-                            name.toLowerCase().includes(pickerSearch.toLowerCase())
-                          )
-                          .map(({ name, group }) => (
-                            <button
-                              key={name}
-                              type="button"
-                              className="exercise-picker__item"
-                              onClick={() => handlePickExercise(name)}
-                            >
-                              <span>{name}</span>
-                              <em>{group}</em>
-                            </button>
-                          ))}
+                        {availableExerciseGroups.length === 0 ? (
+                          <p className="exercise-picker__empty">
+                            Nenhum aparelho ativo nas configurações. Configure sua academia em Configurações → Aparelhos.
+                          </p>
+                        ) : (
+                          availableExerciseGroups
+                            .flatMap((g) => g.exercises.map((name) => ({ name, group: g.group })))
+                            .filter(({ name }) =>
+                              !pickerSearch ||
+                              name.toLowerCase().includes(pickerSearch.toLowerCase())
+                            )
+                            .map(({ name, group }) => (
+                              <button
+                                key={`${group}-${name}`}
+                                type="button"
+                                className="exercise-picker__item"
+                                onClick={() => handlePickExercise(name)}
+                              >
+                                <span>{name}</span>
+                                <em>{group}</em>
+                              </button>
+                            ))
+                        )}
                       </div>
                     </div>
                   ) : (
