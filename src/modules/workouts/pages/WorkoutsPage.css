@@ -2124,3 +2124,359 @@
     gap: 10px;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   Calendário de treinos
+   ══════════════════════════════════════════════════════════════ */
+
+.workout-calendar {
+  display: grid;
+  gap: 20px;
+  padding: 18px 20px 22px;
+  border-radius: 12px;
+}
+
+/* ── Navegação de mês ────────────────────────────────────────── */
+
+.workout-calendar__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.workout-calendar__nav-title {
+  flex: 1;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 900;
+  text-transform: capitalize;
+}
+
+.workout-calendar__nav-btn {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  min-height: 38px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.065);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 1.1rem;
+  transition: background 140ms ease;
+}
+
+.workout-calendar__nav-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ── Grade 7 colunas ────────────────────────────────────────── */
+
+.workout-calendar__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.calendar-weekday {
+  padding: 6px 0 8px;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.38);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Célula de dia ──────────────────────────────────────────── */
+
+.calendar-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 3px 6px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.025);
+  min-height: 62px;
+  transition: background 130ms ease, border-color 130ms ease;
+  text-align: center;
+  user-select: none;
+}
+
+.calendar-day--outside {
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+.calendar-day__num {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1;
+}
+
+.calendar-day__focus {
+  font-size: 0.58rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.32);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-top: auto;
+}
+
+.calendar-day__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.calendar-day__dot--done {
+  background: rgba(100, 220, 130, 0.82);
+}
+
+/* ── Variantes de status ────────────────────────────────────── */
+
+.calendar-day.is-today {
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.065);
+}
+
+.calendar-day.is-today .calendar-day__num {
+  color: #fff;
+  font-size: 0.92rem;
+}
+
+.calendar-day.is-done {
+  border-color: rgba(100, 220, 130, 0.22);
+  background: rgba(100, 220, 130, 0.07);
+}
+
+.calendar-day.is-done .calendar-day__num {
+  color: rgba(110, 230, 140, 0.9);
+}
+
+.calendar-day.is-missed {
+  border-color: rgba(255, 100, 80, 0.15);
+  background: rgba(255, 100, 80, 0.04);
+}
+
+.calendar-day.is-missed .calendar-day__num {
+  color: rgba(255, 150, 130, 0.78);
+}
+
+.calendar-day.is-planned {
+  border-color: rgba(100, 160, 255, 0.15);
+  background: rgba(100, 160, 255, 0.04);
+}
+
+.calendar-day.is-planned .calendar-day__num {
+  color: rgba(150, 195, 255, 0.82);
+}
+
+.calendar-day.is-rest {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.calendar-day.is-rest .calendar-day__num {
+  color: rgba(255, 255, 255, 0.32);
+}
+
+/* ── Clicável: dias passados com treino ─────────────────────── */
+
+.calendar-day.is-clickable {
+  cursor: pointer;
+}
+
+.calendar-day.is-done.is-clickable:hover {
+  background: rgba(100, 220, 130, 0.13);
+  border-color: rgba(100, 220, 130, 0.34);
+}
+
+.calendar-day.is-missed.is-clickable:hover {
+  background: rgba(255, 150, 80, 0.1);
+  border-color: rgba(255, 150, 80, 0.28);
+}
+
+/* ── Legenda ────────────────────────────────────────────────── */
+
+.workout-calendar__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.46);
+}
+
+.legend-item.is-done    { color: rgba(110, 230, 140, 0.84); }
+.legend-item.is-missed  { color: rgba(255, 150, 130, 0.84); }
+.legend-item.is-planned { color: rgba(150, 195, 255, 0.84); }
+.legend-item.is-rest    { color: rgba(255, 255, 255, 0.36); }
+
+/* ══════════════════════════════════════════════════════════════
+   Sessão retroativa — modal de preenchimento
+   ══════════════════════════════════════════════════════════════ */
+
+.retro-session-hint {
+  margin: 0;
+  padding: 10px 13px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  line-height: 1.5;
+}
+
+.retro-session-list {
+  display: grid;
+  gap: 10px;
+}
+
+.retro-session-exercise {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.retro-session-exercise__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.retro-session-exercise__header strong {
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.9);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.retro-session-exercise__header span {
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.42);
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.retro-session-sets {
+  display: grid;
+  gap: 5px;
+}
+
+.retro-session-set {
+  display: grid;
+  grid-template-columns: 30px 1fr 18px 1fr;
+  align-items: center;
+  gap: 7px;
+}
+
+.retro-session-set__label {
+  font-size: 0.74rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.42);
+  text-align: center;
+}
+
+.retro-session-set__sep {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.28);
+  font-size: 0.84rem;
+}
+
+.retro-session-set input {
+  min-height: 38px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  outline: none;
+  font-size: 0.88rem;
+  text-align: center;
+  width: 100%;
+}
+
+.retro-session-set input:focus {
+  border-color: rgba(255, 46, 46, 0.38);
+  box-shadow: 0 0 0 3px rgba(255, 46, 46, 0.1);
+}
+
+.retro-session-set input::placeholder {
+  color: rgba(255, 255, 255, 0.26);
+}
+
+/* ── Calendar & retro: mobile ───────────────────────────────── */
+
+@media (max-width: 760px) {
+  .workout-calendar {
+    padding: 14px 14px 18px;
+    gap: 14px;
+  }
+
+  .calendar-day {
+    min-height: 52px;
+    padding: 6px 2px 5px;
+    border-radius: 6px;
+    gap: 2px;
+  }
+
+  .calendar-day__num {
+    font-size: 0.8rem;
+  }
+
+  .calendar-day__focus {
+    font-size: 0.52rem;
+  }
+
+  .retro-session-set {
+    grid-template-columns: 26px 1fr 14px 1fr;
+    gap: 5px;
+  }
+}
+
+@media (max-width: 430px) {
+  .workout-calendar__grid {
+    gap: 2px;
+  }
+
+  .calendar-day {
+    min-height: 44px;
+    padding: 5px 1px 4px;
+    border-radius: 5px;
+  }
+
+  .calendar-day__num {
+    font-size: 0.74rem;
+  }
+
+  .calendar-day__focus {
+    display: none;
+  }
+
+  .workout-calendar__legend {
+    gap: 10px;
+  }
+
+  .legend-item {
+    font-size: 0.72rem;
+  }
+}

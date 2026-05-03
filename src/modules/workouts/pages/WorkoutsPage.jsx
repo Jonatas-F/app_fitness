@@ -72,6 +72,47 @@ function createEditExercise(workoutId, name, sourceEx = null) {
 }
 import "./WorkoutsPage.css";
 
+// ── Calendar helpers ──────────────────────────────────────────────────────────
+
+function getWeekdayId(date) {
+  const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  return days[date.getDay()];
+}
+
+function getDayStatus(date, plan, sessionHistory) {
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+  const d = new Date(date.getTime());
+  d.setHours(12, 0, 0, 0);
+  const dayId = getWeekdayId(d);
+  const workout = plan.workouts.find((w) => w.id === dayId);
+  if (!workout?.enabled) return "rest";
+  if (d > today) return "planned";
+  const dateStr = d.toISOString().slice(0, 10);
+  const hasSession = sessionHistory.some(
+    (s) => s.createdAt.slice(0, 10) === dateStr && s.workoutId === dayId
+  );
+  return hasSession ? "done" : "missed";
+}
+
+function buildCalendarCells(year, month) {
+  const firstDay = new Date(year, month, 1);
+  const lastDayNum = new Date(year, month + 1, 0).getDate();
+  const startDow = (firstDay.getDay() + 6) % 7; // Mon=0, Sun=6
+  const cells = [];
+  for (let i = startDow - 1; i >= 0; i--) {
+    cells.push({ date: new Date(year, month, -i), outside: true });
+  }
+  for (let d = 1; d <= lastDayNum; d++) {
+    cells.push({ date: new Date(year, month, d), outside: false });
+  }
+  const remaining = (7 - (cells.length % 7)) % 7;
+  for (let i = 1; i <= remaining; i++) {
+    cells.push({ date: new Date(year, month + 1, i), outside: true });
+  }
+  return cells;
+}
+
 function getWorkoutView(pathname, workoutId) {
   if (workoutId) return "detail";
   if (pathname.endsWith("/historico")) return "history";
@@ -248,6 +289,16 @@ function WorkoutExecutionSection() {
   const [pickerMode, setPickerMode] = useState(null);
   const [pickerSearch, setPickerSearch] = useState("");
   const [availableExerciseGroups, setAvailableExerciseGroups] = useState([]);
+  const [calendarDate, setCalendarDate] = useState(() => {
+    const d = new Date();
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+  const [isRetroLogging, setIsRetroLogging] = useState(false);
+  const [retroDate, setRetroDate] = useState(null);
+  const [retroWorkout, setRetroWorkout] = useState(null);
+  const [retroExercises, setRetroExercises] = useState([]);
   const [sessionHistory, setSessionHistory] = useState(() => loadWorkoutSessionHistory());
   const [workoutHistory, setWorkoutHistory] = useState([]);
   const [isRestoringWorkout, setIsRestoringWorkout] = useState(null);
@@ -625,6 +676,59 @@ function WorkoutExecutionSection() {
     setFeedback("Treino atualizado com sucesso.");
   }
 
+  // ── Registro retroativo de sessão ─────────────────────────────────────────
+
+  function handleCalendarDayClick(date) {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (date > today) return;
+    const dayId = getWeekdayId(date);
+    const workout = plan.workouts.find((w) => w.id === dayId && w.enabled);
+    if (!workout) return;
+    const dateStr = date.toISOString().slice(0, 10);
+    setRetroDate(dateStr);
+    setRetroWorkout(workout);
+    setRetroExercises(
+      workout.exercises.map((ex) => ({
+        ...ex,
+        sets: ex.sets.map((s) => ({ ...s, weight: "", reps: "" })),
+      }))
+    );
+    setIsRetroLogging(true);
+  }
+
+  function handleRetroSetChange(exerciseIndex, setIndex, field, value) {
+    setRetroExercises((prev) =>
+      prev.map((ex, ei) =>
+        ei !== exerciseIndex
+          ? ex
+          : {
+              ...ex,
+              sets: ex.sets.map((s, si) => (si !== setIndex ? s : { ...s, [field]: value })),
+            }
+      )
+    );
+  }
+
+  function handleSaveRetroSession() {
+    if (!retroWorkout || !retroDate) return;
+    const createdAt = new Date(retroDate + "T12:00:00").toISOString();
+    const updatedHistory = saveWorkoutSession(
+      { ...retroWorkout, exercises: retroExercises },
+      { createdAt, startedAt: createdAt, retroactive: true, skipCheckin: true }
+    );
+    setSessionHistory(updatedHistory);
+    setIsRetroLogging(false);
+    setRetroDate(null);
+    setRetroWorkout(null);
+    setRetroExercises([]);
+    setFeedback(
+      `Sessao retroativa de ${retroWorkout.title} registrada para ${new Date(
+        retroDate + "T12:00:00"
+      ).toLocaleDateString("pt-BR")}.`
+    );
+  }
+
   async function handleRestoreWorkoutPlan(planId) {
     setIsRestoringWorkout(planId);
     try {
@@ -800,6 +904,7 @@ function WorkoutExecutionSection() {
         <TabsList className="dashboard-tabs workout-tabs">
           <TabsTrigger value="treino" className="dashboard-tab-trigger">Treino</TabsTrigger>
           <TabsTrigger value="historico" className="dashboard-tab-trigger">Historico</TabsTrigger>
+          <TabsTrigger value="calendario" className="dashboard-tab-trigger">Calendario</TabsTrigger>
         </TabsList>
 
         <TabsContent value="treino">
@@ -1114,6 +1219,91 @@ function WorkoutExecutionSection() {
             document.body
           )}
 
+          {/* ── Modal de registro retroativo de sessão ──────────────────────── */}
+          {isRetroLogging && retroWorkout && createPortal(
+            <div className="workout-edit-overlay" role="dialog" aria-modal="true">
+              <section className="workout-edit-panel">
+                <div className="workout-edit-panel__header">
+                  <div>
+                    <h3 className="workout-edit-panel__title">Registrar sessao retroativa</h3>
+                    <p className="workout-edit-panel__sub">
+                      {retroWorkout.title} —{" "}
+                      {new Date(retroDate + "T12:00:00").toLocaleDateString("pt-BR")}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="workout-edit-close-btn"
+                    onClick={() => setIsRetroLogging(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="workout-edit-panel__body">
+                  <p className="retro-session-hint">
+                    Registre os pesos e repeticoes realizados nesta sessao. Os dados serao
+                    armazenados no historico e nos dashboards.
+                  </p>
+                  <div className="retro-session-list">
+                    {retroExercises.map((ex, ei) => (
+                      <div key={ex.id} className="retro-session-exercise">
+                        <div className="retro-session-exercise__header">
+                          <strong>{ei + 1}. {ex.name}</strong>
+                          <span>{ex.suggestedSets} × {ex.suggestedReps}</span>
+                        </div>
+                        <div className="retro-session-sets">
+                          {ex.sets.map((set, si) => {
+                            if (set.enabled === false) return null;
+                            return (
+                              <div key={si} className="retro-session-set">
+                                <span className="retro-session-set__label">S{set.set ?? si + 1}</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.5"
+                                  value={set.weight}
+                                  onChange={(e) => handleRetroSetChange(ei, si, "weight", e.target.value)}
+                                  placeholder="kg"
+                                />
+                                <span className="retro-session-set__sep">×</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={set.reps}
+                                  onChange={(e) => handleRetroSetChange(ei, si, "reps", e.target.value)}
+                                  placeholder="reps"
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="workout-edit-panel__footer">
+                  <button
+                    type="button"
+                    className="workout-edit-cancel-btn"
+                    onClick={() => setIsRetroLogging(false)}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    className="workout-edit-save-all-btn"
+                    onClick={handleSaveRetroSession}
+                  >
+                    Salvar sessao
+                  </button>
+                </div>
+              </section>
+            </div>,
+            document.body
+          )}
+
           <article className="workout-protocol-panel" data-tour="workout-exercises">
             <header>
               <div>
@@ -1344,6 +1534,109 @@ function WorkoutExecutionSection() {
               </div>
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="calendario">
+          <div className="workout-calendar glass-panel">
+            {/* Navegação de mês */}
+            <div className="workout-calendar__nav">
+              <button
+                type="button"
+                className="workout-calendar__nav-btn"
+                onClick={() =>
+                  setCalendarDate((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))
+                }
+              >
+                ←
+              </button>
+              <strong className="workout-calendar__nav-title">
+                {calendarDate.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}
+              </strong>
+              <button
+                type="button"
+                className="workout-calendar__nav-btn"
+                onClick={() =>
+                  setCalendarDate((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))
+                }
+              >
+                →
+              </button>
+            </div>
+
+            {/* Grade do calendário */}
+            <div className="workout-calendar__grid">
+              {["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"].map((d) => (
+                <div key={d} className="calendar-weekday">{d}</div>
+              ))}
+
+              {buildCalendarCells(calendarDate.getFullYear(), calendarDate.getMonth()).map(
+                (cell, i) => {
+                  const today = new Date();
+                  const isToday =
+                    !cell.outside &&
+                    cell.date.getDate() === today.getDate() &&
+                    cell.date.getMonth() === today.getMonth() &&
+                    cell.date.getFullYear() === today.getFullYear();
+                  const status = cell.outside
+                    ? null
+                    : getDayStatus(cell.date, plan, sessionHistory);
+                  const dayId = getWeekdayId(cell.date);
+                  const workout = !cell.outside
+                    ? plan.workouts.find((w) => w.id === dayId)
+                    : null;
+                  const isClickable =
+                    !cell.outside &&
+                    status !== null &&
+                    status !== "rest" &&
+                    status !== "planned";
+
+                  return (
+                    <div
+                      key={i}
+                      role={isClickable ? "button" : undefined}
+                      tabIndex={isClickable ? 0 : undefined}
+                      className={[
+                        "calendar-day",
+                        cell.outside ? "calendar-day--outside" : "",
+                        isToday ? "is-today" : "",
+                        status ? `is-${status}` : "",
+                        isClickable ? "is-clickable" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      onClick={() => isClickable && handleCalendarDayClick(cell.date)}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && isClickable && handleCalendarDayClick(cell.date)
+                      }
+                      title={
+                        !cell.outside && workout?.enabled
+                          ? `${workout.title} — ${workout.focus}`
+                          : undefined
+                      }
+                    >
+                      <span className="calendar-day__num">{cell.date.getDate()}</span>
+                      {!cell.outside && status === "done" && (
+                        <span className="calendar-day__dot calendar-day__dot--done" />
+                      )}
+                      {!cell.outside && workout?.enabled && (
+                        <span className="calendar-day__focus">
+                          {workout.shortTitle.slice(0, 3)}
+                        </span>
+                      )}
+                    </div>
+                  );
+                }
+              )}
+            </div>
+
+            {/* Legenda */}
+            <div className="workout-calendar__legend">
+              <span className="legend-item is-done">✓ Realizado</span>
+              <span className="legend-item is-missed">✗ Perdido</span>
+              <span className="legend-item is-planned">○ Previsto</span>
+              <span className="legend-item is-rest">· Descanso</span>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
 

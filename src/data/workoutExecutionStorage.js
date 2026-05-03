@@ -203,18 +203,20 @@ export function loadWorkoutSessionHistory() {
 
 export function saveWorkoutSession(workout, options = {}) {
   const history = loadWorkoutSessionHistory();
-  const createdAt = new Date().toISOString();
+  // Permite data personalizada para sessões retroativas
+  const createdAt = options.createdAt || new Date().toISOString();
   const session = {
     id: `session-${workout.id}-${Date.now()}`,
     workoutId: workout.id,
     workoutTitle: workout.title,
     startedAt: options.startedAt || createdAt,
     createdAt,
+    retroactive: options.retroactive || false,
     exercises: workout.exercises.map((exercise) => ({
       id: exercise.id,
       name: exercise.name,
       sets: exercise.sets.map((set, i) => ({
-        set: set.set ?? (i + 1),   // garante número mesmo que a API não envie
+        set: set.set ?? (i + 1),
         enabled: set.enabled !== false,
         weight: set.weight || "",
         reps: set.reps || "",
@@ -222,23 +224,29 @@ export function saveWorkoutSession(workout, options = {}) {
     })),
   };
 
-  const updated = [session, ...history];
+  const updated = [session, ...history].sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
   localStorage.setItem(WORKOUT_SESSION_HISTORY_KEY, JSON.stringify(updated));
   syncWorkoutSessionToApi(session);
-  saveCheckin(
-    {
-      cadence: "daily",
-      trainingPerformance: "realizado",
-      adherence: "100",
-      protocolAction: "monitor",
-      notes: `${workout.title} finalizado. Sessao registrada pelo treino atual.`,
-      photos: [],
-    },
-    {
-      createdAt,
-      allowMultiplePerDay: true,
-    }
-  );
+
+  // Sessões retroativas não criam check-in automático
+  if (!options.skipCheckin) {
+    saveCheckin(
+      {
+        cadence: "daily",
+        trainingPerformance: "realizado",
+        adherence: "100",
+        protocolAction: "monitor",
+        notes: `${workout.title} finalizado. Sessao registrada pelo treino atual.`,
+        photos: [],
+      },
+      {
+        createdAt,
+        allowMultiplePerDay: true,
+      }
+    );
+  }
   return updated;
 }
 
