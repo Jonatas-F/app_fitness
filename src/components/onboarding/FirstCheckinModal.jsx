@@ -1,19 +1,29 @@
 import { useState } from "react";
 import { saveCheckin, defaultCheckinForm } from "../../data/checkinStorage";
 import { saveRemoteCheckin } from "../../services/checkinService";
+import { personalAvatarCatalog } from "../../data/platformImageCatalog";
 import "./FirstCheckinModal.css";
+
+const PERSONAL_STEP = {
+  id: "personal",
+  title: "Seu Personal Virtual",
+  subtitle: "Escolha o nome e o visual do seu Personal — ele aparece no chat e em cada protocolo.",
+  fields: ["personalName", "personalAvatar"],
+};
 
 const STEPS = {
   basico: [
     { id: "basics",   title: "Seus dados básicos",     subtitle: "Informações essenciais para o Personal Virtual montar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
     { id: "training", title: "Sua disponibilidade",    subtitle: "Marque os dias que você pode ir à academia.", fields: ["trainingAvailableDays"] },
     { id: "goals",    title: "Suas expectativas",       subtitle: "Conte o que espera alcançar — quanto mais detalhes, melhor.", fields: ["notes"] },
+    PERSONAL_STEP,
   ],
   intermediario: [
     { id: "basics",   title: "Seus dados básicos",       subtitle: "Informações essenciais para personalizar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
     { id: "profile",  title: "Perfil de treino",          subtitle: "Experiência, tempo disponível e limitações físicas.", fields: ["trainingExperience","trainingAge","availableMinutes","injuries"] },
     { id: "state",    title: "Seu estado atual",           subtitle: "Como você está hoje e quais dias pode treinar.", fields: ["energy","sleepQuality","trainingAvailableDays"] },
     { id: "goals",    title: "Suas expectativas",          subtitle: "Conte o que espera alcançar com o Shape Certo.", fields: ["notes"] },
+    PERSONAL_STEP,
   ],
   pro: [
     { id: "basics",   title: "Seus dados básicos",         subtitle: "Informações essenciais para personalizar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
@@ -21,6 +31,7 @@ const STEPS = {
     { id: "state",    title: "Seu estado atual",             subtitle: "Sinais de recuperação e disponibilidade semanal.", fields: ["energy","sleepQuality","fatigueLevel","trainingPerformance","trainingAvailableDays"] },
     { id: "nutrition",title: "Alimentação", subtitle: "Restrições e preferências (opcional — pode pular).", fields: ["dietaryRestrictions","foodPreferences"], optional: true },
     { id: "body",     title: "Dados corporais",              subtitle: "Bioimpedância e composição corporal (opcional).", fields: ["bodyFat","leanMass"], optional: true },
+    PERSONAL_STEP,
   ],
 };
 
@@ -68,6 +79,10 @@ const FIELD_DEFS = {
   notes:              { label: "Expectativas e contexto", type: "textarea", required: false,
                         placeholder: "Conte o que espera alcançar, sua rotina atual, qualquer informação relevante...",
                         hint: "Quanto mais você descrever, mais preciso o protocolo inicial" },
+  personalName:       { label: "Nome do Personal Virtual", type: "text", required: false,
+                        placeholder: "Ex: Alex, Marina, Coach, Lucas...",
+                        hint: "Deixe em branco para usar 'Personal Virtual'" },
+  personalAvatar:     { label: "Avatar", type: "avatarpicker", required: false },
 };
 
 // Pré-inicializa selects que não têm opção vazia como primeiro item
@@ -112,9 +127,23 @@ export default function FirstCheckinModal({ planId, onComplete }) {
   async function handleFinish() {
     setSaving(true);
     try {
+      // Salvar check-in
       const payload = { ...defaultCheckinForm, ...form, cadence: "weekly" };
       const updated = saveCheckin(payload, { createdAt: new Date().toISOString() });
       saveRemoteCheckin(updated[0]).catch(() => {});
+
+      // Salvar avatar e nome do Personal Virtual nas configurações
+      const SETTINGS_KEY = "shapeCertoSettings";
+      const existing = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+        ...existing,
+        personal: {
+          ...(existing.personal || {}),
+          name: (form.personalName || "").trim() || "Personal Virtual",
+          avatarId: form.personalAvatar || "default-personal",
+        },
+      }));
+
       onComplete();
     } finally {
       setSaving(false);
@@ -166,6 +195,29 @@ export default function FirstCheckinModal({ planId, onComplete }) {
           {def.hint && <p className="ob-field__hint">{def.hint}</p>}
           <textarea className="ob-field__control" rows={3} placeholder={def.placeholder ?? ""}
             value={form[key] ?? ""} onChange={e => handleChange(key, e.target.value)} />
+        </div>
+      );
+    }
+    if (def.type === "avatarpicker") {
+      const selected = form[key] || "default-personal";
+      return (
+        <div key={key} className="ob-field">
+          <label className="ob-field__label">{def.label}</label>
+          <div className="ob-avatar-picker">
+            {personalAvatarCatalog.map(avatar => (
+              <button
+                key={avatar.id}
+                type="button"
+                className={`ob-avatar-picker__item${selected === avatar.id ? " is-active" : ""}`}
+                onClick={() => handleChange(key, avatar.id)}
+                title={avatar.label}
+                aria-label={`Selecionar avatar ${avatar.label}`}
+                aria-pressed={selected === avatar.id}
+              >
+                <img src={avatar.url} alt={avatar.label} className="ob-avatar-picker__img" />
+              </button>
+            ))}
+          </div>
         </div>
       );
     }
