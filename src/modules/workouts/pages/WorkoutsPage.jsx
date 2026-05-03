@@ -951,12 +951,6 @@ function WorkoutExecutionSection() {
                         </div>
                       </div>
 
-                      <p className="set-log-locked">
-                        {isSessionActive
-                          ? "Use o painel de sessao acima para registrar a serie atual."
-                          : "Clique em Iniciar sessao para registrar series, cargas e repeticoes."}
-                      </p>
-
                       <label className="exercise-notes">
                         Anotacoes
                         <textarea
