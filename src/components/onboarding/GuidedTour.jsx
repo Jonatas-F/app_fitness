@@ -274,21 +274,37 @@ export default function GuidedTour({ onComplete }) {
       const expandDelay = step.clickTarget ? 380 : 0;
 
       function measureAndShow() {
-        // Scroll INSTANTÂNEO após a expansão para trazer o card inteiro para a tela
-        el.scrollIntoView({ behavior: "instant", block: "center", inline: "nearest" });
+        // Para elementos altos (card expandido), "start" garante que o topo
+        // fica visível; para elementos normais "center" é preferível.
+        const approxH = el.getBoundingClientRect().height;
+        const scrollBlock = approxH > window.innerHeight * 0.55 ? "start" : "center";
+        el.scrollIntoView({ behavior: "instant", block: scrollBlock, inline: "nearest" });
 
         // Dois rAF garantem que o browser pintou o frame pós-scroll
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             const r = el.getBoundingClientRect();
-            const inView =
+            // Verifica apenas se o elemento está *parcialmente* no viewport
+            // (não exige que todo ele caiba — cards expandidos podem ser maiores que a tela)
+            const partiallyVisible =
               r.width > 0 &&
               r.height > 0 &&
-              r.top >= 0 &&
-              r.bottom <= window.innerHeight + 1;
+              r.top  < window.innerHeight - 40 &&
+              r.bottom > 40;
 
-            if (inView) {
-              setRect(r);
+            if (partiallyVisible) {
+              // Clipa o rect para que o spotlight não saia do viewport
+              const clipped = {
+                left:   Math.max(0, r.left),
+                top:    Math.max(0, r.top),
+                right:  Math.min(window.innerWidth,  r.right),
+                bottom: Math.min(window.innerHeight, r.bottom),
+                width:  0,
+                height: 0,
+              };
+              clipped.width  = clipped.right  - clipped.left;
+              clipped.height = clipped.bottom - clipped.top;
+              setRect(clipped);
               el.classList.add("tour-target--active");
               activeElRef.current = el;
             }
