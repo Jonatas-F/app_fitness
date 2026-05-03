@@ -1048,6 +1048,15 @@
   resize: vertical;
 }
 
+.feature-locked-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.38);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
 .feedback-request-button {
   width: fit-content;
   min-height: 38px;

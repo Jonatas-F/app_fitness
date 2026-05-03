@@ -25,6 +25,15 @@ import {
   loadActiveSession,
   clearActiveSession,
 } from "../../../data/workoutExecutionStorage";
+import { getStoredApiUser } from "../../../services/api/client";
+
+const ADMIN_PLAN_OVERRIDE_KEY = "shapeCertoAdminPlanOverride";
+
+function getActivePlanId() {
+  const override = localStorage.getItem(ADMIN_PLAN_OVERRIDE_KEY);
+  if (override) return override;
+  return getStoredApiUser()?.plan_type || "intermediario";
+}
 import "./WorkoutsPage.css";
 
 function getWorkoutView(pathname, workoutId) {
@@ -195,6 +204,7 @@ function WorkoutLoadingSkeleton() {
 
 function WorkoutExecutionSection() {
   const [activeTab, setActiveTab] = useState("treino");
+  const isPro = getActivePlanId() === "pro";
   const [workoutState, setWorkoutState] = useState(() => getInitialWorkoutState());
   const [sessionHistory, setSessionHistory] = useState(() => loadWorkoutSessionHistory());
   const [workoutHistory, setWorkoutHistory] = useState([]);
@@ -937,15 +947,19 @@ function WorkoutExecutionSection() {
                                 }
                                 placeholder="Feedback tecnico gerado pelo Personal Virtual apos analisar o video ou as anotacoes"
                               />
-                              <button
-                                type="button"
-                                className="feedback-request-button"
-                                onClick={() =>
-                                  handleRequestExerciseFeedback(selectedWorkout.id, exercise.id, "video")
-                                }
-                              >
-                                Solicitar feedback do video
-                              </button>
+                              {isPro ? (
+                                <button
+                                  type="button"
+                                  className="feedback-request-button"
+                                  onClick={() =>
+                                    handleRequestExerciseFeedback(selectedWorkout.id, exercise.id, "video")
+                                  }
+                                >
+                                  Solicitar feedback do video
+                                </button>
+                              ) : (
+                                <span className="feature-locked-hint">🔒 Disponível no plano Pro</span>
+                              )}
                             </label>
                           </div>
                         </div>
