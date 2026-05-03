@@ -887,20 +887,22 @@ function WorkoutExecutionSection() {
                       >
                         {expandedExerciseIndex === exerciseIndex ? "Recolher" : "Ver detalhes"}
                       </button>
-                      <label className="exercise-video-upload">
-                        Enviar video
-                        <input
-                          type="file"
-                          accept="video/*"
-                          onChange={(event) =>
-                            handleVideoUpload(
-                              selectedWorkout.id,
-                              exercise.id,
-                              event.target.files?.[0]
-                            )
-                          }
-                        />
-                      </label>
+                      {isPro && (
+                        <label className="exercise-video-upload">
+                          Enviar video
+                          <input
+                            type="file"
+                            accept="video/*"
+                            onChange={(event) =>
+                              handleVideoUpload(
+                                selectedWorkout.id,
+                                exercise.id,
+                                event.target.files?.[0]
+                              )
+                            }
+                          />
+                        </label>
+                      )}
                     </div>
                   </div>
 
@@ -947,7 +949,7 @@ function WorkoutExecutionSection() {
                                 }
                                 placeholder="Feedback tecnico gerado pelo Personal Virtual apos analisar o video ou as anotacoes"
                               />
-                              {isPro ? (
+                              {isPro && (
                                 <button
                                   type="button"
                                   className="feedback-request-button"
@@ -957,8 +959,6 @@ function WorkoutExecutionSection() {
                                 >
                                   Solicitar feedback do video
                                 </button>
-                              ) : (
-                                <span className="feature-locked-hint">🔒 Disponível no plano Pro</span>
                               )}
                             </label>
                           </div>

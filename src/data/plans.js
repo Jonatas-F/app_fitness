@@ -73,7 +73,7 @@ export const featureMatrix = [
   {
     name: "Upload de videos de exercicios",
     category: "IA",
-    plans: ["intermediario", "pro"],
+    plans: ["pro"],
   },
 
   // ── Chat ─────────────────────────────────────────────────────
