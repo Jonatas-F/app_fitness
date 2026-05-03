@@ -1951,30 +1951,31 @@ export default function CheckinsPage() {
               />
             </Field>
 
-            {canDoPhotos && <div className={`photo-checkin-panel${submitAttempted && canDoPhotos && selectedPhotoCount === 0 ? " is-invalid" : ""}`}>
-              <div className="photo-checkin-panel__header">
-                <div>
-                  <h3>Fotos de progresso obrigatorias</h3>
-                  <p>
-                    Envie ate {maxPhotos === Infinity ? "cinco" : maxPhotos} fotos de corpo inteiro seguindo as poses
-                    marcadas. Use o mesmo local, luz e distancia sempre que
-                    possivel.
-                  </p>
+            {canDoPhotos && (
+              <div className={`photo-checkin-panel${submitAttempted && selectedPhotoCount === 0 ? " is-invalid" : ""}`}>
+                <div className="photo-checkin-panel__header">
+                  <div>
+                    <h3>Fotos de progresso obrigatorias</h3>
+                    <p>
+                      Envie fotos de corpo inteiro seguindo as poses marcadas.
+                      Use o mesmo local, luz e distancia sempre que possivel.
+                    </p>
+                  </div>
+                  <span>{selectedPhotoCount}/{photoPoseSlots.length} fotos</span>
                 </div>
-                <span>{selectedPhotoCount}/{maxPhotos === Infinity ? 5 : maxPhotos} fotos</span>
-              </div>
 
-              <div className="photo-pose-grid">
-                {photoPoseSlots.slice(0, maxPhotos === Infinity ? photoPoseSlots.length : maxPhotos).map((slot) => (
-                  <PhotoPoseCard
-                    key={slot.id}
-                    slot={slot}
-                    fileName={photoUploads[slot.id]?.fileName}
-                    onChange={handlePhotoChange}
-                  />
-                ))}
+                <div className="photo-pose-grid">
+                  {photoPoseSlots.map((slot) => (
+                    <PhotoPoseCard
+                      key={slot.id}
+                      slot={slot}
+                      fileName={photoUploads[slot.id]?.fileName}
+                      onChange={handlePhotoChange}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>}
+            )}
 
             {/* Painel de atualização com IA após salvar */}
             <div className="checkins-ai-update-panel glass-panel">
