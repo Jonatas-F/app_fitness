@@ -1081,10 +1081,20 @@ export default function CheckinsPage() {
     setProtocolUpdateResult(null);
     const results = { workout: null, diet: null, errors: [] };
 
+    // Timeout de 90 segundos por chamada
+    function withTimeout(promise, ms = 90_000) {
+      return Promise.race([
+        promise,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Tempo limite excedido (90s). Tente novamente.")), ms)
+        ),
+      ]);
+    }
+
     try {
       if (updateWorkoutWithAi) {
         try {
-          const res = await generateWorkoutWithAi({ persist: true });
+          const res = await withTimeout(generateWorkoutWithAi({ persist: true }));
           if (res?.protocol) {
             await hydrateWorkoutExecutionFromApi();
             results.workout = res.protocol?.title || "Protocolo de treino atualizado";
@@ -1096,7 +1106,7 @@ export default function CheckinsPage() {
 
       if (updateDietWithAi) {
         try {
-          const res = await generateDietWithAi({ persist: true });
+          const res = await withTimeout(generateDietWithAi({ persist: true }));
           if (res?.protocol) {
             await hydrateDietProtocolFromApi();
             results.diet = res.protocol?.title || "Protocolo de dieta atualizado";
@@ -1295,16 +1305,14 @@ export default function CheckinsPage() {
                   A IA vai analisar todos os dados deste check-in e gerar novos protocolos.
                 </p>
               </div>
-              {!isGeneratingProtocols && (
-                <button
-                  type="button"
-                  className="checkins-modal__close"
-                  onClick={() => { setShowAiModal(false); setProtocolUpdateResult(null); }}
-                  aria-label="Fechar"
-                >
-                  x
-                </button>
-              )}
+              <button
+                type="button"
+                className="checkins-modal__close"
+                onClick={() => { setShowAiModal(false); setProtocolUpdateResult(null); setIsGeneratingProtocols(false); }}
+                aria-label="Fechar"
+              >
+                x
+              </button>
             </div>
 
             {!protocolUpdateResult && (
