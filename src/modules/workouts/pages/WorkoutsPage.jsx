@@ -827,15 +827,19 @@ function WorkoutExecutionSection() {
             <div className="exercise-list">
               <div className="workout-history-panel">{renderPreviousSession()}</div>
 
-              {selectedWorkout.exercises.map((exercise, exerciseIndex) => (
+              {selectedWorkout.exercises.map((exercise, exerciseIndex) => {
+                const isExerciseDone = exercise.sets.some(
+                  (set) => set.enabled !== false && (set.weight || set.reps)
+                );
+                return (
                 <section
                   key={exercise.id}
-                  className={`exercise-card ${
-                    expandedExerciseIndex === exerciseIndex ? "is-selected" : ""
-                  }`}
+                  className={`exercise-card${expandedExerciseIndex === exerciseIndex ? " is-selected" : ""}${isExerciseDone ? " is-completed" : ""}`}
                 >
                   <div className="exercise-card__top">
-                    <span className="exercise-card__index">{exerciseIndex + 1}</span>
+                    <span className={`exercise-card__index${isExerciseDone ? " is-completed" : ""}`}>
+                      {isExerciseDone ? "✓" : exerciseIndex + 1}
+                    </span>
                     <div className="exercise-card__main">
                       <h4>{exercise.name}</h4>
                       <span>
@@ -986,7 +990,8 @@ function WorkoutExecutionSection() {
                     </>
                   ) : null}
                 </section>
-              ))}
+                );
+              })}
             </div>
           </article>
         </TabsContent>

@@ -920,6 +920,18 @@
   border-color: rgba(255, 46, 46, 0.26);
 }
 
+.exercise-card.is-completed {
+  border-color: rgba(100, 220, 130, 0.26);
+  background: linear-gradient(135deg, rgba(100, 220, 130, 0.07), rgba(255, 255, 255, 0.03));
+}
+
+.exercise-card__index.is-completed {
+  color: rgba(100, 220, 130, 0.92);
+  background: rgba(100, 220, 130, 0.1);
+  border-color: rgba(100, 220, 130, 0.32);
+  font-size: 1rem;
+}
+
 .exercise-card__actions {
   display: flex;
   flex-wrap: wrap;
