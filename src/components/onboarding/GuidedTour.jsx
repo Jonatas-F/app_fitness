@@ -228,16 +228,29 @@ export default function GuidedTour({ onComplete }) {
         return;
       }
 
-      el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+      // Scroll INSTANTÂNEO (síncrono) para garantir que o elemento está no
+      // viewport ANTES de medir o rect. behavior:"smooth" é assíncrono e
+      // causa race condition com getBoundingClientRect().
+      el.scrollIntoView({ behavior: "instant", block: "center", inline: "nearest" });
 
-      // Pequeno delay extra para o scroll terminar
-      setTimeout(() => {
-        const r = el.getBoundingClientRect();
-        setRect(r);
-        el.classList.add("tour-target--active");
-        activeElRef.current = el;
-        setVisible(true);
-      }, 160);
+      // Dois rAF garantem que o browser pintou o frame pós-scroll
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const r = el.getBoundingClientRect();
+          const inView =
+            r.width > 0 &&
+            r.height > 0 &&
+            r.top >= 0 &&
+            r.bottom <= window.innerHeight + 1;
+
+          if (inView) {
+            setRect(r);
+            el.classList.add("tour-target--active");
+            activeElRef.current = el;
+          }
+          setVisible(true);
+        });
+      });
     }, DELAY);
 
     return () => clearTimeout(timer);

@@ -2106,6 +2106,7 @@ export default function CheckinsPage() {
                 />
               </Field>
 
+              <div data-tour="checkin-weight">
               <Field label="Peso atual" required invalid={submitAttempted && !hasValue(formData.weight)}>
                 <input
                   name="weight"
@@ -2115,6 +2116,7 @@ export default function CheckinsPage() {
                   placeholder="Ex.: 84.6 kg"
                 />
               </Field>
+              </div>
 
               <Field label="Fome" required invalid={submitAttempted && !hasValue(formData.hunger)}>
                 <select name="hunger" value={formData.hunger} onChange={handleChange}>
