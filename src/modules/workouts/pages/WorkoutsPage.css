@@ -950,6 +950,392 @@
   font-weight: 800;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   Modal de edição de treino
+   ══════════════════════════════════════════════════════════════ */
+
+.workout-edit-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.74);
+  backdrop-filter: blur(10px);
+  animation: liveSessionFade 180ms ease both;
+}
+
+.workout-edit-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(640px, 100%);
+  max-height: calc(100svh - 40px);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(8, 8, 8, 0.98), rgba(20, 20, 20, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.44);
+  overflow: hidden;
+  animation: liveSessionEnter 220ms ease both;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.workout-edit-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.workout-edit-panel__title {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+}
+
+.workout-edit-panel__sub {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.52);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.workout-edit-close-btn {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  min-height: 34px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.78rem;
+  flex-shrink: 0;
+}
+
+/* ── Body (lista + picker, scrollável) ─────────────────── */
+.workout-edit-panel__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+/* ── Linhas de exercício ────────────────────────────────── */
+.workout-edit-list {
+  display: grid;
+  gap: 6px;
+}
+
+.workout-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: border-color 160ms ease;
+}
+
+.workout-edit-row.is-picking {
+  border-color: rgba(255, 200, 50, 0.3);
+  background: rgba(255, 200, 50, 0.04);
+}
+
+.workout-edit-row__index {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.workout-edit-row__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.workout-edit-row__info strong {
+  display: block;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workout-edit-row__info span {
+  display: block;
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.46);
+  margin-top: 2px;
+}
+
+.workout-edit-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.workout-edit-reorder-btn {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  font-size: 0.76rem;
+  transition: background 140ms ease;
+}
+
+.workout-edit-reorder-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.workout-edit-reorder-btn:disabled {
+  opacity: 0.24;
+  cursor: not-allowed;
+}
+
+.workout-edit-replace-btn {
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.76rem;
+  font-weight: 800;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.workout-edit-replace-btn:hover,
+.workout-edit-replace-btn.is-active {
+  color: rgba(255, 210, 60, 0.95);
+  background: rgba(255, 210, 60, 0.1);
+  border-color: rgba(255, 210, 60, 0.3);
+}
+
+.workout-edit-remove-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  color: rgba(255, 100, 100, 0.7);
+  background: rgba(255, 80, 80, 0.05);
+  border: 1px solid rgba(255, 80, 80, 0.14);
+  font-size: 0.74rem;
+  transition: background 140ms ease;
+}
+
+.workout-edit-remove-btn:hover {
+  background: rgba(255, 80, 80, 0.12);
+  color: rgba(255, 120, 120, 0.95);
+  border-color: rgba(255, 80, 80, 0.28);
+}
+
+/* ── Botão adicionar exercício ──────────────────────────── */
+.workout-edit-add-btn {
+  justify-self: start;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  font-size: 0.84rem;
+  font-weight: 800;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.workout-edit-add-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* ── Picker de exercícios ────────────────────────────────── */
+.exercise-picker {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.exercise-picker__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.exercise-picker__header span {
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: rgba(255, 210, 60, 0.88);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.exercise-picker__header button {
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.58);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.exercise-picker__search {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  outline: none;
+  font-size: 0.88rem;
+}
+
+.exercise-picker__search:focus {
+  border-color: rgba(255, 210, 60, 0.38);
+  box-shadow: 0 0 0 3px rgba(255, 210, 60, 0.08);
+}
+
+.exercise-picker__list {
+  display: grid;
+  gap: 3px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.exercise-picker__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.84);
+  background: transparent;
+  border: 1px solid transparent;
+  text-align: left;
+  font-size: 0.86rem;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.exercise-picker__item:hover {
+  background: rgba(255, 255, 255, 0.065);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.exercise-picker__item em {
+  font-style: normal;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.38);
+  flex-shrink: 0;
+}
+
+/* ── Footer ─────────────────────────────────────────────── */
+.workout-edit-panel__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 20px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.workout-edit-cancel-btn {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.58);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-weight: 800;
+  margin-right: auto;
+}
+
+.workout-edit-save-day-btn {
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-weight: 900;
+  font-size: 0.86rem;
+}
+
+.workout-edit-save-all-btn {
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: 8px;
+  color: #fff;
+  background: linear-gradient(135deg, #ff2e2e, #e50914);
+  border: 1px solid rgba(255, 46, 46, 0.55);
+  box-shadow: 0 10px 26px rgba(255, 46, 46, 0.22);
+  font-weight: 900;
+  font-size: 0.86rem;
+  transition: transform 160ms ease;
+}
+
+.workout-edit-save-all-btn:hover {
+  transform: translateY(-1px);
+}
+
+/* ── Mobile ─────────────────────────────────────────────── */
+@media (max-width: 760px) {
+  .workout-edit-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .workout-edit-panel {
+    width: 100%;
+    border-radius: 20px 20px 0 0;
+    max-height: calc(100svh - env(safe-area-inset-bottom, 0px) - 8px);
+  }
+
+  .workout-edit-panel__footer {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .workout-edit-cancel-btn,
+  .workout-edit-save-day-btn,
+  .workout-edit-save-all-btn {
+    width: 100%;
+    margin-right: 0;
+  }
+
+  .workout-edit-row__actions {
+    gap: 3px;
+  }
+}
+
 @keyframes liveSessionFade {
   from {
     opacity: 0;

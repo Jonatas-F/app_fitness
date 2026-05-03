@@ -34,6 +34,40 @@ function getActivePlanId() {
   if (override) return override;
   return getStoredApiUser()?.plan_type || "intermediario";
 }
+
+// ── Base de exercícios disponíveis para edição ───────────────────────────────
+const EXERCISE_BASE = [
+  { group: "Peito",          exercises: ["Supino maquina", "Chest press", "Crucifixo maquina", "Pec deck", "Cable crossover"] },
+  { group: "Costas",         exercises: ["Puxada alta", "Remada baixa", "Pullover machine", "Seated row", "Remada cavalinho"] },
+  { group: "Biceps",         exercises: ["Biceps curl machine", "Rosca direta", "Rosca concentrada", "Rosca martelo machine"] },
+  { group: "Triceps",        exercises: ["Triceps extension machine", "Triceps pulley", "Mergulho maquina", "Triceps testa"] },
+  { group: "Ombros",         exercises: ["Desenvolvimento maquina", "Elevacao lateral machine", "Face pull", "Shrug machine", "Reverse fly machine"] },
+  { group: "Pernas",         exercises: ["Leg press 45", "Leg press horizontal", "Cadeira extensora", "Mesa flexora", "Agachamento maquina", "Hack squat", "Panturrilha sentada"] },
+  { group: "Gluteos",        exercises: ["Hip thrust machine", "Abdutora", "Adutora", "Gluteo maquina"] },
+  { group: "Core",           exercises: ["Abdominal crunch machine", "Rotary torso", "Roman chair", "Back extension machine"] },
+  { group: "Condicionamento",exercises: ["Functional trainer", "Esteira", "Bike ergometrica", "Remo ergometro"] },
+];
+
+function createEditExercise(workoutId, name, sourceEx = null) {
+  const prescribedSets = Number(sourceEx?.suggestedSets || 3);
+  return {
+    id: `${workoutId}-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`,
+    name,
+    suggestedSets:      sourceEx?.suggestedSets || "3",
+    suggestedReps:      sourceEx?.suggestedReps || "8-12",
+    restSeconds:        sourceEx?.restSeconds    || 90,
+    executionVideoUrl:  "",
+    userVideoFileName:  "",
+    aiFeedback:         "",
+    notes:              sourceEx?.notes          || "",
+    sets: Array.from({ length: 5 }, (_, i) => ({
+      set:     i + 1,
+      enabled: i < prescribedSets,
+      weight:  "",
+      reps:    "",
+    })),
+  };
+}
 import "./WorkoutsPage.css";
 
 function getWorkoutView(pathname, workoutId) {
@@ -206,6 +240,11 @@ function WorkoutExecutionSection() {
   const [activeTab, setActiveTab] = useState("treino");
   const isPro = getActivePlanId() === "pro";
   const [workoutState, setWorkoutState] = useState(() => getInitialWorkoutState());
+  const [isEditingWorkout, setIsEditingWorkout] = useState(false);
+  const [editExercises, setEditExercises] = useState([]);
+  const [editReplacements, setEditReplacements] = useState({});
+  const [pickerMode, setPickerMode] = useState(null);
+  const [pickerSearch, setPickerSearch] = useState("");
   const [sessionHistory, setSessionHistory] = useState(() => loadWorkoutSessionHistory());
   const [workoutHistory, setWorkoutHistory] = useState([]);
   const [isRestoringWorkout, setIsRestoringWorkout] = useState(null);
@@ -493,6 +532,95 @@ function WorkoutExecutionSection() {
     });
   }
 
+  // ── Edição de treino ────────────────────────────────────────────────────────
+
+  function handleOpenEditWorkout() {
+    setEditExercises(
+      selectedWorkout.exercises.map((ex) => ({ ...ex, sets: ex.sets.map((s) => ({ ...s })) }))
+    );
+    setEditReplacements({});
+    setPickerMode(null);
+    setPickerSearch("");
+    setIsEditingWorkout(true);
+  }
+
+  function handleMoveEditExercise(idx, dir) {
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= editExercises.length) return;
+    const arr = [...editExercises];
+    [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
+    setEditExercises(arr);
+  }
+
+  function handleRemoveEditExercise(idx) {
+    setEditExercises((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function handlePickExercise(name) {
+    if (pickerMode?.mode === "replace") {
+      const idx = pickerMode.index;
+      const originalEx = editExercises[idx];
+      const newEx = createEditExercise(selectedWorkout.id, name, originalEx);
+      setEditReplacements((prev) => ({ ...prev, [originalEx.id]: name }));
+      setEditExercises((prev) => prev.map((ex, i) => (i === idx ? newEx : ex)));
+    } else {
+      setEditExercises((prev) => [...prev, createEditExercise(selectedWorkout.id, name)]);
+    }
+    setPickerMode(null);
+    setPickerSearch("");
+  }
+
+  function handleSaveEditedWorkout(scope) {
+    if (scope === "day") {
+      updatePlan({
+        ...plan,
+        workouts: plan.workouts.map((w) =>
+          w.id === selectedWorkout.id ? { ...w, exercises: editExercises } : w
+        ),
+      });
+    } else {
+      // Propaga substituições e remoções para todos os outros treinos
+      const origById = new Map(selectedWorkout.exercises.map((ex) => [ex.id, ex]));
+
+      // mapa oldName → newName para substituições
+      const nameReplacements = {};
+      Object.entries(editReplacements).forEach(([origId, newName]) => {
+        const origEx = origById.get(origId);
+        if (origEx) nameReplacements[origEx.name] = newName;
+      });
+
+      // nomes dos exercícios removidos nesta edição
+      const editIds = new Set(editExercises.map((ex) => ex.id));
+      const removedNames = new Set(
+        selectedWorkout.exercises
+          .filter((ex) => !editIds.has(ex.id))
+          .map((ex) => ex.name)
+      );
+
+      updatePlan({
+        ...plan,
+        workouts: plan.workouts.map((w) => {
+          if (w.id === selectedWorkout.id) return { ...w, exercises: editExercises };
+          const updated = w.exercises
+            .filter((ex) => !removedNames.has(ex.name))
+            .map((ex) => {
+              if (nameReplacements[ex.name]) {
+                return createEditExercise(w.id, nameReplacements[ex.name], ex);
+              }
+              return ex;
+            });
+          return { ...w, exercises: updated };
+        }),
+      });
+    }
+
+    setIsEditingWorkout(false);
+    setEditExercises([]);
+    setEditReplacements({});
+    setPickerMode(null);
+    setFeedback("Treino atualizado com sucesso.");
+  }
+
   async function handleRestoreWorkoutPlan(planId) {
     setIsRestoringWorkout(planId);
     try {
@@ -597,7 +725,7 @@ function WorkoutExecutionSection() {
         </div>
 
         <div className="workout-header-actions">
-          <button type="button" className="workout-edit-button">
+          <button type="button" className="workout-edit-button" onClick={handleOpenEditWorkout}>
             Editar treino
           </button>
           <button
@@ -823,6 +951,159 @@ function WorkoutExecutionSection() {
             document.body
           ) : null}
 
+          {/* ── Modal de edição de treino ──────────────────────────────────── */}
+          {isEditingWorkout && createPortal(
+            <div className="workout-edit-overlay" role="dialog" aria-modal="true">
+              <section className="workout-edit-panel">
+                {/* Header */}
+                <div className="workout-edit-panel__header">
+                  <div>
+                    <h3 className="workout-edit-panel__title">Editar treino</h3>
+                    <p className="workout-edit-panel__sub">{selectedWorkout.title} — {selectedWorkout.focus}</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="workout-edit-close-btn"
+                    onClick={() => setIsEditingWorkout(false)}
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Body: lista + picker */}
+                <div className="workout-edit-panel__body">
+                  <div className="workout-edit-list">
+                    {editExercises.map((ex, idx) => (
+                      <div
+                        key={ex.id}
+                        className={`workout-edit-row${pickerMode?.mode === "replace" && pickerMode.index === idx ? " is-picking" : ""}`}
+                      >
+                        <span className="workout-edit-row__index">{idx + 1}</span>
+                        <div className="workout-edit-row__info">
+                          <strong>{ex.name}</strong>
+                          <span>{ex.suggestedSets} × {ex.suggestedReps} · descanso {formatTimer(ex.restSeconds || 90)}</span>
+                        </div>
+                        <div className="workout-edit-row__actions">
+                          <button
+                            type="button"
+                            className="workout-edit-reorder-btn"
+                            disabled={idx === 0}
+                            title="Mover para cima"
+                            onClick={() => handleMoveEditExercise(idx, -1)}
+                          >↑</button>
+                          <button
+                            type="button"
+                            className="workout-edit-reorder-btn"
+                            disabled={idx === editExercises.length - 1}
+                            title="Mover para baixo"
+                            onClick={() => handleMoveEditExercise(idx, 1)}
+                          >↓</button>
+                          <button
+                            type="button"
+                            className={`workout-edit-replace-btn${pickerMode?.mode === "replace" && pickerMode.index === idx ? " is-active" : ""}`}
+                            onClick={() =>
+                              setPickerMode(
+                                pickerMode?.mode === "replace" && pickerMode.index === idx
+                                  ? null
+                                  : { mode: "replace", index: idx }
+                              )
+                            }
+                          >
+                            Substituir
+                          </button>
+                          <button
+                            type="button"
+                            className="workout-edit-remove-btn"
+                            title="Remover"
+                            onClick={() => handleRemoveEditExercise(idx)}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Picker de exercícios ou botão de adicionar */}
+                  {pickerMode ? (
+                    <div className="exercise-picker">
+                      <div className="exercise-picker__header">
+                        <span>
+                          {pickerMode.mode === "replace"
+                            ? `Substituir: ${editExercises[pickerMode.index]?.name}`
+                            : "Adicionar exercício"}
+                        </span>
+                        <button type="button" onClick={() => { setPickerMode(null); setPickerSearch(""); }}>
+                          Cancelar
+                        </button>
+                      </div>
+                      <input
+                        className="exercise-picker__search"
+                        value={pickerSearch}
+                        onChange={(e) => setPickerSearch(e.target.value)}
+                        placeholder="Buscar exercício..."
+                        autoFocus
+                      />
+                      <div className="exercise-picker__list">
+                        {EXERCISE_BASE
+                          .flatMap((g) => g.exercises.map((name) => ({ name, group: g.group })))
+                          .filter(({ name }) =>
+                            !pickerSearch ||
+                            name.toLowerCase().includes(pickerSearch.toLowerCase())
+                          )
+                          .map(({ name, group }) => (
+                            <button
+                              key={name}
+                              type="button"
+                              className="exercise-picker__item"
+                              onClick={() => handlePickExercise(name)}
+                            >
+                              <span>{name}</span>
+                              <em>{group}</em>
+                            </button>
+                          ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="workout-edit-add-btn"
+                      onClick={() => setPickerMode({ mode: "add" })}
+                    >
+                      + Adicionar exercício
+                    </button>
+                  )}
+                </div>
+
+                {/* Footer: escopo de salvamento */}
+                <div className="workout-edit-panel__footer">
+                  <button
+                    type="button"
+                    className="workout-edit-cancel-btn"
+                    onClick={() => setIsEditingWorkout(false)}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    className="workout-edit-save-day-btn"
+                    onClick={() => handleSaveEditedWorkout("day")}
+                  >
+                    Salvar neste dia
+                  </button>
+                  <button
+                    type="button"
+                    className="workout-edit-save-all-btn"
+                    onClick={() => handleSaveEditedWorkout("all")}
+                  >
+                    Salvar em todos os dias
+                  </button>
+                </div>
+              </section>
+            </div>,
+            document.body
+          )}
+
           <article className="workout-protocol-panel" data-tour="workout-exercises">
             <header>
               <div>
@@ -831,7 +1112,6 @@ function WorkoutExecutionSection() {
                   {completedExercises}/{selectedWorkout.exercises.length} completos - marque conforme avanca
                 </p>
               </div>
-              <button type="button">Adicionar exercicio</button>
             </header>
 
             <div className="exercise-list">
