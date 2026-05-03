@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useLocation, useParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StatusPill from "@/components/ui/StatusPill";
@@ -551,7 +552,7 @@ function WorkoutExecutionSection() {
         </TabsList>
 
         <TabsContent value="treino">
-          {isSessionActive && selectedExercise ? (
+          {isSessionActive && selectedExercise ? createPortal(
             <div className="live-session-overlay" role="dialog" aria-modal="true">
               <section className="live-session-panel">
                 <div className="live-session-panel__top">
@@ -645,7 +646,8 @@ function WorkoutExecutionSection() {
                   </button>
                 </div>
               </section>
-            </div>
+            </div>,
+            document.body
           ) : null}
 
           <article className="workout-protocol-panel" data-tour="workout-exercises">
