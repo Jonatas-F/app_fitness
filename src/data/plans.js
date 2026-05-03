@@ -85,7 +85,7 @@ export const featureMatrix = [
   {
     name: "Historico de conversas",
     category: "Chat",
-    plans: { basico: "Sessao atual", intermediario: "Expandido", pro: "Completo" },
+    plans: { basico: "1 sessao", intermediario: "3 meses", pro: "Ilimitado" },
   },
 
   // ── Dashboard ────────────────────────────────────────────────
