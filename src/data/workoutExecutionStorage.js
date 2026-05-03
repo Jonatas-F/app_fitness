@@ -2,8 +2,9 @@ import { loadCheckins, saveCheckin } from "./checkinStorage";
 import { apiEndpoints } from "../services/api/endpoints";
 import { apiRequest, getApiToken, isLocalApiConfigured } from "../services/api/client";
 
-const WORKOUT_EXECUTION_KEY = "shapeCertoWorkoutExecution";
-const WORKOUT_SESSION_HISTORY_KEY = "shapeCertoWorkoutSessionHistory";
+const WORKOUT_EXECUTION_KEY        = "shapeCertoWorkoutExecution";
+const WORKOUT_SESSION_HISTORY_KEY  = "shapeCertoWorkoutSessionHistory";
+const ACTIVE_SESSION_KEY           = "shapeCertoActiveSession";
 
 const weekDayWorkouts = [
   {
@@ -243,6 +244,22 @@ export function saveWorkoutSession(workout, options = {}) {
 
 export function getPreviousWorkoutSession(workoutId) {
   return loadWorkoutSessionHistory().find((session) => session.workoutId === workoutId);
+}
+
+// ── Sessão ao vivo: estado persistido para retomada ──────────────────────────
+
+export function saveActiveSession(state) {
+  localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify({ ...state, savedAt: new Date().toISOString() }));
+}
+
+export function loadActiveSession(workoutId) {
+  const parsed = safeParse(localStorage.getItem(ACTIVE_SESSION_KEY), null);
+  if (!parsed || parsed.workoutId !== workoutId) return null;
+  return parsed;
+}
+
+export function clearActiveSession() {
+  localStorage.removeItem(ACTIVE_SESSION_KEY);
 }
 
 export function getWorkoutDashboardSummary(plan = loadWorkoutExecution()) {

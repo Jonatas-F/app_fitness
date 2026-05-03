@@ -21,6 +21,9 @@ import {
   loadWorkoutSessionHistory,
   saveWorkoutSession,
   saveWorkoutExecution,
+  saveActiveSession,
+  loadActiveSession,
+  clearActiveSession,
 } from "../../../data/workoutExecutionStorage";
 import "./WorkoutsPage.css";
 
@@ -206,6 +209,7 @@ function WorkoutExecutionSection() {
   const [activeVideo, setActiveVideo] = useState(null);
   const [feedback, setFeedback] = useState("");
   const [isHydrating, setIsHydrating] = useState(true);
+  const [waitingForNextExercise, setWaitingForNextExercise] = useState(false);
   const { plan, selectedWorkoutId } = workoutState;
   const selectedWorkout =
     plan.workouts.find((workout) => workout.id === selectedWorkoutId) ||
@@ -293,6 +297,19 @@ function WorkoutExecutionSection() {
     return () => window.clearInterval(timerId);
   }, [isSessionActive, restRemainingSeconds]);
 
+  // Persiste estado da sessão para retomada posterior
+  useEffect(() => {
+    if (!isSessionActive || !selectedWorkout) return;
+    saveActiveSession({
+      workoutId:              selectedWorkout.id,
+      exerciseIndex:          sessionExerciseIndex,
+      setIndex:               activeSetIndex,
+      elapsedSeconds:         sessionElapsedSeconds,
+      startedAt:              sessionStartedAt,
+      waitingForNextExercise,
+    });
+  }, [isSessionActive, sessionExerciseIndex, activeSetIndex, sessionElapsedSeconds, waitingForNextExercise]);
+
   function updatePlan(nextPlan) {
     setWorkoutState((current) => ({
       ...current,
@@ -358,7 +375,22 @@ function WorkoutExecutionSection() {
   function handleStartWorkoutSession() {
     if (!selectedWorkout?.enabled) return;
 
-    // Pré-preenche pesos/reps da última sessão caso os campos estejam vazios
+    const saved = loadActiveSession(selectedWorkout.id);
+
+    if (saved) {
+      // Retoma de onde parou
+      setSessionExerciseIndex(saved.exerciseIndex ?? 0);
+      setActiveSetIndex(saved.setIndex ?? 0);
+      setSessionElapsedSeconds(saved.elapsedSeconds ?? 0);
+      setSessionStartedAt(saved.startedAt || new Date().toISOString());
+      setWaitingForNextExercise(saved.waitingForNextExercise ?? false);
+      setRestRemainingSeconds(0);
+      setActiveSessionWorkoutId(selectedWorkout.id);
+      setFeedback("Sessao retomada de onde parou.");
+      return;
+    }
+
+    // Nova sessão — pré-preenche pesos da última sessão salva
     const prevSession = getPreviousWorkoutSession(selectedWorkout.id);
     if (prevSession) {
       const prefilled = {
@@ -391,6 +423,7 @@ function WorkoutExecutionSection() {
     setActiveSetIndex(0);
     setSessionElapsedSeconds(0);
     setRestRemainingSeconds(0);
+    setWaitingForNextExercise(false);
     setFeedback(`Sessao de ${selectedWorkout.title} iniciada.`);
   }
 
@@ -398,13 +431,56 @@ function WorkoutExecutionSection() {
     if (!selectedWorkout) return;
     const updatedHistory = saveWorkoutSession(selectedWorkout, { startedAt: sessionStartedAt });
     setSessionHistory(updatedHistory);
+    clearActiveSession();
     setActiveSessionWorkoutId("");
     setSessionStartedAt("");
     setSessionElapsedSeconds(0);
     setRestRemainingSeconds(0);
+    setWaitingForNextExercise(false);
     setFeedback(
       `${selectedWorkout.title} finalizado. A sessao foi salva, alimentou o dashboard e criou o registro diario automatico.`
     );
+  }
+
+  function handleStartNextExercise() {
+    setSessionExerciseIndex((i) => i + 1);
+    setActiveSetIndex(0);
+    setRestRemainingSeconds(0);
+    setWaitingForNextExercise(false);
+    setFeedback("Proximo exercicio iniciado.");
+  }
+
+  function handleResetSession() {
+    setSessionExerciseIndex(0);
+    setActiveSetIndex(0);
+    setSessionElapsedSeconds(0);
+    setRestRemainingSeconds(0);
+    setWaitingForNextExercise(false);
+    clearActiveSession();
+    setFeedback("Sessao resetada. Comecando do inicio.");
+  }
+
+  function handleJumpToExercise(index) {
+    setSessionExerciseIndex(index);
+    setActiveSetIndex(0);
+    setRestRemainingSeconds(0);
+    setWaitingForNextExercise(false);
+  }
+
+  function handleMoveExercise(workoutId, exerciseId, direction) {
+    const workout = plan.workouts.find((w) => w.id === workoutId);
+    if (!workout) return;
+    const idx = workout.exercises.findIndex((e) => e.id === exerciseId);
+    const newIdx = idx + direction;
+    if (newIdx < 0 || newIdx >= workout.exercises.length) return;
+    const reordered = [...workout.exercises];
+    [reordered[idx], reordered[newIdx]] = [reordered[newIdx], reordered[idx]];
+    updatePlan({
+      ...plan,
+      workouts: plan.workouts.map((w) =>
+        w.id !== workoutId ? w : { ...w, exercises: reordered }
+      ),
+    });
   }
 
   async function handleRestoreWorkoutPlan(planId) {
@@ -448,24 +524,25 @@ function WorkoutExecutionSection() {
     const nextSetIndex = selectedExercise.sets.findIndex(
       (set, index) => index > activeSetIndex && set.enabled !== false
     );
-    const shouldStartRest =
-      nextSetIndex >= 0 || sessionExerciseIndex + 1 < selectedWorkout.exercises.length;
 
     if (nextSetIndex >= 0) {
+      // Ainda há séries neste exercício
       setActiveSetIndex(nextSetIndex);
       setRestRemainingSeconds(getExerciseRestSeconds(selectedExercise));
       setFeedback("Serie encerrada. Descanso iniciado.");
       return;
     }
 
+    // Última série do exercício
     if (sessionExerciseIndex + 1 < selectedWorkout.exercises.length) {
-      setSessionExerciseIndex(sessionExerciseIndex + 1);
-      setActiveSetIndex(0);
-      setRestRemainingSeconds(shouldStartRest ? getExerciseRestSeconds(selectedExercise) : 0);
-      setFeedback("Exercicio concluido. Descanso iniciado antes do proximo exercicio.");
+      // Há mais exercícios — pausa e aguarda ação do usuário
+      setRestRemainingSeconds(0);
+      setWaitingForNextExercise(true);
+      setFeedback("Exercicio concluido! Confirme para passar ao proximo.");
       return;
     }
 
+    // Último exercício, última série → encerra sessão
     handleFinishWorkoutSession();
   }
 
@@ -520,7 +597,11 @@ function WorkoutExecutionSection() {
             disabled={!selectedWorkout.enabled}
             onClick={isSessionActive ? handleFinishWorkoutSession : handleStartWorkoutSession}
           >
-            {isSessionActive ? "Finalizar sessao" : "Iniciar sessao"}
+            {isSessionActive
+              ? "Finalizar sessao"
+              : loadActiveSession(selectedWorkout?.id)
+                ? "Retomar sessao"
+                : "Iniciar sessao"}
           </button>
         </div>
       </header>
@@ -583,11 +664,37 @@ function WorkoutExecutionSection() {
           {isSessionActive && selectedExercise ? createPortal(
             <div className="live-session-overlay" role="dialog" aria-modal="true">
               <section className="live-session-panel">
+                {/* Cabeçalho: pill + resetar + fechar */}
                 <div className="live-session-panel__top">
                   <span>Sessao ao vivo</span>
-                  <button type="button" onClick={() => setActiveSessionWorkoutId("")}>
-                    Fechar
-                  </button>
+                  <div className="live-session-panel__top-actions">
+                    <button
+                      type="button"
+                      className="live-session-reset-btn"
+                      title="Resetar sessão"
+                      onClick={handleResetSession}
+                    >
+                      ↺
+                    </button>
+                    <button type="button" onClick={() => setActiveSessionWorkoutId("")}>
+                      Fechar
+                    </button>
+                  </div>
+                </div>
+
+                {/* Nav de exercícios: pílulas numeradas para pular/ver progresso */}
+                <div className="live-session-exercise-nav">
+                  {selectedWorkout.exercises.map((ex, i) => (
+                    <button
+                      key={ex.id}
+                      type="button"
+                      title={ex.name}
+                      className={`live-session-ex-pill${i === sessionExerciseIndex ? " is-current" : ""}${i < sessionExerciseIndex ? " is-done" : ""}`}
+                      onClick={() => handleJumpToExercise(i)}
+                    >
+                      {i < sessionExerciseIndex ? "✓" : i + 1}
+                    </button>
+                  ))}
                 </div>
 
                 <div className="live-session-panel__exercise">
@@ -616,8 +723,28 @@ function WorkoutExecutionSection() {
                   </article>
                 </div>
 
+                {/* Painel de transição entre exercícios */}
+                {waitingForNextExercise && (
+                  <div className="live-session-next-ex">
+                    <p className="live-session-next-ex__done">
+                      ✓ Exercício {sessionExerciseIndex + 1} concluído
+                    </p>
+                    <p className="live-session-next-ex__label">Próximo exercício:</p>
+                    <strong className="live-session-next-ex__name">
+                      {selectedWorkout.exercises[sessionExerciseIndex + 1]?.name}
+                    </strong>
+                    <button
+                      type="button"
+                      className="live-session-next-ex__btn"
+                      onClick={handleStartNextExercise}
+                    >
+                      Iniciar próximo exercício →
+                    </button>
+                  </div>
+                )}
+
                 {/* Um card por série habilitada, cada um com seus próprios inputs */}
-                <div className="live-session-sets-list">
+                <div className="live-session-sets-list" style={waitingForNextExercise ? { opacity: 0.35, pointerEvents: "none" } : undefined}>
                   {selectedExercise.sets
                     .map((set, originalIndex) => ({ set, originalIndex }))
                     .filter(({ set }) => set.enabled !== false)
@@ -717,6 +844,23 @@ function WorkoutExecutionSection() {
                       <small>Descanso ideal: {formatTimer(getExerciseRestSeconds(exercise))}</small>
                     </div>
                     <div className="exercise-card__actions">
+                      {/* Reordenar exercício */}
+                      <div className="exercise-reorder-btns">
+                        <button
+                          type="button"
+                          className="exercise-reorder-btn"
+                          title="Mover para cima"
+                          disabled={exerciseIndex === 0}
+                          onClick={() => handleMoveExercise(selectedWorkout.id, exercise.id, -1)}
+                        >↑</button>
+                        <button
+                          type="button"
+                          className="exercise-reorder-btn"
+                          title="Mover para baixo"
+                          disabled={exerciseIndex === selectedWorkout.exercises.length - 1}
+                          onClick={() => handleMoveExercise(selectedWorkout.id, exercise.id, 1)}
+                        >↓</button>
+                      </div>
                       <button
                         type="button"
                         className="exercise-select-button"

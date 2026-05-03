@@ -508,19 +508,42 @@
   background: #ff2e2e;
 }
 
-.live-session-panel__top button {
-  width: 40px;
-  min-height: 40px;
+/* ── Top-actions: grupo reset + fechar ───────────────────────── */
+.live-session-panel__top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.live-session-panel__top-actions > button:not(.live-session-reset-btn) {
+  min-height: 36px;
+  padding: 0 14px;
   border-radius: 8px;
   color: rgba(255, 255, 255, 0.72);
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  font-size: 0;
+  font-size: 0.82rem;
+  font-weight: 800;
 }
 
-.live-session-panel__top button::before {
-  content: "x";
-  font-size: 1rem;
+.live-session-reset-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  min-height: 36px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 1.15rem;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.live-session-reset-btn:hover {
+  color: rgba(255, 160, 60, 0.9);
+  background: rgba(255, 160, 60, 0.1);
+  border-color: rgba(255, 160, 60, 0.3);
 }
 
 .live-session-panel__exercise {
@@ -713,6 +736,130 @@
   border: 1px solid rgba(255, 46, 46, 0.48);
   box-shadow: 0 14px 34px rgba(255, 46, 46, 0.22);
   font-weight: 900;
+}
+
+/* ── Navegação por exercício: pílulas numeradas ───────────────── */
+.live-session-exercise-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.live-session-ex-pill {
+  display: grid;
+  place-items: center;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0 6px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.56);
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.78rem;
+  font-weight: 900;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.live-session-ex-pill:hover:not(.is-current) {
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.live-session-ex-pill.is-current {
+  color: #fff;
+  background: rgba(255, 46, 46, 0.15);
+  border-color: rgba(255, 46, 46, 0.52);
+  box-shadow: 0 0 12px rgba(255, 46, 46, 0.2);
+}
+
+.live-session-ex-pill.is-done {
+  color: rgba(100, 220, 130, 0.88);
+  background: rgba(100, 220, 130, 0.08);
+  border-color: rgba(100, 220, 130, 0.3);
+}
+
+/* ── Painel de transição entre exercícios ────────────────────── */
+.live-session-next-ex {
+  display: grid;
+  gap: 10px;
+  padding: 18px 16px;
+  border-radius: 10px;
+  text-align: center;
+  background: rgba(100, 220, 130, 0.055);
+  border: 1px solid rgba(100, 220, 130, 0.22);
+}
+
+.live-session-next-ex__done {
+  margin: 0;
+  color: rgba(100, 220, 130, 0.85);
+  font-size: 0.8rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.live-session-next-ex__label {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.live-session-next-ex__name {
+  display: block;
+  font-size: 1.15rem;
+  color: #fff;
+}
+
+.live-session-next-ex__btn {
+  justify-self: center;
+  min-height: 44px;
+  padding: 0 26px;
+  border-radius: 8px;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(100, 220, 130, 0.22), rgba(50, 180, 100, 0.16));
+  border: 1px solid rgba(100, 220, 130, 0.4);
+  font-weight: 900;
+  font-size: 0.92rem;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.live-session-next-ex__btn:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, rgba(100, 220, 130, 0.3), rgba(50, 180, 100, 0.24));
+}
+
+/* ── Reordenação de exercícios ───────────────────────────────── */
+.exercise-reorder-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.exercise-reorder-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 26px;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.54);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  font-size: 0.76rem;
+  transition: background 160ms ease, color 160ms ease, border-color 160ms ease;
+}
+
+.exercise-reorder-btn:hover:not(:disabled) {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.exercise-reorder-btn:disabled {
+  opacity: 0.28;
+  cursor: not-allowed;
 }
 
 .workout-protocol-panel {
@@ -1383,8 +1530,26 @@
     flex-direction: column;
   }
 
-  .live-session-panel__top button {
+  .live-session-panel__top-actions {
     align-self: flex-end;
+  }
+
+  /* Pills: um pouco menores no bottom-sheet */
+  .live-session-ex-pill {
+    min-width: 28px;
+    min-height: 28px;
+    font-size: 0.74rem;
+  }
+
+  /* Painel "próximo exercício": compacto */
+  .live-session-next-ex {
+    padding: 14px 12px;
+    gap: 8px;
+  }
+
+  .live-session-next-ex__btn {
+    min-height: 40px;
+    font-size: 0.88rem;
   }
 
   /* Exercício compacto */
@@ -1481,6 +1646,17 @@
   .live-session-panel {
     gap: 8px;
     padding: 12px 10px 14px;
+  }
+
+  .live-session-ex-pill {
+    min-width: 26px;
+    min-height: 26px;
+    font-size: 0.7rem;
+    border-radius: 6px;
+  }
+
+  .live-session-next-ex__name {
+    font-size: 1rem;
   }
 
   .live-session-timers strong {
