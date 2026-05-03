@@ -2100,3 +2100,125 @@
   box-shadow: 0 0 0 2px rgba(229, 9, 20, 0.18);
 }
 
+
+/* ── Mobile fino ≤ 430px ────────────────────────────────────────────────── */
+@media (max-width: 430px) {
+  .checkins-page {
+    gap: 14px;
+  }
+
+  .checkins-hero,
+  .checkin-section,
+  .checkins-actions,
+  .checkins-history {
+    padding: 16px 14px;
+  }
+
+  /* Cabeçalhos de seção menores */
+  .checkins-hero h1,
+  .checkins-page h1 {
+    font-size: 1.5rem;
+  }
+
+  /* Tabs de tipo de check-in: scroll horizontal */
+  .checkins-tabs,
+  .checkins-tabs--compact {
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 10px;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .checkins-tabs::-webkit-scrollbar,
+  .checkins-tabs--compact::-webkit-scrollbar { display: none; }
+
+  .checkins-tab,
+  .checkins-tabs--compact .checkins-tab {
+    flex: 0 0 auto;
+    min-width: 120px;
+    min-height: 90px;
+  }
+
+  /* Calendário — 5 colunas em vez de 7 esconde fins de semana quando necessário;
+     mantém 7 mas com células menores */
+  .checkins-calendar__day {
+    min-height: 38px;
+    font-size: 0.72rem;
+  }
+
+  .checkins-calendar__grid {
+    gap: 4px;
+  }
+
+  /* Tabela de cadência: reduz largura */
+  .checkins-cadence-table {
+    min-width: 420px;
+  }
+
+  .checkins-cadence-table [data-slot="table-head"],
+  .checkins-cadence-table [data-slot="table-cell"] {
+    padding: 10px 12px;
+    font-size: 0.8rem;
+  }
+
+  /* Tabela histórico: reduz min-width e padding para diminuir scroll */
+  .checkins-history-table {
+    min-width: 700px;
+  }
+
+  .checkins-history-table [data-slot="table-head"] {
+    padding: 10px 10px;
+    font-size: 0.6rem;
+  }
+
+  .checkins-history-table [data-slot="table-cell"] {
+    padding: 10px 10px;
+    font-size: 0.78rem;
+  }
+
+  /* Oculta colunas menos essenciais em telas muito pequenas */
+  .checkins-history-table [data-slot="table-head"]:nth-child(5),
+  .checkins-history-table [data-slot="table-cell"]:nth-child(5),
+  .checkins-history-table [data-slot="table-head"]:nth-child(6),
+  .checkins-history-table [data-slot="table-cell"]:nth-child(6),
+  .checkins-history-table [data-slot="table-head"]:nth-child(8),
+  .checkins-history-table [data-slot="table-cell"]:nth-child(8) {
+    display: none;
+  }
+
+  /* Coluna resumo: limita a 2 linhas */
+  .checkins-history-table__notes-cell {
+    min-width: 180px;
+    max-width: 260px;
+  }
+
+  .checkins-history-table__notes-cell span {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Cards de insight / overview */
+  .checkins-history-overview .checkins-history-card,
+  .checkins-history-insight {
+    padding: 14px;
+  }
+
+  /* Métricas: 2 colunas em vez de 4 */
+  .checkins-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Modal de check-in */
+  .checkins-modal__panel {
+    padding: 20px 16px;
+  }
+
+  /* Formulário */
+  .checkins-form-field label,
+  .checkin-field label {
+    font-size: 0.82rem;
+  }
+}

@@ -638,3 +638,85 @@
     justify-self: start;
   }
 }
+
+/* ── Mobile fino ≤ 430px ────────────────────────────────────────────────── */
+@media (max-width: 430px) {
+  .settings-hero {
+    padding: 16px 14px;
+    gap: 10px;
+  }
+
+  .settings-hero h1 {
+    font-size: 1.5rem;
+  }
+
+  /* Overview: 1 coluna */
+  .settings-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-overview-card {
+    min-height: auto;
+    padding: 14px;
+  }
+
+  /* Tabs: scroll horizontal em vez de 1 coluna empilhada */
+  .settings-tabs {
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 6px;
+    padding-bottom: 4px;
+  }
+  .settings-tabs::-webkit-scrollbar { display: none; }
+
+  .settings-tab-trigger {
+    flex: 0 0 auto;
+    min-width: 110px;
+    min-height: 52px;
+    font-size: 0.8rem;
+    padding: 8px 12px;
+  }
+
+  /* Avatar grid: 3 colunas */
+  .settings-avatar-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  /* Painel de abas */
+  .settings-tab-panel {
+    gap: 14px;
+  }
+
+  /* Toggle row */
+  .settings-toggle-row {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .settings-toggle-row strong {
+    font-size: 0.88rem;
+  }
+
+  .settings-toggle-row p,
+  .settings-toggle-row small {
+    font-size: 0.76rem;
+  }
+
+  /* Opções de personal */
+  .settings-option-group h3 {
+    font-size: 0.88rem;
+  }
+
+  .settings-option-group > div button {
+    padding: 10px 12px;
+    min-height: 80px;
+  }
+
+  /* Salvar */
+  .settings-save-actions {
+    padding: 12px 14px;
+  }
+}

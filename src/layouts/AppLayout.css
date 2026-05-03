@@ -307,3 +307,56 @@
     display: grid;
   }
 }
+
+/* ── Mobile fino (iPhone SE, Android compact) ──────────────────────────── */
+@media (max-width: 430px) {
+  .app-shell__content {
+    padding: 14px 12px 94px;
+  }
+
+  /* Bottom nav mais compacta */
+  .bottom-nav {
+    left: 6px;
+    right: 6px;
+    bottom: 8px;
+    gap: 4px;
+    padding: 8px 6px;
+  }
+
+  .bottom-nav__link {
+    min-height: 56px;
+    font-size: 0.62rem;
+    gap: 4px;
+    border-radius: 10px;
+    padding: 0 4px;
+  }
+
+  .bottom-nav__link svg,
+  .bottom-nav__link [data-icon] {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* ── Safe area (iPhone notch / dynamic island / Android gesture bar) ────── */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  @media (max-width: 960px) {
+    .app-shell__content {
+      padding-bottom: calc(112px + env(safe-area-inset-bottom));
+    }
+
+    .bottom-nav {
+      bottom: calc(16px + env(safe-area-inset-bottom));
+    }
+  }
+
+  @media (max-width: 430px) {
+    .app-shell__content {
+      padding-bottom: calc(94px + env(safe-area-inset-bottom));
+    }
+
+    .bottom-nav {
+      bottom: calc(8px + env(safe-area-inset-bottom));
+    }
+  }
+}

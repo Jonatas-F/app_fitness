@@ -770,3 +770,69 @@
     justify-self: start;
   }
 }
+
+/* ── Mobile fino ≤ 430px ────────────────────────────────────────────────── */
+@media (max-width: 430px) {
+  .nutrition-hero,
+  .nutrition-config {
+    padding: 16px 14px;
+  }
+
+  /* Tabs de dia da semana: scroll horizontal mais compacto */
+  .nutrition-week-tabs {
+    gap: 6px;
+    padding: 4px 2px 8px;
+  }
+
+  .nutrition-week-tabs button {
+    min-width: 110px;
+    padding: 10px 12px;
+    font-size: 0.78rem;
+  }
+
+  /* Métricas: 2 colunas */
+  .nutrition-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  /* Meal card */
+  .meal-card {
+    padding: 16px 14px;
+  }
+
+  .meal-card__header {
+    gap: 10px;
+  }
+
+  /* Nome da refeição */
+  .meal-card h3 {
+    font-size: 1rem;
+  }
+
+  /* Itens da refeição: compactos */
+  .meal-item {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .meal-item__name {
+    font-size: 0.84rem;
+  }
+
+  .meal-item__macros {
+    font-size: 0.72rem;
+    gap: 6px;
+  }
+
+  /* Calendário */
+  .nutrition-meal-calendar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  /* Hero título */
+  .nutrition-hero h1 {
+    font-size: 1.5rem;
+  }
+}
