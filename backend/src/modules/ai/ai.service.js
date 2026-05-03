@@ -386,6 +386,8 @@ REGRAS OBRIGATORIAS (leia o contexto do usuario antes de gerar):
 6. MEDIDAS: use "progress.measurements[0].weight_kg" e "progress.bioimpedance[0]" para calcular necessidade calorica. Se nao houver, use "profile.current_weight_kg" e "profile.activity_level".
 7. DIAS DA SEMANA: gere dayPlans para todos os 7 dias com variacao entre os dias.
 8. VALORES NUTRICIONAIS: preencha calories, protein, carbs, fats para cada refeicao com valores numericos reais (strings, ex: "450", "35").
+9. QUANTIDADES OBRIGATORIAS: no campo "foods", especifique a quantidade exata de cada alimento. Use gramas (g), mililitros (ml) ou unidades conforme adequado. Exemplo: "3 ovos inteiros, 40g aveia em flocos, 1 banana media (120g), 200ml cafe preto sem acucar". Nunca liste apenas o nome do alimento sem a quantidade.
+10. SUBSTITUICOES OBRIGATORIAS: no campo "notes", liste 2-3 opcoes de substituicao para os principais alimentos da refeicao, respeitando restricoes e preferencias. Formato: "Substituicoes: trocar X por Y; trocar A por B". Exemplo: "Substituicoes: trocar aveia por 40g tapioca ou 2 fatias de pao integral; trocar banana por 1 maca ou 150g mamao".
 
 SLOTS DISPONIVEIS (use os IDs exatos): desjejum, cafe-manha, brunch, almoco, cafe-tarde, pre-treino, pos-treino, janta, ceia
 DIAS (use os IDs exatos): segunda, terca, quarta, quinta, sexta, sabado, domingo
@@ -410,9 +412,9 @@ ESTRUTURA JSON OBRIGATORIA:
       "protein": "<numero>",
       "carbs": "<numero>",
       "fats": "<numero>",
-      "foods": "<lista de alimentos separados por virgula>",
-      "description": "<descricao curta>",
-      "notes": ""
+      "foods": "<cada alimento COM quantidade exata, separados por virgula — ex: 3 ovos inteiros, 40g aveia, 1 banana media (120g), 200ml cafe preto>",
+      "description": "<descricao curta da refeicao>",
+      "notes": "<substituicoes: trocar X por Y; trocar A por B — 2 a 3 opcoes, respeitando restricoes>"
     }
   ],
   "dayPlans": {
