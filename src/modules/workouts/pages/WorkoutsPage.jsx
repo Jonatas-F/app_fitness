@@ -484,9 +484,9 @@ function WorkoutExecutionSection() {
             <span>{exercise.name}</span>
             <small>
               {exercise.sets
-                .filter((set) => set.enabled !== false)
-                .map((set) => `S${set.set}: ${set.weight || "--"}kg x ${set.reps || "--"}`)
-                .join(" | ")}
+                .filter((set) => set.enabled !== false && (set.weight || set.reps))
+                .map((set, i) => `S${set.set ?? (i + 1)}: ${set.weight || "--"}kg × ${set.reps || "--"}`)
+                .join("  |  ") || "sem registro"}
             </small>
           </div>
         ))}

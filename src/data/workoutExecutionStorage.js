@@ -212,8 +212,8 @@ export function saveWorkoutSession(workout, options = {}) {
     exercises: workout.exercises.map((exercise) => ({
       id: exercise.id,
       name: exercise.name,
-      sets: exercise.sets.map((set) => ({
-        set: set.set,
+      sets: exercise.sets.map((set, i) => ({
+        set: set.set ?? (i + 1),   // garante número mesmo que a API não envie
         enabled: set.enabled !== false,
         weight: set.weight || "",
         reps: set.reps || "",
@@ -275,7 +275,9 @@ export async function hydrateWorkoutExecutionFromApi() {
     const data = await apiRequest(apiEndpoints.activeWorkout);
 
     if (data.protocol?.payload) {
-      const plan = saveWorkoutExecution(data.protocol.payload);
+      // Salva o payload da API e devolve o plano *normalizado* (com set numbers, enabled, etc.)
+      saveWorkoutExecution(data.protocol.payload);
+      const plan = loadWorkoutExecution();
       return { plan, skipped: false, error: null };
     }
 
