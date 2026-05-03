@@ -924,22 +924,6 @@ function WorkoutExecutionSection() {
                             </div>
 
                             <label>
-                              URL do video demonstrativo
-                              <input
-                                value={exercise.executionVideoUrl}
-                                onChange={(event) =>
-                                  handleExerciseChange(
-                                    selectedWorkout.id,
-                                    exercise.id,
-                                    "executionVideoUrl",
-                                    event.target.value
-                                  )
-                                }
-                                placeholder="URL do video de execucao"
-                              />
-                            </label>
-
-                            <label>
                               Feedback do Personal Virtual
                               <textarea
                                 value={exercise.aiFeedback}
