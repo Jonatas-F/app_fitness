@@ -357,6 +357,34 @@ function WorkoutExecutionSection() {
 
   function handleStartWorkoutSession() {
     if (!selectedWorkout?.enabled) return;
+
+    // Pré-preenche pesos/reps da última sessão caso os campos estejam vazios
+    const prevSession = getPreviousWorkoutSession(selectedWorkout.id);
+    if (prevSession) {
+      const prefilled = {
+        ...plan,
+        workouts: plan.workouts.map((workout) => {
+          if (workout.id !== selectedWorkout.id) return workout;
+          return {
+            ...workout,
+            exercises: workout.exercises.map((exercise) => {
+              const prevEx = prevSession.exercises?.find((e) => e.id === exercise.id);
+              if (!prevEx) return exercise;
+              return {
+                ...exercise,
+                sets: exercise.sets.map((set, i) => ({
+                  ...set,
+                  weight: set.weight || prevEx.sets?.[i]?.weight || "",
+                  reps:   set.reps   || prevEx.sets?.[i]?.reps   || "",
+                })),
+              };
+            }),
+          };
+        }),
+      };
+      updatePlan(prefilled);
+    }
+
     setActiveSessionWorkoutId(selectedWorkout.id);
     setSessionStartedAt(new Date().toISOString());
     setSessionExerciseIndex(0);
