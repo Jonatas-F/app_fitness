@@ -487,6 +487,7 @@ function WorkoutExecutionSection() {
           <button
             type="button"
             className="workout-start-button"
+            data-tour="workout-start"
             disabled={!selectedWorkout.enabled}
             onClick={isSessionActive ? handleFinishWorkoutSession : handleStartWorkoutSession}
           >

@@ -429,6 +429,7 @@ export default function ChatPage() {
               rows={1}
               disabled={isSending || !!contextError}
               className="mono-chat__input"
+              data-tour="chat-input"
             />
             <button
               type="submit"

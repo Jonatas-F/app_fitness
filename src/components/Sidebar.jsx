@@ -181,11 +181,22 @@ export default function Sidebar() {
       <nav className="sidebar__nav">
         {navigationItems.map((item) => {
           const Icon = NAV_ICONS[item.iconKey];
+          // Mapeia path → data-tour para o guided tour conseguir destacar cada link
+          const tourMap = {
+            dashboard:      "nav-dashboard",
+            checkins:       "nav-checkins",
+            treinos:        "nav-treinos",
+            dietas:         "nav-dieta",
+            chat:           "nav-chat",
+            configuracoes:  "nav-config",
+          };
+          const tourKey = Object.keys(tourMap).find((k) => item.path.includes(k));
           return (
             <NavLink
               key={item.path}
               to={item.path}
               end={item.path === "/"}
+              data-tour={tourKey ? tourMap[tourKey] : undefined}
               className={({ isActive }) =>
                 `sidebar__link ${isActive ? "sidebar__link--active" : ""}`
               }

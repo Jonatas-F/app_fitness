@@ -430,7 +430,7 @@ export default function SettingsPage() {
         </section>
       ) : (
         <>
-          <section className="settings-overview-grid">
+          <section className="settings-overview-grid" data-tour="settings-overview">
             {overviewCards.map((item) => (
               <SectionCard
                 key={item.label}

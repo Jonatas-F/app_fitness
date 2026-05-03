@@ -1602,7 +1602,7 @@ export default function CheckinsPage() {
         </aside>
       </header>
 
-      <section className="checkins-selector glass-panel">
+      <section className="checkins-selector glass-panel" data-tour="checkin-selector">
         <div className="checkins-selector__header">
           <span>Tipo de check-in</span>
           <h2>
@@ -1770,6 +1770,7 @@ export default function CheckinsPage() {
                   />
                 </Field>
 
+                <div data-tour="checkin-weight">
                 <Field label="Peso atual" required>
                   <input
                     name="weight"
@@ -1779,6 +1780,7 @@ export default function CheckinsPage() {
                     placeholder="Ex.: 84.6 kg"
                   />
                 </Field>
+                </div>
 
                 <Field label="Objetivo principal" hint="Usado pela IA para ajustar treino e dieta">
                   <select name="goal" value={formData.goal} onChange={handleChange}>

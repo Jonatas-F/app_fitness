@@ -481,7 +481,7 @@ export default function NutritionPage() {
 
   return (
     <section className="nutrition-page">
-      <header className="nutrition-hero glass-panel">
+      <header className="nutrition-hero glass-panel" data-tour="diet-content">
         <span>Dietas</span>
         <h1>Plano alimentar por refeições habilitadas.</h1>
         <p>
