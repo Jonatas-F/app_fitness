@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PricingCard from "@/components/ui/pricing-card";
-import logo from "../../../assets/logo.svg";
+import logoMark from "../../../assets/logo_sp.svg";
 import { featureMatrix, getAnnualPrice, subscriptionPlans } from "../../../data/plans";
 import {
   buildGoogleSignInUrl,
@@ -158,7 +158,7 @@ export default function HomePage() {
       <header className="home-header">
         <Link to="/" className="home-brand">
           <span>
-            <img src={logo} alt="Shape Certo" />
+            <img src={logoMark} alt="Shape Certo" />
           </span>
           <div>
             <strong>Shape Certo</strong>
