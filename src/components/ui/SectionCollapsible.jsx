@@ -14,12 +14,14 @@ export default function SectionCollapsible({
   bodyClassName,
   badgeClassName,
   defaultOpen = false,
+  ...rest
 }) {
   const contentId = useId();
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
     <details
+      {...rest}
       className={cn("section-collapsible", className)}
       open={defaultOpen}
       onToggle={(event) => setIsOpen(event.currentTarget.open)}

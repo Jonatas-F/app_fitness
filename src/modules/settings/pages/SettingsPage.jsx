@@ -302,6 +302,33 @@ export default function SettingsPage() {
     },
   ];
 
+  // ── Tour: abre abas/painéis corretos quando o tour guiado navega até cá ──
+  useEffect(() => {
+    function onTourOpenPlan() {
+      setActiveTab("account");
+      // Aguarda React renderizar a aba antes de abrir o <details>
+      setTimeout(() => {
+        const el = document.querySelector('[data-tour="settings-plan-card"]');
+        if (el) el.open = true;
+      }, 120);
+    }
+    function onTourOpenPersonal() { setActiveTab("personal"); }
+    function onTourOpenGym()      { setActiveTab("account"); }
+    function onTourOpenFood()     { setActiveTab("account"); }
+
+    window.addEventListener("shape-certo-tour-open-plan",     onTourOpenPlan);
+    window.addEventListener("shape-certo-tour-open-personal", onTourOpenPersonal);
+    window.addEventListener("shape-certo-tour-open-gym",      onTourOpenGym);
+    window.addEventListener("shape-certo-tour-open-food",     onTourOpenFood);
+
+    return () => {
+      window.removeEventListener("shape-certo-tour-open-plan",     onTourOpenPlan);
+      window.removeEventListener("shape-certo-tour-open-personal", onTourOpenPersonal);
+      window.removeEventListener("shape-certo-tour-open-gym",      onTourOpenGym);
+      window.removeEventListener("shape-certo-tour-open-food",     onTourOpenFood);
+    };
+  }, []);
+
   useEffect(() => {
     let ignore = false;
 
@@ -452,7 +479,7 @@ export default function SettingsPage() {
                 <strong>Notificacoes</strong>
                 <StatusPill tone="danger">{activeNotificationCount} ativas</StatusPill>
               </TabsTrigger>
-              <TabsTrigger value="personal" className="settings-tab-trigger">
+              <TabsTrigger value="personal" className="settings-tab-trigger" data-tour="settings-personal-tab">
                 <strong>Personal</strong>
                 <StatusPill tone="neutral">{settings.personal.name || "Personal"}</StatusPill>
               </TabsTrigger>
@@ -507,7 +534,7 @@ export default function SettingsPage() {
                   </article>
                 </div>
 
-                <div className="settings-avatar-grid">
+                <div className="settings-avatar-grid" data-tour="settings-personal-avatar">
                   {personalAvatarCatalog.map((avatar) => (
                     <button
                       key={avatar.id}

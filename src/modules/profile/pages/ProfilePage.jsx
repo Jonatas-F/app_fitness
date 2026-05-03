@@ -1273,7 +1273,7 @@ export default function ProfilePage({ embedded = false }) {
             </div>
           </details>
 
-          <details className="profile-compact-panel profile-plan-card">
+          <details className="profile-compact-panel profile-plan-card" data-tour="settings-plan-card">
             <summary className="profile-compact-summary">
               <span className="profile-compact-summary__icon"><ChevronDown aria-hidden="true" /></span>
               <span>
@@ -1477,6 +1477,7 @@ export default function ProfilePage({ embedded = false }) {
         title="Academia do usuario"
         summary={`${selectedEquipmentIds.length}/${allGymEquipment.length} aparelhos liberados`}
         badge={`${equipmentContext.unavailableEquipment.length} fora do treino`}
+        data-tour="settings-gym"
       >
           <div className="profile-section__heading profile-section__heading--compact">
             <div>
@@ -1579,6 +1580,7 @@ export default function ProfilePage({ embedded = false }) {
         title="Preferencias alimentares"
         summary={`${foodContext.selectedPreferences.length} marcacoes salvas`}
         badge={`${foodPreferencesCatalog.length} grupos`}
+        data-tour="settings-food"
       >
           <div className="profile-section__heading profile-section__heading--compact">
             <div>

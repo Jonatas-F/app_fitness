@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import "./GuidedTour.css";
 
@@ -119,7 +120,7 @@ const TOUR_STEPS = [
     target: '[data-tour="diet-meal"]',
     // Dispara evento para NutritionPage abrir a 1ª refeição ativa via state React
     openEvent: "shape-certo-tour-open-meal",
-    position: "right",
+    position: "left",
     icon: "🍽️",
     title: "Card de refeição",
     description:
@@ -140,7 +141,7 @@ const TOUR_STEPS = [
     id: "chat-input",
     route: "/chat",
     target: '[data-tour="chat-input"]',
-    position: "top",
+    position: "center",
     icon: "💬",
     title: "Faça uma pergunta",
     description:
@@ -166,6 +167,60 @@ const TOUR_STEPS = [
     title: "Seu plano atual",
     description:
       "Acompanhe os tokens usados, data de recarga e faça upgrade quando quiser acessar recursos avançados como check-in diário e dashboard completo.",
+  },
+  {
+    id: "settings-plan-card",
+    route: "/configuracoes",
+    target: '[data-tour="settings-plan-card"]',
+    openEvent: "shape-certo-tour-open-plan",
+    position: "center",
+    icon: "🔄",
+    title: "Alterar plano de pagamento",
+    description:
+      "Escolha entre Básico, Intermediário e Pro, defina o ciclo mensal ou anual e confirme a mudança. O Shape Certo calcula o crédito proporcional antes de você ir para o pagamento.",
+  },
+  {
+    id: "settings-personal-tab",
+    route: "/configuracoes",
+    target: '[data-tour="settings-personal-tab"]',
+    openEvent: "shape-certo-tour-open-personal",
+    position: "bottom",
+    icon: "🤖",
+    title: "Personalizar o Personal Virtual",
+    description:
+      "Nesta aba você define o avatar, o nome e o estilo de comunicação do seu Personal — tom de linguagem, nível de ânimo e profundidade do feedback.",
+  },
+  {
+    id: "settings-personal-avatar",
+    route: "/configuracoes",
+    target: '[data-tour="settings-personal-avatar"]',
+    position: "center",
+    icon: "🖼️",
+    title: "Escolha o avatar",
+    description:
+      "Selecione o visual do Personal Virtual — ele aparece no chat e em momentos-chave da experiência. Combine com o nome e o estilo que mais combina com você.",
+  },
+  {
+    id: "settings-gym",
+    route: "/configuracoes",
+    target: '[data-tour="settings-gym"]',
+    openEvent: "shape-certo-tour-open-gym",
+    position: "center",
+    icon: "🏋️",
+    title: "Sua academia",
+    description:
+      "Marque os aparelhos disponíveis na sua academia. A IA ignora os desmarcados e monta treinos apenas com o que você realmente tem à disposição.",
+  },
+  {
+    id: "settings-food",
+    route: "/configuracoes",
+    target: '[data-tour="settings-food"]',
+    openEvent: "shape-certo-tour-open-food",
+    position: "center",
+    icon: "🥦",
+    title: "Preferências alimentares",
+    description:
+      "Registre alergias, intolerâncias, alimentos que você evita e os que adora. A IA aplica essas preferências na dieta personalizada desde o primeiro protocolo.",
   },
   // ── Done ──────────────────────────────────────────────────────────────────
   {
@@ -248,22 +303,8 @@ export default function GuidedTour({ onComplete }) {
     // Aguarda render da página destino
     const DELAY = step.route ? 600 : 100;
     const timer = setTimeout(() => {
-      if (!step.target) {
-        setVisible(true);
-        return;
-      }
-
-      const el = document.querySelector(step.target);
-      if (!el) {
-        // Elemento não encontrado (ex.: sidebar oculta em mobile) → modo center
-        setVisible(true);
-        return;
-      }
-
-      // Se o step tem openEvent, dispara o evento para o componente da página
-      // abrir/expandir o elemento via seu próprio state React (mais confiável
-      // do que chamar .click() diretamente no DOM, que pode não acionar
-      // handlers sintéticos do React)
+      // Dispara openEvent ANTES do querySelector para que abas/seções possam
+      // ser abertas/montadas antes de tentarmos medir o elemento.
       if (step.openEvent) {
         window.dispatchEvent(new CustomEvent(step.openEvent));
       }
@@ -272,6 +313,18 @@ export default function GuidedTour({ onComplete }) {
       const expandDelay = step.openEvent ? 500 : 0;
 
       function measureAndShow() {
+        if (!step.target) {
+          setVisible(true);
+          return;
+        }
+
+        const el = document.querySelector(step.target);
+        if (!el) {
+          // Elemento não encontrado (ex.: sidebar oculta em mobile) → modo center
+          setVisible(true);
+          return;
+        }
+
         // Para elementos altos (card expandido), "start" garante que o topo
         // fica visível; para elementos normais "center" é preferível.
         const approxH = el.getBoundingClientRect().height;
@@ -346,91 +399,96 @@ export default function GuidedTour({ onComplete }) {
   const isCenter      = !rect || step.position === "center";
   const tooltipPos    = (!isCenter && rect) ? calcTooltipPos(rect, step.position) : null;
 
-  return (
+  // ── Card JSX (renderizado via Portal para ficar no root stacking context) ─
+  const cardEl = (
     <div
-      className="tour-overlay"
+      id="tour-title"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="tour-title"
+      aria-labelledby="tour-card-title"
+      className={[
+        "tour-card",
+        "glass-panel",
+        isCenter ? "tour-card--center" : "tour-card--anchored",
+        !isCenter ? `tour-card--${step.position}` : "",
+        visible ? "tour-card--visible" : "",
+      ].join(" ")}
+      style={tooltipPos ? { left: tooltipPos.left, top: tooltipPos.top } : {}}
     >
-      {/* ── SVG Spotlight ─────────────────────────────────────────────────── */}
-      {rect ? (
-        <svg className="tour-spotlight" aria-hidden="true">
-          <defs>
-            <mask id="tour-mask">
-              <rect fill="white" x="0" y="0" width="100%" height="100%" />
-              <rect
-                fill="black"
-                x={rect.left   - SPOT_PAD}
-                y={rect.top    - SPOT_PAD}
-                width={rect.width  + SPOT_PAD * 2}
-                height={rect.height + SPOT_PAD * 2}
-                rx="10"
-              />
-            </mask>
-          </defs>
-          <rect
-            fill="rgba(0,0,0,0.78)"
-            x="0" y="0"
-            width="100%" height="100%"
-            mask="url(#tour-mask)"
+      {/* Seta apontando para o elemento */}
+      {!isCenter && <span className={`tour-arrow tour-arrow--${step.position}`} aria-hidden="true" />}
+
+      {/* Ícone + conteúdo */}
+      <div className="tour-card__icon">{step.icon}</div>
+
+      <div className="tour-card__body">
+        <p className="tour-card__step">{stepIndex + 1} / {TOUR_STEPS.length}</p>
+        <h3 id="tour-card-title" className="tour-card__title">{step.title}</h3>
+        <p className="tour-card__desc">{step.description}</p>
+      </div>
+
+      {/* Indicadores de progresso */}
+      <div className="tour-dots" aria-hidden="true">
+        {TOUR_STEPS.map((_, i) => (
+          <span
+            key={i}
+            className={`tour-dot${i === stepIndex ? " is-active" : ""}`}
           />
-        </svg>
-      ) : (
-        <div className="tour-backdrop" />
-      )}
+        ))}
+      </div>
 
-      {/* ── Tooltip / Card ────────────────────────────────────────────────── */}
-      <div
-        id="tour-title"
-        className={[
-          "tour-card",
-          "glass-panel",
-          isCenter ? "tour-card--center" : "tour-card--anchored",
-          !isCenter ? `tour-card--${step.position}` : "",
-          visible ? "tour-card--visible" : "",
-        ].join(" ")}
-        style={tooltipPos ? { left: tooltipPos.left, top: tooltipPos.top } : {}}
-      >
-        {/* Seta apontando para o elemento */}
-        {!isCenter && <span className={`tour-arrow tour-arrow--${step.position}`} aria-hidden="true" />}
-
-        {/* Ícone + conteúdo */}
-        <div className="tour-card__icon">{step.icon}</div>
-
-        <div className="tour-card__body">
-          <p className="tour-card__step">{stepIndex + 1} / {TOUR_STEPS.length}</p>
-          <h3 className="tour-card__title">{step.title}</h3>
-          <p className="tour-card__desc">{step.description}</p>
-        </div>
-
-        {/* Indicadores de progresso */}
-        <div className="tour-dots" aria-hidden="true">
-          {TOUR_STEPS.map((_, i) => (
-            <span
-              key={i}
-              className={`tour-dot${i === stepIndex ? " is-active" : ""}`}
-            />
-          ))}
-        </div>
-
-        {/* Botões */}
-        <div className="tour-actions">
-          <button type="button" className="ghost-button" onClick={onComplete}>
-            Pular
-          </button>
-          <div className="tour-actions__nav">
-            {stepIndex > 0 && (
-              <button type="button" className="ghost-button" onClick={goPrev}>
-                ← Voltar
-              </button>
-            )}
-            <button type="button" className="primary-button" onClick={goNext}>
-              {step.isLast ? "Começar →" : "Próximo →"}
+      {/* Botões */}
+      <div className="tour-actions">
+        <button type="button" className="ghost-button" onClick={onComplete}>
+          Pular
+        </button>
+        <div className="tour-actions__nav">
+          {stepIndex > 0 && (
+            <button type="button" className="ghost-button" onClick={goPrev}>
+              ← Voltar
             </button>
-          </div>
+          )}
+          <button type="button" className="primary-button" onClick={goNext}>
+            {step.isLast ? "Começar →" : "Próximo →"}
+          </button>
         </div>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {/* ── Backdrop / Spotlight — permanece no tour-overlay ──────────────── */}
+      <div className="tour-overlay" aria-hidden="true">
+        {rect ? (
+          <svg className="tour-spotlight">
+            <defs>
+              <mask id="tour-mask">
+                <rect fill="white" x="0" y="0" width="100%" height="100%" />
+                <rect
+                  fill="black"
+                  x={rect.left   - SPOT_PAD}
+                  y={rect.top    - SPOT_PAD}
+                  width={rect.width  + SPOT_PAD * 2}
+                  height={rect.height + SPOT_PAD * 2}
+                  rx="10"
+                />
+              </mask>
+            </defs>
+            <rect
+              fill="rgba(0,0,0,0.78)"
+              x="0" y="0"
+              width="100%" height="100%"
+              mask="url(#tour-mask)"
+            />
+          </svg>
+        ) : (
+          <div className="tour-backdrop" />
+        )}
+      </div>
+
+      {/* ── Card via Portal → filho direto do <body>, acima de tudo ─────── */}
+      {createPortal(cardEl, document.body)}
+    </>
   );
 }
