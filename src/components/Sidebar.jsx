@@ -120,6 +120,17 @@ function AdminPlanSwitcher() {
               ← Plano real
             </button>
           )}
+          <button
+            type="button"
+            className="sidebar__admin-option sidebar__admin-option--reset"
+            onClick={() => {
+              localStorage.removeItem("shapeCertoFirstCheckinDone");
+              localStorage.removeItem("shapeCertoOnboardingDone");
+              window.dispatchEvent(new CustomEvent("shape-certo-reset-onboarding"));
+            }}
+          >
+            🔄 Testar 1º acesso
+          </button>
         </div>
       )}
     </div>
