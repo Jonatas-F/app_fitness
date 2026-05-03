@@ -1647,6 +1647,9 @@
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.025);
+  /* Garante que o shell não ultrapasse a largura do pai */
+  width: 100%;
+  max-width: 100%;
 }
 
 /* ── Tabela de resumo por cadência ───────────────────────────────────────── */
@@ -2184,46 +2187,54 @@
     gap: 4px;
   }
 
-  /* Tabela de cadência: reduz largura */
+  /* Tabela de cadência: largura mínima reduzida para caber no shell */
   .checkins-cadence-table {
-    min-width: 420px;
+    min-width: 340px;
   }
 
   .checkins-cadence-table [data-slot="table-head"],
   .checkins-cadence-table [data-slot="table-cell"] {
-    padding: 10px 12px;
-    font-size: 0.8rem;
-  }
-
-  /* Tabela histórico: reduz min-width e padding para diminuir scroll */
-  .checkins-history-table {
-    min-width: 700px;
-  }
-
-  .checkins-history-table [data-slot="table-head"] {
-    padding: 10px 10px;
-    font-size: 0.6rem;
-  }
-
-  .checkins-history-table [data-slot="table-cell"] {
     padding: 10px 10px;
     font-size: 0.78rem;
   }
 
-  /* Oculta colunas menos essenciais em telas muito pequenas */
+  /* Tabela histórico: mostra apenas Data, Cadência, Status e Peso (cols 1-4) */
+  .checkins-history-table {
+    min-width: 360px;
+  }
+
+  .checkins-history-table [data-slot="table-head"] {
+    padding: 10px 8px;
+    font-size: 0.6rem;
+  }
+
+  .checkins-history-table [data-slot="table-cell"] {
+    padding: 10px 8px;
+    font-size: 0.76rem;
+  }
+
+  /* Oculta colunas menos essenciais — mantém Data, Cadência, Status, Peso */
   .checkins-history-table [data-slot="table-head"]:nth-child(5),
   .checkins-history-table [data-slot="table-cell"]:nth-child(5),
   .checkins-history-table [data-slot="table-head"]:nth-child(6),
   .checkins-history-table [data-slot="table-cell"]:nth-child(6),
+  .checkins-history-table [data-slot="table-head"]:nth-child(7),
+  .checkins-history-table [data-slot="table-cell"]:nth-child(7),
   .checkins-history-table [data-slot="table-head"]:nth-child(8),
   .checkins-history-table [data-slot="table-cell"]:nth-child(8) {
     display: none;
   }
 
-  /* Coluna resumo: limita a 2 linhas */
+  /* Coluna Data: largura mínima reduzida */
+  .checkins-history-table [data-slot="table-head"]:nth-child(1),
+  .checkins-history-table [data-slot="table-cell"]:nth-child(1) {
+    min-width: 100px;
+  }
+
+  /* Coluna resumo (notes): limita a 2 linhas */
   .checkins-history-table__notes-cell {
-    min-width: 180px;
-    max-width: 260px;
+    min-width: 140px;
+    max-width: 200px;
   }
 
   .checkins-history-table__notes-cell span {

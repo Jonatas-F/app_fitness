@@ -18,6 +18,9 @@
 
 .app-shell__content {
   padding: 28px 28px 110px;
+  /* Clip horizontal overflow so nenhum filho força scroll na página */
+  overflow-x: clip;
+  min-width: 0; /* evita que o grid cell expanda além de 1fr */
 }
 
 .glass-panel {

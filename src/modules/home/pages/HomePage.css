@@ -576,6 +576,8 @@
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid rgba(255, 255, 255, 0.09);
+  width: 100%;
+  max-width: 100%;
 }
 
 .home-pricing-card .pricing-card__comparison table {
@@ -745,3 +747,33 @@
     display: none;
   }
 }
+
+@media (max-width: 430px) {
+  .home-page {
+    padding: 12px;
+  }
+
+  .home-header {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .home-hero {
+    padding-top: 24px;
+    margin-top: 14px;
+    min-height: auto;
+  }
+
+  .home-hero h1 {
+    font-size: clamp(1.9rem, 10vw, 2.6rem);
+  }
+
+  .home-section {
+    padding-top: 48px;
+  }
+
+  .home-pricing-card .pricing-card__plan {
+    padding: 12px;
+  }
+}
+

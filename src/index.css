@@ -129,6 +129,8 @@ body,
 
 html {
   scroll-behavior: smooth;
+  /* Impede barra de rolagem horizontal na página inteira */
+  overflow-x: hidden;
 }
 
 body {

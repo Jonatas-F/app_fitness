@@ -1138,21 +1138,25 @@
 
   /* Tabs do dashboard: scroll horizontal */
   .dashboard-tabs {
-    display: flex;
+    display: flex !important;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     gap: 6px;
     padding-bottom: 4px;
+    width: 100%;
+    max-width: 100%;
   }
   .dashboard-tabs::-webkit-scrollbar { display: none; }
 
-  .dashboard-tab {
-    flex: 0 0 auto;
-    min-width: 90px;
-    min-height: 52px;
+  /* Aplica ao seletor correto das tabs (era .dashboard-tab) */
+  .dashboard-tab-trigger,
+  .dashboard-tab-trigger--locked {
+    flex: 0 0 auto !important;
+    min-width: 90px !important;
+    min-height: 52px !important;
     font-size: 0.78rem;
-    padding: 8px 12px;
+    padding: 8px 10px !important;
   }
 
   /* Métricas: 2 colunas */

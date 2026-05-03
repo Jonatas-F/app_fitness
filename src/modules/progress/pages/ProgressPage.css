@@ -84,6 +84,8 @@
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
+  width: 100%;
+  max-width: 100%;
 }
 
 .progress-table {
@@ -155,5 +157,36 @@
 
   .progress-table {
     min-width: 720px;
+  }
+}
+
+@media (max-width: 430px) {
+  .progress-hero {
+    padding: 14px;
+  }
+
+  .progress-hero h1 {
+    font-size: 1.5rem;
+  }
+
+  /* Tabela de progresso: reduz ao mínimo para caber no shell de 430px */
+  .progress-table {
+    min-width: 360px;
+  }
+
+  .progress-table [data-slot="table-head"],
+  .progress-table [data-slot="table-cell"] {
+    padding: 10px 8px;
+    font-size: 0.76rem;
+  }
+
+  /* Oculta colunas secundárias — mantém Data, Peso, IMC e Notas */
+  .progress-table [data-slot="table-head"]:nth-child(n+4):nth-child(-n+7),
+  .progress-table [data-slot="table-cell"]:nth-child(n+4):nth-child(-n+7) {
+    display: none;
+  }
+
+  .progress-table__notes-cell {
+    min-width: 120px;
   }
 }

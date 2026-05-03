@@ -668,6 +668,8 @@
     scrollbar-width: none;
     gap: 6px;
     padding-bottom: 4px;
+    width: 100%;
+    max-width: 100%;
   }
   .settings-tabs::-webkit-scrollbar { display: none; }
 
