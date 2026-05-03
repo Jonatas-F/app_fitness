@@ -37,9 +37,9 @@ export const featureMatrix = [
 
   // ── Fotos ────────────────────────────────────────────────────
   {
-    name: "Fotos de progresso por check-in",
+    name: "Fotos de progresso",
     category: "Fotos",
-    plans: { basico: "2", intermediario: "Ate 6", pro: "Ilimitadas" },
+    plans: ["intermediario", "pro"],
   },
 
   // ── Medidas ──────────────────────────────────────────────────
@@ -126,11 +126,11 @@ export const subscriptionPlans = [
      */
     highlights: [
       { name: "Check-in semanal (peso, sinais, aderencia)", isIncluded: true },
-      { name: "2 fotos de progresso por check-in", isIncluded: true },
       { name: "Geracao de treino com IA", isIncluded: true },
       { name: "Geracao de dieta com IA", isIncluded: true },
       { name: "Chat com Personal Virtual IA", isIncluded: true },
       { name: "Dashboard basico (resumo e feedback)", isIncluded: true },
+      { name: "~260k tokens de IA por mes", isIncluded: true },
     ],
     features: [
       "Check-in semanal (peso, altura, saciedade, sono, treino)",
@@ -158,7 +158,7 @@ export const subscriptionPlans = [
       { name: "Tudo do plano Basico, e mais:", isIncluded: true },
       { name: "Check-in mensal completo", isIncluded: true },
       { name: "Medidas corporais completas + bioimpedancia", isIncluded: true },
-      { name: "Ate 6 fotos por check-in", isIncluded: true },
+      { name: "Fotos de progresso por check-in", isIncluded: true },
       { name: "IA com historico de 3 meses", isIncluded: true },
       { name: "Dashboard completo (corpo, cargas, mensal)", isIncluded: true },
     ],
@@ -187,7 +187,7 @@ export const subscriptionPlans = [
     highlights: [
       { name: "Tudo do plano Intermediario, e mais:", isIncluded: true },
       { name: "Check-in diario de sinais", isIncluded: true },
-      { name: "Fotos ilimitadas por check-in", isIncluded: true },
+      { name: "Fotos de progresso por check-in", isIncluded: true },
       { name: "IA com contexto total e historico completo", isIncluded: true },
       { name: "Upload de videos de exercicios", isIncluded: true },
       { name: "~4,5M tokens de IA por mes", isIncluded: true },

@@ -16,8 +16,8 @@ const ACCESS_MATRIX = {
   checkin_monthly:      ["intermediario", "pro"],
   checkin_daily:        ["pro"],
   bioimpedance:         ["intermediario", "pro"],
-  photo_upload:         ["basico", "intermediario", "pro"],
-  photo_limit:          { basico: 2, intermediario: 5, pro: Infinity },
+  photo_upload:         ["intermediario", "pro"],
+  photo_limit:          { intermediario: Infinity, pro: Infinity },
   body_measurements:    ["intermediario", "pro"],
 
   // dashboard

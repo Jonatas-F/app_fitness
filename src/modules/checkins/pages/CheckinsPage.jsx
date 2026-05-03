@@ -781,6 +781,7 @@ function getCadenceIntro(cadence) {
 
 export default function CheckinsPage() {
   const { canAccess, getLimit } = usePlan();
+  const canDoPhotos = canAccess("photo_upload");
   const maxPhotos = getLimit("photo_limit");
   const canDoMonthly = canAccess("checkin_monthly");
   const canDoDaily   = canAccess("checkin_daily");
@@ -1950,7 +1951,7 @@ export default function CheckinsPage() {
               />
             </Field>
 
-            <div className={`photo-checkin-panel${submitAttempted && selectedPhotoCount === 0 ? " is-invalid" : ""}`}>
+            {canDoPhotos && <div className={`photo-checkin-panel${submitAttempted && canDoPhotos && selectedPhotoCount === 0 ? " is-invalid" : ""}`}>
               <div className="photo-checkin-panel__header">
                 <div>
                   <h3>Fotos de progresso obrigatorias</h3>
@@ -1973,7 +1974,7 @@ export default function CheckinsPage() {
                   />
                 ))}
               </div>
-            </div>
+            </div>}
 
             {/* Painel de atualização com IA após salvar */}
             <div className="checkins-ai-update-panel glass-panel">
