@@ -94,7 +94,7 @@ export async function ensureLocalBillingTables() {
     create table if not exists subscriptions (
       id bigint generated always as identity primary key,
       account_id bigint not null references accounts(id) on delete cascade,
-      plan varchar(30) not null check (plan in ('basico', 'intermediario', 'avancado')),
+      plan varchar(30) not null check (plan in ('basico', 'intermediario', 'avancado', 'pro')),
       billing_cycle varchar(20) not null check (billing_cycle in ('monthly', 'annual')),
       status varchar(40) not null default 'active',
       token_limit integer not null default 90000,
@@ -119,8 +119,8 @@ export async function ensureLocalBillingTables() {
       metadata jsonb not null default '{}'::jsonb,
       accepted_at timestamptz not null default now(),
       created_at timestamptz not null default now(),
-      check (previous_plan in ('basico', 'intermediario', 'avancado')),
-      check (next_plan in ('basico', 'intermediario', 'avancado')),
+      check (previous_plan in ('basico', 'intermediario', 'avancado', 'pro')),
+      check (next_plan in ('basico', 'intermediario', 'avancado', 'pro')),
       check (previous_billing_cycle in ('monthly', 'annual')),
       check (next_billing_cycle in ('monthly', 'annual'))
     );
@@ -968,6 +968,13 @@ export function constructStripeWebhookEvent(rawBody, signature) {
   const client = requireStripe();
 
   if (!webhookSecret) {
+    if (process.env.NODE_ENV === "production") {
+      const error = new Error("STRIPE_WEBHOOK_SECRET nao configurado. Webhook rejeitado em producao.");
+      error.status = 500;
+      throw error;
+    }
+    // Em desenvolvimento, aceita sem validar (apenas local)
+    console.warn("[AVISO] STRIPE_WEBHOOK_SECRET ausente — validacao de assinatura desativada em dev.");
     return JSON.parse(rawBody.toString("utf8"));
   }
 

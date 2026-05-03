@@ -1,6 +1,8 @@
 import "dotenv/config";
 import cors from "cors";
 import express from "express";
+import helmet from "helmet";
+import { rateLimit } from "express-rate-limit";
 import { appConfig } from "./config/app.config.js";
 import { requireAuth } from "./middlewares/auth.middleware.js";
 import { pool, testDatabaseConnection } from "./utils/db.js";
@@ -73,9 +75,45 @@ import { ensureLocalAiTables } from "./modules/ai/ai.service.js";
 import { handleLoadChatHistory } from "./modules/chat/chat.controller.js";
 import { ensureLocalChatTables } from "./modules/chat/chat.service.js";
 
+// ── Startup validation ────────────────────────────────────────────────────────
+if (process.env.NODE_ENV === "production") {
+  const missingSecrets = [];
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET === "shape_certo_dev_secret") {
+    missingSecrets.push("JWT_SECRET");
+  }
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    missingSecrets.push("STRIPE_WEBHOOK_SECRET");
+  }
+  if (missingSecrets.length) {
+    console.error(`[FATAL] Variaveis de ambiente obrigatorias ausentes em producao: ${missingSecrets.join(", ")}`);
+    process.exit(1);
+  }
+}
+
 const app = express();
 const allowedOrigins = new Set(appConfig.allowedOrigins);
 
+// ── Security headers ──────────────────────────────────────────────────────────
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"], // inline scripts necessários para SPA
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'", "https://api.stripe.com", "https://api.openai.com"],
+        frameSrc: ["'self'", "https://js.stripe.com"],
+        fontSrc: ["'self'", "data:"],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: [],
+      },
+    },
+    crossOriginEmbedderPolicy: false, // evita quebrar Stripe.js
+  })
+);
+
+// ── CORS ──────────────────────────────────────────────────────────────────────
 app.use(
   cors({
     origin(origin, callback) {
@@ -88,6 +126,25 @@ app.use(
     },
   })
 );
+
+// ── Rate limiting ─────────────────────────────────────────────────────────────
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 20,                   // máx 20 tentativas por IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Muitas tentativas. Aguarde 15 minutos e tente novamente." },
+  skip: (req) => process.env.NODE_ENV !== "production", // ativo apenas em prod
+});
+
+const generalLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minuto
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Muitas requisicoes. Tente novamente em instantes." },
+  skip: (req) => process.env.NODE_ENV !== "production",
+});
 app.post("/billing/stripe/webhook", express.raw({ type: "application/json" }), handleStripeWebhook);
 app.post(
   "/security/google-risc/events",
@@ -98,6 +155,8 @@ app.post(
   handleGoogleRiscEvent
 );
 app.use(express.json({ limit: "2mb" }));
+
+app.use(generalLimiter);
 
 app.get("/health", async (req, res, next) => {
   try {
@@ -113,25 +172,11 @@ app.get("/health", async (req, res, next) => {
   }
 });
 
-app.get("/db/tables", async (req, res, next) => {
-  try {
-    const result = await pool.query(`
-      select table_name
-      from information_schema.tables
-      where table_schema = 'public'
-      order by table_name;
-    `);
+// REMOVIDO: /db/tables — rota de debug, não deve existir em produção.
+// Para inspecionar tabelas, use o cliente de banco diretamente.
 
-    res.json({
-      tables: result.rows.map((row) => row.table_name),
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-app.post("/auth/signup", handleSignUp);
-app.post("/auth/login", handleSignIn);
+app.post("/auth/signup", authLimiter, handleSignUp);
+app.post("/auth/login", authLimiter, handleSignIn);
 app.post("/auth/logout", requireAuth, handleSignOut);
 app.get("/auth/me", requireAuth, handleMe);
 app.get("/auth/google", handleGoogleStart);

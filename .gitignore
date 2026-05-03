@@ -23,3 +23,16 @@ pnpm-debug.log*
 Thumbs.db
 .vscode
 .idea
+
+# Logs de processo (não commitar)
+*.log
+*.err.log
+backend-server.*
+dev-server.*
+
+# Capacitor — plataformas nativas geradas
+android/
+ios/
+
+# PWA screenshots (geradas em deploy)
+public/screenshots/
