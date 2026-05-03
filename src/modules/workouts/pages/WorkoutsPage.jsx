@@ -648,7 +648,7 @@ function WorkoutExecutionSection() {
             </div>
           ) : null}
 
-          <article className="workout-protocol-panel">
+          <article className="workout-protocol-panel" data-tour="workout-exercises">
             <header>
               <div>
                 <h3>Exercicios</h3>
@@ -682,6 +682,7 @@ function WorkoutExecutionSection() {
                       <button
                         type="button"
                         className="exercise-select-button"
+                        data-tour={exerciseIndex === 0 ? "exercise-detail-btn" : undefined}
                         onClick={() => {
                           setExpandedExerciseIndex((current) =>
                             current === exerciseIndex ? null : exerciseIndex

@@ -63,6 +63,26 @@ const TOUR_STEPS = [
       "Após o check-in, a IA monta um protocolo de treino completo com séries, cargas e progressão.",
   },
   {
+    id: "workout-exercises",
+    route: "/treinos",
+    target: '[data-tour="workout-exercises"]',
+    position: "top",
+    icon: "📋",
+    title: "Card de treino",
+    description:
+      "Aqui ficam todos os exercícios do dia com nome, número de séries, repetições sugeridas e tempo de descanso ideal. Os exercícios são ordenados pela IA para maximizar o resultado.",
+  },
+  {
+    id: "exercise-detail-btn",
+    route: "/treinos",
+    target: '[data-tour="exercise-detail-btn"]',
+    position: "left",
+    icon: "🔍",
+    title: "Ver detalhes do exercício",
+    description:
+      "Clique em Ver detalhes para expandir o exercício: registre cargas e repetições série a série, envie um vídeo de execução para avaliação e veja o histórico de cargas das sessões anteriores.",
+  },
+  {
     id: "workout-start",
     route: "/treinos",
     target: '[data-tour="workout-start"]',
@@ -70,7 +90,7 @@ const TOUR_STEPS = [
     icon: "▶️",
     title: "Iniciar sessão",
     description:
-      "Clique aqui para iniciar sua sessão de treino. Registre cargas e repetições — esses dados alimentam os próximos protocolos.",
+      "Clique aqui para iniciar sua sessão de treino. O cronômetro de descanso é ativado e você registra tudo em tempo real.",
   },
   // ── Dieta ─────────────────────────────────────────────────────────────────
   {
