@@ -2046,22 +2046,6 @@ export default function CheckinsPage() {
               </Field>
 
               {showWeekly ? (
-              <Field
-                label="Dias disponiveis para treinar esta semana"
-                hint="Quantos dias voce conseguira treinar de fato nesta semana (1 a 7)."
-              >
-                <select name="weeklyTrainingDays" value={formData.weeklyTrainingDays} onChange={handleChange}>
-                  <option value="">Selecione</option>
-                  {weeklyTrainingDayOptions.map((value) => (
-                    <option key={value} value={value}>
-                      {value} dia{value === "1" ? "" : "s"} por semana
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              ) : null}
-
-              {showWeekly ? (
               <Field label="Nivel de treino" hint="Usado pela IA para calibrar complexidade e volume dos exercicios">
                 <select name="trainingExperience" value={formData.trainingExperience} onChange={handleChange}>
                   {experienceOptions.map((option) => (
@@ -2083,7 +2067,12 @@ export default function CheckinsPage() {
                   <DayPicker
                     value={formData.trainingAvailableDays}
                     onChange={(val) =>
-                      setFormData((prev) => ({ ...prev, trainingAvailableDays: val }))
+                      setFormData((prev) => ({
+                        ...prev,
+                        trainingAvailableDays: val,
+                        // Deriva weeklyTrainingDays automaticamente pela contagem dos dias selecionados
+                        weeklyTrainingDays: val ? String(val.split(",").filter(Boolean).length) : prev.weeklyTrainingDays,
+                      }))
                     }
                   />
                 </Field>
