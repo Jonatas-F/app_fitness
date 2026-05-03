@@ -556,6 +556,8 @@ Gere entre 5 e 8 exercicios por dia de treino ativo.
 Nao inclua texto fora do JSON.
 `.trim();
 
+  const ALL_WEEK_DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+
   const trainingDayList = trainingAvailableDays
     ? trainingAvailableDays.split(",").map((d) => d.trim()).filter(Boolean)
     : [];
@@ -573,7 +575,7 @@ Nao inclua texto fora do JSON.
         ? [
             `DIAS DE TREINO SELECIONADOS PELO USUARIO (${trainingDayCount} dias — OBRIGATORIO):`,
             `  Dias com "enabled": true: ${trainingDayList.join(", ")}.`,
-            `  Dias com "enabled": false e "exercises": []: todos os outros (${["monday","tuesday","wednesday","thursday","friday","saturday","sunday"].filter((d) => !trainingDayList.includes(d)).join(", ")}).`,
+            `  Dias com "enabled": false e "exercises": []: todos os outros (${ALL_WEEK_DAYS.filter((d) => !trainingDayList.includes(d)).join(", ")}).`,
             `  NAO altere esta selecao. NAO redistribua os dias. Use exatamente esses ${trainingDayCount} dias como dias de treino.`,
           ].join(" ")
         : "Distribua os dias de treino de forma equilibrada, nunca concentrando todos os descansos no final da semana.",
@@ -581,8 +583,32 @@ Nao inclua texto fora do JSON.
     ].filter(Boolean).join(" "),
   });
 
-  if (persist && result.json) {
-    const protocol = await saveWorkoutPlan(accountId, result.json);
+  // ── Post-processamento determinístico ───────────────────────────────────────
+  // Independente do que o modelo retornou, aplica os dias selecionados pelo
+  // usuário como verdade absoluta. Isso garante que a contagem de dias esteja
+  // sempre correta mesmo quando o LLM ignora as instruções.
+  let finalJson = result.json;
+  if (finalJson && trainingDayList.length > 0 && Array.isArray(finalJson.workouts)) {
+    const enabledSet = new Set(trainingDayList);
+    finalJson = {
+      ...finalJson,
+      weeklyTrainingDays: trainingDayList.length,
+      workouts: finalJson.workouts.map((w) => {
+        if (enabledSet.has(w.id)) {
+          return { ...w, enabled: true };
+        }
+        return {
+          ...w,
+          enabled: false,
+          exercises: [],
+          focus: "Descanso e recuperacao",
+        };
+      }),
+    };
+  }
+
+  if (persist && finalJson) {
+    const protocol = await saveWorkoutPlan(accountId, finalJson);
     await pool.query(
       `
         insert into ai_data_writes (account_id, ai_generation_run_id, target_table, target_id, action, payload)
@@ -593,7 +619,7 @@ Nao inclua texto fora do JSON.
     return {
       run: result.publicRun,
       text: result.text,
-      json: result.json,
+      json: finalJson,
       protocol,
     };
   }
@@ -601,6 +627,6 @@ Nao inclua texto fora do JSON.
   return {
     run: result.publicRun,
     text: result.text,
-    json: result.json,
+    json: finalJson,
   };
 }
