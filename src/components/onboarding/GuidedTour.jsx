@@ -86,7 +86,7 @@ const TOUR_STEPS = [
     id: "workout-start",
     route: "/treinos",
     target: '[data-tour="workout-start"]',
-    position: "top",
+    position: "left",
     icon: "▶️",
     title: "Iniciar sessão",
     description:
