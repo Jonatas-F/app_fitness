@@ -80,7 +80,7 @@ export default function HomePage() {
     }
 
     if (result.skipped) {
-      setAuthMessage("Supabase ainda nao configurado. Entrando em modo local.");
+      setAuthMessage("Servidor ainda nao disponivel. Entrando em modo local.");
     }
 
     navigate("/dashboard");

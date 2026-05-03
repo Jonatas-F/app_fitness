@@ -626,7 +626,7 @@ export default function ProfilePage({ embedded = false }) {
 
     if (!upload.skipped && upload.signedUrl) {
       setProfilePhoto(saveProfilePhoto({ name: file.name, dataUrl: upload.signedUrl, avatarPath: upload.path }));
-      setAccountMessage("Foto enviada para o Supabase Storage.");
+      setAccountMessage("Foto enviada com sucesso.");
     }
   }
 
@@ -644,14 +644,14 @@ export default function ProfilePage({ embedded = false }) {
 
     if (result.error) {
       setIsSavingAccount(false);
-      setAccountMessage(`Dados salvos localmente. Supabase: ${result.error.message}`);
+      setAccountMessage(`Dados salvos localmente. Erro ao sincronizar: ${result.error.message}`);
       return;
     }
 
     setAccountMessage(
       result.skipped
         ? "Dados de perfil salvos neste dispositivo."
-        : "Dados de perfil salvos no Supabase."
+        : "Dados de perfil salvos no servidor."
     );
     setIsSavingAccount(false);
   }
@@ -799,7 +799,7 @@ export default function ProfilePage({ embedded = false }) {
       setAccountMessage(
         `Aceite registrado, mas nao foi possivel abrir o Stripe. ${
           result.error?.message || "Tente novamente em alguns instantes."
-        }${acceptanceResult.error ? ` Historico local salvo; Supabase: ${acceptanceResult.error.message}` : ""}`
+        }${acceptanceResult.error ? ` Historico local salvo; erro: ${acceptanceResult.error.message}` : ""}`
       );
       return;
     }

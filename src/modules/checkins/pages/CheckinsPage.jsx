@@ -471,7 +471,7 @@ function buildSyncStatus({ successMessage, skippedMessage, localFallback, remote
       normalized.includes("jwt") ||
       normalized.includes("session")
     ) {
-      return `${localFallback} Entre novamente para sincronizar com o Supabase.`;
+      return `${localFallback} Entre novamente para sincronizar.`;
     }
 
     if (
@@ -1030,7 +1030,7 @@ export default function CheckinsPage() {
           cadence: cadenceToUse,
         };
       });
-      setSyncStatus("Historico sincronizado com o Supabase. Pode seguir preenchendo normalmente.");
+      setSyncStatus("Historico sincronizado com o servidor. Pode seguir preenchendo normalmente.");
       setIsHydratingCheckins(false);
     }
 
@@ -1168,8 +1168,8 @@ export default function CheckinsPage() {
     showToast(`${checkinCadences[activeCadence].label} salvo com sucesso.`);
     setSyncStatus(
       buildSyncStatus({
-        successMessage: "Check-in salvo e sincronizado com o Supabase.",
-        skippedMessage: "Check-in salvo nesta maquina. Entre com o Supabase se quiser sincronizar em nuvem.",
+        successMessage: "Check-in salvo no servidor.",
+        skippedMessage: "Check-in salvo localmente.",
         localFallback: "Check-in salvo nesta maquina.",
         remote,
       })
@@ -1277,8 +1277,8 @@ export default function CheckinsPage() {
     showToast("Ausencia registrada no historico.", "warning");
     setSyncStatus(
       buildSyncStatus({
-        successMessage: "Ausencia salva e sincronizada com o Supabase.",
-        skippedMessage: "Ausencia salva nesta maquina. Entre com o Supabase se quiser sincronizar em nuvem.",
+        successMessage: "Ausencia salva no servidor.",
+        skippedMessage: "Ausencia salva localmente.",
         localFallback: "Ausencia salva nesta maquina.",
         remote,
       })
@@ -1293,8 +1293,8 @@ export default function CheckinsPage() {
     const remote = await deleteRemoteCheckins();
     setSyncStatus(
       buildSyncStatus({
-        successMessage: "Historico local e Supabase resetados.",
-        skippedMessage: "Historico local resetado. Entre com o Supabase se quiser limpar tambem a nuvem.",
+        successMessage: "Historico resetado.",
+        skippedMessage: "Historico local resetado.",
         localFallback: "Historico local resetado.",
         remote,
       })
