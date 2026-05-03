@@ -1,17 +1,47 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { getStoredApiUser } from "../services/api/client";
 
-const FIRST_CHECKIN_KEY  = "shapeCertoFirstCheckinDone";
+const FIRST_CHECKIN_KEY   = "shapeCertoFirstCheckinDone";
 const ONBOARDING_DONE_KEY = "shapeCertoOnboardingDone";
+
+function readFromStorage() {
+  return {
+    firstCheckinDone: localStorage.getItem(FIRST_CHECKIN_KEY) === "true",
+    onboardingDone:   localStorage.getItem(ONBOARDING_DONE_KEY) === "true",
+  };
+}
 
 export function useOnboarding() {
   const [firstCheckinDone, setFirstCheckinDone] = useState(
-    () => localStorage.getItem(FIRST_CHECKIN_KEY) === "true"
+    () => readFromStorage().firstCheckinDone
   );
   const [onboardingDone, setOnboardingDone] = useState(
-    () => localStorage.getItem(ONBOARDING_DONE_KEY) === "true"
+    () => readFromStorage().onboardingDone
   );
 
-  // Listen for admin reset event
+  // Re-sync a partir do localStorage quando o usuário faz login/logout
+  // Um usuário novo que acabou de logar ainda não tem a flag → modal abre automaticamente
+  const syncFromStorage = useCallback(() => {
+    const user = getStoredApiUser();
+    if (!user) {
+      // Logout: esconde tudo
+      setFirstCheckinDone(true);
+      setOnboardingDone(true);
+      return;
+    }
+    // Login: relê as flags — usuário novo não terá nada salvo
+    const { firstCheckinDone: f, onboardingDone: o } = readFromStorage();
+    setFirstCheckinDone(f);
+    setOnboardingDone(o);
+  }, []);
+
+  // Escuta login/logout
+  useEffect(() => {
+    window.addEventListener("shape-certo-auth-updated", syncFromStorage);
+    return () => window.removeEventListener("shape-certo-auth-updated", syncFromStorage);
+  }, [syncFromStorage]);
+
+  // Escuta o botão admin "🔄 Testar 1º acesso" → abre modal imediatamente
   useEffect(() => {
     function onReset() {
       setFirstCheckinDone(false);

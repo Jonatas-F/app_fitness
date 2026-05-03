@@ -5,11 +5,15 @@ import FirstCheckinModal from '../components/onboarding/FirstCheckinModal';
 import GuidedTour from '../components/onboarding/GuidedTour';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { usePlan } from '../hooks/usePlan';
+import { getStoredApiUser } from '../services/api/client';
 import './AppLayout.css';
 
 export default function AppLayout() {
   const { showFirstCheckin, showTour, completeFirstCheckin, completeOnboarding } = useOnboarding();
   const { planId } = usePlan();
+
+  // Só exibe os modais de onboarding quando há sessão ativa
+  const isLoggedIn = Boolean(getStoredApiUser());
 
   return (
     <div className="app-shell">
@@ -21,10 +25,10 @@ export default function AppLayout() {
 
       <BottomNav />
 
-      {showFirstCheckin && (
+      {isLoggedIn && showFirstCheckin && (
         <FirstCheckinModal planId={planId} onComplete={completeFirstCheckin} />
       )}
-      {showTour && (
+      {isLoggedIn && showTour && (
         <GuidedTour onComplete={completeOnboarding} />
       )}
     </div>
