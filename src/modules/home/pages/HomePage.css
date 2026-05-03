@@ -626,6 +626,48 @@
   margin: 0 auto;
 }
 
+/* ── Category header rows ───────────────────────────────────── */
+.home-pricing-card .pricing-card__category-row td {
+  padding: 10px 12px 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.42);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent !important;
+}
+
+.home-pricing-card .pricing-card__category-row:first-child td {
+  border-top: none;
+}
+
+/* ── Value cells (text instead of icon) ─────────────────────── */
+.home-pricing-card .pricing-card__table-value-cell {
+  text-align: center;
+}
+
+.home-pricing-card .pricing-card__table-value {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.home-pricing-card .pricing-card__comparison .is-featured .pricing-card__table-value {
+  background: rgba(229, 9, 20, 0.28);
+  color: #ff8080;
+}
+
+/* ── Minus icon (not included) ──────────────────────────────── */
+.home-pricing-card .pricing-card__table-icon.is-muted {
+  color: rgba(255, 255, 255, 0.18);
+}
+
 @media (max-width: 1060px) {
   .home-hero {
     grid-template-columns: 1fr;

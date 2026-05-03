@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Check, X } from "lucide-react"
+import { Check, X, Minus } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -28,6 +28,24 @@ function formatPlanPrice(value, locale = "pt-BR", currency = "BRL") {
   }).format(value)
 }
 
+/**
+ * Builds the ordered list of unique feature names from all plans,
+ * preserving the order from the first plan that introduces each name.
+ */
+function buildAllFeatures(plans) {
+  const seen = new Set()
+  const result = []
+  for (const plan of plans) {
+    for (const f of plan.features) {
+      if (!seen.has(f.name)) {
+        seen.add(f.name)
+        result.push({ name: f.name, category: f.category ?? null })
+      }
+    }
+  }
+  return result
+}
+
 function PricingCard({
   plans,
   billingCycle,
@@ -45,7 +63,13 @@ function PricingCard({
     return null
   }
 
-  const allFeatures = Array.from(new Set(plans.flatMap((plan) => plan.features.map((feature) => feature.name))))
+  const allFeatures = buildAllFeatures(plans)
+
+  // Detect if we have category data to render grouped sections
+  const hasCategories = allFeatures.some((f) => f.category)
+  const categories = hasCategories
+    ? Array.from(new Set(allFeatures.map((f) => f.category).filter(Boolean)))
+    : []
 
   return (
     <div className={cn("pricing-card", className)} {...props}>
@@ -93,6 +117,8 @@ function PricingCard({
           const isFeatured = plan.isPopular
           const currentPrice = billingCycle === "monthly" ? plan.priceMonthly : plan.priceAnnually
           const suffix = billingCycle === "monthly" ? "/mes" : "/ano"
+          // Use highlights for the card if provided, otherwise fall back to first 6 features
+          const cardItems = plan.highlights ?? plan.features.slice(0, 6)
 
           return (
             <Card
@@ -131,7 +157,7 @@ function PricingCard({
               <CardContent className="pricing-card__plan-content">
                 <h3>Inclui:</h3>
                 <ul>
-                  {plan.features.slice(0, 6).map((feature) => (
+                  {cardItems.map((feature) => (
                     <FeatureItem key={feature.name} feature={feature} />
                   ))}
                 </ul>
@@ -171,26 +197,89 @@ function PricingCard({
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
-              {allFeatures.map((featureName, index) => (
-                <tr key={featureName} className={index % 2 === 0 ? "is-even" : ""}>
-                  <td>{featureName}</td>
-                  {plans.map((plan) => {
-                    const feature = plan.features.find((item) => item.name === featureName)
-                    const isIncluded = feature?.isIncluded ?? false
-                    const Icon = isIncluded ? Check : X
-
-                    return (
-                      <td key={`${plan.id}-${featureName}`} className={plan.isPopular ? "is-featured" : ""}>
-                        <Icon
-                          className={cn("pricing-card__table-icon", isIncluded ? "is-included" : "is-muted")}
-                          aria-label={isIncluded ? "Incluido" : "Nao incluido"}
-                        />
-                      </td>
-                    )
-                  })}
-                </tr>
-              ))}
+            <tbody>
+              {hasCategories
+                ? categories.flatMap((cat) => {
+                    const catFeatures = allFeatures.filter((f) => f.category === cat)
+                    return [
+                      // Category header row
+                      <tr key={`cat-${cat}`} className="pricing-card__category-row">
+                        <td colSpan={plans.length + 1}>{cat}</td>
+                      </tr>,
+                      // Feature rows for this category
+                      ...catFeatures.map((feature, idx) => (
+                        <tr key={feature.name} className={idx % 2 === 0 ? "is-even" : ""}>
+                          <td>{feature.name}</td>
+                          {plans.map((plan) => {
+                            const f = plan.features.find((item) => item.name === feature.name)
+                            // Value cell (text display)
+                            if (f?.value) {
+                              return (
+                                <td
+                                  key={`${plan.id}-${feature.name}`}
+                                  className={cn("pricing-card__table-value-cell", plan.isPopular ? "is-featured" : "")}
+                                >
+                                  <span className="pricing-card__table-value">{f.value}</span>
+                                </td>
+                              )
+                            }
+                            // Boolean cell (✓ / ✗)
+                            const isIncluded = f?.isIncluded ?? false
+                            const Icon = isIncluded ? Check : Minus
+                            return (
+                              <td
+                                key={`${plan.id}-${feature.name}`}
+                                className={plan.isPopular ? "is-featured" : ""}
+                              >
+                                <Icon
+                                  className={cn(
+                                    "pricing-card__table-icon",
+                                    isIncluded ? "is-included" : "is-muted"
+                                  )}
+                                  aria-label={isIncluded ? "Incluido" : "Nao incluido"}
+                                />
+                              </td>
+                            )
+                          })}
+                        </tr>
+                      )),
+                    ]
+                  })
+                : // Flat rendering (no categories)
+                  allFeatures.map((feature, index) => (
+                    <tr key={feature.name} className={index % 2 === 0 ? "is-even" : ""}>
+                      <td>{feature.name}</td>
+                      {plans.map((plan) => {
+                        const f = plan.features.find((item) => item.name === feature.name)
+                        if (f?.value) {
+                          return (
+                            <td
+                              key={`${plan.id}-${feature.name}`}
+                              className={cn("pricing-card__table-value-cell", plan.isPopular ? "is-featured" : "")}
+                            >
+                              <span className="pricing-card__table-value">{f.value}</span>
+                            </td>
+                          )
+                        }
+                        const isIncluded = f?.isIncluded ?? false
+                        const Icon = isIncluded ? Check : Minus
+                        return (
+                          <td
+                            key={`${plan.id}-${feature.name}`}
+                            className={plan.isPopular ? "is-featured" : ""}
+                          >
+                            <Icon
+                              className={cn(
+                                "pricing-card__table-icon",
+                                isIncluded ? "is-included" : "is-muted"
+                              )}
+                              aria-label={isIncluded ? "Incluido" : "Nao incluido"}
+                            />
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
             </tbody>
           </table>
         </div>

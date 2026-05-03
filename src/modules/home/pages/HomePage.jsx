@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PricingCard from "@/components/ui/pricing-card";
 import logo from "../../../assets/logo.svg";
-import { getAnnualPrice, subscriptionPlans } from "../../../data/plans";
+import { featureMatrix, getAnnualPrice, subscriptionPlans } from "../../../data/plans";
 import {
   buildGoogleSignInUrl,
   rememberGoogleReturnTo,
@@ -119,11 +119,27 @@ export default function HomePage() {
   }
 
   const pricingPlans = plans.map((plan) => {
-    const featureNames = [plan.tokens, plan.workouts, plan.meals, ...plan.features];
-    const features = featureNames.map((feature) => ({
-      name: feature,
-      isIncluded: true,
-    }));
+    // Build comparison-table features from the shared feature matrix.
+    // Boolean entries → { name, category, isIncluded }
+    // Value entries   → { name, category, isIncluded, value }
+    const features = featureMatrix.map((entry) => {
+      if (Array.isArray(entry.plans)) {
+        return {
+          name: entry.name,
+          category: entry.category,
+          isIncluded: entry.plans.includes(plan.id),
+        };
+      }
+      // Value-type feature (object map per plan)
+      const val = entry.plans[plan.id] ?? null;
+      return {
+        name: entry.name,
+        category: entry.category,
+        isIncluded: val !== null,
+        value: val,
+      };
+    });
+
     return {
       id: plan.id,
       name: plan.name,
@@ -133,6 +149,7 @@ export default function HomePage() {
       isPopular: Boolean(plan.featured),
       buttonLabel: `Escolher ${plan.name}`,
       features,
+      highlights: plan.highlights,
     };
   });
 
