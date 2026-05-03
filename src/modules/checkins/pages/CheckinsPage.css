@@ -157,9 +157,15 @@
 
 .checkins-hero,
 .checkin-section,
-.checkins-actions,
-.checkins-history {
+.checkins-actions {
   padding: 22px;
+}
+
+.checkins-history {
+  padding: 28px 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .checkins-collapsible {
@@ -1567,100 +1573,182 @@
 
 .checkins-history-overview .checkins-history-card,
 .checkins-history-insight {
-  min-height: 96px;
+  min-height: 100px;
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .checkins-history-overview .section-card__eyebrow,
 .checkins-history-insight .section-card__eyebrow {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 0.68rem;
   font-weight: 900;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  margin-bottom: 6px;
 }
 
 .checkins-history-overview .section-card__title,
 .checkins-history-insight .section-card__title {
   color: #fff;
-  font-size: 1rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.2;
 }
 
 .checkins-history-overview .section-card__description,
 .checkins-history-insight .section-card__description {
-  color: rgba(255, 255, 255, 0.66);
-  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  margin-top: 4px;
 }
 
+/* ── Shells das tabelas ───────────────────────────────────────────────────── */
 .checkins-cadence-table-shell,
 .checkins-history-table-shell {
   overflow-x: auto;
   overflow-y: hidden;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.025);
 }
 
+/* ── Tabela de resumo por cadência ───────────────────────────────────────── */
 .checkins-cadence-table {
-  min-width: 640px;
+  min-width: 560px;
 }
 
-.checkins-history-table {
-  min-width: 980px;
-}
-
-.checkins-cadence-table [data-slot="table-head"],
-.checkins-history-table [data-slot="table-head"] {
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 0.75rem;
+.checkins-cadence-table [data-slot="table-head"] {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.7rem;
   font-weight: 900;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
+  padding-top: 14px;
+  padding-bottom: 14px;
 }
 
-.checkins-cadence-table [data-slot="table-row"],
+.checkins-cadence-table [data-slot="table-row"] {
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+.checkins-cadence-table [data-slot="table-row"]:last-child {
+  border-bottom: none;
+}
+
+.checkins-cadence-table [data-slot="table-cell"] {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.88rem;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* primeiro td = rótulo de cadência */
+.checkins-cadence-table [data-slot="table-cell"]:first-child {
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ── Tabela histórico completo ────────────────────────────────────────────── */
+.checkins-history-table {
+  min-width: 1020px;
+}
+
+.checkins-history-table [data-slot="table-head"] {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding-top: 14px;
+  padding-bottom: 14px;
+  white-space: nowrap;
+}
+
+/* Linhas ─────────────────────────────────────────────────────────────────── */
 .checkins-history-table [data-slot="table-row"] {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.07);
+  transition: background 0.15s ease;
 }
 
-.checkins-cadence-table [data-slot="table-cell"],
+.checkins-history-table [data-slot="table-row"]:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Zebra stripes suaves */
+.checkins-history-table [data-slot="table-body"]
+  > [data-slot="table-row"]:nth-child(even) {
+  background: rgba(255, 255, 255, 0.018);
+}
+
+/* Células ────────────────────────────────────────────────────────────────── */
 .checkins-history-table [data-slot="table-cell"] {
-  color: rgba(255, 255, 255, 0.88);
-  vertical-align: top;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.84rem;
+  vertical-align: middle;
+  padding-top: 13px;
+  padding-bottom: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
+/* Coluna de data — monoespaçada para alinhamento */
+.checkins-history-table [data-slot="table-cell"]:first-child {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.55);
+  font-family: ui-monospace, monospace;
+  white-space: nowrap;
+}
+
+/* ── Status pill — restaura cores do StatusPill (success/danger) ──────────── */
 .checkins-table-pill {
-  min-width: 72px;
+  min-width: 68px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
 }
 
-.checkins-table-pill.is-completed {
-  color: inherit;
-  background: inherit;
-  border-color: inherit;
-}
-
+/* Não sobrescrever com inherit — deixa o tone do StatusPill agir */
+.checkins-table-pill.is-completed,
 .checkins-table-pill.is-missed {
-  color: inherit;
-  background: inherit;
-  border-color: inherit;
+  /* intencionalmente vazio para preservar as cores do componente */
 }
 
+/* ── Coluna Resumo (goal + notes) ────────────────────────────────────────── */
 .checkins-history-table__notes-head,
 .checkins-history-table__notes-cell {
   width: 100%;
 }
 
 .checkins-history-table__notes-cell {
-  min-width: 260px;
+  min-width: 280px;
+  max-width: 420px;
   white-space: normal;
+  vertical-align: top;
+  padding-top: 14px;
 }
 
-.checkins-history-table__notes-cell strong,
+.checkins-history-table__notes-cell strong {
+  display: block;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.01em;
+  line-height: 1.3;
+  text-transform: capitalize;
+}
+
 .checkins-history-table__notes-cell span {
   display: block;
-}
-
-.checkins-history-table__notes-cell span {
-  margin-top: 4px;
-  color: rgba(255, 255, 255, 0.62);
-  line-height: 1.45;
+  margin-top: 5px;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.48);
+  line-height: 1.5;
+  white-space: normal;
 }
 
 .checkins-history__header,
@@ -1672,10 +1760,56 @@
 }
 
 .checkins-history__header {
-  margin-bottom: 18px;
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
 
-.checkins-history__header strong,
+.checkins-history__header small {
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.38);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.checkins-history__header strong {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.checkins-history__header em {
+  display: block;
+  font-style: normal;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.48);
+  margin-top: 3px;
+}
+
+/* Badge de contagem */
+.checkins-history__header mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #fff;
+  background: rgba(229, 9, 20, 0.18);
+  border: 1px solid rgba(229, 9, 20, 0.35);
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
 .checkins-history-card__top span {
   display: inline-flex;
   min-height: 34px;
@@ -1686,6 +1820,7 @@
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
 
 .checkins-history__list {
   display: grid;
@@ -1865,10 +2000,6 @@
 .checkin-section__body {
   display: grid;
   gap: 18px;
-}
-
-.checkins-history {
-  padding: 22px;
 }
 
 /* ── Day Picker ─────────────────────────────────────────────── */
