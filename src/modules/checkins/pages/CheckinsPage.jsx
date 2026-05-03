@@ -187,6 +187,19 @@ const photoPoseSlots = [
 
 const FORM_CONTROL_TAGS = ["input", "select", "textarea"];
 
+/**
+ * Coleta os valores válidos (não vazios) das <option> de um <select>.
+ */
+function collectOptionValues(selectChildren) {
+  const values = new Set();
+  Children.forEach(selectChildren, (opt) => {
+    if (isValidElement(opt) && opt.props.value !== "" && opt.props.value !== undefined) {
+      values.add(String(opt.props.value));
+    }
+  });
+  return values;
+}
+
 function getChildrenValue(children) {
   let value = "";
 
@@ -195,13 +208,28 @@ function getChildrenValue(children) {
       return;
     }
 
-    // For form controls, only use the controlled `value` prop.
-    // Never recurse into <option> children — an undefined value means empty.
+    // Para form controls, nunca recursamos nos filhos para extrair valor.
     if (typeof child.type === "string" && FORM_CONTROL_TAGS.includes(child.type)) {
       const controlled = child.props.value;
-      if (controlled !== undefined && controlled !== null) {
-        value = controlled;
+
+      if (controlled === undefined || controlled === null || controlled === "") {
+        // sem valor controlado → campo vazio
+        return;
       }
+
+      if (child.type === "select") {
+        // Para <select>, só considera preenchido se o valor controlado
+        // realmente corresponde a uma das <option> não-vazias.
+        const validOptions = collectOptionValues(child.props.children);
+        if (validOptions.has(String(controlled))) {
+          value = controlled;
+        }
+        // valor existe mas não bate com nenhuma opção → trata como vazio
+        return;
+      }
+
+      // input / textarea: qualquer string não-vazia vale
+      value = controlled;
       return;
     }
 
@@ -815,10 +843,11 @@ export default function CheckinsPage() {
   const [pendingPayload, setPendingPayload] = useState(null);
   const confirmButtonRef = useRef(null);
   const [submitAttempted, setSubmitAttempted] = useState(false);
-  const [updateWorkoutWithAi, setUpdateWorkoutWithAi] = useState(false);
-  const [updateDietWithAi, setUpdateDietWithAi] = useState(false);
+  const [updateWorkoutWithAi, setUpdateWorkoutWithAi] = useState(true);
+  const [updateDietWithAi, setUpdateDietWithAi] = useState(true);
   const [isGeneratingProtocols, setIsGeneratingProtocols] = useState(false);
   const [protocolUpdateResult, setProtocolUpdateResult] = useState(null);
+  const [showAiModal, setShowAiModal] = useState(false);
   const cancelButtonRef = useRef(null);
   const [isHydratingCheckins, setIsHydratingCheckins] = useState(true);
 
@@ -1038,42 +1067,47 @@ export default function CheckinsPage() {
       })
     );
 
-    // Se o usuário pediu para atualizar protocolos com IA após o check-in
-    if (updateWorkoutWithAi || updateDietWithAi) {
-      setIsGeneratingProtocols(true);
-      setProtocolUpdateResult(null);
-      const results = { workout: null, diet: null, errors: [] };
+    // Abrir popup para perguntar se deseja atualizar protocolos com IA
+    setProtocolUpdateResult(null);
+    setShowAiModal(true);
+  }
 
-      try {
-        if (updateWorkoutWithAi) {
-          try {
-            const res = await generateWorkoutWithAi({ persist: true });
-            if (res?.protocol) {
-              await hydrateWorkoutExecutionFromApi();
-              results.workout = res.protocol?.title || "Protocolo de treino atualizado";
-            }
-          } catch (err) {
-            results.errors.push("Treino: " + (err.message || "erro desconhecido"));
-          }
-        }
+  async function handleAiUpdate() {
+    if (!updateWorkoutWithAi && !updateDietWithAi) {
+      setShowAiModal(false);
+      return;
+    }
+    setIsGeneratingProtocols(true);
+    setProtocolUpdateResult(null);
+    const results = { workout: null, diet: null, errors: [] };
 
-        if (updateDietWithAi) {
-          try {
-            const res = await generateDietWithAi({ persist: true });
-            if (res?.protocol) {
-              await hydrateDietProtocolFromApi();
-              results.diet = res.protocol?.title || "Protocolo de dieta atualizado";
-            }
-          } catch (err) {
-            results.errors.push("Dieta: " + (err.message || "erro desconhecido"));
+    try {
+      if (updateWorkoutWithAi) {
+        try {
+          const res = await generateWorkoutWithAi({ persist: true });
+          if (res?.protocol) {
+            await hydrateWorkoutExecutionFromApi();
+            results.workout = res.protocol?.title || "Protocolo de treino atualizado";
           }
+        } catch (err) {
+          results.errors.push("Treino: " + (err.message || "erro desconhecido"));
         }
-      } finally {
-        setIsGeneratingProtocols(false);
-        setProtocolUpdateResult(results);
-        setUpdateWorkoutWithAi(false);
-        setUpdateDietWithAi(false);
       }
+
+      if (updateDietWithAi) {
+        try {
+          const res = await generateDietWithAi({ persist: true });
+          if (res?.protocol) {
+            await hydrateDietProtocolFromApi();
+            results.diet = res.protocol?.title || "Protocolo de dieta atualizado";
+          }
+        } catch (err) {
+          results.errors.push("Dieta: " + (err.message || "erro desconhecido"));
+        }
+      }
+    } finally {
+      setIsGeneratingProtocols(false);
+      setProtocolUpdateResult(results);
     }
   }
 
@@ -1249,6 +1283,106 @@ export default function CheckinsPage() {
           </div>
         </div>
       ) : null}
+
+      {showAiModal && (
+        <div className="checkins-modal" role="dialog" aria-modal="true" aria-labelledby="ai-modal-title">
+          <div className="checkins-modal__panel glass-panel">
+            <div className="checkins-modal__header">
+              <div>
+                <span>Check-in salvo com sucesso!</span>
+                <h2 id="ai-modal-title">Atualizar protocolos com IA?</h2>
+                <p>
+                  A IA vai analisar todos os dados deste check-in e gerar novos protocolos.
+                </p>
+              </div>
+              {!isGeneratingProtocols && (
+                <button
+                  type="button"
+                  className="checkins-modal__close"
+                  onClick={() => { setShowAiModal(false); setProtocolUpdateResult(null); }}
+                  aria-label="Fechar"
+                >
+                  x
+                </button>
+              )}
+            </div>
+
+            {!protocolUpdateResult && (
+              <div className="checkins-ai-update-panel__checks" style={{ padding: "0 0 16px" }}>
+                <label className="checkins-ai-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={updateWorkoutWithAi}
+                    onChange={(e) => setUpdateWorkoutWithAi(e.target.checked)}
+                    disabled={isGeneratingProtocols}
+                  />
+                  <span>Atualizar protocolo de treino</span>
+                </label>
+                <label className="checkins-ai-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={updateDietWithAi}
+                    onChange={(e) => setUpdateDietWithAi(e.target.checked)}
+                    disabled={isGeneratingProtocols}
+                  />
+                  <span>Atualizar protocolo de dieta</span>
+                </label>
+              </div>
+            )}
+
+            {isGeneratingProtocols && (
+              <p className="checkins-ai-update-panel__status">
+                ⏳ Gerando protocolos com IA... isso pode levar alguns segundos.
+              </p>
+            )}
+
+            {protocolUpdateResult && (
+              <div className="checkins-ai-update-panel__result">
+                {protocolUpdateResult.workout && (
+                  <p className="checkins-ai-update-panel__ok">{"✓"} Treino: {protocolUpdateResult.workout}</p>
+                )}
+                {protocolUpdateResult.diet && (
+                  <p className="checkins-ai-update-panel__ok">{"✓"} Dieta: {protocolUpdateResult.diet}</p>
+                )}
+                {protocolUpdateResult.errors?.map((err) => (
+                  <p key={err} className="checkins-ai-update-panel__err">{"✗"} {err}</p>
+                ))}
+              </div>
+            )}
+
+            <div className="checkins-modal__actions">
+              {!protocolUpdateResult ? (
+                <>
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    onClick={() => { setShowAiModal(false); }}
+                    disabled={isGeneratingProtocols}
+                  >
+                    Agora não
+                  </button>
+                  <button
+                    type="button"
+                    className="primary-button"
+                    onClick={handleAiUpdate}
+                    disabled={isGeneratingProtocols || (!updateWorkoutWithAi && !updateDietWithAi)}
+                  >
+                    {isGeneratingProtocols ? "Gerando..." : "Atualizar"}
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={() => { setShowAiModal(false); setProtocolUpdateResult(null); }}
+                >
+                  Fechar
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <header className="checkins-hero glass-panel">
         <div>
@@ -1988,55 +2122,6 @@ export default function CheckinsPage() {
                 </div>
               </div>
             )}
-
-            {/* Painel de atualização com IA após salvar */}
-            <div className="checkins-ai-update-panel glass-panel">
-              <div className="checkins-ai-update-panel__header">
-                <strong>Atualizar protocolos com IA após este check-in</strong>
-                <p>
-                  Se marcado, a IA vai analisar todos os dados deste check-in e gerar
-                  novos protocolos automaticamente ao salvar.
-                </p>
-              </div>
-              <div className="checkins-ai-update-panel__checks">
-                <label className="checkins-ai-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={updateWorkoutWithAi}
-                    onChange={(e) => setUpdateWorkoutWithAi(e.target.checked)}
-                    disabled={isGeneratingProtocols}
-                  />
-                  <span>Atualizar protocolo de treino</span>
-                </label>
-                <label className="checkins-ai-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={updateDietWithAi}
-                    onChange={(e) => setUpdateDietWithAi(e.target.checked)}
-                    disabled={isGeneratingProtocols}
-                  />
-                  <span>Atualizar protocolo de dieta</span>
-                </label>
-              </div>
-              {isGeneratingProtocols && (
-                <p className="checkins-ai-update-panel__status">
-                  ⏳ Gerando protocolos com IA... isso pode levar alguns segundos.
-                </p>
-              )}
-              {protocolUpdateResult && (
-                <div className="checkins-ai-update-panel__result">
-                  {protocolUpdateResult.workout && (
-                    <p className="checkins-ai-update-panel__ok">✓ Treino: {protocolUpdateResult.workout}</p>
-                  )}
-                  {protocolUpdateResult.diet && (
-                    <p className="checkins-ai-update-panel__ok">✓ Dieta: {protocolUpdateResult.diet}</p>
-                  )}
-                  {protocolUpdateResult.errors?.map((err) => (
-                    <p key={err} className="checkins-ai-update-panel__err">✗ {err}</p>
-                  ))}
-                </div>
-              )}
-            </div>
 
             <div className="checkins-inline-actions">
               <div>
