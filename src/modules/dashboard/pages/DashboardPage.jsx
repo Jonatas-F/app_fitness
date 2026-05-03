@@ -22,7 +22,7 @@ import {
   loadWorkoutExecution,
   loadWorkoutSessionHistory,
 } from "../../../data/workoutExecutionStorage";
-import logoMark from "../../../assets/logo.svg";
+import logoMark from "../../../assets/logo_sp.svg";
 import "./DashboardPage.css";
 
 const DashboardCharts = lazy(() => import("./DashboardCharts"));
