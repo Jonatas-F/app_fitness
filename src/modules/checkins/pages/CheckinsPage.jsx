@@ -1265,7 +1265,7 @@ export default function CheckinsPage() {
   const showDaily = activeCadence === "daily";
   const showWeekly = activeCadence === "weekly";
   const showMonthly = activeCadence === "monthly";
-  const showProtocolBase = showMonthly || showWeekly;
+  const showProtocolBase = showMonthly;
   const showBodyComposition = showMonthly;
   const metrics = useMemo(() => getCheckinMetrics(checkins), [checkins]);
   const cadenceSummary = useMemo(() => getCheckinCadenceSummary(checkins), [checkins]);
@@ -2047,6 +2047,18 @@ export default function CheckinsPage() {
               <Field label="Nivel de treino" hint="Usado pela IA para calibrar complexidade e volume dos exercicios">
                 <select name="trainingExperience" value={formData.trainingExperience} onChange={handleChange}>
                   {experienceOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              ) : null}
+
+              {showWeekly ? (
+              <Field label="Objetivo principal" hint="Usado pela IA para ajustar treino e dieta">
+                <select name="goal" value={formData.goal} onChange={handleChange}>
+                  {goalOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
