@@ -628,18 +628,19 @@
 
 /* ── Category header rows ───────────────────────────────────── */
 .home-pricing-card .pricing-card__category-row td {
-  padding: 10px 12px 6px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  padding: 14px 14px 8px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.42);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: transparent !important;
+  color: #fff;
+  border-top: 2px solid rgba(229, 9, 20, 0.55);
+  border-bottom: none;
+  background: rgba(229, 9, 20, 0.08) !important;
 }
 
 .home-pricing-card .pricing-card__category-row:first-child td {
-  border-top: none;
+  border-top: 2px solid rgba(229, 9, 20, 0.55);
 }
 
 /* ── Value cells (text instead of icon) ─────────────────────── */
