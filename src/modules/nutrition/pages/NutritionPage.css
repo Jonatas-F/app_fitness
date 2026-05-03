@@ -957,3 +957,438 @@
     font-size: 1.5rem;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   Campos travados (somente Personal Virtual)
+   ══════════════════════════════════════════════════════════════ */
+
+.meal-card__ai-lock {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.46);
+}
+
+.meal-field--readonly {
+  cursor: default !important;
+  color: rgba(255, 255, 255, 0.58) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.07) !important;
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Seção de solicitação de ajuste
+   ══════════════════════════════════════════════════════════════ */
+
+.meal-adjustment-request {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 4px;
+}
+
+.meal-adjustment-request__title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.52);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.meal-adjustment-request__textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  outline: none;
+  font-size: 0.88rem;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.meal-adjustment-request__textarea:focus {
+  border-color: rgba(229, 9, 20, 0.36);
+  box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.08);
+}
+
+.meal-adjustment-request__textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* ── Escopo: apenas este dia / todos ─────────────────────────── */
+
+.meal-adjustment-scope {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.meal-adjustment-scope__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.meal-adjustment-scope__option input[type="radio"] {
+  width: 14px;
+  height: 14px;
+  accent-color: #e50914;
+  flex-shrink: 0;
+}
+
+.meal-adjustment-scope__option.is-selected {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(229, 9, 20, 0.1);
+  border-color: rgba(229, 9, 20, 0.32);
+}
+
+/* ── Botão solicitar ajuste ─────────────────────────────────── */
+
+.meal-adjustment-btn {
+  justify-self: start;
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-size: 0.86rem;
+  font-weight: 900;
+  transition: background 140ms ease, transform 120ms ease;
+}
+
+.meal-adjustment-btn:hover:not(:disabled) {
+  background: rgba(229, 9, 20, 0.18);
+  border-color: rgba(229, 9, 20, 0.38);
+}
+
+.meal-adjustment-btn:disabled {
+  opacity: 0.36;
+  cursor: not-allowed;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Calendário de refeições
+   ══════════════════════════════════════════════════════════════ */
+
+.diet-calendar {
+  display: grid;
+  gap: 20px;
+  padding: 18px 20px 22px;
+  border-radius: 12px;
+}
+
+.diet-calendar__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.diet-calendar__nav-title {
+  flex: 1;
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 900;
+  text-transform: capitalize;
+}
+
+.diet-calendar__nav-btn {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  min-height: 38px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.065);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 1.1rem;
+  transition: background 140ms ease;
+}
+
+.diet-calendar__nav-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.diet-calendar__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.diet-calendar-weekday {
+  padding: 6px 0 8px;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.38);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.diet-calendar-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 3px 6px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.025);
+  min-height: 60px;
+  text-align: center;
+  transition: background 130ms ease, border-color 130ms ease;
+  user-select: none;
+}
+
+.diet-calendar-day--outside {
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+.diet-calendar-day__num {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1;
+}
+
+.diet-calendar-day__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(100, 220, 130, 0.82);
+  flex-shrink: 0;
+}
+
+.diet-calendar-day__count {
+  font-size: 0.58rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.3);
+  text-transform: uppercase;
+  margin-top: auto;
+}
+
+/* ── Status ──────────────────────────────────────────────────── */
+
+.diet-calendar-day.is-today {
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.065);
+}
+
+.diet-calendar-day.is-today .diet-calendar-day__num { color: #fff; }
+
+.diet-calendar-day.is-done {
+  border-color: rgba(100, 220, 130, 0.22);
+  background: rgba(100, 220, 130, 0.07);
+}
+
+.diet-calendar-day.is-done .diet-calendar-day__num {
+  color: rgba(110, 230, 140, 0.9);
+}
+
+.diet-calendar-day.is-missed {
+  border-color: rgba(229, 9, 20, 0.15);
+  background: rgba(229, 9, 20, 0.04);
+}
+
+.diet-calendar-day.is-missed .diet-calendar-day__num {
+  color: rgba(255, 130, 110, 0.8);
+}
+
+.diet-calendar-day.is-future {
+  border-color: rgba(100, 160, 255, 0.14);
+  background: rgba(100, 160, 255, 0.04);
+}
+
+.diet-calendar-day.is-future .diet-calendar-day__num {
+  color: rgba(150, 195, 255, 0.8);
+}
+
+.diet-calendar-day.is-rest .diet-calendar-day__num {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.diet-calendar-day.is-clickable { cursor: pointer; }
+
+.diet-calendar-day.is-done.is-clickable:hover {
+  background: rgba(100, 220, 130, 0.13);
+  border-color: rgba(100, 220, 130, 0.32);
+}
+
+.diet-calendar-day.is-missed.is-clickable:hover {
+  background: rgba(229, 9, 20, 0.1);
+  border-color: rgba(229, 9, 20, 0.3);
+}
+
+/* ── Legenda ─────────────────────────────────────────────────── */
+
+.diet-calendar__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.diet-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.44);
+}
+
+.diet-legend-item.is-done    { color: rgba(110, 230, 140, 0.84); }
+.diet-legend-item.is-missed  { color: rgba(255, 130, 110, 0.84); }
+.diet-legend-item.is-future  { color: rgba(150, 195, 255, 0.84); }
+.diet-legend-item.is-rest    { color: rgba(255, 255, 255, 0.34); }
+
+/* ══════════════════════════════════════════════════════════════
+   Modal retroativo de refeições
+   ══════════════════════════════════════════════════════════════ */
+
+.retro-meal-hint {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  line-height: 1.5;
+}
+
+.retro-meal-list {
+  display: grid;
+  gap: 10px;
+}
+
+.retro-meal-row {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.retro-meal-row__check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.retro-meal-row__check input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #e50914;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.retro-meal-row__check em {
+  font-style: normal;
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 700;
+  margin-left: auto;
+}
+
+.retro-meal-row__time {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 800;
+  padding-left: 26px;
+}
+
+.retro-meal-row__time input[type="time"] {
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  outline: none;
+  font-size: 0.88rem;
+  color-scheme: dark;
+}
+
+.retro-meal-row__time input[type="time"]:focus {
+  border-color: rgba(229, 9, 20, 0.36);
+}
+
+/* ── Modal header ajuste (retroativo tem 2 linhas no header) ─── */
+
+.nutrition-modal header > div {
+  display: grid;
+  gap: 2px;
+}
+
+.nutrition-modal header strong {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 800;
+}
+
+/* ── Mobile ─────────────────────────────────────────────────── */
+
+@media (max-width: 760px) {
+  .diet-calendar {
+    padding: 14px 14px 18px;
+    gap: 14px;
+  }
+
+  .diet-calendar-day {
+    min-height: 50px;
+    padding: 6px 2px 5px;
+    border-radius: 6px;
+  }
+
+  .diet-calendar-day__num { font-size: 0.8rem; }
+  .diet-calendar-day__count { display: none; }
+
+  .meal-adjustment-scope { flex-direction: column; gap: 6px; }
+
+  .retro-meal-row__time { padding-left: 0; flex-wrap: wrap; }
+}
+
+@media (max-width: 430px) {
+  .diet-calendar__grid { gap: 2px; }
+  .diet-calendar-day { min-height: 42px; border-radius: 5px; }
+  .diet-calendar-day__num { font-size: 0.74rem; }
+  .diet-calendar__legend { gap: 10px; }
+  .diet-legend-item { font-size: 0.72rem; }
+}

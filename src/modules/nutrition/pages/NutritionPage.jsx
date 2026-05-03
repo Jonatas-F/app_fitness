@@ -18,6 +18,46 @@ import {
 import "@/components/ModulePageLayout.css";
 import "./NutritionPage.css";
 
+// ── Calendar helpers ──────────────────────────────────────────────────────────
+
+function buildDietCalendarCells(year, month) {
+  const firstDay = new Date(year, month, 1);
+  const lastDayNum = new Date(year, month + 1, 0).getDate();
+  const startDow = (firstDay.getDay() + 6) % 7; // Mon=0, Sun=6
+  const cells = [];
+  for (let i = startDow - 1; i >= 0; i--) {
+    cells.push({ date: new Date(year, month, -i), outside: true });
+  }
+  for (let d = 1; d <= lastDayNum; d++) {
+    cells.push({ date: new Date(year, month, d), outside: false });
+  }
+  const remaining = (7 - (cells.length % 7)) % 7;
+  for (let i = 1; i <= remaining; i++) {
+    cells.push({ date: new Date(year, month + 1, i), outside: true });
+  }
+  return cells;
+}
+
+function getDietDayIdFromDate(date) {
+  const map = ["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"];
+  return map[date.getDay()];
+}
+
+function getDietDayStatus(date, diet, mealLogs) {
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+  const d = new Date(date.getTime());
+  d.setHours(12, 0, 0, 0);
+  if (d > today) return "future";
+  const dateStr = d.toISOString().slice(0, 10);
+  const dayId = getDietDayIdFromDate(d);
+  const dayPlan = diet.dayPlans?.find((p) => p.id === dayId);
+  const enabledMeals = (dayPlan?.meals || []).filter((m) => m.enabled);
+  if (!enabledMeals.length) return "rest";
+  const hasLogs = mealLogs.some((log) => log.logDate === dateStr && log.dayId === dayId);
+  return hasLogs ? "done" : "missed";
+}
+
 function parseNumeric(value) {
   const normalized = String(value || "").replace(",", ".").replace(/[^\d.]/g, "");
   const parsed = Number(normalized);
@@ -227,6 +267,20 @@ export default function NutritionPage() {
   const [feedback, setFeedback] = useState("");
   const [isRestoringDiet, setIsRestoringDiet] = useState(null);
   const [selectedDayId, setSelectedDayId] = useState("segunda");
+  // Solicitações de ajuste por refeição
+  const [adjustmentText, setAdjustmentText] = useState({});
+  const [adjustmentScope, setAdjustmentScope] = useState({});
+  // Calendário retroativo
+  const [mealCalendarDate, setMealCalendarDate] = useState(() => {
+    const d = new Date();
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+  const [isRetroMealLogging, setIsRetroMealLogging] = useState(false);
+  const [retroMealDate, setRetroMealDate] = useState(null);
+  const [retroMealDayPlan, setRetroMealDayPlan] = useState(null);
+  const [retroMealEntries, setRetroMealEntries] = useState([]);
   const [openMeals, setOpenMeals] = useState([]);
   const [mealCompletionModal, setMealCompletionModal] = useState(null);
   const metrics = getDietMetrics(diet, dietHistory);
@@ -439,6 +493,103 @@ export default function NutritionPage() {
     );
   }
 
+  function handleSendAdjustmentRequest(meal) {
+    const text = adjustmentText[meal.id];
+    const scope = adjustmentScope[meal.id] || "day";
+    if (!text) return;
+    const scopeLabel =
+      scope === "all"
+        ? `todos os "${meal.name}" da semana`
+        : `${meal.name} de ${selectedDayPlan.name}`;
+    setFeedback(
+      `Solicitacao enviada para ${scopeLabel}: "${text}". O Personal Virtual vai processar e atualizar o plano.`
+    );
+    setAdjustmentText((prev) => ({ ...prev, [meal.id]: "" }));
+  }
+
+  function handleDietCalendarDayClick(date) {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (date > today) return;
+    const dateStr = date.toISOString().slice(0, 10);
+    const dayId = getDietDayIdFromDate(date);
+    const dayPlan = diet.dayPlans?.find((p) => p.id === dayId);
+    if (!dayPlan) return;
+    const enabledMeals = (dayPlan.meals || []).filter((m) => m.enabled);
+    if (!enabledMeals.length) return;
+    setRetroMealDate(dateStr);
+    setRetroMealDayPlan(dayPlan);
+    setRetroMealEntries(
+      enabledMeals.map((meal) => {
+        const existing = mealLogs.find(
+          (l) => l.logDate === dateStr && l.slotId === meal.id && l.dayId === dayId
+        );
+        return {
+          meal,
+          done: existing
+            ? ["completed", "done", "auto_completed"].includes(existing.status)
+            : false,
+          time: existing
+            ? getTimeInputValue(existing.performedAt || existing.scheduledAt, "")
+            : "",
+          existingLog: existing || null,
+        };
+      })
+    );
+    setIsRetroMealLogging(true);
+  }
+
+  function handleRetroMealEntryChange(index, field, value) {
+    setRetroMealEntries((prev) =>
+      prev.map((entry, i) => (i === index ? { ...entry, [field]: value } : entry))
+    );
+  }
+
+  async function handleSaveRetroMealLogs() {
+    if (!retroMealDate || !retroMealDayPlan) return;
+    const saved = [];
+    for (const entry of retroMealEntries) {
+      if (!entry.done) continue;
+      const performedAt = getDateTimeFromDateAndTime(retroMealDate, entry.time || "12:00");
+      const log = await saveDietMealLog({
+        dietPlanId: diet.id,
+        dayId: retroMealDayPlan.id,
+        slotId: entry.meal.id,
+        mealName: entry.meal.name,
+        logDate: retroMealDate,
+        scheduledAt: performedAt,
+        performedAt,
+        status: "completed",
+        source: "retroactive",
+        payload: { retroactive: true },
+      });
+      saved.push(log);
+    }
+    if (saved.length) {
+      setMealLogs((current) => {
+        const withoutOld = current.filter(
+          (l) =>
+            !(
+              l.logDate === retroMealDate &&
+              l.dayId === retroMealDayPlan.id &&
+              saved.some((s) => s.slotId === l.slotId)
+            )
+        );
+        return [...saved, ...withoutOld].sort(
+          (a, b) =>
+            new Date(b.createdAt || b.performedAt || 0) -
+            new Date(a.createdAt || a.performedAt || 0)
+        );
+      });
+    }
+    setIsRetroMealLogging(false);
+    setFeedback(
+      `${saved.length} refeicao(oes) registrada(s) para ${new Date(
+        retroMealDate + "T12:00:00"
+      ).toLocaleDateString("pt-BR")}.`
+    );
+  }
+
   function toggleMeal(meal) {
     if (!meal.enabled) {
       return;
@@ -547,6 +698,9 @@ export default function NutritionPage() {
           <TabsTrigger value="config" className="nutrition-tab-trigger dashboard-tab-trigger">
             <strong>Config</strong>
             <StatusPill tone="neutral">{diet.userAvailableMeals || "--"} refeicoes</StatusPill>
+          </TabsTrigger>
+          <TabsTrigger value="calendario" className="nutrition-tab-trigger dashboard-tab-trigger">
+            <strong>Calendario</strong>
           </TabsTrigger>
         </TabsList>
 
@@ -831,49 +985,47 @@ export default function NutritionPage() {
                   </button>
                 </div>
 
+                {/* ── Campos travados: somente o Personal Virtual pode editar ──── */}
+                <div className="meal-card__ai-lock">
+                  <span>🔒</span>
+                  <span>Campos definidos pelo Personal Virtual — use o campo abaixo para solicitar ajustes</span>
+                </div>
+
                 <div className="meal-card__macros">
                   <label>
                     Calorias
                     <input
-                      disabled={!meal.enabled}
-                      value={meal.calories}
-                      onChange={(event) =>
-                        handleMealField(selectedDayPlan.id, meal.id, "calories", event.target.value)
-                      }
-                      placeholder="kcal"
+                      readOnly
+                      value={meal.calories || ""}
+                      className="meal-field--readonly"
+                      placeholder="--"
                     />
                   </label>
                   <label>
                     Proteína
                     <input
-                      disabled={!meal.enabled}
-                      value={meal.protein}
-                      onChange={(event) =>
-                        handleMealField(selectedDayPlan.id, meal.id, "protein", event.target.value)
-                      }
-                      placeholder="g"
+                      readOnly
+                      value={meal.protein || ""}
+                      className="meal-field--readonly"
+                      placeholder="--"
                     />
                   </label>
                   <label>
                     Carboidrato
                     <input
-                      disabled={!meal.enabled}
-                      value={meal.carbs}
-                      onChange={(event) =>
-                        handleMealField(selectedDayPlan.id, meal.id, "carbs", event.target.value)
-                      }
-                      placeholder="g"
+                      readOnly
+                      value={meal.carbs || ""}
+                      className="meal-field--readonly"
+                      placeholder="--"
                     />
                   </label>
                   <label>
                     Gorduras
                     <input
-                      disabled={!meal.enabled}
-                      value={meal.fats}
-                      onChange={(event) =>
-                        handleMealField(selectedDayPlan.id, meal.id, "fats", event.target.value)
-                      }
-                      placeholder="g"
+                      readOnly
+                      value={meal.fats || ""}
+                      className="meal-field--readonly"
+                      placeholder="--"
                     />
                   </label>
                 </div>
@@ -881,26 +1033,79 @@ export default function NutritionPage() {
                 <label className="meal-card__textarea">
                   Alimentos e quantidades
                   <textarea
-                    disabled={!meal.enabled}
-                    value={meal.foods}
-                    onChange={(event) =>
-                      handleMealField(selectedDayPlan.id, meal.id, "foods", event.target.value)
-                    }
-                    placeholder="O Personal Virtual preencherá os alimentos desta refeição."
+                    readOnly
+                    value={meal.foods || ""}
+                    className="meal-field--readonly"
+                    placeholder="O Personal Virtual preenchera os alimentos desta refeicao."
                   />
                 </label>
 
                 <label className="meal-card__textarea">
-                  Observações
+                  Observacoes
                   <textarea
-                    disabled={!meal.enabled}
-                    value={meal.notes}
-                    onChange={(event) =>
-                      handleMealField(selectedDayPlan.id, meal.id, "notes", event.target.value)
-                    }
-                    placeholder="Substituições, horários, preparo..."
+                    readOnly
+                    value={meal.notes || ""}
+                    className="meal-field--readonly"
+                    placeholder="Substituicoes, horarios, preparo..."
                   />
                 </label>
+
+                {/* ── Solicitar ajuste ─────────────────────────────────────── */}
+                <div className="meal-adjustment-request">
+                  <p className="meal-adjustment-request__title">
+                    Solicitar ajuste ao Personal Virtual
+                  </p>
+                  <textarea
+                    className="meal-adjustment-request__textarea"
+                    value={adjustmentText[meal.id] || ""}
+                    onChange={(e) =>
+                      setAdjustmentText((prev) => ({ ...prev, [meal.id]: e.target.value }))
+                    }
+                    placeholder="Ex.: Quero retirar a aveia e substituir por granola. Prefiro adicionar mais proteina..."
+                  />
+                  <div className="meal-adjustment-scope">
+                    <label
+                      className={`meal-adjustment-scope__option${
+                        (adjustmentScope[meal.id] || "day") === "day" ? " is-selected" : ""
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name={`adj-scope-${meal.id}`}
+                        value="day"
+                        checked={(adjustmentScope[meal.id] || "day") === "day"}
+                        onChange={() =>
+                          setAdjustmentScope((prev) => ({ ...prev, [meal.id]: "day" }))
+                        }
+                      />
+                      Apenas {selectedDayPlan.name}
+                    </label>
+                    <label
+                      className={`meal-adjustment-scope__option${
+                        adjustmentScope[meal.id] === "all" ? " is-selected" : ""
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name={`adj-scope-${meal.id}`}
+                        value="all"
+                        checked={adjustmentScope[meal.id] === "all"}
+                        onChange={() =>
+                          setAdjustmentScope((prev) => ({ ...prev, [meal.id]: "all" }))
+                        }
+                      />
+                      Todos os {meal.name}
+                    </label>
+                  </div>
+                  <button
+                    type="button"
+                    className="meal-adjustment-btn"
+                    disabled={!adjustmentText[meal.id]}
+                    onClick={() => handleSendAdjustmentRequest(meal)}
+                  >
+                    Solicitar ajuste
+                  </button>
+                </div>
               </>
             ) : null}
           </article>
@@ -908,7 +1113,207 @@ export default function NutritionPage() {
         })}
       </section>
         </TabsContent>
+
+        {/* ═══════════════════════════════════════════════════════════
+            CALENDÁRIO — lançamento retroativo de refeições
+            ═══════════════════════════════════════════════════════════ */}
+        <TabsContent value="calendario" className="nutrition-tab-panel dashboard-tab-panel">
+          <div className="diet-calendar glass-panel">
+            {/* Navegação de mês */}
+            <div className="diet-calendar__nav">
+              <button
+                type="button"
+                className="diet-calendar__nav-btn"
+                onClick={() =>
+                  setMealCalendarDate((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))
+                }
+              >
+                ←
+              </button>
+              <strong className="diet-calendar__nav-title">
+                {mealCalendarDate.toLocaleDateString("pt-BR", {
+                  month: "long",
+                  year: "numeric",
+                })}
+              </strong>
+              <button
+                type="button"
+                className="diet-calendar__nav-btn"
+                onClick={() =>
+                  setMealCalendarDate((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))
+                }
+              >
+                →
+              </button>
+            </div>
+
+            {/* Grade 7 colunas */}
+            <div className="diet-calendar__grid">
+              {["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"].map((d) => (
+                <div key={d} className="diet-calendar-weekday">{d}</div>
+              ))}
+
+              {buildDietCalendarCells(
+                mealCalendarDate.getFullYear(),
+                mealCalendarDate.getMonth()
+              ).map((cell, i) => {
+                const today = new Date();
+                const isToday =
+                  !cell.outside &&
+                  cell.date.getDate() === today.getDate() &&
+                  cell.date.getMonth() === today.getMonth() &&
+                  cell.date.getFullYear() === today.getFullYear();
+                const status = cell.outside
+                  ? null
+                  : getDietDayStatus(cell.date, diet, mealLogs);
+                const dayId = getDietDayIdFromDate(cell.date);
+                const dayPlan = !cell.outside
+                  ? diet.dayPlans?.find((p) => p.id === dayId)
+                  : null;
+                const enabledCount = (dayPlan?.meals || []).filter((m) => m.enabled).length;
+                const isClickable =
+                  !cell.outside &&
+                  status !== null &&
+                  status !== "rest" &&
+                  status !== "future";
+
+                return (
+                  <div
+                    key={i}
+                    role={isClickable ? "button" : undefined}
+                    tabIndex={isClickable ? 0 : undefined}
+                    className={[
+                      "diet-calendar-day",
+                      cell.outside ? "diet-calendar-day--outside" : "",
+                      isToday ? "is-today" : "",
+                      status ? `is-${status}` : "",
+                      isClickable ? "is-clickable" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    onClick={() => isClickable && handleDietCalendarDayClick(cell.date)}
+                    onKeyDown={(e) =>
+                      e.key === "Enter" &&
+                      isClickable &&
+                      handleDietCalendarDayClick(cell.date)
+                    }
+                    title={
+                      !cell.outside && enabledCount
+                        ? `${dayPlan?.name || ""} — ${enabledCount} refeicao(oes)`
+                        : undefined
+                    }
+                  >
+                    <span className="diet-calendar-day__num">{cell.date.getDate()}</span>
+                    {!cell.outside && status === "done" && (
+                      <span className="diet-calendar-day__dot" />
+                    )}
+                    {!cell.outside && enabledCount > 0 && (
+                      <span className="diet-calendar-day__count">{enabledCount}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Legenda */}
+            <div className="diet-calendar__legend">
+              <span className="diet-legend-item is-done">✓ Registrado</span>
+              <span className="diet-legend-item is-missed">✗ Perdido</span>
+              <span className="diet-legend-item is-future">○ Previsto</span>
+              <span className="diet-legend-item is-rest">· Sem refeicoes</span>
+            </div>
+          </div>
+        </TabsContent>
       </Tabs>
+
+      {/* ── Modal retroativo de refeições ─────────────────────────────────── */}
+      {isRetroMealLogging && retroMealDayPlan && (
+        <div
+          className="nutrition-modal-backdrop"
+          role="presentation"
+          onClick={() => setIsRetroMealLogging(false)}
+        >
+          <section
+            className="nutrition-modal glass-panel"
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <header>
+              <div>
+                <span>Registrar refeicoes retroativas</span>
+                <strong>
+                  {retroMealDayPlan.name} —{" "}
+                  {retroMealDate
+                    ? new Date(retroMealDate + "T12:00:00").toLocaleDateString("pt-BR")
+                    : ""}
+                </strong>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsRetroMealLogging(false)}
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </header>
+
+            <div className="nutrition-modal__content retro-meal-list">
+              <p className="retro-meal-hint">
+                Marque as refeicoes realizadas e informe o horario aproximado. Os dados
+                alimentarao o historico e os dashboards.
+              </p>
+              {retroMealEntries.map((entry, idx) => (
+                <div key={entry.meal.id} className="retro-meal-row">
+                  <label className="retro-meal-row__check">
+                    <input
+                      type="checkbox"
+                      checked={entry.done}
+                      onChange={(e) =>
+                        handleRetroMealEntryChange(idx, "done", e.target.checked)
+                      }
+                    />
+                    <span>{entry.meal.name}</span>
+                    {entry.meal.calories ? (
+                      <em>{entry.meal.calories} kcal</em>
+                    ) : null}
+                  </label>
+                  {entry.done && (
+                    <label className="retro-meal-row__time">
+                      Horario
+                      <input
+                        type="time"
+                        value={entry.time}
+                        onChange={(e) =>
+                          handleRetroMealEntryChange(idx, "time", e.target.value)
+                        }
+                      />
+                    </label>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <footer>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setIsRetroMealLogging(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={handleSaveRetroMealLogs}
+                disabled={!retroMealEntries.some((e) => e.done)}
+              >
+                Salvar registros
+              </button>
+            </footer>
+          </section>
+        </div>
+      )}
 
       {mealCompletionModal ? (
         <div className="nutrition-modal-backdrop" role="presentation" onClick={closeMealDoneModal}>
