@@ -352,6 +352,28 @@ export default function NutritionPage() {
     };
   }, [diet, latestCheckin, todayKey]);
 
+  // ── Tour: abre o primeiro dia/refeição ativa quando o guided tour pede ────
+  useEffect(() => {
+    function onTourOpenMeal() {
+      // Encontra o primeiro dia com pelo menos uma refeição ativa
+      const days = diet.dayPlans || [];
+      const activeDay = days.find((d) => d.meals?.some((m) => m.enabled)) || days[0];
+      if (!activeDay) return;
+
+      setSelectedDayId(activeDay.id);
+
+      // Abre a primeira refeição ativa desse dia
+      const firstEnabled = activeDay.meals?.find((m) => m.enabled);
+      if (firstEnabled) {
+        setOpenMeals((prev) =>
+          prev.includes(firstEnabled.id) ? prev : [...prev, firstEnabled.id]
+        );
+      }
+    }
+    window.addEventListener("shape-certo-tour-open-meal", onTourOpenMeal);
+    return () => window.removeEventListener("shape-certo-tour-open-meal", onTourOpenMeal);
+  }, [diet]);
+
   function updateDiet(nextDiet) {
     setDiet(saveDietProtocol(nextDiet));
   }

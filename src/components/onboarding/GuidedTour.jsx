@@ -117,8 +117,8 @@ const TOUR_STEPS = [
     id: "diet-meal",
     route: "/dietas",
     target: '[data-tour="diet-meal"]',
-    // Abre o card automaticamente para mostrar o conteúdo expandido
-    clickTarget: '[data-tour="diet-meal"] .meal-card__toggle',
+    // Dispara evento para NutritionPage abrir a 1ª refeição ativa via state React
+    openEvent: "shape-certo-tour-open-meal",
     position: "right",
     icon: "🍽️",
     title: "Card de refeição",
@@ -260,18 +260,16 @@ export default function GuidedTour({ onComplete }) {
         return;
       }
 
-      // Se o step tem um clickTarget, clicar para abrir/expandir o elemento
-      // antes de medir (ex.: expandir card de refeição)
-      if (step.clickTarget) {
-        const clickEl = document.querySelector(step.clickTarget);
-        if (clickEl && !clickEl.disabled) {
-          clickEl.click();
-        }
+      // Se o step tem openEvent, dispara o evento para o componente da página
+      // abrir/expandir o elemento via seu próprio state React (mais confiável
+      // do que chamar .click() diretamente no DOM, que pode não acionar
+      // handlers sintéticos do React)
+      if (step.openEvent) {
+        window.dispatchEvent(new CustomEvent(step.openEvent));
       }
 
-      // Aguarda a animação CSS de expansão terminar (se houver clickTarget)
-      // antes de fazer scroll e medir o rect final
-      const expandDelay = step.clickTarget ? 380 : 0;
+      // Aguarda React re-renderizar + animação CSS de expansão
+      const expandDelay = step.openEvent ? 500 : 0;
 
       function measureAndShow() {
         // Para elementos altos (card expandido), "start" garante que o topo
