@@ -299,6 +299,8 @@ function WorkoutExecutionSection() {
   const [retroDate, setRetroDate] = useState(null);
   const [retroWorkout, setRetroWorkout] = useState(null);
   const [retroExercises, setRetroExercises] = useState([]);
+  const [retroPickerMode, setRetroPickerMode] = useState(null); // { mode:'replace'|'add', index?:number }
+  const [retroPickerSearch, setRetroPickerSearch] = useState("");
   const [sessionHistory, setSessionHistory] = useState(() => loadWorkoutSessionHistory());
   const [workoutHistory, setWorkoutHistory] = useState([]);
   const [isRestoringWorkout, setIsRestoringWorkout] = useState(null);
@@ -694,6 +696,9 @@ function WorkoutExecutionSection() {
         sets: ex.sets.map((s) => ({ ...s, weight: "", reps: "" })),
       }))
     );
+    setRetroPickerMode(null);
+    setRetroPickerSearch("");
+    setAvailableExerciseGroups(buildActiveExerciseGroups());
     setIsRetroLogging(true);
   }
 
@@ -710,6 +715,33 @@ function WorkoutExecutionSection() {
     );
   }
 
+  function handleRetroPickExercise(name) {
+    if (retroPickerMode?.mode === "replace") {
+      const idx = retroPickerMode.index;
+      const sourceEx = retroExercises[idx];
+      const newEx = createEditExercise(retroWorkout.id, name, sourceEx);
+      setRetroExercises((prev) =>
+        prev.map((ex, i) =>
+          i === idx
+            ? { ...newEx, sets: newEx.sets.map((s) => ({ ...s, weight: "", reps: "" })) }
+            : ex
+        )
+      );
+    } else {
+      const newEx = createEditExercise(retroWorkout.id, name);
+      setRetroExercises((prev) => [
+        ...prev,
+        { ...newEx, sets: newEx.sets.map((s) => ({ ...s, weight: "", reps: "" })) },
+      ]);
+    }
+    setRetroPickerMode(null);
+    setRetroPickerSearch("");
+  }
+
+  function handleRetroRemoveExercise(idx) {
+    setRetroExercises((prev) => prev.filter((_, i) => i !== idx));
+  }
+
   function handleSaveRetroSession() {
     if (!retroWorkout || !retroDate) return;
     const createdAt = new Date(retroDate + "T12:00:00").toISOString();
@@ -722,6 +754,8 @@ function WorkoutExecutionSection() {
     setRetroDate(null);
     setRetroWorkout(null);
     setRetroExercises([]);
+    setRetroPickerMode(null);
+    setRetroPickerSearch("");
     setFeedback(
       `Sessao retroativa de ${retroWorkout.title} registrada para ${new Date(
         retroDate + "T12:00:00"
@@ -1570,7 +1604,7 @@ function WorkoutExecutionSection() {
               <button
                 type="button"
                 className="workout-edit-close-btn"
-                onClick={() => setIsRetroLogging(false)}
+                onClick={() => { setIsRetroLogging(false); setRetroPickerMode(null); setRetroPickerSearch(""); }}
               >
                 ✕
               </button>
@@ -1578,16 +1612,47 @@ function WorkoutExecutionSection() {
 
             <div className="workout-edit-panel__body">
               <p className="retro-session-hint">
-                Registre os pesos e repeticoes realizados nesta sessao. Os dados serao
-                armazenados no historico e nos dashboards.
+                Registre os pesos e repeticoes. Use Substituir para trocar exercicios ou
+                adicione extras abaixo da lista.
               </p>
+
+              {/* Lista de exercícios */}
               <div className="retro-session-list">
                 {retroExercises.map((ex, ei) => (
-                  <div key={ex.id} className="retro-session-exercise">
+                  <div
+                    key={ex.id}
+                    className={`retro-session-exercise${retroPickerMode?.mode === "replace" && retroPickerMode.index === ei ? " is-picking" : ""}`}
+                  >
+                    {/* Cabeçalho: nome + ações */}
                     <div className="retro-session-exercise__header">
-                      <strong>{ei + 1}. {ex.name}</strong>
-                      <span>{ex.suggestedSets} × {ex.suggestedReps}</span>
+                      <strong className="retro-session-exercise__name">{ei + 1}. {ex.name}</strong>
+                      <div className="retro-session-exercise__actions">
+                        <span className="retro-session-exercise__prescription">{ex.suggestedSets} × {ex.suggestedReps}</span>
+                        <button
+                          type="button"
+                          className={`workout-edit-replace-btn${retroPickerMode?.mode === "replace" && retroPickerMode.index === ei ? " is-active" : ""}`}
+                          onClick={() =>
+                            setRetroPickerMode(
+                              retroPickerMode?.mode === "replace" && retroPickerMode.index === ei
+                                ? null
+                                : { mode: "replace", index: ei }
+                            )
+                          }
+                        >
+                          Substituir
+                        </button>
+                        <button
+                          type="button"
+                          className="workout-edit-remove-btn"
+                          title="Remover"
+                          onClick={() => handleRetroRemoveExercise(ei)}
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
+
+                    {/* Séries: peso × reps */}
                     <div className="retro-session-sets">
                       {ex.sets.map((set, si) => {
                         if (set.enabled === false) return null;
@@ -1617,13 +1682,74 @@ function WorkoutExecutionSection() {
                   </div>
                 ))}
               </div>
+
+              {/* Picker de exercícios ou botão de adicionar */}
+              {retroPickerMode ? (
+                <div className="exercise-picker">
+                  <div className="exercise-picker__header">
+                    <span>
+                      {retroPickerMode.mode === "replace"
+                        ? `Substituir: ${retroExercises[retroPickerMode.index]?.name}`
+                        : "Adicionar exercicio"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => { setRetroPickerMode(null); setRetroPickerSearch(""); }}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                  <input
+                    className="exercise-picker__search"
+                    value={retroPickerSearch}
+                    onChange={(e) => setRetroPickerSearch(e.target.value)}
+                    placeholder="Buscar exercicio..."
+                    autoFocus
+                  />
+                  <div className="exercise-picker__list">
+                    {availableExerciseGroups.length === 0 ? (
+                      <p className="exercise-picker__empty">
+                        Nenhum aparelho ativo nas configuracoes. Configure sua academia em
+                        Configuracoes → Aparelhos.
+                      </p>
+                    ) : (
+                      availableExerciseGroups
+                        .flatMap((g) => g.exercises.map((name) => ({ name, group: g.group })))
+                        .filter(
+                          ({ name }) =>
+                            !retroPickerSearch ||
+                            name.toLowerCase().includes(retroPickerSearch.toLowerCase())
+                        )
+                        .map(({ name, group }) => (
+                          <button
+                            key={`${group}-${name}`}
+                            type="button"
+                            className="exercise-picker__item"
+                            onClick={() => handleRetroPickExercise(name)}
+                          >
+                            <span>{name}</span>
+                            <em>{group}</em>
+                          </button>
+                        ))
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="workout-edit-add-btn"
+                  onClick={() => setRetroPickerMode({ mode: "add" })}
+                >
+                  + Adicionar exercicio
+                </button>
+              )}
             </div>
 
             <div className="workout-edit-panel__footer">
               <button
                 type="button"
                 className="workout-edit-cancel-btn"
-                onClick={() => setIsRetroLogging(false)}
+                onClick={() => { setIsRetroLogging(false); setRetroPickerMode(null); setRetroPickerSearch(""); }}
               >
                 Cancelar
               </button>
