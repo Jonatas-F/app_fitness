@@ -915,9 +915,9 @@
 }
 
 .exercise-card.is-selected {
-  background:
-    linear-gradient(135deg, rgba(255, 46, 46, 0.09), rgba(255, 255, 255, 0.045));
-  border-color: rgba(255, 46, 46, 0.26);
+  background: rgba(255, 255, 255, 0.055);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.14);
 }
 
 .exercise-card.is-completed {
@@ -972,13 +972,9 @@
   }
 }
 
-.workout-source-note,
-.exercise-fields {
+.workout-source-note {
   display: grid;
   gap: 12px;
-}
-
-.workout-source-note {
   padding: 14px 16px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.05);
@@ -991,12 +987,25 @@
   line-height: 1.55;
 }
 
-.exercise-fields {
-  grid-template-columns: 180px minmax(180px, 240px) minmax(320px, 1fr);
+/* ── Exercise detail (expanded card body) ───────────────── */
+.exercise-detail {
+  display: grid;
+  gap: 16px;
+}
+
+.exercise-detail__header {
+  display: grid;
+  grid-template-columns: 172px 1fr;
+  gap: 18px;
   align-items: start;
 }
 
-.exercise-fields label,
+.exercise-detail__meta {
+  display: grid;
+  gap: 14px;
+}
+
+.exercise-detail__meta label,
 .exercise-notes {
   display: grid;
   gap: 8px;
@@ -1005,8 +1014,8 @@
   font-weight: 700;
 }
 
-.exercise-fields input,
-.exercise-fields textarea,
+.exercise-detail__meta input,
+.exercise-detail__meta textarea,
 .exercise-notes textarea,
 .set-log-row input {
   width: 100%;
@@ -1019,28 +1028,24 @@
   outline: none;
 }
 
-.exercise-fields input::placeholder,
-.exercise-fields textarea::placeholder,
+.exercise-detail__meta input::placeholder,
+.exercise-detail__meta textarea::placeholder,
 .set-log-row input::placeholder {
   color: rgba(255, 255, 255, 0.38);
 }
 
-.exercise-fields input:focus,
-.exercise-fields textarea:focus,
+.exercise-detail__meta input:focus,
+.exercise-detail__meta textarea:focus,
 .exercise-notes textarea:focus,
 .set-log-row input:focus {
   border-color: rgba(255, 46, 46, 0.38);
   box-shadow: 0 0 0 3px rgba(255, 46, 46, 0.1);
 }
 
-.exercise-fields textarea,
+.exercise-detail__meta textarea,
 .exercise-notes textarea {
-  min-height: 132px;
+  min-height: 120px;
   resize: vertical;
-}
-
-.exercise-notes textarea {
-  min-height: 132px;
 }
 
 .feedback-request-button {
@@ -1331,32 +1336,43 @@
 
 .exercise-prescription {
   display: grid;
-  gap: 8px;
-  padding: 12px;
+  gap: 10px;
+  padding: 14px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.045);
   border: 1px solid rgba(255, 255, 255, 0.09);
 }
 
 .exercise-prescription span {
-  color: rgba(255, 255, 255, 0.68);
-  font-size: 0.78rem;
-  font-weight: 800;
+  color: rgba(255, 255, 255, 0.52);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.exercise-prescription__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .exercise-prescription strong {
-  width: fit-content;
-  padding: 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
   border-radius: 999px;
-  color: rgba(255, 255, 255, 0.80);
+  color: rgba(255, 255, 255, 0.85);
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.12);
   font-size: 0.82rem;
+  white-space: nowrap;
 }
 
 .exercise-prescription small {
-  color: rgba(255, 255, 255, 0.62);
-  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
 .exercise-video-upload {
@@ -1468,8 +1484,11 @@
     padding: 18px;
   }
 
-  .workout-execution__header,
-  .exercise-fields {
+  .workout-execution__header {
+    grid-template-columns: 1fr;
+  }
+
+  .exercise-detail__header {
     grid-template-columns: 1fr;
   }
 

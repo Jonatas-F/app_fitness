@@ -896,65 +896,75 @@ function WorkoutExecutionSection() {
 
                   {expandedExerciseIndex === exerciseIndex ? (
                     <>
-                      <div className="exercise-fields">
-                        <div className="exercise-video-preview">
-                          <button
-                            type="button"
-                            onClick={() => setActiveVideo(exercise)}
-                            disabled={!exercise.executionVideoUrl}
-                          >
-                            <span>{exercise.executionVideoUrl ? "Ver video" : "Sem video"}</span>
-                          </button>
-                          <small>Miniatura do video demonstrativo</small>
-                        </div>
+                      {/* ── Seção de detalhes do exercício ─────────────────── */}
+                      <div className="exercise-detail">
+                        <div className="exercise-detail__header">
+                          {/* Coluna esquerda: placeholder de vídeo */}
+                          <div className="exercise-video-preview">
+                            <button
+                              type="button"
+                              onClick={() => setActiveVideo(exercise)}
+                              disabled={!exercise.executionVideoUrl}
+                            >
+                              <span>{exercise.executionVideoUrl ? "Ver video" : "Sem video"}</span>
+                            </button>
+                            <small>Video demonstrativo</small>
+                          </div>
 
-                        <div className="exercise-prescription">
-                          <span>Prescricao do Personal Virtual</span>
-                          <strong>{exercise.suggestedSets} series</strong>
-                          <strong>{exercise.suggestedReps} reps</strong>
-                          <strong>Descanso {formatTimer(getExerciseRestSeconds(exercise))}</strong>
-                          <small>Somente o Personal Virtual altera series e repeticoes prescritas.</small>
-                        </div>
+                          {/* Coluna direita: prescrição + URL + feedback */}
+                          <div className="exercise-detail__meta">
+                            <div className="exercise-prescription">
+                              <span>Prescricao do Personal Virtual</span>
+                              <div className="exercise-prescription__badges">
+                                <strong>{exercise.suggestedSets} series</strong>
+                                <strong>{exercise.suggestedReps} reps</strong>
+                                <strong>Descanso {formatTimer(getExerciseRestSeconds(exercise))}</strong>
+                              </div>
+                              <small>Somente o Personal Virtual altera series e repeticoes prescritas.</small>
+                            </div>
 
-                        <label>
-                          Video demonstrativo
-                          <input
-                            value={exercise.executionVideoUrl}
-                            onChange={(event) =>
-                              handleExerciseChange(
-                                selectedWorkout.id,
-                                exercise.id,
-                                "executionVideoUrl",
-                                event.target.value
-                              )
-                            }
-                            placeholder="URL do video de execucao"
-                          />
-                        </label>
-                        <label>
-                          Feedback do Personal Virtual
-                          <textarea
-                            value={exercise.aiFeedback}
-                            onChange={(event) =>
-                              handleExerciseChange(
-                                selectedWorkout.id,
-                                exercise.id,
-                                "aiFeedback",
-                                event.target.value
-                              )
-                            }
-                            placeholder="Feedback tecnico gerado pelo Personal Virtual apos analisar o video ou as anotacoes"
-                          />
-                          <button
-                            type="button"
-                            className="feedback-request-button"
-                            onClick={() =>
-                              handleRequestExerciseFeedback(selectedWorkout.id, exercise.id, "video")
-                            }
-                          >
-                            Solicitar feedback do video
-                          </button>
-                        </label>
+                            <label>
+                              URL do video demonstrativo
+                              <input
+                                value={exercise.executionVideoUrl}
+                                onChange={(event) =>
+                                  handleExerciseChange(
+                                    selectedWorkout.id,
+                                    exercise.id,
+                                    "executionVideoUrl",
+                                    event.target.value
+                                  )
+                                }
+                                placeholder="URL do video de execucao"
+                              />
+                            </label>
+
+                            <label>
+                              Feedback do Personal Virtual
+                              <textarea
+                                value={exercise.aiFeedback}
+                                onChange={(event) =>
+                                  handleExerciseChange(
+                                    selectedWorkout.id,
+                                    exercise.id,
+                                    "aiFeedback",
+                                    event.target.value
+                                  )
+                                }
+                                placeholder="Feedback tecnico gerado pelo Personal Virtual apos analisar o video ou as anotacoes"
+                              />
+                              <button
+                                type="button"
+                                className="feedback-request-button"
+                                onClick={() =>
+                                  handleRequestExerciseFeedback(selectedWorkout.id, exercise.id, "video")
+                                }
+                              >
+                                Solicitar feedback do video
+                              </button>
+                            </label>
+                          </div>
+                        </div>
                       </div>
 
                       <p className="set-log-locked">
