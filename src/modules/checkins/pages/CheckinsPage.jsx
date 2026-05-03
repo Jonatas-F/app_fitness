@@ -1,4 +1,4 @@
-import { Children, isValidElement, useEffect, useMemo, useRef, useState } from "react";
+import { Children, createContext, isValidElement, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { usePlan } from "../../../hooks/usePlan";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -246,6 +246,41 @@ function getChildrenValue(children) {
   return value;
 }
 
+/**
+ * Extrai o atributo `name` do primeiro input/select/textarea aninhado nos filhos.
+ * Usado pelo Field para identificar o campo sem precisar de prop explícita.
+ */
+function getChildFieldName(children) {
+  let name = null;
+  Children.forEach(children, (child) => {
+    if (name || !isValidElement(child)) return;
+    if (typeof child.type === "string" && FORM_CONTROL_TAGS.includes(child.type)) {
+      name = child.props.name || null;
+      return;
+    }
+    if (child.props?.children) {
+      name = getChildFieldName(child.props.children);
+    }
+  });
+  return name;
+}
+
+/**
+ * Retorna apenas os dados do último check-in real (excluindo metadados e defaults).
+ * Usado como snapshot para destacar campos pré-preenchidos em amarelo.
+ */
+function makePrefilledSnapshot(checkins, cadence) {
+  const latestSameCadence = getLatestCompletedCheckin(checkins, cadence);
+  const latestAny = getLatestCompletedCheckin(checkins);
+  const latest = latestSameCadence || latestAny;
+  if (!latest) return {};
+  const { id, createdAt, updatedAt, checkin_date, status, aiContext, ai_context, photos, ...stableData } = latest;
+  return stableData;
+}
+
+/** Context que fornece `isStale(fieldName)` ao Field automaticamente. */
+const FormStaleContext = createContext(null);
+
 const WEEK_DAYS = [
   { id: "monday",    short: "SEG", label: "Segunda" },
   { id: "tuesday",   short: "TER", label: "Terca"   },
@@ -256,7 +291,7 @@ const WEEK_DAYS = [
   { id: "sunday",    short: "DOM", label: "Domingo" },
 ];
 
-function DayPicker({ value = "", onChange }) {
+function DayPicker({ value = "", onChange, stale = false }) {
   const selected = (value || "").split(",").filter(Boolean);
 
   function toggle(dayId) {
@@ -270,8 +305,10 @@ function DayPicker({ value = "", onChange }) {
     onChange(next.join(","));
   }
 
+  const wrapperClass = `checkin-day-picker${stale ? " is-stale" : selected.length > 0 ? " is-filled" : ""}`;
+
   return (
-    <div className="checkin-day-picker">
+    <div className={wrapperClass}>
       {WEEK_DAYS.map((day) => (
         <button
           key={day.id}
@@ -287,21 +324,30 @@ function DayPicker({ value = "", onChange }) {
   );
 }
 
-function Field({ label, required = false, hint, children, className = "", invalid = false }) {
+function Field({ label, required = false, hint, children, className = "", invalid = false, stale: staleProp }) {
+  const ctx = useContext(FormStaleContext);
   const fieldValue = getChildrenValue(children);
   const isFilled = Array.isArray(fieldValue)
     ? fieldValue.length > 0
     : String(fieldValue ?? "").trim().length > 0;
 
+  // Detecta automaticamente o nome do campo pelo filho; ou usa prop explícita para campos sem name (DayPicker)
+  const fieldName = staleProp === undefined ? getChildFieldName(children) : null;
+  const isStale = staleProp !== undefined
+    ? staleProp
+    : (ctx && fieldName ? ctx.isStale(fieldName) : false);
+
+  const stateClass = isFilled ? (isStale ? "is-stale" : "is-filled") : "";
+
   return (
-    <label className={`checkin-field ${className} ${isFilled ? "is-filled" : ""} ${invalid ? "is-invalid" : ""}`.trim()}>
+    <label className={`checkin-field ${className} ${stateClass} ${invalid ? "is-invalid" : ""}`.trim()}>
       <span className="checkin-field__label">
         {label}
         {required ? <strong>Obrigatorio</strong> : <em>Opcional</em>}
       </span>
       <span className="checkin-field__control">
         {children}
-        {isFilled ? <span className="checkin-field__check" aria-hidden="true">✓</span> : null}
+        {isFilled ? <span className="checkin-field__check" aria-hidden="true">{"✓"}</span> : null}
       </span>
       {hint ? <small>{hint}</small> : null}
     </label>
@@ -871,6 +917,7 @@ export default function CheckinsPage() {
   const [selectedDateKey, setSelectedDateKey] = useState(todayKey);
   const [calendarMonth, setCalendarMonth] = useState(() => parseDateKey(todayKey));
   const [formData, setFormData] = useState(() => makePrefilledCheckinForm(loadCheckins(), "weekly"));
+  const [prefilledSnapshot, setPrefilledSnapshot] = useState(() => makePrefilledSnapshot(loadCheckins(), "weekly"));
   const [photoUploads, setPhotoUploads] = useState({});
   const [checkins, setCheckins] = useState(() => loadCheckins());
   const [feedback, setFeedback] = useState("");
@@ -906,6 +953,18 @@ export default function CheckinsPage() {
       monthlyDateKey: addDaysToDateKey(monthlyBase, 30),
     };
   }, [checkins, selectedDateKey, todayKey]);
+  /** Retorna true se o campo tem valor do último check-in sem ter sido alterado. */
+  function isStaleField(name) {
+    const snap = prefilledSnapshot[name];
+    if (snap === undefined || snap === null) return false;
+    if (Array.isArray(snap)) {
+      if (snap.length === 0) return false;
+      return JSON.stringify(formData[name] ?? []) === JSON.stringify(snap);
+    }
+    if (String(snap).trim() === "") return false;
+    return String(formData[name] ?? "") === String(snap);
+  }
+
   const requiredFields = getRequiredFields(activeCadence);
   const selectedPhotoCount = Object.keys(photoUploads).length;
   const progressFormData = {
@@ -963,10 +1022,14 @@ export default function CheckinsPage() {
       }
 
       setCheckins(result.checkins);
-      setFormData((current) => ({
-        ...makePrefilledCheckinForm(result.checkins, current.cadence || activeCadence),
-        cadence: current.cadence || activeCadence,
-      }));
+      setFormData((current) => {
+        const cadenceToUse = current.cadence || activeCadence;
+        setPrefilledSnapshot(makePrefilledSnapshot(result.checkins, cadenceToUse));
+        return {
+          ...makePrefilledCheckinForm(result.checkins, cadenceToUse),
+          cadence: cadenceToUse,
+        };
+      });
       setSyncStatus("Historico sincronizado com o Supabase. Pode seguir preenchendo normalmente.");
       setIsHydratingCheckins(false);
     }
@@ -1026,6 +1089,7 @@ export default function CheckinsPage() {
   function handleCadenceChange(cadence) {
     setActiveCadence(cadence);
     setFormData(makePrefilledCheckinForm(checkins, cadence));
+    setPrefilledSnapshot(makePrefilledSnapshot(checkins, cadence));
     setPhotoUploads({});
     setFeedback("");
     setSubmitAttempted(false);
@@ -1095,6 +1159,7 @@ export default function CheckinsPage() {
     setAiTrainingDays(payload.trainingAvailableDays || "");
 
     setFormData(makePrefilledCheckinForm(updated, activeCadence));
+    setPrefilledSnapshot(makePrefilledSnapshot(updated, activeCadence));
     setPhotoUploads({});
     setSubmitAttempted(false);
     setFeedback(
@@ -1582,6 +1647,7 @@ export default function CheckinsPage() {
         role="tabpanel"
         aria-labelledby={`checkins-tab-${activeCadence}`}
       >
+        <FormStaleContext.Provider value={{ isStale: isStaleField }}>
         <div className="checkins-form__main">
           {showProtocolBase ? (
             <Section
@@ -2073,9 +2139,11 @@ export default function CheckinsPage() {
                 <Field
                   label="Quais dias da semana voce pode treinar"
                   hint="Marque os dias que voce tem disponibilidade real para ir a academia. A IA vai distribuir os treinos nesses dias com folgas bem posicionadas."
+                  stale={isStaleField("trainingAvailableDays")}
                 >
                   <DayPicker
                     value={formData.trainingAvailableDays}
+                    stale={isStaleField("trainingAvailableDays")}
                     onChange={(val) =>
                       setFormData((prev) => ({
                         ...prev,
@@ -2195,6 +2263,7 @@ export default function CheckinsPage() {
             </div>
           </Section>
         </div>
+        </FormStaleContext.Provider>
       </form>
         </TabsContent>
 

@@ -976,6 +976,29 @@
   box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.12);
 }
 
+/* ── Stale field: dado do check-in anterior, não alterado → âmbar ── */
+.checkin-field.is-stale input,
+.checkin-field.is-stale select,
+.checkin-field.is-stale textarea {
+  padding-right: 46px;
+  border-color: rgba(245, 158, 11, 0.42);
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.14);
+}
+
+.checkin-field.is-stale .checkin-field__check {
+  color: #1a1000;
+  background: #f59e0b;
+  box-shadow: 0 6px 14px rgba(245, 158, 11, 0.28);
+}
+
+/* DayPicker stale: dias selecionados mostram âmbar */
+.checkin-day-picker.is-stale .checkin-day-picker__btn.is-active {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(245, 158, 11, 0.65);
+  color: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.18);
+}
+
 .checkin-field__check {
   position: absolute;
   top: 50%;
