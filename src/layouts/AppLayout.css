@@ -242,6 +242,28 @@
   padding-top: 10px;
 }
 
+.sidebar__admin-onboarding-btn {
+  width: calc(100% - 36px);
+  margin: 4px 18px 10px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 200, 0, 0.06);
+  border: 1px dashed rgba(255, 200, 0, 0.25);
+  border-radius: 8px;
+  color: rgba(255, 200, 0, 0.7);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebar__admin-onboarding-btn:hover {
+  background: rgba(255, 200, 0, 0.12);
+  color: #ffc800;
+}
+
 .bottom-nav {
   position: fixed;
   left: 16px;
