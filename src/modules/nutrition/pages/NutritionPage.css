@@ -825,8 +825,15 @@
     justify-items: start;
   }
 
+  /* Tabs: 4 por linha (4+3) — sem scroll horizontal */
+  .nutrition-week-tabs {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
   .nutrition-week-tabs button {
-    min-width: 142px;
+    flex: 1 1 calc(25% - 6px);
+    min-width: 0;
   }
 
   .nutrition-collapsible__summary {

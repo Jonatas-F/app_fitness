@@ -1286,8 +1286,15 @@
     grid-template-columns: 1fr;
   }
 
+  /* Tabs: 3 por linha — sem scroll horizontal */
+  .workout-week-tabs {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
   .workout-week-tabs button {
-    min-width: 142px;
+    flex: 1 1 calc(33.333% - 6px);
+    min-width: 0;
   }
 
   .live-session-overlay {
@@ -1357,18 +1364,10 @@
     gap: 8px;
   }
 
-  /* Tabs de semana: scroll horizontal */
-  .workout-week-tabs {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 4px;
-  }
-  .workout-week-tabs::-webkit-scrollbar { display: none; }
-
+  /* Tabs de semana: 2 por linha em telas muito pequenas */
   .workout-week-tabs button {
-    flex: 0 0 auto;
-    min-width: 110px;
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
   }
 
   /* Live session */
