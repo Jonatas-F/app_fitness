@@ -117,11 +117,13 @@ const TOUR_STEPS = [
     id: "diet-meal",
     route: "/dietas",
     target: '[data-tour="diet-meal"]',
+    // Abre o card automaticamente para mostrar o conteúdo expandido
+    clickTarget: '[data-tour="diet-meal"] .meal-card__toggle',
     position: "right",
     icon: "🍽️",
     title: "Card de refeição",
     description:
-      "Cada refeição mostra nome, horário sugerido e status. Clique no card para expandir e ver os alimentos com quantidades exatas, calorias e opções de substituição. Marque como realizada para registrar a aderência.",
+      "Cada refeição mostra alimentos com gramas exatas, calorias e substituições sugeridas. Marque como realizada para registrar sua aderência diária.",
   },
   // ── Chat ──────────────────────────────────────────────────────────────────
   {
@@ -258,29 +260,48 @@ export default function GuidedTour({ onComplete }) {
         return;
       }
 
-      // Scroll INSTANTÂNEO (síncrono) para garantir que o elemento está no
-      // viewport ANTES de medir o rect. behavior:"smooth" é assíncrono e
-      // causa race condition com getBoundingClientRect().
-      el.scrollIntoView({ behavior: "instant", block: "center", inline: "nearest" });
+      // Se o step tem um clickTarget, clicar para abrir/expandir o elemento
+      // antes de medir (ex.: expandir card de refeição)
+      if (step.clickTarget) {
+        const clickEl = document.querySelector(step.clickTarget);
+        if (clickEl && !clickEl.disabled) {
+          clickEl.click();
+        }
+      }
 
-      // Dois rAF garantem que o browser pintou o frame pós-scroll
-      requestAnimationFrame(() => {
+      // Aguarda a animação CSS de expansão terminar (se houver clickTarget)
+      // antes de fazer scroll e medir o rect final
+      const expandDelay = step.clickTarget ? 380 : 0;
+
+      function measureAndShow() {
+        // Scroll INSTANTÂNEO após a expansão para trazer o card inteiro para a tela
+        el.scrollIntoView({ behavior: "instant", block: "center", inline: "nearest" });
+
+        // Dois rAF garantem que o browser pintou o frame pós-scroll
         requestAnimationFrame(() => {
-          const r = el.getBoundingClientRect();
-          const inView =
-            r.width > 0 &&
-            r.height > 0 &&
-            r.top >= 0 &&
-            r.bottom <= window.innerHeight + 1;
+          requestAnimationFrame(() => {
+            const r = el.getBoundingClientRect();
+            const inView =
+              r.width > 0 &&
+              r.height > 0 &&
+              r.top >= 0 &&
+              r.bottom <= window.innerHeight + 1;
 
-          if (inView) {
-            setRect(r);
-            el.classList.add("tour-target--active");
-            activeElRef.current = el;
-          }
-          setVisible(true);
+            if (inView) {
+              setRect(r);
+              el.classList.add("tour-target--active");
+              activeElRef.current = el;
+            }
+            setVisible(true);
+          });
         });
-      });
+      }
+
+      if (expandDelay > 0) {
+        setTimeout(measureAndShow, expandDelay);
+      } else {
+        measureAndShow();
+      }
     }, DELAY);
 
     return () => clearTimeout(timer);
