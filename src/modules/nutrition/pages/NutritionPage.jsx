@@ -352,21 +352,27 @@ export default function NutritionPage() {
     };
   }, [diet, latestCheckin, todayKey]);
 
-  // ── Tour: abre o primeiro dia/refeição ativa quando o guided tour pede ────
+  // ── Tour: abre o almoço (refeição obrigatória) quando o guided tour pede ──
   useEffect(() => {
     function onTourOpenMeal() {
-      // Encontra o primeiro dia com pelo menos uma refeição ativa
       const days = diet.dayPlans || [];
-      const activeDay = days.find((d) => d.meals?.some((m) => m.enabled)) || days[0];
-      if (!activeDay) return;
 
-      setSelectedDayId(activeDay.id);
+      // Preferência: dia que tenha almoço habilitado; senão qualquer dia ativo
+      const targetDay =
+        days.find((d) => d.meals?.some((m) => m.id === "almoco" && m.enabled)) ||
+        days.find((d) => d.meals?.some((m) => m.enabled)) ||
+        days[0];
+      if (!targetDay) return;
 
-      // Abre a primeira refeição ativa desse dia
-      const firstEnabled = activeDay.meals?.find((m) => m.enabled);
-      if (firstEnabled) {
+      setSelectedDayId(targetDay.id);
+
+      // Abre especificamente o almoço (ou primeiro ativo como fallback)
+      const meal =
+        targetDay.meals?.find((m) => m.id === "almoco" && m.enabled) ||
+        targetDay.meals?.find((m) => m.enabled);
+      if (meal) {
         setOpenMeals((prev) =>
-          prev.includes(firstEnabled.id) ? prev : [...prev, firstEnabled.id]
+          prev.includes(meal.id) ? prev : [...prev, meal.id]
         );
       }
     }
@@ -760,7 +766,7 @@ export default function NutritionPage() {
           return (
             <article
               key={`${selectedDayPlan.id}-${meal.id}`}
-              data-tour={mealIndex === 0 ? "diet-meal" : undefined}
+              data-tour={meal.id === "almoco" ? "diet-meal" : undefined}
               className={`meal-card glass-panel ${meal.enabled ? "is-enabled" : "is-disabled"} ${
                 openMeals.includes(meal.id) ? "is-open" : ""
               } ${mealLog ? "is-completed" : ""}`}
