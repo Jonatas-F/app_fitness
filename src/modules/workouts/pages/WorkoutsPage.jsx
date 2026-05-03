@@ -1219,91 +1219,6 @@ function WorkoutExecutionSection() {
             document.body
           )}
 
-          {/* ── Modal de registro retroativo de sessão ──────────────────────── */}
-          {isRetroLogging && retroWorkout && createPortal(
-            <div className="workout-edit-overlay" role="dialog" aria-modal="true">
-              <section className="workout-edit-panel">
-                <div className="workout-edit-panel__header">
-                  <div>
-                    <h3 className="workout-edit-panel__title">Registrar sessao retroativa</h3>
-                    <p className="workout-edit-panel__sub">
-                      {retroWorkout.title} —{" "}
-                      {new Date(retroDate + "T12:00:00").toLocaleDateString("pt-BR")}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className="workout-edit-close-btn"
-                    onClick={() => setIsRetroLogging(false)}
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="workout-edit-panel__body">
-                  <p className="retro-session-hint">
-                    Registre os pesos e repeticoes realizados nesta sessao. Os dados serao
-                    armazenados no historico e nos dashboards.
-                  </p>
-                  <div className="retro-session-list">
-                    {retroExercises.map((ex, ei) => (
-                      <div key={ex.id} className="retro-session-exercise">
-                        <div className="retro-session-exercise__header">
-                          <strong>{ei + 1}. {ex.name}</strong>
-                          <span>{ex.suggestedSets} × {ex.suggestedReps}</span>
-                        </div>
-                        <div className="retro-session-sets">
-                          {ex.sets.map((set, si) => {
-                            if (set.enabled === false) return null;
-                            return (
-                              <div key={si} className="retro-session-set">
-                                <span className="retro-session-set__label">S{set.set ?? si + 1}</span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  step="0.5"
-                                  value={set.weight}
-                                  onChange={(e) => handleRetroSetChange(ei, si, "weight", e.target.value)}
-                                  placeholder="kg"
-                                />
-                                <span className="retro-session-set__sep">×</span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  value={set.reps}
-                                  onChange={(e) => handleRetroSetChange(ei, si, "reps", e.target.value)}
-                                  placeholder="reps"
-                                />
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="workout-edit-panel__footer">
-                  <button
-                    type="button"
-                    className="workout-edit-cancel-btn"
-                    onClick={() => setIsRetroLogging(false)}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="button"
-                    className="workout-edit-save-all-btn"
-                    onClick={handleSaveRetroSession}
-                  >
-                    Salvar sessao
-                  </button>
-                </div>
-              </section>
-            </div>,
-            document.body
-          )}
-
           <article className="workout-protocol-panel" data-tour="workout-exercises">
             <header>
               <div>
@@ -1639,6 +1554,91 @@ function WorkoutExecutionSection() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* ── Modal de registro retroativo — fora das Tabs para funcionar de qualquer aba ── */}
+      {isRetroLogging && retroWorkout && createPortal(
+        <div className="workout-edit-overlay" role="dialog" aria-modal="true">
+          <section className="workout-edit-panel">
+            <div className="workout-edit-panel__header">
+              <div>
+                <h3 className="workout-edit-panel__title">Registrar sessao retroativa</h3>
+                <p className="workout-edit-panel__sub">
+                  {retroWorkout.title} —{" "}
+                  {new Date(retroDate + "T12:00:00").toLocaleDateString("pt-BR")}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="workout-edit-close-btn"
+                onClick={() => setIsRetroLogging(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="workout-edit-panel__body">
+              <p className="retro-session-hint">
+                Registre os pesos e repeticoes realizados nesta sessao. Os dados serao
+                armazenados no historico e nos dashboards.
+              </p>
+              <div className="retro-session-list">
+                {retroExercises.map((ex, ei) => (
+                  <div key={ex.id} className="retro-session-exercise">
+                    <div className="retro-session-exercise__header">
+                      <strong>{ei + 1}. {ex.name}</strong>
+                      <span>{ex.suggestedSets} × {ex.suggestedReps}</span>
+                    </div>
+                    <div className="retro-session-sets">
+                      {ex.sets.map((set, si) => {
+                        if (set.enabled === false) return null;
+                        return (
+                          <div key={si} className="retro-session-set">
+                            <span className="retro-session-set__label">S{set.set ?? si + 1}</span>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.5"
+                              value={set.weight}
+                              onChange={(e) => handleRetroSetChange(ei, si, "weight", e.target.value)}
+                              placeholder="kg"
+                            />
+                            <span className="retro-session-set__sep">×</span>
+                            <input
+                              type="number"
+                              min="0"
+                              value={set.reps}
+                              onChange={(e) => handleRetroSetChange(ei, si, "reps", e.target.value)}
+                              placeholder="reps"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="workout-edit-panel__footer">
+              <button
+                type="button"
+                className="workout-edit-cancel-btn"
+                onClick={() => setIsRetroLogging(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="workout-edit-save-all-btn"
+                onClick={handleSaveRetroSession}
+              >
+                Salvar sessao
+              </button>
+            </div>
+          </section>
+        </div>,
+        document.body
+      )}
 
       {activeVideo ? (
         <div className="video-modal" role="dialog" aria-modal="true">
