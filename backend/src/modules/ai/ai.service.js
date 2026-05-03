@@ -311,7 +311,7 @@ async function callOpenAi({ accountId, generationType, instructions, input, hist
         model,
         messages,
         temperature: 0.7,
-        max_tokens: 2048,
+        max_tokens: expectJson ? 4096 : 2048,
         // Para geração de JSON estruturado (dieta/treino), força JSON mode
         ...(expectJson ? { response_format: { type: "json_object" } } : {}),
       }),
@@ -368,13 +368,73 @@ export async function generateAiChatResponse(accountId, { message, history = [],
 }
 
 export async function generateAiDietPlan(accountId, { goal, persist = false } = {}) {
+  const instructions = `
+Gere um plano alimentar personalizado em JSON valido para o Shape Certo.
+
+REGRAS OBRIGATORIAS (leia o contexto do usuario antes de gerar):
+1. RESTRICOES E ALERGIAS: leia "nutrition.allergies_notes" e "nutrition.restrictions_notes". NUNCA inclua alimentos proibidos ou alegenicos.
+2. PREFERENCIAS: leia "nutrition.preferred_foods" (incluir prioritariamente) e "nutrition.disliked_foods" (evitar ao maximo). Leia tambem "preferences.foods" (mark: "like" = incluir, "dislike" = evitar).
+3. REFEICOES: leia "nutrition.meals_per_day" para definir quantas refeicoes habilitar. Se nao informado, use 4-5 refeicoes.
+4. OBJETIVO E MACROS: use o objetivo informado na requisicao para definir o perfil de macronutrientes:
+   - hipertrofia: superavit calorico (~300-500 kcal acima do TDEE), proteina alta (2-2.5g/kg)
+   - emagrecimento/cutting: deficit calorico (~300-500 kcal abaixo do TDEE), proteina alta para preservar massa
+   - recomposicao: manutencao calorica, proteina moderada-alta
+   - condicionamento/saude: manutencao calorica, dieta equilibrada
+5. SINAIS DO CHECK-IN: leia o check-in mais recente (context.checkins[0]):
+   - "hunger" alto: aumente volume de alimentos ou fibras
+   - "dietAdherence" baixo: simplifique refeicoes, use alimentos mais praticos
+6. MEDIDAS: use "progress.measurements[0].weight_kg" e "progress.bioimpedance[0]" para calcular necessidade calorica. Se nao houver, use "profile.current_weight_kg" e "profile.activity_level".
+7. DIAS DA SEMANA: gere dayPlans para todos os 7 dias com variacao entre os dias.
+8. VALORES NUTRICIONAIS: preencha calories, protein, carbs, fats para cada refeicao com valores numericos reais (strings, ex: "450", "35").
+
+SLOTS DISPONIVEIS (use os IDs exatos): desjejum, cafe-manha, brunch, almoco, cafe-tarde, pre-treino, pos-treino, janta, ceia
+DIAS (use os IDs exatos): segunda, terca, quarta, quinta, sexta, sabado, domingo
+
+ESTRUTURA JSON OBRIGATORIA:
+{
+  "title": "<nome do plano>",
+  "nutritionalGoal": "<descricao do objetivo nutricional>",
+  "startDate": "<YYYY-MM-DD>",
+  "endDate": "<YYYY-MM-DD, 28 dias apos startDate>",
+  "guidance": "<orientacoes gerais em 2-3 frases>",
+  "recommendedMeals": <numero inteiro>,
+  "userAvailableMeals": <numero inteiro>,
+  "restrictionNotes": "<restricoes identificadas>",
+  "preferenceNotes": "<preferencias identificadas>",
+  "meals": [
+    {
+      "id": "<slot_id>",
+      "name": "<nome da refeicao>",
+      "enabled": <true|false>,
+      "calories": "<numero>",
+      "protein": "<numero>",
+      "carbs": "<numero>",
+      "fats": "<numero>",
+      "foods": "<lista de alimentos separados por virgula>",
+      "description": "<descricao curta>",
+      "notes": ""
+    }
+  ],
+  "dayPlans": {
+    "segunda": { "meals": [ <mesma estrutura de meals acima com variacao> ] },
+    "terca":   { "meals": [ ... ] },
+    "quarta":  { "meals": [ ... ] },
+    "quinta":  { "meals": [ ... ] },
+    "sexta":   { "meals": [ ... ] },
+    "sabado":  { "meals": [ ... ] },
+    "domingo": { "meals": [ ... ] }
+  }
+}
+
+Nao inclua texto fora do JSON.
+`.trim();
+
   const result = await callOpenAi({
     accountId,
     generationType: "diet",
     expectJson: true,
-    instructions:
-      "Gere um plano alimentar em JSON valido para o Shape Certo. Use os campos title, nutritionalGoal, startDate, endDate, recommendedMeals, userAvailableMeals, restrictionNotes, preferenceNotes, guidance, meals e dayPlans. Respeite alergias, restricoes, preferencias e historico do usuario. Nao inclua texto fora do JSON.",
-    input: `Monte um plano alimentar atualizado.${goal ? ` Objetivo informado: ${goal}` : ""}`,
+    instructions,
+    input: `Gere um plano alimentar completo e atualizado com base em todos os dados do usuario.${goal ? ` Objetivo principal: ${goal}.` : ""} Consulte as preferencias e restricoes alimentares, o numero de refeicoes, os sinais do ultimo check-in e as medidas corporais para calcular as necessidades calorias e macros.`,
   });
 
   if (persist && result.json) {
@@ -402,13 +462,62 @@ export async function generateAiDietPlan(accountId, { goal, persist = false } = 
 }
 
 export async function generateAiWorkoutPlan(accountId, { goal, persist = false } = {}) {
+  const instructions = `
+Gere um plano de treino personalizado em JSON valido para o Shape Certo.
+
+REGRAS OBRIGATORIAS (leia o contexto do usuario antes de gerar):
+1. EQUIPAMENTOS: leia "preferences.gymEquipment" e use SOMENTE equipamentos com "available: true". Se a lista estiver vazia, use exercicios com peso corporal ou equipamentos basicos (halter, barra).
+2. NIVEL: leia "profile.training_level" (iniciante/intermediario/avancado) e calibre complexidade, volume e intensidade.
+3. SINAIS DO CHECK-IN: leia o check-in mais recente (context.checkins[0]) e ajuste:
+   - Se fatigueLevel >= 4 ou sleepQuality <= 2: reduza volume (menos series/exercicios)
+   - Se trainingPerformance <= 2: mantenha cargas e evite exercicios de alta tecnica
+   - Use "weeklyWorkoutsPlanned" e "weeklyWorkoutsCompleted" para ajustar frequencia
+4. OBJETIVO: use o objetivo informado na requisicao. Se nao informado, use "goals" do contexto.
+5. DIAS: leia "profile.training_days_per_week" ou extraia dos check-ins. Gere apenas os dias de treino necessarios (ex: 3 dias = monday, wednesday, friday).
+6. VARIEDADE: consulte "workout.recentSessions" para evitar repeticao de exercicios identicos ao ultimo treino.
+7. SERIES/REPS: use valores reais e especificos (ex: "3x10-12", "4x8", "3x15"). Inclua "suggestedSets" como numero inteiro e "suggestedReps" como string (ex: "10-12").
+8. DESCANSO: use valores em segundos adequados ao objetivo (hipertrofia: 60-90s, forca: 120-180s, emagrecimento: 30-60s).
+
+ESTRUTURA JSON OBRIGATORIA:
+{
+  "weeklyTrainingDays": <numero inteiro>,
+  "trainingShift": "morning" | "afternoon" | "evening",
+  "split": "<descricao do split, ex: ABC, ABCDE>",
+  "updatedAt": "<ISO timestamp>",
+  "workouts": [
+    {
+      "id": "<monday|tuesday|wednesday|thursday|friday|saturday|sunday>",
+      "title": "<nome completo, ex: Segunda-feira>",
+      "shortTitle": "<nome curto, ex: Segunda>",
+      "enabled": true,
+      "focus": "<grupo muscular principal, ex: Peito e Triceps>",
+      "exercises": [
+        {
+          "id": "<id unico, ex: ex-001>",
+          "name": "<nome do exercicio>",
+          "suggestedSets": <numero inteiro>,
+          "suggestedReps": "<string, ex: 10-12>",
+          "restSeconds": <numero inteiro>,
+          "executionVideoUrl": "",
+          "userVideoFileName": "",
+          "aiFeedback": "<dica personalizada baseada no perfil e sinais do check-in>",
+          "notes": "",
+          "sets": [{ "enabled": true, "weight": 0, "reps": 0 }]
+        }
+      ]
+    }
+  ]
+}
+
+Nao inclua texto fora do JSON. Gere entre 5 e 8 exercicios por dia de treino.
+`.trim();
+
   const result = await callOpenAi({
     accountId,
     generationType: "workout",
     expectJson: true,
-    instructions:
-      "Gere um plano de treino em JSON valido para o Shape Certo. Use os campos weeklyTrainingDays, trainingShift, split, workouts e updatedAt. Cada treino deve ter id, title, shortTitle, enabled, focus e exercises. Cada exercicio deve ter id, name, suggestedSets, suggestedReps, restSeconds, executionVideoUrl, userVideoFileName, aiFeedback, notes e sets. Nao inclua texto fora do JSON.",
-    input: `Monte um protocolo de treino atualizado.${goal ? ` Objetivo informado: ${goal}` : ""}`,
+    instructions,
+    input: `Gere um protocolo de treino completo e atualizado com base em todos os dados do usuario.${goal ? ` Objetivo principal: ${goal}.` : ""} Consulte os equipamentos disponiveis, o nivel de treino, os sinais do ultimo check-in e o historico de sessoes.`,
   });
 
   if (persist && result.json) {

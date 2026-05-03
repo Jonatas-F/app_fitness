@@ -848,6 +848,7 @@ export default function CheckinsPage() {
   const [isGeneratingProtocols, setIsGeneratingProtocols] = useState(false);
   const [protocolUpdateResult, setProtocolUpdateResult] = useState(null);
   const [showAiModal, setShowAiModal] = useState(false);
+  const [aiGoal, setAiGoal] = useState("");
   const cancelButtonRef = useRef(null);
   const [isHydratingCheckins, setIsHydratingCheckins] = useState(true);
 
@@ -1051,6 +1052,9 @@ export default function CheckinsPage() {
       setCheckins(syncSavedCheckin(updated, localCheckin, remote.data));
     }
 
+    // Captura o objetivo ANTES de resetar o formulário
+    setAiGoal(payload.goal || "");
+
     setFormData(makePrefilledCheckinForm(updated, activeCadence));
     setPhotoUploads({});
     setSubmitAttempted(false);
@@ -1094,7 +1098,7 @@ export default function CheckinsPage() {
     try {
       if (updateWorkoutWithAi) {
         try {
-          const res = await withTimeout(generateWorkoutWithAi({ persist: true }));
+          const res = await withTimeout(generateWorkoutWithAi({ persist: true, goal: aiGoal }));
           if (res?.protocol) {
             await hydrateWorkoutExecutionFromApi();
             results.workout = res.protocol?.title || "Protocolo de treino atualizado";
@@ -1106,7 +1110,7 @@ export default function CheckinsPage() {
 
       if (updateDietWithAi) {
         try {
-          const res = await withTimeout(generateDietWithAi({ persist: true }));
+          const res = await withTimeout(generateDietWithAi({ persist: true, goal: aiGoal }));
           if (res?.protocol) {
             await hydrateDietProtocolFromApi();
             results.diet = res.protocol?.title || "Protocolo de dieta atualizado";
@@ -1594,8 +1598,7 @@ export default function CheckinsPage() {
                   />
                 </Field>
 
-                {showMonthly ? (
-                <Field label="Objetivo principal">
+                <Field label="Objetivo principal" hint="Usado pela IA para ajustar treino e dieta">
                   <select name="goal" value={formData.goal} onChange={handleChange}>
                     {goalOptions.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -1604,7 +1607,6 @@ export default function CheckinsPage() {
                     ))}
                   </select>
                 </Field>
-                ) : null}
 
                 {showMonthly ? (
                 <Field label="Esporte especifico">
