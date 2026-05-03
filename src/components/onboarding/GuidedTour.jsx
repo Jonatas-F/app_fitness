@@ -104,14 +104,24 @@ const TOUR_STEPS = [
       "Seu plano alimentar personalizado com refeições, quantidades exatas e opções de substituição para cada alimento.",
   },
   {
-    id: "diet-content",
+    id: "diet-days",
     route: "/dietas",
-    target: '[data-tour="diet-content"]',
+    target: '[data-tour="diet-days"]',
     position: "bottom",
-    icon: "🍽️",
-    title: "Refeições do dia",
+    icon: "📅",
+    title: "Dieta por dia da semana",
     description:
-      "Cada refeição vem com alimentos, gramas e calorias. Marque as refeições realizadas para acompanhar sua aderência diária.",
+      "Cada dia tem um plano próprio. Clique em qualquer dia para ver as refeições daquele dia — a IA varia ou repete os pratos conforme o seu check-in.",
+  },
+  {
+    id: "diet-meal",
+    route: "/dietas",
+    target: '[data-tour="diet-meal"]',
+    position: "right",
+    icon: "🍽️",
+    title: "Card de refeição",
+    description:
+      "Cada refeição mostra nome, horário sugerido e status. Clique no card para expandir e ver os alimentos com quantidades exatas, calorias e opções de substituição. Marque como realizada para registrar a aderência.",
   },
   // ── Chat ──────────────────────────────────────────────────────────────────
   {

@@ -670,7 +670,7 @@ export default function NutritionPage() {
           </p>
         </div>
 
-        <nav className="nutrition-week-tabs" role="tablist" aria-label="Dias da dieta">
+        <nav className="nutrition-week-tabs" role="tablist" aria-label="Dias da dieta" data-tour="diet-days">
           {dietDays.map((day) => {
             const dayPlan = diet.dayPlans?.find((item) => item.id === day.id);
             const enabledMeals = (dayPlan?.meals || []).filter((meal) => meal.enabled).length;
@@ -730,7 +730,7 @@ export default function NutritionPage() {
       </section>
 
       <section className="meal-grid">
-        {selectedDayPlan.meals.map((meal) => {
+        {selectedDayPlan.meals.map((meal, mealIndex) => {
           const mealLogKey = `${selectedDayPlan.id}-${meal.id}-${todayKey}`;
           const mealLog = mealLogMap.get(mealLogKey);
           const suggestedTime = mealSchedule[meal.id] || meal.time || "";
@@ -738,6 +738,7 @@ export default function NutritionPage() {
           return (
             <article
               key={`${selectedDayPlan.id}-${meal.id}`}
+              data-tour={mealIndex === 0 ? "diet-meal" : undefined}
               className={`meal-card glass-panel ${meal.enabled ? "is-enabled" : "is-disabled"} ${
                 openMeals.includes(meal.id) ? "is-open" : ""
               } ${mealLog ? "is-completed" : ""}`}
