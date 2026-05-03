@@ -462,23 +462,56 @@ export default function DashboardPage() {
             <strong>Resumo</strong>
             <StatusPill tone="neutral">{weeklyCheckins.length} check-ins</StatusPill>
           </TabsTrigger>
-          {canAccess("dashboard_corpo") && (
+          {canAccess("dashboard_corpo") ? (
           <TabsTrigger value="corpo" className="dashboard-tab-trigger">
             <strong>Corpo</strong>
             <StatusPill tone="neutral">{checkins.length} registros</StatusPill>
           </TabsTrigger>
+          ) : (
+          <button
+            type="button"
+            className="dashboard-tab-trigger dashboard-tab-trigger--locked"
+            title="Disponível no plano Intermediário"
+            disabled
+          >
+            <span className="dashboard-tab-trigger__lock">🔒</span>
+            <strong>Corpo</strong>
+            <StatusPill tone="neutral">Intermediário+</StatusPill>
+          </button>
           )}
-          {canAccess("dashboard_cargas") && (
+          {canAccess("dashboard_cargas") ? (
           <TabsTrigger value="cargas" className="dashboard-tab-trigger">
             <strong>Cargas</strong>
             <StatusPill tone="neutral">{monthSessions.length} treinos</StatusPill>
           </TabsTrigger>
+          ) : (
+          <button
+            type="button"
+            className="dashboard-tab-trigger dashboard-tab-trigger--locked"
+            title="Disponível no plano Intermediário"
+            disabled
+          >
+            <span className="dashboard-tab-trigger__lock">🔒</span>
+            <strong>Cargas</strong>
+            <StatusPill tone="neutral">Intermediário+</StatusPill>
+          </button>
           )}
-          {canAccess("dashboard_mensal") && (
+          {canAccess("dashboard_mensal") ? (
           <TabsTrigger value="mensal" className="dashboard-tab-trigger">
             <strong>Mensal</strong>
             <StatusPill tone="neutral">{monthlyCheckins.length} registros</StatusPill>
           </TabsTrigger>
+          ) : (
+          <button
+            type="button"
+            className="dashboard-tab-trigger dashboard-tab-trigger--locked"
+            title="Disponível no plano Intermediário"
+            disabled
+          >
+            <span className="dashboard-tab-trigger__lock">🔒</span>
+            <strong>Mensal</strong>
+            <StatusPill tone="neutral">Intermediário+</StatusPill>
+          </button>
           )}
           <TabsTrigger value="feedback" className="dashboard-tab-trigger">
             <strong>Feedback</strong>

@@ -67,6 +67,27 @@
   max-width: 100%;
 }
 
+/* ── Locked tab (plano insuficiente) ─────────────────────────── */
+.dashboard-tab-trigger--locked {
+  opacity: 0.48 !important;
+  cursor: not-allowed !important;
+  position: relative;
+}
+
+.dashboard-tab-trigger--locked:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: none !important;
+}
+
+.dashboard-tab-trigger__lock {
+  font-size: 0.8rem;
+  line-height: 1;
+  position: absolute;
+  top: 8px;
+  right: 10px;
+}
+
 .dashboard-tab-panel {
   display: grid;
   gap: 16px;

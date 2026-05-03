@@ -641,6 +641,39 @@
   border-color: rgba(255, 255, 255, 0.18);
 }
 
+/* ── Plan gate hint (upgrade nudge) ──────────────────────────── */
+.checkins-plan-gate {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.checkins-plan-gate strong {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* ── Locked cadence tab ───────────────────────────────────────── */
+.checkins-tab--locked {
+  opacity: 0.42;
+  cursor: not-allowed !important;
+}
+
+.checkins-tab--locked:hover {
+  transform: none !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+}
+
+.checkins-tab--locked .checkins-tab__icon {
+  font-size: 1.1rem;
+}
+
 .checkins-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

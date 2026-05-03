@@ -1615,29 +1615,47 @@ export default function CheckinsPage() {
           </p>
         </div>
         <div className="checkins-tabs checkins-tabs--compact" role="tablist" aria-label="Tipo de check-in">
-          {["weekly", ...(canDoMonthly ? ["monthly"] : []), ...(canDoDaily ? ["daily"] : [])].map((cadence) => (
-            <button
-              key={cadence}
-              type="button"
-              className={`checkins-tab checkins-tab--${cadence} ${activeCadence === cadence ? "is-active" : ""}`}
-              onClick={() => handleCadenceChange(cadence)}
-              role="tab"
-              aria-selected={activeCadence === cadence}
-              aria-controls={`checkins-panel-${cadence}`}
-              id={`checkins-tab-${cadence}`}
-              tabIndex={activeCadence === cadence ? 0 : -1}
-            >
-              <span className="checkins-tab__icon">{cadence === "weekly" ? "S" : "M"}</span>
-              <span className="checkins-tab__content">
-                <strong>{checkinCadences[cadence].label}</strong>
-                <span>{checkinCadences[cadence].description}</span>
-                <em>{cadence === "weekly" ? "Aderencia e feedback" : "Dados completos do mes"}</em>
-              </span>
-              <span className="checkins-tab__state">
-                {activeCadence === cadence ? "Selecionado" : "Selecionar"}
-              </span>
-            </button>
-          ))}
+          {[
+            { id: "weekly",  allowed: true },
+            { id: "monthly", allowed: canDoMonthly },
+            { id: "daily",   allowed: canDoDaily   },
+          ].map(({ id: cadence, allowed }) => {
+            const icons = { weekly: "S", monthly: "M", daily: "D" };
+            const subtitles = {
+              weekly:  "Aderencia e feedback",
+              monthly: allowed ? "Dados completos do mes" : "Intermediário+",
+              daily:   allowed ? "Sinais diários"        : "Pro",
+            };
+            return (
+              <button
+                key={cadence}
+                type="button"
+                className={[
+                  `checkins-tab checkins-tab--${cadence}`,
+                  activeCadence === cadence ? "is-active" : "",
+                  !allowed ? "checkins-tab--locked" : "",
+                ].filter(Boolean).join(" ")}
+                onClick={allowed ? () => handleCadenceChange(cadence) : undefined}
+                disabled={!allowed}
+                role="tab"
+                aria-selected={activeCadence === cadence}
+                aria-controls={`checkins-panel-${cadence}`}
+                id={`checkins-tab-${cadence}`}
+                tabIndex={activeCadence === cadence ? 0 : -1}
+                title={!allowed ? `Check-in ${checkinCadences[cadence]?.label} disponível no plano ${subtitles[cadence]}` : undefined}
+              >
+                <span className="checkins-tab__icon">{allowed ? icons[cadence] : "🔒"}</span>
+                <span className="checkins-tab__content">
+                  <strong>{checkinCadences[cadence]?.label}</strong>
+                  <span>{checkinCadences[cadence]?.description}</span>
+                  <em>{subtitles[cadence]}</em>
+                </span>
+                <span className="checkins-tab__state">
+                  {!allowed ? "Bloqueado" : activeCadence === cadence ? "Selecionado" : "Selecionar"}
+                </span>
+              </button>
+            );
+          })}
         </div>
         <div className="checkins-progress-stack">
           <div className="checkins-progress-row">
@@ -2303,6 +2321,13 @@ export default function CheckinsPage() {
                 placeholder="Ex.: fome a noite, treino rendeu pouco, viagem, dores, refeicoes fora do plano."
               />
             </Field>
+
+            {!canDoPhotos && (
+              <div className="checkins-plan-gate">
+                <span>🔒</span>
+                <span>Fotos de progresso disponíveis no plano <strong>Intermediário+</strong></span>
+              </div>
+            )}
 
             {canDoPhotos && (
               <div className="photo-checkin-panel">
