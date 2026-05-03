@@ -616,55 +616,63 @@ function WorkoutExecutionSection() {
                   </article>
                 </div>
 
-                <div className="live-session-sets">
+                {/* Um card por série habilitada, cada um com seus próprios inputs */}
+                <div className="live-session-sets-list">
                   {selectedExercise.sets
-                    .filter((set) => set.enabled !== false)
-                    .map((set, index) => (
-                      <button
-                        key={set.set}
-                        type="button"
-                        className={activeSetIndex === index ? "is-selected" : ""}
-                        onClick={() => setActiveSetIndex(index)}
-                      >
-                        <strong>Serie {set.set}</strong>
-                        <span>{set.weight || "--"} kg</span>
-                      </button>
-                    ))}
-                </div>
-
-                <div className="live-session-inputs">
-                  <label>
-                    Carga (kg)
-                    <input
-                      value={selectedSet?.weight || ""}
-                      onChange={(event) =>
-                        handleSetChange(
-                          selectedWorkout.id,
-                          selectedExercise.id,
-                          activeSetIndex,
-                          "weight",
-                          event.target.value
-                        )
-                      }
-                      placeholder="Ex.: 72"
-                    />
-                  </label>
-                  <label>
-                    Repeticoes
-                    <input
-                      value={selectedSet?.reps || ""}
-                      onChange={(event) =>
-                        handleSetChange(
-                          selectedWorkout.id,
-                          selectedExercise.id,
-                          activeSetIndex,
-                          "reps",
-                          event.target.value
-                        )
-                      }
-                      placeholder="Ex.: 10"
-                    />
-                  </label>
+                    .map((set, originalIndex) => ({ set, originalIndex }))
+                    .filter(({ set }) => set.enabled !== false)
+                    .map(({ set, originalIndex }) => {
+                      const isDone = !!(set.weight || set.reps);
+                      const isActive = activeSetIndex === originalIndex;
+                      return (
+                        <div
+                          key={set.set}
+                          className={`live-session-set-card${isActive ? " is-active" : ""}${isDone ? " is-done" : ""}`}
+                          onClick={() => setActiveSetIndex(originalIndex)}
+                        >
+                          <div className="live-session-set-card__header">
+                            <strong>Série {set.set}</strong>
+                            {isDone && <span className="live-session-set-card__check">✓</span>}
+                          </div>
+                          <div className="live-session-set-card__inputs">
+                            <label onClick={(e) => e.stopPropagation()}>
+                              <span>Carga (kg)</span>
+                              <input
+                                value={set.weight || ""}
+                                onChange={(e) =>
+                                  handleSetChange(
+                                    selectedWorkout.id,
+                                    selectedExercise.id,
+                                    originalIndex,
+                                    "weight",
+                                    e.target.value
+                                  )
+                                }
+                                onFocus={() => setActiveSetIndex(originalIndex)}
+                                placeholder="kg"
+                              />
+                            </label>
+                            <label onClick={(e) => e.stopPropagation()}>
+                              <span>Reps</span>
+                              <input
+                                value={set.reps || ""}
+                                onChange={(e) =>
+                                  handleSetChange(
+                                    selectedWorkout.id,
+                                    selectedExercise.id,
+                                    originalIndex,
+                                    "reps",
+                                    e.target.value
+                                  )
+                                }
+                                onFocus={() => setActiveSetIndex(originalIndex)}
+                                placeholder="10"
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      );
+                    })}
                 </div>
 
                 <div className="live-session-footer">

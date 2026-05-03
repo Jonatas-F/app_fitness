@@ -584,37 +584,85 @@
   font-variant-numeric: tabular-nums;
 }
 
-.live-session-sets {
+/* ── Cards de série (um por set habilitado) ─────────────────────────────── */
+.live-session-sets-list {
   display: grid;
-  grid-template-columns: repeat(5, minmax(92px, 1fr));
   gap: 8px;
 }
 
-.live-session-sets button {
-  display: grid;
-  gap: 10px;
-  min-height: 82px;
-  padding: 12px;
-  border-radius: 8px;
-  color: rgba(255, 255, 255, 0.78);
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+.live-session-set-card {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
 }
 
-.live-session-sets button.is-selected {
-  color: #fff;
-  border-color: rgba(255, 46, 46, 0.5);
-  box-shadow: inset 0 0 0 1px rgba(255, 46, 46, 0.18);
+.live-session-set-card.is-active {
+  background: rgba(255, 46, 46, 0.07);
+  border-color: rgba(255, 46, 46, 0.46);
+  box-shadow: inset 0 0 0 1px rgba(255, 46, 46, 0.12);
 }
 
-.live-session-sets strong {
-  font-size: 0.78rem;
-  text-transform: uppercase;
+.live-session-set-card.is-done:not(.is-active) {
+  border-color: rgba(100, 220, 130, 0.28);
+  background: rgba(100, 220, 130, 0.04);
 }
 
-.live-session-sets span {
-  font-size: 1.08rem;
+.live-session-set-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 0.74rem;
   font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.52);
+}
+
+.live-session-set-card.is-active .live-session-set-card__header {
+  color: rgba(255, 160, 100, 0.9);
+}
+
+.live-session-set-card__check {
+  font-size: 0.82rem;
+  color: rgba(100, 220, 130, 0.9);
+  font-style: normal;
+}
+
+.live-session-set-card__inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.live-session-set-card__inputs label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.live-session-set-card__inputs input {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 10px;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.065);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  outline: none;
+  transition: border-color 160ms ease;
+}
+
+.live-session-set-card__inputs input:focus {
+  border-color: rgba(255, 46, 46, 0.44);
+  box-shadow: 0 0 0 2px rgba(255, 46, 46, 0.1);
 }
 
 .live-session-inputs {
@@ -1368,20 +1416,13 @@
     font-size: 1.5rem;
   }
 
-  /* Séries: 3 por linha */
-  .live-session-sets {
-    grid-template-columns: repeat(3, 1fr);
+  /* Cards de série: inputs compactos no mobile */
+  .live-session-set-card {
+    padding: 10px 12px;
   }
 
-  .live-session-sets button {
-    min-height: 56px;
-    padding: 8px;
-    gap: 4px;
-  }
-
-  /* Inputs: mantém 2 colunas lado a lado */
-  .live-session-inputs input {
-    min-height: 40px;
+  .live-session-set-card__inputs input {
+    min-height: 36px;
   }
 
   .live-session-footer {
@@ -1446,8 +1487,9 @@
     font-size: 1.35rem;
   }
 
-  .live-session-sets button {
-    min-height: 50px;
+  .live-session-set-card__inputs input {
+    min-height: 34px;
+    font-size: 0.88rem;
   }
 
   /* Exercício: card compacto */
