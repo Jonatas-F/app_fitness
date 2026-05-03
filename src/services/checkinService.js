@@ -1,4 +1,3 @@
-import { persistCheckins } from "../data/checkinStorage";
 import { apiEndpoints } from "./api/endpoints";
 import { apiRequest, getApiToken } from "./api/client";
 
@@ -35,7 +34,6 @@ export async function loadRemoteCheckins() {
   try {
     const data = await apiRequest(apiEndpoints.checkins);
     const checkins = (data.checkins || []).map(toLocalCheckin);
-    persistCheckins(checkins);
     return { checkins, error: null, skipped: false };
   } catch (error) {
     return { checkins: [], error, skipped: false };

@@ -267,16 +267,16 @@ function getChildFieldName(children) {
 }
 
 /**
- * Retorna apenas os dados do último check-in real (excluindo metadados e defaults).
- * Usado como snapshot para destacar campos pré-preenchidos em amarelo.
+ * Retorna o snapshot de valores pré-preenchidos (excluindo metadados).
+ * Usa a mesma lógica de merge de makePrefilledCheckinForm para que a
+ * detecção de campos stale fique sempre em sincronia com o que foi
+ * realmente exibido no formulário.
  */
 function makePrefilledSnapshot(checkins, cadence) {
-  const latestSameCadence = getLatestCompletedCheckin(checkins, cadence);
-  const latestAny = getLatestCompletedCheckin(checkins);
-  const latest = latestSameCadence || latestAny;
-  if (!latest) return {};
-  const { id, createdAt, updatedAt, checkin_date, status, aiContext, ai_context, photos, ...stableData } = latest;
-  return stableData;
+  const form = makePrefilledCheckinForm(checkins, cadence);
+  // Strip form-only fields that shouldn't trigger stale comparison
+  const { cadence: _c, photos: _p, ...snapshot } = form;
+  return snapshot;
 }
 
 /** Context que fornece `isStale(fieldName)` ao Field automaticamente. */
@@ -415,22 +415,35 @@ function getLatestCompletedCheckin(checkins, cadence) {
 }
 
 function makePrefilledCheckinForm(checkins, cadence) {
-  const latestSameCadence = getLatestCompletedCheckin(checkins, cadence);
-  const latestAny = getLatestCompletedCheckin(checkins);
-  const latest = latestSameCadence || latestAny;
+  const completed = [...(Array.isArray(checkins) ? checkins : [])]
+    .filter((item) => item.status !== "missed")
+    .sort((a, b) => new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0));
 
-  if (!latest) {
-    return {
-      ...defaultCheckinForm,
-      cadence,
-    };
+  if (completed.length === 0) {
+    return { ...defaultCheckinForm, cadence };
   }
 
-  const { id, createdAt, updatedAt, checkin_date, status, aiContext, ai_context, photos, ...stableData } = latest;
+  // Build pre-fill by starting from the most recent check-in and filling in any
+  // empty fields from progressively older ones. This way, if the latest check-in
+  // didn't include a field (e.g. hunger, stress), we still pre-fill from history.
+  const merged = { ...defaultCheckinForm };
+
+  // Process oldest → newest so that newer values naturally overwrite older ones.
+  const ordered = [...completed].reverse();
+  for (const checkin of ordered) {
+    const { id, createdAt, updatedAt, checkin_date, status, aiContext, ai_context, photos, cadence: _c, ...stableData } = checkin;
+    for (const [key, value] of Object.entries(stableData)) {
+      const isEmpty = Array.isArray(value)
+        ? value.length === 0
+        : String(value ?? "").trim() === "";
+      if (!isEmpty) {
+        merged[key] = value;
+      }
+    }
+  }
 
   return {
-    ...defaultCheckinForm,
-    ...stableData,
+    ...merged,
     cadence,
     photos: [],
   };
@@ -1023,12 +1036,23 @@ export default function CheckinsPage() {
         return;
       }
 
-      setCheckins(result.checkins);
+      // Merge remote with local: remote is authoritative for already-synced IDs,
+      // but keep any local-only check-ins (saved while offline or if remote save failed)
+      // so that navigation never loses locally saved data.
+      const localCheckins = loadCheckins();
+      const remoteIds = new Set(result.checkins.map((c) => c.id));
+      const localOnly = localCheckins.filter((c) => !remoteIds.has(c.id));
+      const merged = [...result.checkins, ...localOnly].sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
+      persistCheckins(merged);
+
+      setCheckins(merged);
       setFormData((current) => {
         const cadenceToUse = current.cadence || activeCadence;
-        setPrefilledSnapshot(makePrefilledSnapshot(result.checkins, cadenceToUse));
+        setPrefilledSnapshot(makePrefilledSnapshot(merged, cadenceToUse));
         return {
-          ...makePrefilledCheckinForm(result.checkins, cadenceToUse),
+          ...makePrefilledCheckinForm(merged, cadenceToUse),
           cadence: cadenceToUse,
         };
       });
