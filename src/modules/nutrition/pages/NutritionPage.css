@@ -831,9 +831,26 @@
     overflow-x: visible;
   }
 
+  /* Troca o grid de 2 colunas por flex-column para evitar sobreposição */
   .nutrition-week-tabs button {
     flex: 1 1 calc(25% - 6px);
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    min-height: 62px;
+  }
+
+  /* Esconde nome completo (Segunda, Terça…) — só abreviação + contagem */
+  .nutrition-week-tabs button span {
+    display: none;
+  }
+
+  /* em tinha grid-column:2 no estilo base — reset para funcionar no flex */
+  .nutrition-week-tabs em {
+    grid-column: unset;
+    font-size: 0.72rem;
   }
 
   .nutrition-collapsible__summary {

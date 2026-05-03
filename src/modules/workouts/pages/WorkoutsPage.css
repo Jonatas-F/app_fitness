@@ -1292,9 +1292,24 @@
     overflow-x: visible;
   }
 
+  /* Troca grid de 3 colunas por flex-column para evitar sobreposição */
   .workout-week-tabs button {
     flex: 1 1 calc(33.333% - 6px);
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    min-height: 56px;
+  }
+
+  /* Trunça o foco (ex: "Peito + Tríceps") com ellipsis */
+  .workout-week-tabs span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    font-size: 0.72rem;
   }
 
   .live-session-overlay {
