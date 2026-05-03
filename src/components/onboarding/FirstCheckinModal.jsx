@@ -70,10 +70,22 @@ const FIELD_DEFS = {
                         hint: "Quanto mais você descrever, mais preciso o protocolo inicial" },
 };
 
+// Pré-inicializa selects que não têm opção vazia como primeiro item
+// (o browser exibe o 1º item visualmente, mas o valor no estado fica undefined sem isso)
+function buildInitialForm() {
+  const defaults = { cadence: "weekly" };
+  for (const [key, def] of Object.entries(FIELD_DEFS)) {
+    if (def.type === "select" && def.options?.[0]?.[0] !== "") {
+      defaults[key] = def.options[0][0];
+    }
+  }
+  return defaults;
+}
+
 export default function FirstCheckinModal({ planId, onComplete }) {
   const steps = STEPS[planId] ?? STEPS.intermediario;
   const [step, setStep] = useState(0);
-  const [form, setForm] = useState({ cadence: "weekly" });
+  const [form, setForm] = useState(buildInitialForm);
   const [saving, setSaving] = useState(false);
 
   const currentStep = steps[step];
