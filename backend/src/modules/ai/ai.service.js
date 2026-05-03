@@ -465,42 +465,77 @@ export async function generateAiWorkoutPlan(accountId, { goal, persist = false }
   const instructions = `
 Gere um plano de treino personalizado em JSON valido para o Shape Certo.
 
-REGRAS OBRIGATORIAS (leia o contexto do usuario antes de gerar):
-1. EQUIPAMENTOS: leia "preferences.gymEquipment" e use SOMENTE equipamentos com "available: true". Se a lista estiver vazia, use exercicios com peso corporal ou equipamentos basicos (halter, barra).
-2. NIVEL: leia "profile.training_level" (iniciante/intermediario/avancado) e calibre complexidade, volume e intensidade.
-3. SINAIS DO CHECK-IN: leia o check-in mais recente (context.checkins[0]) e ajuste:
-   - Se fatigueLevel >= 4 ou sleepQuality <= 2: reduza volume (menos series/exercicios)
-   - Se trainingPerformance <= 2: mantenha cargas e evite exercicios de alta tecnica
-   - Use "weeklyWorkoutsPlanned" e "weeklyWorkoutsCompleted" para ajustar frequencia
-4. OBJETIVO: use o objetivo informado na requisicao. Se nao informado, use "goals" do contexto.
-5. DIAS: leia "profile.training_days_per_week" ou extraia dos check-ins. Gere apenas os dias de treino necessarios (ex: 3 dias = monday, wednesday, friday).
-6. VARIEDADE: consulte "workout.recentSessions" para evitar repeticao de exercicios identicos ao ultimo treino.
-7. SERIES/REPS: use valores reais e especificos (ex: "3x10-12", "4x8", "3x15"). Inclua "suggestedSets" como numero inteiro e "suggestedReps" como string (ex: "10-12").
-8. DESCANSO: use valores em segundos adequados ao objetivo (hipertrofia: 60-90s, forca: 120-180s, emagrecimento: 30-60s).
+DADOS OBRIGATORIOS A LER NO CONTEXTO:
+1. DIAS DISPONIVEIS: leia "trainingAvailableDays" no payload do check-in mais recente (checkins[0].payload.trainingAvailableDays). Este campo contem os dias da semana em que o usuario tem disponibilidade real, separados por virgula (ex: "monday,wednesday,friday"). Use EXATAMENTE esses dias como dias de treino habilitados. Se estiver vazio, leia "weeklyTrainingDays" e distribua os dias de forma equilibrada conforme as regras abaixo.
+2. EQUIPAMENTOS: leia "preferences.gymEquipment" e use SOMENTE os com "available: true". Se vazio, use maquinas de academia padrao (chest press, leg press, puxada, remada, shoulder press, cadeira extensora, mesa flexora).
+3. NIVEL: leia "trainingExperience" do check-in mais recente — "iniciante", "intermediario" ou "avancado". Calibre complexidade tecnica, numero de exercicios e volume total.
+4. SINAIS DE RECUPERACAO: leia fatigueLevel, sleepQuality, trainingPerformance do check-in mais recente:
+   - fatigueLevel 4-5 OU sleepQuality 1-2: reduza volume (menos 1 serie por exercicio)
+   - trainingPerformance 1-2: priorize exercicios basicos, evite movimentos tecnicos complexos
+5. OBJETIVO: use o objetivo informado. Se nao informado, use "goals" do contexto ou o "goal" do check-in.
+6. HISTORICO: leia "workout.recentSessions" para variar exercicios e nao repetir identicamente o ultimo treino.
 
-ESTRUTURA JSON OBRIGATORIA:
+PRINCIPIOS CIENTIFICOS OBRIGATORIOS (evidence-based):
+
+A. DISTRIBUICAO DOS DIAS DE DESCANSO (Schoenfeld 2016 - muscle recovery):
+   - Cada grupo muscular precisa de 48-72h de recuperacao entre estimulos
+   - NUNCA concentre todos os dias de descanso ao final da semana
+   - Regras por frequencia semanal:
+     * 3 dias: distribua com 1 dia de folga entre treinos — SEG/QUA/SEX ou TER/QUI/SAB
+     * 4 dias: distribua em blocos — SEG/TER/QUI/SEX (folga QUA e fim de semana)
+     * 5 dias: SEG a SEX (folga SAB e DOM)
+     * 6 dias: 6 dias consecutivos mais proximos, 1 dia de descanso isolado
+   - Se "trainingAvailableDays" informar dias especificos, RESPEITE esses dias exatamente
+   - Verifique se ha pelo menos 1 dia de descanso a cada 3 dias de treino consecutivos
+
+B. VOLUME SEMANAL POR GRUPO MUSCULAR (Krieger 2010, Ralston 2017):
+   - Iniciante: 10-12 series/semana por grupo muscular
+   - Intermediario: 12-20 series/semana por grupo muscular
+   - Avancado: 16-25 series/semana por grupo muscular
+
+C. REP RANGES POR OBJETIVO (Schoenfeld 2017 meta-analysis):
+   - Hipertrofia: 6-12 reps, descanso 60-90s
+   - Forca: 3-6 reps, descanso 120-180s
+   - Emagrecimento/cutting: 12-15 reps, descanso 30-60s, maior densidade de treino
+   - Condicionamento/saude: 12-20 reps, descanso 45-60s
+   - Recomposicao: varie 8-15 reps, descanso 60-90s
+
+D. ORDEM DOS EXERCICIOS (neurological priority principle):
+   - SEMPRE: compostos multiarticulares primeiro (supino, agachamento, terra, puxada, remada)
+   - Depois: exercicios complementares intermedios
+   - Por ultimo: isolados (curl de biceps, extensao de triceps, elevacao lateral)
+   - Nunca treine biceps no dia anterior a costas (pre-fadiga prejudica o composto principal)
+
+E. SPLITS RECOMENDADOS POR FREQUENCIA:
+   - 2 dias: Full Body A / Full Body B
+   - 3 dias: ABC (Peito+Triceps / Costas+Biceps / Pernas+Ombros)
+   - 4 dias: Upper A / Lower A / Upper B / Lower B — ou ABCD com grupos separados
+   - 5 dias: Push / Pull / Legs / Upper isolados / Pernas 2 — ou ABCDE
+   - Para emagrecimento: prefira Full Body ou Upper/Lower para maior gasto calorico por sessao
+
+ESTRUTURA JSON OBRIGATORIA (inclua TODOS os 7 dias da semana):
 {
-  "weeklyTrainingDays": <numero inteiro>,
+  "weeklyTrainingDays": <numero inteiro de dias ativos>,
   "trainingShift": "morning" | "afternoon" | "evening",
-  "split": "<descricao do split, ex: ABC, ABCDE>",
+  "split": "<nome do split, ex: ABC, Upper/Lower, Full Body>",
   "updatedAt": "<ISO timestamp>",
   "workouts": [
     {
       "id": "<monday|tuesday|wednesday|thursday|friday|saturday|sunday>",
-      "title": "<nome completo, ex: Segunda-feira>",
+      "title": "<nome em portugues, ex: Segunda-feira>",
       "shortTitle": "<nome curto, ex: Segunda>",
-      "enabled": true,
-      "focus": "<grupo muscular principal, ex: Peito e Triceps>",
+      "enabled": <true se dia de treino, false se descanso>,
+      "focus": "<grupo muscular ou Descanso e recuperacao>",
       "exercises": [
         {
-          "id": "<id unico, ex: ex-001>",
-          "name": "<nome do exercicio>",
+          "id": "<ex-001, ex-002, etc>",
+          "name": "<nome do exercicio em portugues>",
           "suggestedSets": <numero inteiro>,
-          "suggestedReps": "<string, ex: 10-12>",
-          "restSeconds": <numero inteiro>,
+          "suggestedReps": "<ex: 10-12 ou 15>",
+          "restSeconds": <segundos inteiro>,
           "executionVideoUrl": "",
           "userVideoFileName": "",
-          "aiFeedback": "<dica personalizada baseada no perfil e sinais do check-in>",
+          "aiFeedback": "<dica personalizada: mencione equipamento, nivel e objetivo>",
           "notes": "",
           "sets": [{ "enabled": true, "weight": 0, "reps": 0 }]
         }
@@ -509,7 +544,9 @@ ESTRUTURA JSON OBRIGATORIA:
   ]
 }
 
-Nao inclua texto fora do JSON. Gere entre 5 e 8 exercicios por dia de treino.
+OBRIGATORIO: dias de descanso devem ter exercises: [] e focus: "Descanso e recuperacao".
+Gere entre 5 e 8 exercicios por dia de treino ativo.
+Nao inclua texto fora do JSON.
 `.trim();
 
   const result = await callOpenAi({

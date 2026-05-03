@@ -250,6 +250,47 @@ function getChildrenValue(children) {
   return value;
 }
 
+const WEEK_DAYS = [
+  { id: "monday",    short: "SEG", label: "Segunda" },
+  { id: "tuesday",   short: "TER", label: "Terca"   },
+  { id: "wednesday", short: "QUA", label: "Quarta"  },
+  { id: "thursday",  short: "QUI", label: "Quinta"  },
+  { id: "friday",    short: "SEX", label: "Sexta"   },
+  { id: "saturday",  short: "SAB", label: "Sabado"  },
+  { id: "sunday",    short: "DOM", label: "Domingo" },
+];
+
+function DayPicker({ value = "", onChange }) {
+  const selected = (value || "").split(",").filter(Boolean);
+
+  function toggle(dayId) {
+    const next = selected.includes(dayId)
+      ? selected.filter((d) => d !== dayId)
+      : [...selected, dayId].sort(
+          (a, b) =>
+            WEEK_DAYS.findIndex((d) => d.id === a) -
+            WEEK_DAYS.findIndex((d) => d.id === b)
+        );
+    onChange(next.join(","));
+  }
+
+  return (
+    <div className="checkin-day-picker">
+      {WEEK_DAYS.map((day) => (
+        <button
+          key={day.id}
+          type="button"
+          title={day.label}
+          className={`checkin-day-picker__btn${selected.includes(day.id) ? " is-active" : ""}`}
+          onClick={() => toggle(day.id)}
+        >
+          {day.short}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function Field({ label, required = false, hint, children, className = "", invalid = false }) {
   const fieldValue = getChildrenValue(children);
   const isFilled = Array.isArray(fieldValue)
@@ -2019,7 +2060,35 @@ export default function CheckinsPage() {
                 </select>
               </Field>
               ) : null}
+
+              {showWeekly ? (
+              <Field label="Nivel de treino" hint="Usado pela IA para calibrar complexidade e volume dos exercicios">
+                <select name="trainingExperience" value={formData.trainingExperience} onChange={handleChange}>
+                  {experienceOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              ) : null}
             </div>
+
+            {(showWeekly || showMonthly) && (
+              <div>
+                <Field
+                  label="Quais dias da semana voce pode treinar"
+                  hint="Marque os dias que voce tem disponibilidade real para ir a academia. A IA vai distribuir os treinos nesses dias com folgas bem posicionadas."
+                >
+                  <DayPicker
+                    value={formData.trainingAvailableDays}
+                    onChange={(val) =>
+                      setFormData((prev) => ({ ...prev, trainingAvailableDays: val }))
+                    }
+                  />
+                </Field>
+              </div>
+            )}
 
             <div className="checkins-routine-block">
               <div>

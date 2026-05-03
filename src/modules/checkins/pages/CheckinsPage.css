@@ -1746,3 +1746,42 @@
   padding: 22px;
 }
 
+/* ── Day Picker ─────────────────────────────────────────────── */
+.checkin-day-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.checkin-day-picker__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  user-select: none;
+}
+
+.checkin-day-picker__btn:hover {
+  border-color: rgba(229, 9, 20, 0.5);
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(229, 9, 20, 0.08);
+}
+
+.checkin-day-picker__btn.is-active {
+  background: rgba(229, 9, 20, 0.18);
+  border-color: rgba(229, 9, 20, 0.75);
+  color: #fff;
+  box-shadow: 0 0 0 2px rgba(229, 9, 20, 0.18);
+}
+
