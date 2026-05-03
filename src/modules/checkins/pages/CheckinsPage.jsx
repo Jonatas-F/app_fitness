@@ -185,11 +185,23 @@ const photoPoseSlots = [
   },
 ];
 
+const FORM_CONTROL_TAGS = ["input", "select", "textarea"];
+
 function getChildrenValue(children) {
   let value = "";
 
   Children.forEach(children, (child) => {
     if (!isValidElement(child)) {
+      return;
+    }
+
+    // For form controls, only use the controlled `value` prop.
+    // Never recurse into <option> children — an undefined value means empty.
+    if (typeof child.type === "string" && FORM_CONTROL_TAGS.includes(child.type)) {
+      const controlled = child.props.value;
+      if (controlled !== undefined && controlled !== null) {
+        value = controlled;
+      }
       return;
     }
 
