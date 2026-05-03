@@ -116,7 +116,6 @@ const requiredFieldsByCadence = {
     "trainingPerformance",
     "protocolAction",
     "notes",
-    "photos",
   ],
   monthly: [
     "height",
@@ -129,7 +128,6 @@ const requiredFieldsByCadence = {
     "trainingPerformance",
     "protocolAction",
     "notes",
-    "photos",
   ],
 };
 

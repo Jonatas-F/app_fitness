@@ -2098,10 +2098,10 @@ export default function CheckinsPage() {
             </Field>
 
             {canDoPhotos && (
-              <div className={`photo-checkin-panel${submitAttempted && selectedPhotoCount === 0 ? " is-invalid" : ""}`}>
+              <div className="photo-checkin-panel">
                 <div className="photo-checkin-panel__header">
                   <div>
-                    <h3>Fotos de progresso obrigatorias</h3>
+                    <h3>Fotos de progresso</h3>
                     <p>
                       Envie fotos de corpo inteiro seguindo as poses marcadas.
                       Use o mesmo local, luz e distancia sempre que possivel.
