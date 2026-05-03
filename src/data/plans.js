@@ -134,7 +134,6 @@ export const subscriptionPlans = [
     ],
     features: [
       "Check-in semanal (peso, altura, saciedade, sono, treino)",
-      "Ate 2 fotos de progresso por check-in",
       "Geracao de dieta IA com base no perfil basico",
       "Geracao de treino IA com base no perfil basico",
       "Chat com Personal Virtual IA",

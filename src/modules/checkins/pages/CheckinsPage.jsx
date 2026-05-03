@@ -94,9 +94,7 @@ const requiredCheckinFieldsByCadence = {
     "sleepQuality",
     "fatigueLevel",
     "trainingPerformance",
-    "protocolAction",
     "notes",
-    "photos",
   ],
   monthly: [
     "height",
@@ -107,9 +105,7 @@ const requiredCheckinFieldsByCadence = {
     "sleepQuality",
     "fatigueLevel",
     "trainingPerformance",
-    "protocolAction",
     "notes",
-    "photos",
   ],
 };
 
