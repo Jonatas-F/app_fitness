@@ -1386,17 +1386,75 @@
     min-width: 0;
   }
 
-  /* Live session */
+  /* ── Live session: cabe sem scroll ──────────────────────────── */
   .live-session-overlay {
-    padding: 10px;
+    padding: 0;
     align-items: flex-end;
   }
 
   .live-session-panel {
-    padding: 16px 14px;
-    border-radius: 16px;
-    max-height: 88vh;
+    gap: 10px;
+    padding: 14px 12px 16px;
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    max-height: calc(100svh - env(safe-area-inset-bottom, 0px) - 8px);
     overflow-y: auto;
+  }
+
+  /* Exercício: texto compacto */
+  .live-session-panel__exercise {
+    gap: 4px;
+    padding: 0;
+  }
+
+  .live-session-panel__exercise h3 {
+    font-size: 1.25rem;
+  }
+
+  .live-session-panel__exercise small,
+  .live-session-panel__exercise p {
+    font-size: 0.76rem;
+  }
+
+  /* Timers: volta para 2 colunas + reduz padding */
+  .live-session-timers {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px;
+  }
+
+  .live-session-timers article {
+    padding: 8px 10px;
+    gap: 3px;
+  }
+
+  .live-session-timers strong {
+    font-size: 1.45rem;
+  }
+
+  /* Série: 3 por linha, botões compactos */
+  .live-session-sets {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px;
+  }
+
+  .live-session-sets button {
+    min-height: 56px;
+    padding: 8px;
+    gap: 4px;
+  }
+
+  /* Inputs: lado a lado + altura reduzida */
+  .live-session-inputs {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px;
+  }
+
+  .live-session-inputs input {
+    min-height: 40px;
+  }
+
+  .live-session-footer {
+    padding-top: 2px;
   }
 
   /* Exercício: card compacto */
