@@ -510,9 +510,6 @@ export default function CheckoutPage() {
             <button type="submit" className="primary-button" disabled={isSubmitting || !checkoutTermsAccepted}>
               {isSubmitting ? "Abrindo Stripe..." : "Finalizar assinatura"}
             </button>
-            <button type="button" className="ghost-button" onClick={() => navigate("/dashboard")}>
-              Entrar sem finalizar agora
-            </button>
             {message ? <small className="checkout-message">{message}</small> : null}
           </form>
             </>

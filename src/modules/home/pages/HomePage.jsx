@@ -131,25 +131,7 @@ export default function HomePage() {
       plan: planId,
       cycle: cycle === "annually" ? "annual" : "monthly",
     });
-    const checkoutUrl = `/checkout?${params.toString()}`;
-
-    // Se não estiver logado, salva o destino e rola para o login
-    const hasSession = Boolean(
-      localStorage.getItem("shapeCertoApiToken") &&
-      localStorage.getItem("shapeCertoApiUser")
-    );
-
-    if (!hasSession) {
-      sessionStorage.setItem("shapeCertoPostLoginRedirect", checkoutUrl);
-      const loginSection = document.getElementById("acesso");
-      if (loginSection) {
-        loginSection.scrollIntoView({ behavior: "smooth" });
-        loginSection.querySelector("input")?.focus();
-      }
-      return;
-    }
-
-    navigate(checkoutUrl);
+    navigate(`/checkout?${params.toString()}`);
   }
 
   const pricingPlans = plans.map((plan) => {
