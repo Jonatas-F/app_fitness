@@ -155,6 +155,12 @@ export default function HomePage() {
 
   return (
     <main className="home-page">
+      <div className="home-beta-banner" role="banner" aria-label="Versão beta">
+        <span className="home-beta-banner__badge">BETA</span>
+        <span className="home-beta-banner__text">
+          Versão beta — funcionalidades em desenvolvimento. Seu feedback é bem-vindo.
+        </span>
+      </div>
       <header className="home-header">
         <Link to="/" className="home-brand">
           <span>

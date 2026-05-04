@@ -1,3 +1,36 @@
+/* ── Beta Banner ─────────────────────────────────────────────────────────── */
+.home-beta-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(229, 9, 20, 0.12);
+  border-bottom: 1px solid rgba(229, 9, 20, 0.25);
+  padding: 9px 20px;
+  margin: -22px -22px 0;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.75);
+  letter-spacing: 0.01em;
+  flex-wrap: wrap;
+  text-align: center;
+}
+
+.home-beta-banner__badge {
+  background: #e50914;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.home-beta-banner__text {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* ── Page ────────────────────────────────────────────────────────────────── */
 .home-page {
   min-height: 100vh;
   padding: 22px;
