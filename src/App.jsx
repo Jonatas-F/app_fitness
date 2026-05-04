@@ -22,7 +22,10 @@ export default function App() {
       const sessionData = JSON.parse(localSession);
       saveApiSession(sessionData);
 
-      const pendingReturnTo = sessionStorage.getItem(GOOGLE_RETURN_KEY);
+      // Destino salvo antes de ir ao Google (ex.: checkout de um plano clicado)
+      const pendingReturnTo = sessionStorage.getItem("shapeCertoPostLoginRedirect");
+      sessionStorage.removeItem("shapeCertoPostLoginRedirect");
+      // Legado — limpa a chave antiga também
       sessionStorage.removeItem(GOOGLE_RETURN_KEY);
 
       // Sem plano ativo → redirecionar para checkout com aviso
@@ -36,7 +39,7 @@ export default function App() {
         nextPath =
           pendingReturnTo && pendingReturnTo.startsWith("/") && !pendingReturnTo.startsWith("//")
             ? pendingReturnTo
-            : `${window.location.pathname}${window.location.search}`;
+            : "/dashboard";
       }
 
       const currentPath = `${window.location.pathname}${window.location.search}`;

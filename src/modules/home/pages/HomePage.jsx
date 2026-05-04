@@ -34,7 +34,9 @@ export default function HomePage() {
   });
   const [authMessage, setAuthMessage] = useState("");
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const googleSignInUrl = buildGoogleSignInUrl({ returnTo: "/dashboard" });
+  // returnTo sempre aponta para "/" (página pública) para que o hash
+  // com local_session seja processado sem ser bloqueado pelo RequireAuth
+  const googleSignInUrl = buildGoogleSignInUrl({ returnTo: "/" });
 
   useEffect(() => {
     const hash = window.location.hash.startsWith("#")
@@ -118,8 +120,8 @@ export default function HomePage() {
   }
 
   function handleGoogleLinkClick() {
-    const pendingRedirect = sessionStorage.getItem("shapeCertoPostLoginRedirect") || "/dashboard";
-    rememberGoogleReturnTo(pendingRedirect);
+    // O destino pós-login fica em shapeCertoPostLoginRedirect no sessionStorage.
+    // App.jsx lê isso após processar o local_session no hash.
     setAuthMessage("");
     setIsGoogleLoading(true);
   }
