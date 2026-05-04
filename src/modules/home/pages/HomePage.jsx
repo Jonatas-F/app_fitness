@@ -26,7 +26,7 @@ export default function HomePage() {
   const navigate = useNavigate();
   const [authMode, setAuthMode] = useState("login");
   const [selectedPlan, setSelectedPlan] = useState("intermediario");
-  const [billingCycle, setBillingCycle] = useState("annually");
+  const [billingCycle, setBillingCycle] = useState("monthly");
   const [authForm, setAuthForm] = useState({
     fullName: "",
     email: "",
