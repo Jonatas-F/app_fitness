@@ -31,7 +31,7 @@ export default function App() {
       // Sem plano ativo → redirecionar para checkout com aviso
       let nextPath;
       if (sessionData.is_new || sessionData.has_active_plan === false) {
-        const base = pendingReturnTo?.startsWith("/checkout") ? pendingReturnTo : "/checkout";
+        const base = pendingReturnTo?.startsWith("/checkout") ? pendingReturnTo : "/checkout?plan=basico&cycle=monthly";
         const sep  = base.includes("?") ? "&" : "?";
         const flag = sessionData.is_new ? "new=1" : "no_plan=1";
         nextPath = `${base}${sep}${flag}`;

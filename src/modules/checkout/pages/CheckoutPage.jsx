@@ -24,7 +24,9 @@ export default function CheckoutPage() {
   const isStripePopupReturn = searchParams.get("stripe_popup") === "1";
   const isNewGoogleUser = searchParams.get("new") === "1";
   const hasNoPlan      = searchParams.get("no_plan") === "1";
-  const [billingCycle, setBillingCycle] = useState("annual");
+  const [billingCycle, setBillingCycle] = useState(() =>
+    searchParams.get("cycle") === "monthly" ? "monthly" : "annual"
+  );
   const [installments, setInstallments] = useState("12");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);

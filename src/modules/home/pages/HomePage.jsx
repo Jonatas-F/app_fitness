@@ -88,9 +88,9 @@ export default function HomePage() {
     const pendingRedirect = sessionStorage.getItem("shapeCertoPostLoginRedirect");
     sessionStorage.removeItem("shapeCertoPostLoginRedirect");
 
-    // Sem plano ativo → checkout com aviso
+    // Sem plano ativo → checkout com aviso (plano básico mensal pré-selecionado)
     if (result.data?.is_new || result.data?.has_active_plan === false) {
-      const base = pendingRedirect?.startsWith("/checkout") ? pendingRedirect : "/checkout";
+      const base = pendingRedirect?.startsWith("/checkout") ? pendingRedirect : "/checkout?plan=basico&cycle=monthly";
       const sep  = base.includes("?") ? "&" : "?";
       const flag = result.data?.is_new ? "new=1" : "no_plan=1";
       navigate(`${base}${sep}${flag}`);
