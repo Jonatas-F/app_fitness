@@ -1,5 +1,6 @@
 import { Suspense, lazy } from "react";
 import { Navigate, createBrowserRouter, useLocation } from "react-router-dom";
+import { getApiToken, getStoredApiUser, clearApiSession } from "../services/api/client";
 
 const AppLayout = lazy(() => import("../layouts/AppLayout"));
 const HomePage = lazy(() => import("../modules/home/pages/HomePage"));
@@ -25,12 +26,29 @@ function RedirectToSettings() {
   return <Navigate to={`/configuracoes${location.search}${location.hash}`} replace />;
 }
 
+/**
+ * Guarda de rota: redireciona para / se não houver token + usuário válidos.
+ * Limpa a sessão caso apenas um dos dois esteja presente (estado corrompido).
+ */
+function RequireAuth({ children }) {
+  const token = getApiToken();
+  const user  = getStoredApiUser();
+
+  if (!token || !user) {
+    // Limpa eventual estado parcial corrompido
+    if (token || user) clearApiSession();
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
+
 export const router = createBrowserRouter(
   [
     { path: "/", element: withSuspense(<HomePage />) },
     { path: "/checkout", element: withSuspense(<CheckoutPage />) },
     {
-      element: withSuspense(<AppLayout />),
+      element: <RequireAuth>{withSuspense(<AppLayout />)}</RequireAuth>,
       children: [
         { path: "dashboard", element: withSuspense(<DashboardPage />) },
 
