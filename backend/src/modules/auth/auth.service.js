@@ -4,6 +4,8 @@ import { pool } from "../../utils/db.js";
 const tokenSecret = process.env.JWT_SECRET || "shape_certo_dev_secret";
 const tokenTtlSeconds = 60 * 60 * 24 * 7;
 
+const ADMIN_EMAIL = "jonatas.freire.prof@gmail.com";
+
 function base64Url(input) {
   return Buffer.from(input).toString("base64url");
 }
@@ -223,7 +225,7 @@ export async function signInWithEmail({ email, password }) {
   await pool.query("update accounts set last_login_at = current_timestamp where id = $1;", [account.id]);
 
   const profileResult = await pool.query("select * from user_profiles where account_id = $1 limit 1;", [account.id]);
-  const activePlan = await hasActivePlan(account.id);
+  const activePlan = account.email === ADMIN_EMAIL ? true : await hasActivePlan(account.id);
 
   return { ...toAuthResponse(account, profileResult.rows[0] || null), has_active_plan: activePlan };
 }
@@ -295,8 +297,8 @@ export async function signInWithGoogleProfile(profile) {
     );
 
     await client.query("commit");
-    const activePlan = isNewAccount ? false : await hasActivePlan(account.id);
-    return { ...toAuthResponse(account, profileResult.rows[0] || null), is_new: isNewAccount, has_active_plan: activePlan };
+    const activePlan = email === ADMIN_EMAIL ? true : (isNewAccount ? false : await hasActivePlan(account.id));
+    return { ...toAuthResponse(account, profileResult.rows[0] || null), is_new: isNewAccount && email !== ADMIN_EMAIL, has_active_plan: activePlan };
   } catch (error) {
     await client.query("rollback");
     throw error;
