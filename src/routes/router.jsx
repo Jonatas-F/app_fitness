@@ -46,7 +46,7 @@ function RequireAuth({ children }) {
 export const router = createBrowserRouter(
   [
     { path: "/", element: withSuspense(<HomePage />) },
-    { path: "/checkout", element: withSuspense(<CheckoutPage />) },
+    { path: "/checkout", element: <RequireAuth>{withSuspense(<CheckoutPage />)}</RequireAuth> },
     {
       element: <RequireAuth>{withSuspense(<AppLayout />)}</RequireAuth>,
       children: [
