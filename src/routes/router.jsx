@@ -1,6 +1,54 @@
-import { Suspense, lazy } from "react";
+import { Component, Suspense, lazy } from "react";
 import { Navigate, createBrowserRouter, useLocation } from "react-router-dom";
 import { getApiToken, getStoredApiUser, clearApiSession } from "../services/api/client";
+
+/**
+ * Captura ChunkLoadError (chunk de lazy import não encontrado no servidor)
+ * e força um hard reload limpando os caches do Service Worker.
+ */
+class ChunkErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    const isChunkError =
+      error?.name === "ChunkLoadError" ||
+      /failed to fetch dynamically imported module/i.test(error?.message || "") ||
+      /loading chunk/i.test(error?.message || "");
+    return { hasError: isChunkError };
+  }
+
+  componentDidCatch(error) {
+    const isChunkError =
+      error?.name === "ChunkLoadError" ||
+      /failed to fetch dynamically imported module/i.test(error?.message || "") ||
+      /loading chunk/i.test(error?.message || "");
+
+    if (!isChunkError) return;
+
+    // Limpa caches do Service Worker e recarrega
+    if ("caches" in window) {
+      caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).finally(() => {
+        window.location.reload();
+      });
+    } else {
+      window.location.reload();
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="route-loading-state" style={{ textAlign: "center", padding: "40px" }}>
+          Atualizando o app...
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const AppLayout = lazy(() => import("../layouts/AppLayout"));
 const HomePage = lazy(() => import("../modules/home/pages/HomePage"));
@@ -15,9 +63,11 @@ const NotFoundPage = lazy(() => import("../modules/shared/pages/NotFoundPage"));
 
 function withSuspense(element) {
   return (
-    <Suspense fallback={<div className="route-loading-state">Carregando...</div>}>
-      {element}
-    </Suspense>
+    <ChunkErrorBoundary>
+      <Suspense fallback={<div className="route-loading-state">Carregando...</div>}>
+        {element}
+      </Suspense>
+    </ChunkErrorBoundary>
   );
 }
 
