@@ -23,6 +23,7 @@ export default function CheckoutPage() {
   const checkoutStatus = searchParams.get("checkout");
   const isStripePopupReturn = searchParams.get("stripe_popup") === "1";
   const isNewGoogleUser = searchParams.get("new") === "1";
+  const hasNoPlan      = searchParams.get("no_plan") === "1";
   const [billingCycle, setBillingCycle] = useState("annual");
   const [installments, setInstallments] = useState("12");
   const [message, setMessage] = useState("");
@@ -76,13 +77,16 @@ export default function CheckoutPage() {
     };
   }, []);
 
-  // Aviso para novo usuário vindo do Google
+  // Aviso para novo usuário ou usuário sem plano ativo
   useEffect(() => {
-    if (!isNewGoogleUser) return;
-    setMessage("Conta criada com sucesso! Escolha um plano para começar a usar o Shape Certo.");
-    // Remove o ?new=1 da URL sem recarregar a página
-    setSearchParams(prev => { prev.delete("new"); return prev; }, { replace: true });
-  }, [isNewGoogleUser]);
+    if (isNewGoogleUser) {
+      setMessage("Conta criada com sucesso! Escolha um plano para começar a usar o Shape Certo.");
+      setSearchParams(prev => { prev.delete("new"); return prev; }, { replace: true });
+    } else if (hasNoPlan) {
+      setMessage("Você ainda não tem um plano ativo. Escolha um plano para acessar o Shape Certo.");
+      setSearchParams(prev => { prev.delete("no_plan"); return prev; }, { replace: true });
+    }
+  }, [isNewGoogleUser, hasNoPlan]);
 
   useEffect(() => {
     if (isStripePopupReturn && checkoutStatus) {

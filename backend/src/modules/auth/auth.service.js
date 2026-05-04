@@ -42,6 +42,19 @@ function verifyPassword(password, storedHash) {
   return stored.length === passwordHash.length && timingSafeEqual(stored, passwordHash);
 }
 
+/** Retorna true se o usuário tiver assinatura ativa no Stripe. */
+async function hasActivePlan(accountId) {
+  const result = await pool.query(
+    `select 1 from subscriptions
+     where account_id = $1
+       and gateway_subscription_id is not null
+       and status in ('active','trialing')
+     limit 1;`,
+    [accountId]
+  );
+  return result.rowCount > 0;
+}
+
 export function toAuthResponse(account, profile = null) {
   const now = Math.floor(Date.now() / 1000);
   const user = {
@@ -175,7 +188,7 @@ export async function signUpWithEmail({ email, password, fullName, plan }) {
     );
 
     await client.query("commit");
-    return toAuthResponse(account, profileResult.rows[0]);
+    return { ...toAuthResponse(account, profileResult.rows[0]), has_active_plan: false, is_new: true };
   } catch (error) {
     await client.query("rollback");
 
@@ -210,8 +223,9 @@ export async function signInWithEmail({ email, password }) {
   await pool.query("update accounts set last_login_at = current_timestamp where id = $1;", [account.id]);
 
   const profileResult = await pool.query("select * from user_profiles where account_id = $1 limit 1;", [account.id]);
+  const activePlan = await hasActivePlan(account.id);
 
-  return toAuthResponse(account, profileResult.rows[0] || null);
+  return { ...toAuthResponse(account, profileResult.rows[0] || null), has_active_plan: activePlan };
 }
 
 export async function signInWithGoogleProfile(profile) {
@@ -281,7 +295,8 @@ export async function signInWithGoogleProfile(profile) {
     );
 
     await client.query("commit");
-    return { ...toAuthResponse(account, profileResult.rows[0] || null), is_new: isNewAccount };
+    const activePlan = isNewAccount ? false : await hasActivePlan(account.id);
+    return { ...toAuthResponse(account, profileResult.rows[0] || null), is_new: isNewAccount, has_active_plan: activePlan };
   } catch (error) {
     await client.query("rollback");
     throw error;

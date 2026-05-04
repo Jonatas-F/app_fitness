@@ -25,12 +25,13 @@ export default function App() {
       const pendingReturnTo = sessionStorage.getItem(GOOGLE_RETURN_KEY);
       sessionStorage.removeItem(GOOGLE_RETURN_KEY);
 
-      // Novo usuário via Google → redirecionar para checkout com aviso
+      // Sem plano ativo → redirecionar para checkout com aviso
       let nextPath;
-      if (sessionData.is_new) {
+      if (sessionData.is_new || sessionData.has_active_plan === false) {
         const base = pendingReturnTo?.startsWith("/checkout") ? pendingReturnTo : "/checkout";
         const sep  = base.includes("?") ? "&" : "?";
-        nextPath = `${base}${sep}new=1`;
+        const flag = sessionData.is_new ? "new=1" : "no_plan=1";
+        nextPath = `${base}${sep}${flag}`;
       } else {
         nextPath =
           pendingReturnTo && pendingReturnTo.startsWith("/") && !pendingReturnTo.startsWith("//")
