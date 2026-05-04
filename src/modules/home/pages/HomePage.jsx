@@ -83,14 +83,17 @@ export default function HomePage() {
       setAuthMessage("Servidor ainda não disponível. Entrando em modo local.");
     }
 
-    navigate("/dashboard");
+    const pendingRedirect = sessionStorage.getItem("shapeCertoPostLoginRedirect");
+    sessionStorage.removeItem("shapeCertoPostLoginRedirect");
+    navigate(pendingRedirect || "/dashboard");
   }
 
   async function handleGoogleLogin(event) {
     if (event?.preventDefault) event.preventDefault();
     setAuthMessage("");
     setIsGoogleLoading(true);
-    const result = await signInWithGoogle({ returnTo: "/dashboard" });
+    const pendingRedirect = sessionStorage.getItem("shapeCertoPostLoginRedirect") || "/dashboard";
+    const result = await signInWithGoogle({ returnTo: pendingRedirect });
 
     if (result.error) {
       setAuthMessage(result.error.message);
@@ -105,7 +108,8 @@ export default function HomePage() {
   }
 
   function handleGoogleLinkClick() {
-    rememberGoogleReturnTo("/dashboard");
+    const pendingRedirect = sessionStorage.getItem("shapeCertoPostLoginRedirect") || "/dashboard";
+    rememberGoogleReturnTo(pendingRedirect);
     setAuthMessage("");
     setIsGoogleLoading(true);
   }
@@ -115,7 +119,25 @@ export default function HomePage() {
       plan: planId,
       cycle: cycle === "annually" ? "annual" : "monthly",
     });
-    navigate(`/checkout?${params.toString()}`);
+    const checkoutUrl = `/checkout?${params.toString()}`;
+
+    // Se não estiver logado, salva o destino e rola para o login
+    const hasSession = Boolean(
+      localStorage.getItem("shapeCertoApiToken") &&
+      localStorage.getItem("shapeCertoApiUser")
+    );
+
+    if (!hasSession) {
+      sessionStorage.setItem("shapeCertoPostLoginRedirect", checkoutUrl);
+      const loginSection = document.getElementById("acesso");
+      if (loginSection) {
+        loginSection.scrollIntoView({ behavior: "smooth" });
+        loginSection.querySelector("input")?.focus();
+      }
+      return;
+    }
+
+    navigate(checkoutUrl);
   }
 
   const pricingPlans = plans.map((plan) => {
