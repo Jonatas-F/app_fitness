@@ -7,6 +7,19 @@ import { appConfig } from "./config/app.config.js";
 import { requireAuth } from "./middlewares/auth.middleware.js";
 import { pool, testDatabaseConnection } from "./utils/db.js";
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
+import { validate } from "./middlewares/validate.middleware.js";
+import {
+  signUpSchema,
+  signInSchema,
+  aiChatSchema,
+  aiGenerateSchema,
+  checkoutSessionSchema,
+  subscriptionChangeSessionSchema,
+  setDefaultPaymentMethodSchema,
+  planChangeAcceptanceSchema,
+  saveProfileSchema,
+  saveSettingsSchema,
+} from "./schemas/index.js";
 import {
   handleMe,
   handleGoogleCallback,
@@ -145,6 +158,16 @@ const generalLimiter = rateLimit({
   message: { error: "Muitas requisicoes. Tente novamente em instantes." },
   skip: (req) => process.env.NODE_ENV !== "production",
 });
+
+// Endpoints de IA consomem tokens OpenAI — limite bem mais conservador
+const aiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minuto
+  max: 6,                   // máx 6 chamadas de IA por minuto por IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Limite de requisicoes de IA atingido. Aguarde 1 minuto." },
+  skip: (req) => process.env.NODE_ENV !== "production",
+});
 app.post("/billing/stripe/webhook", express.raw({ type: "application/json" }), handleStripeWebhook);
 app.post(
   "/security/google-risc/events",
@@ -175,49 +198,64 @@ app.get("/health", async (req, res, next) => {
 // REMOVIDO: /db/tables — rota de debug, não deve existir em produção.
 // Para inspecionar tabelas, use o cliente de banco diretamente.
 
-app.post("/auth/signup", authLimiter, handleSignUp);
-app.post("/auth/login", authLimiter, handleSignIn);
-app.post("/auth/logout", requireAuth, handleSignOut);
-app.get("/auth/me", requireAuth, handleMe);
-app.get("/auth/google", handleGoogleStart);
-app.get("/auth/google/callback", handleGoogleCallback);
-app.get("/profile", requireAuth, handleLoadProfile);
-app.put("/profile", requireAuth, handleSaveProfile);
-app.get("/settings", requireAuth, handleLoadSettings);
-app.put("/settings", requireAuth, handleSaveSettings);
-app.get("/checkins", requireAuth, handleListCheckins);
-app.post("/checkins", requireAuth, handleSaveCheckin);
+// ── Auth ──────────────────────────────────────────────────────────────────────
+app.post("/auth/signup",          authLimiter, validate(signUpSchema), handleSignUp);
+app.post("/auth/login",           authLimiter, validate(signInSchema), handleSignIn);
+app.post("/auth/logout",          requireAuth, handleSignOut);
+app.get( "/auth/me",              requireAuth, handleMe);
+app.get( "/auth/google",          handleGoogleStart);
+app.get( "/auth/google/callback", handleGoogleCallback);
+
+// ── Perfil e configurações ────────────────────────────────────────────────────
+app.get("/profile",   requireAuth, handleLoadProfile);
+app.put("/profile",   requireAuth, validate(saveProfileSchema), handleSaveProfile);
+app.get("/settings",  requireAuth, handleLoadSettings);
+app.put("/settings",  requireAuth, validate(saveSettingsSchema), handleSaveSettings);
+
+// ── Check-ins ─────────────────────────────────────────────────────────────────
+app.get(   "/checkins", requireAuth, handleListCheckins);
+app.post(  "/checkins", requireAuth, handleSaveCheckin);
 app.delete("/checkins", requireAuth, handleDeleteCheckins);
-app.get("/billing/plan-change-acceptances", requireAuth, handleListPlanChangeAcceptances);
-app.post("/billing/plan-change-acceptances", requireAuth, handleSavePlanChangeAcceptance);
-app.get("/billing/subscription", requireAuth, handleLoadBillingSummary);
-app.get("/billing/stripe/payment-methods", requireAuth, handleListStripePaymentMethods);
-app.put("/billing/stripe/default-payment-method", requireAuth, handleSetDefaultStripePaymentMethod);
-app.post("/billing/stripe/checkout-session", requireAuth, handleCreateStripeCheckoutSession);
-app.post("/billing/stripe/subscription-change-session", requireAuth, handleCreateStripeSubscriptionChangeSession);
-app.post("/billing/stripe/payment-method-session", requireAuth, handleCreateStripePaymentMethodSession);
-app.post("/billing/stripe/portal-session", requireAuth, handleCreateStripePortalSession);
-app.get("/workouts/active", requireAuth, handleLoadWorkoutPlan);
-app.put("/workouts/active", requireAuth, handleSaveWorkoutPlan);
-app.get("/workouts/history", requireAuth, handleListWorkoutHistory);
-app.post("/workouts/restore/:id", requireAuth, handleRestoreWorkoutPlan);
-app.get("/workout-sessions", requireAuth, handleListWorkoutSessions);
-app.post("/workout-sessions", requireAuth, handleSaveWorkoutSession);
-app.get("/diets/active", requireAuth, handleLoadDietPlan);
-app.put("/diets/active", requireAuth, handleSaveDietPlan);
-app.get("/diets/history", requireAuth, handleListDietHistory);
-app.post("/diets/restore/:id", requireAuth, handleRestoreDietPlan);
-app.get("/diets/meal-logs", requireAuth, handleListDietMealLogs);
-app.post("/diets/meal-logs", requireAuth, handleSaveDietMealLog);
-app.get("/preferences/foods", requireAuth, handleLoadFoodPreferences);
-app.put("/preferences/foods", requireAuth, handleSaveFoodPreferences);
+
+// ── Billing ───────────────────────────────────────────────────────────────────
+app.get("/billing/plan-change-acceptances",              requireAuth, handleListPlanChangeAcceptances);
+app.post("/billing/plan-change-acceptances",             requireAuth, validate(planChangeAcceptanceSchema), handleSavePlanChangeAcceptance);
+app.get("/billing/subscription",                         requireAuth, handleLoadBillingSummary);
+app.get("/billing/stripe/payment-methods",               requireAuth, handleListStripePaymentMethods);
+app.put("/billing/stripe/default-payment-method",        requireAuth, validate(setDefaultPaymentMethodSchema), handleSetDefaultStripePaymentMethod);
+app.post("/billing/stripe/checkout-session",             requireAuth, validate(checkoutSessionSchema), handleCreateStripeCheckoutSession);
+app.post("/billing/stripe/subscription-change-session",  requireAuth, validate(subscriptionChangeSessionSchema), handleCreateStripeSubscriptionChangeSession);
+app.post("/billing/stripe/payment-method-session",       requireAuth, handleCreateStripePaymentMethodSession);
+app.post("/billing/stripe/portal-session",               requireAuth, handleCreateStripePortalSession);
+
+// ── Treinos ───────────────────────────────────────────────────────────────────
+app.get( "/workouts/active",       requireAuth, handleLoadWorkoutPlan);
+app.put( "/workouts/active",       requireAuth, handleSaveWorkoutPlan);
+app.get( "/workouts/history",      requireAuth, handleListWorkoutHistory);
+app.post("/workouts/restore/:id",  requireAuth, handleRestoreWorkoutPlan);
+app.get( "/workout-sessions",      requireAuth, handleListWorkoutSessions);
+app.post("/workout-sessions",      requireAuth, handleSaveWorkoutSession);
+
+// ── Dietas ────────────────────────────────────────────────────────────────────
+app.get( "/diets/active",          requireAuth, handleLoadDietPlan);
+app.put( "/diets/active",          requireAuth, handleSaveDietPlan);
+app.get( "/diets/history",         requireAuth, handleListDietHistory);
+app.post("/diets/restore/:id",     requireAuth, handleRestoreDietPlan);
+app.get( "/diets/meal-logs",       requireAuth, handleListDietMealLogs);
+app.post("/diets/meal-logs",       requireAuth, handleSaveDietMealLog);
+
+// ── Preferências ──────────────────────────────────────────────────────────────
+app.get("/preferences/foods",         requireAuth, handleLoadFoodPreferences);
+app.put("/preferences/foods",         requireAuth, handleSaveFoodPreferences);
 app.get("/preferences/gym-equipment", requireAuth, handleLoadGymEquipment);
 app.put("/preferences/gym-equipment", requireAuth, handleSaveGymEquipment);
-app.get("/assistant/context", requireAuth, handleLoadAssistantContext);
-app.post("/ai/chat", requireAuth, handleAiChat);
-app.post("/ai/diet", requireAuth, handleGenerateAiDiet);
-app.post("/ai/workout", requireAuth, handleGenerateAiWorkout);
-app.get("/chat/history", requireAuth, handleLoadChatHistory);
+
+// ── Assistente e IA ───────────────────────────────────────────────────────────
+app.get( "/assistant/context", requireAuth, handleLoadAssistantContext);
+app.post("/ai/chat",    requireAuth, aiLimiter, validate(aiChatSchema),    handleAiChat);
+app.post("/ai/diet",    requireAuth, aiLimiter, validate(aiGenerateSchema), handleGenerateAiDiet);
+app.post("/ai/workout", requireAuth, aiLimiter, validate(aiGenerateSchema), handleGenerateAiWorkout);
+app.get( "/chat/history", requireAuth, handleLoadChatHistory);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
