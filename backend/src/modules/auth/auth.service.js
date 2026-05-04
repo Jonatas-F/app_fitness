@@ -230,6 +230,7 @@ export async function signInWithGoogleProfile(profile) {
 
     const existing = await client.query("select * from accounts where email = $1 limit 1;", [email]);
     let account = existing.rows[0];
+    let isNewAccount = false;
 
     if (account) {
       if (account.google_signin_disabled || account.account_status === "blocked") {
@@ -262,6 +263,7 @@ export async function signInWithGoogleProfile(profile) {
         [email, profile.sub || null]
       );
       account = created.rows[0];
+      isNewAccount = true;
     }
 
     const profileResult = await client.query(
@@ -279,7 +281,7 @@ export async function signInWithGoogleProfile(profile) {
     );
 
     await client.query("commit");
-    return toAuthResponse(account, profileResult.rows[0] || null);
+    return { ...toAuthResponse(account, profileResult.rows[0] || null), is_new: isNewAccount };
   } catch (error) {
     await client.query("rollback");
     throw error;

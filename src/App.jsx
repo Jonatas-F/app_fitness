@@ -19,14 +19,24 @@ export default function App() {
     }
 
     try {
-      saveApiSession(JSON.parse(localSession));
+      const sessionData = JSON.parse(localSession);
+      saveApiSession(sessionData);
+
       const pendingReturnTo = sessionStorage.getItem(GOOGLE_RETURN_KEY);
       sessionStorage.removeItem(GOOGLE_RETURN_KEY);
 
-      const nextPath =
-        pendingReturnTo && pendingReturnTo.startsWith("/") && !pendingReturnTo.startsWith("//")
-          ? pendingReturnTo
-          : `${window.location.pathname}${window.location.search}`;
+      // Novo usuário via Google → redirecionar para checkout com aviso
+      let nextPath;
+      if (sessionData.is_new) {
+        const base = pendingReturnTo?.startsWith("/checkout") ? pendingReturnTo : "/checkout";
+        const sep  = base.includes("?") ? "&" : "?";
+        nextPath = `${base}${sep}new=1`;
+      } else {
+        nextPath =
+          pendingReturnTo && pendingReturnTo.startsWith("/") && !pendingReturnTo.startsWith("//")
+            ? pendingReturnTo
+            : `${window.location.pathname}${window.location.search}`;
+      }
 
       const currentPath = `${window.location.pathname}${window.location.search}`;
 

@@ -22,6 +22,7 @@ export default function CheckoutPage() {
   const selectedPlanId = searchParams.get("plan") || "intermediario";
   const checkoutStatus = searchParams.get("checkout");
   const isStripePopupReturn = searchParams.get("stripe_popup") === "1";
+  const isNewGoogleUser = searchParams.get("new") === "1";
   const [billingCycle, setBillingCycle] = useState("annual");
   const [installments, setInstallments] = useState("12");
   const [message, setMessage] = useState("");
@@ -74,6 +75,14 @@ export default function CheckoutPage() {
       window.removeEventListener("shape-certo-auth-updated", syncAuthState);
     };
   }, []);
+
+  // Aviso para novo usuário vindo do Google
+  useEffect(() => {
+    if (!isNewGoogleUser) return;
+    setMessage("Conta criada com sucesso! Escolha um plano para começar a usar o Shape Certo.");
+    // Remove o ?new=1 da URL sem recarregar a página
+    setSearchParams(prev => { prev.delete("new"); return prev; }, { replace: true });
+  }, [isNewGoogleUser]);
 
   useEffect(() => {
     if (isStripePopupReturn && checkoutStatus) {
