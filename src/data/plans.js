@@ -5,7 +5,7 @@
  * (GPT-4o-mini + infra + Stripe), conforme modelo financeiro em:
  *   src/data/shape_certo_business_plan.xlsx
  *
- * Ultima revisao: Mai 2026  |  Cambio ref.: USD 1 = BRL 5.70
+ * Última revisão: Mai 2026  |  Câmbio ref.: USD 1 = BRL 5.70
  */
 
 /**
@@ -15,7 +15,7 @@
  *  - boolean: { name, category, plans: string[] }
  *    → ✓ para planos listados, ✗ para os demais
  *  - valor:   { name, category, plans: { basico, intermediario, pro } }
- *    → mostra o texto correspondente para cada plano (ex: "2", "Ate 6", "Ilimitadas")
+ *    → mostra o texto correspondente para cada plano (ex: "2", "Até 6", "Ilimitadas")
  */
 export const featureMatrix = [
   // ── Check-ins ────────────────────────────────────────────────
@@ -30,7 +30,7 @@ export const featureMatrix = [
     plans: ["intermediario", "pro"],
   },
   {
-    name: "Check-in diario de sinais",
+    name: "Check-in diário de sinais",
     category: "Check-ins",
     plans: ["pro"],
   },
@@ -49,29 +49,29 @@ export const featureMatrix = [
     plans: ["intermediario", "pro"],
   },
   {
-    name: "Dados de bioimpedancia",
+    name: "Dados de bioimpedância",
     category: "Medidas",
     plans: ["intermediario", "pro"],
   },
 
-  // ── Inteligencia Artificial ──────────────────────────────────
+  // ── Inteligência Artificial ──────────────────────────────────
   {
-    name: "Geracao de treino com IA",
+    name: "Geração de treino com IA",
     category: "IA",
     plans: ["basico", "intermediario", "pro"],
   },
   {
-    name: "Geracao de dieta com IA",
+    name: "Geração de dieta com IA",
     category: "IA",
     plans: ["basico", "intermediario", "pro"],
   },
   {
     name: "Contexto da IA",
     category: "IA",
-    plans: { basico: "Basico", intermediario: "Historico 3 meses", pro: "Total" },
+    plans: { basico: "Básico", intermediario: "Histórico 3 meses", pro: "Total" },
   },
   {
-    name: "Upload de videos de exercicios",
+    name: "Upload de vídeos de exercícios",
     category: "IA",
     plans: ["pro"],
   },
@@ -83,9 +83,9 @@ export const featureMatrix = [
     plans: ["basico", "intermediario", "pro"],
   },
   {
-    name: "Historico de conversas",
+    name: "Histórico de conversas",
     category: "Chat",
-    plans: { basico: "1 sessao", intermediario: "3 meses", pro: "Ilimitado" },
+    plans: { basico: "1 sessão", intermediario: "3 meses", pro: "Ilimitado" },
   },
 
   // ── Dashboard ────────────────────────────────────────────────
@@ -95,14 +95,14 @@ export const featureMatrix = [
     plans: ["basico", "intermediario", "pro"],
   },
   {
-    name: "Dashboard avancado (corpo, cargas, mensal)",
+    name: "Dashboard avançado (corpo, cargas, mensal)",
     category: "Dashboard",
     plans: ["intermediario", "pro"],
   },
 
   // ── Tokens ───────────────────────────────────────────────────
   {
-    name: "Tokens de IA por mes",
+    name: "Tokens de IA por mês",
     category: "Tokens",
     plans: { basico: "~260k", intermediario: "~1,5M", pro: "~4,5M" },
   },
@@ -111,62 +111,62 @@ export const featureMatrix = [
 export const subscriptionPlans = [
   {
     id: "basico",
-    name: "Basico",
-    /** Preco mensal em BRL */
+    name: "Básico",
+    /** Preço mensal em BRL */
     monthlyPrice: 29.90,
-    /** Preco anual em BRL (20% de desconto vs. 12x mensal) */
+    /** Preço anual em BRL (20% de desconto vs. 12x mensal) */
     annualPrice: 287.04,
-    tokens: "~260.000 tokens/mes",
-    workouts: "2-4 geracoes de treino/mes",
-    meals: "2-4 geracoes de dieta/mes",
-    highlight: "Para comecar com direcao",
+    tokens: "~260.000 tokens/mês",
+    workouts: "2-4 gerações de treino/mês",
+    meals: "2-4 gerações de dieta/mês",
+    highlight: "Para começar com direção",
     /**
-     * Destaques exibidos no cartao do plano.
+     * Destaques exibidos no cartão do plano.
      * Mostra o que este plano entrega — sem herdar dos anteriores.
      */
     highlights: [
-      { name: "Check-in semanal (peso, sinais, aderencia)", isIncluded: true },
-      { name: "Geracao de treino com IA", isIncluded: true },
-      { name: "Geracao de dieta com IA", isIncluded: true },
+      { name: "Check-in semanal (peso, sinais, aderência)", isIncluded: true },
+      { name: "Geração de treino com IA", isIncluded: true },
+      { name: "Geração de dieta com IA", isIncluded: true },
       { name: "Chat com Personal Virtual IA", isIncluded: true },
-      { name: "Dashboard basico (resumo e feedback)", isIncluded: true },
-      { name: "~260k tokens de IA por mes", isIncluded: true },
+      { name: "Dashboard básico (resumo e feedback)", isIncluded: true },
+      { name: "~260k tokens de IA por mês", isIncluded: true },
     ],
     features: [
       "Check-in semanal (peso, altura, saciedade, sono, treino)",
-      "Geracao de dieta IA com base no perfil basico",
-      "Geracao de treino IA com base no perfil basico",
+      "Geração de dieta IA com base no perfil básico",
+      "Geração de treino IA com base no perfil básico",
       "Chat com Personal Virtual IA",
-      "Dashboard basico (resumo e feedback)",
+      "Dashboard básico (resumo e feedback)",
     ],
   },
   {
     id: "intermediario",
-    name: "Intermediario",
+    name: "Intermediário",
     monthlyPrice: 59.90,
     annualPrice: 575.04,
-    tokens: "~1.500.000 tokens/mes",
-    workouts: "4-6 geracoes/ajustes de treino",
-    meals: "4-6 geracoes/ajustes de dieta",
+    tokens: "~1.500.000 tokens/mês",
+    workouts: "4-6 gerações/ajustes de treino",
+    meals: "4-6 gerações/ajustes de dieta",
     highlight: "Mais acompanhamento na rotina",
     featured: true,
     /**
-     * Destaques: mostra o que este plano adiciona em relacao ao Basico.
+     * Destaques: mostra o que este plano adiciona em relação ao Básico.
      */
     highlights: [
-      { name: "Tudo do plano Basico, e mais:", isIncluded: true },
+      { name: "Tudo do plano Básico, e mais:", isIncluded: true },
       { name: "Check-in mensal completo", isIncluded: true },
-      { name: "Medidas corporais completas + bioimpedancia", isIncluded: true },
+      { name: "Medidas corporais completas + bioimpedância", isIncluded: true },
       { name: "Fotos de progresso por check-in", isIncluded: true },
-      { name: "IA com historico de 3 meses", isIncluded: true },
+      { name: "IA com histórico de 3 meses", isIncluded: true },
       { name: "Dashboard completo (corpo, cargas, mensal)", isIncluded: true },
     ],
     features: [
       "Check-in semanal e mensal completo",
-      "Medidas corporais completas (cintura, quadril, braco, etc.)",
-      "Bioimpedancia (InBody, Tanita ou similar)",
-      "Ate 6 fotos de progresso por check-in",
-      "Geracao de dieta e treino IA com historico de 3 meses",
+      "Medidas corporais completas (cintura, quadril, braço, etc.)",
+      "Bioimpedância (InBody, Tanita ou similar)",
+      "Até 6 fotos de progresso por check-in",
+      "Geração de dieta e treino IA com histórico de 3 meses",
       "Chat com contexto expandido",
       "Dashboard completo (corpo, cargas, mensal, feedback)",
     ],
@@ -176,29 +176,29 @@ export const subscriptionPlans = [
     name: "Pro",
     monthlyPrice: 99.90,
     annualPrice: 959.04,
-    tokens: "~4.500.000 tokens/mes",
-    workouts: "Geracoes ilimitadas por protocolo",
-    meals: "Dietas e substituicoes completas",
-    highlight: "Acesso total a plataforma",
+    tokens: "~4.500.000 tokens/mês",
+    workouts: "Gerações ilimitadas por protocolo",
+    meals: "Dietas e substituições completas",
+    highlight: "Acesso total à plataforma",
     /**
-     * Destaques: mostra o que este plano adiciona em relacao ao Intermediario.
+     * Destaques: mostra o que este plano adiciona em relação ao Intermediário.
      */
     highlights: [
-      { name: "Tudo do plano Intermediario, e mais:", isIncluded: true },
-      { name: "Check-in diario de sinais", isIncluded: true },
+      { name: "Tudo do plano Intermediário, e mais:", isIncluded: true },
+      { name: "Check-in diário de sinais", isIncluded: true },
       { name: "Fotos de progresso por check-in", isIncluded: true },
-      { name: "IA com contexto total e historico completo", isIncluded: true },
-      { name: "Upload de videos de exercicios", isIncluded: true },
-      { name: "~4,5M tokens de IA por mes", isIncluded: true },
+      { name: "IA com contexto total e histórico completo", isIncluded: true },
+      { name: "Upload de vídeos de exercícios", isIncluded: true },
+      { name: "~4,5M tokens de IA por mês", isIncluded: true },
     ],
     features: [
-      "Todos os check-ins (diario, semanal, mensal)",
+      "Todos os check-ins (diário, semanal, mensal)",
       "Fotos de progresso ilimitadas",
-      "Medidas corporais + bioimpedancia completa",
-      "IA com contexto total e historico completo",
-      "Chat com historico completo sem limite",
+      "Medidas corporais + bioimpedância completa",
+      "IA com contexto total e histórico completo",
+      "Chat com histórico completo sem limite",
       "Dashboard premium com todos os insights",
-      "Upload de videos de exercicios",
+      "Upload de vídeos de exercícios",
       "Todas as funcionalidades do app",
     ],
   },
