@@ -231,37 +231,70 @@ function WorkoutEmptyState({ title, description }) {
 
 function WorkoutSessionHistoryTable({ sessions }) {
   return (
-    <div className="workout-history-table-shell">
-      <Table className="workout-history-table">
-        <TableHeader>
-          <TableRow>
-            <TableHead>Data</TableHead>
-            <TableHead>Treino</TableHead>
-            <TableHead>Duração</TableHead>
-            <TableHead>Séries</TableHead>
-            <TableHead>Volume</TableHead>
-            <TableHead className="workout-history-table__summary-head">Resumo</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sessions.map((session) => (
-            <TableRow key={session.id}>
-              <TableCell>{formatWorkoutDate(session.createdAt)}</TableCell>
-              <TableCell>{session.workoutTitle}</TableCell>
-              <TableCell>{getSessionDurationMinutes(session)}</TableCell>
-              <TableCell>{getRegisteredSets(session)}</TableCell>
-              <TableCell>{Math.round(getSessionVolume(session))}</TableCell>
-              <TableCell className="workout-history-table__summary-cell">
-                <strong>{formatExerciseSummary(session) || "Sem exercícios registrados"}</strong>
-                <span>
-                  {session.exercises.length} exercício(s) no registro
-                </span>
-              </TableCell>
+    <>
+      {/* Tabela — visível apenas em viewports largos */}
+      <div className="workout-history-table-shell">
+        <Table className="workout-history-table">
+          <TableHeader>
+            <TableRow>
+              <TableHead>Data</TableHead>
+              <TableHead>Treino</TableHead>
+              <TableHead>Duração</TableHead>
+              <TableHead>Séries</TableHead>
+              <TableHead>Volume</TableHead>
+              <TableHead className="workout-history-table__summary-head">Resumo</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {sessions.map((session) => (
+              <TableRow key={session.id}>
+                <TableCell>{formatWorkoutDate(session.createdAt)}</TableCell>
+                <TableCell>{session.workoutTitle}</TableCell>
+                <TableCell>{getSessionDurationMinutes(session)}</TableCell>
+                <TableCell>{getRegisteredSets(session)}</TableCell>
+                <TableCell>{Math.round(getSessionVolume(session))}</TableCell>
+                <TableCell className="workout-history-table__summary-cell">
+                  <strong>{formatExerciseSummary(session) || "Sem exercícios registrados"}</strong>
+                  <span>
+                    {session.exercises.length} exercício(s) no registro
+                  </span>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Cards — visíveis apenas no mobile (≤760px) */}
+      <div className="workout-history-cards">
+        {sessions.map((session) => (
+          <div key={`card-${session.id}`} className="workout-history-card">
+            <div className="workout-history-card__top">
+              <span className="workout-history-card__date">{formatWorkoutDate(session.createdAt)}</span>
+              <span className="workout-history-card__title">{session.workoutTitle}</span>
+            </div>
+            <div className="workout-history-card__stats">
+              <div className="workout-history-card__stat">
+                <span>Duração</span>
+                <strong>{getSessionDurationMinutes(session)}</strong>
+              </div>
+              <div className="workout-history-card__stat">
+                <span>Séries</span>
+                <strong>{getRegisteredSets(session)}</strong>
+              </div>
+              <div className="workout-history-card__stat">
+                <span>Volume</span>
+                <strong>{Math.round(getSessionVolume(session))}</strong>
+              </div>
+            </div>
+            <div className="workout-history-card__summary">
+              <strong>{formatExerciseSummary(session) || "Sem exercícios registrados"}</strong>
+              <span>{session.exercises.length} exercício(s) no registro</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
