@@ -29,6 +29,8 @@ export async function handleRunQuery(req, res, next) {
     const result = await runQuery(String(sql).trim());
     res.json(result);
   } catch (error) {
-    next(error);
+    // Retorna 400 para expor a mensagem real do erro SQL (não mascarada pelo errorHandler)
+    const msg = error.message || "Erro ao executar query.";
+    return res.status(400).json({ error: msg });
   }
 }
