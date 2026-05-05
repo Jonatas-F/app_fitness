@@ -174,6 +174,27 @@
   min-width: 4px;
 }
 
+/* Botão Admin DB */
+.sidebar__link--admin {
+  margin-top: 4px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.06);
+  color: rgba(252, 165, 165, 0.85);
+  font-size: 0.82rem;
+}
+
+.sidebar__link--admin:hover {
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.sidebar__link--admin.sidebar__link--active {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fca5a5;
+}
+
 /* Admin plan switcher */
 .sidebar__admin-switcher {
   position: relative;

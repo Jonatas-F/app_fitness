@@ -88,6 +88,12 @@ import {
 import { ensureLocalAiTables } from "./modules/ai/ai.service.js";
 import { handleLoadChatHistory } from "./modules/chat/chat.controller.js";
 import { ensureLocalChatTables } from "./modules/chat/chat.service.js";
+import {
+  handleListTables,
+  handleGetTableData,
+  handleRunQuery,
+} from "./modules/admin/admin.controller.js";
+import { requireAdmin } from "./modules/admin/admin.service.js";
 
 // ── Startup validation ────────────────────────────────────────────────────────
 if (process.env.NODE_ENV === "production") {
@@ -261,6 +267,11 @@ app.post("/ai/chat",    requireAuth, aiLimiter, validate(aiChatSchema),    handl
 app.post("/ai/diet",    requireAuth, aiLimiter, validate(aiGenerateSchema), handleGenerateAiDiet);
 app.post("/ai/workout", requireAuth, aiLimiter, validate(aiGenerateSchema), handleGenerateAiWorkout);
 app.get( "/chat/history", requireAuth, handleLoadChatHistory);
+
+// ── Admin (acesso restrito ao admin) ─────────────────────────────────────────
+app.get( "/admin/tables",             requireAuth, requireAdmin, handleListTables);
+app.get( "/admin/tables/:tableName",  requireAuth, requireAdmin, handleGetTableData);
+app.post("/admin/query",              requireAuth, requireAdmin, handleRunQuery);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

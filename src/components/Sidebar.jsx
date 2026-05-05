@@ -5,6 +5,7 @@ import { NAV_ICONS } from "./NavIcons";
 import logoMark from "../assets/logo_sp.svg";
 import { getStoredApiUser, apiRequest } from "../services/api/client";
 import { apiEndpoints } from "../services/api/endpoints";
+import { ROUTE_PATHS } from "../routes/routePaths";
 
 const ADMIN_EMAIL = "jonatas.freire.prof@gmail.com";
 const OVERRIDE_KEY = "shapeCertoAdminPlanOverride";
@@ -206,6 +207,19 @@ export default function Sidebar() {
             </NavLink>
           );
         })}
+
+        {/* Botão Admin — visível somente para jonatas.freire.prof@gmail.com */}
+        {getStoredApiUser()?.email === ADMIN_EMAIL && (
+          <NavLink
+            to={ROUTE_PATHS.admin}
+            className={({ isActive }) =>
+              `sidebar__link sidebar__link--admin ${isActive ? "sidebar__link--active" : ""}`
+            }
+          >
+            <span className="sidebar__link-icon">🛢</span>
+            <span>Admin DB</span>
+          </NavLink>
+        )}
       </nav>
 
       <TokenCounter subscription={subscription} />

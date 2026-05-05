@@ -59,6 +59,7 @@ const NutritionPage = lazy(() => import("../modules/nutrition/pages/NutritionPag
 const CheckinsPage = lazy(() => import("../modules/checkins/pages/CheckinsPage"));
 const ChatPage = lazy(() => import("../modules/chat/pages/ChatPage"));
 const SettingsPage = lazy(() => import("../modules/settings/pages/SettingsPage"));
+const AdminPage    = lazy(() => import("../modules/admin/pages/AdminPage"));
 const NotFoundPage = lazy(() => import("../modules/shared/pages/NotFoundPage"));
 
 function withSuspense(element) {
@@ -121,6 +122,8 @@ export const router = createBrowserRouter(
         { path: "perfil/editar", element: <RedirectToSettings /> },
 
         { path: "configuracoes", element: withSuspense(<SettingsPage />) },
+
+        { path: "admin", element: withSuspense(<AdminPage />) },
 
         { path: "*", element: withSuspense(<NotFoundPage />) },
       ],

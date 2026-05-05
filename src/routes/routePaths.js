@@ -27,4 +27,5 @@ export const ROUTE_PATHS = {
   profileEdit: '/perfil/editar',
 
   settings: '/configuracoes',
+  admin: '/admin',
 };

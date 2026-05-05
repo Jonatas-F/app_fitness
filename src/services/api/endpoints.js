@@ -28,4 +28,7 @@ export const apiEndpoints = {
   aiDiet: "/ai/diet",
   aiWorkout: "/ai/workout",
   chatHistory: "/chat/history",
+  adminTables: "/admin/tables",
+  adminTableData: (name) => `/admin/tables/${name}`,
+  adminQuery: "/admin/query",
 };
