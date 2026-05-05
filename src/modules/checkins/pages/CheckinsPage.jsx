@@ -949,6 +949,9 @@ export default function CheckinsPage() {
   const [showAiModal, setShowAiModal] = useState(false);
   const [aiGoal, setAiGoal] = useState("");
   const [aiTrainingDays, setAiTrainingDays] = useState("");
+  const [aiTrainingExp, setAiTrainingExp] = useState("");
+  const [aiTrainingAge, setAiTrainingAge] = useState("");
+  const [aiAvailableMinutes, setAiAvailableMinutes] = useState("");
   const cancelButtonRef = useRef(null);
   const [isHydratingCheckins, setIsHydratingCheckins] = useState(true);
 
@@ -1180,9 +1183,12 @@ export default function CheckinsPage() {
       setCheckins(syncSavedCheckin(updated, localCheckin, remote.data));
     }
 
-    // Captura objetivo e dias disponíveis ANTES de resetar o formulário
+    // Captura dados de treino ANTES de resetar o formulário (para enviar à IA)
     setAiGoal(payload.goal || "");
     setAiTrainingDays(payload.trainingAvailableDays || "");
+    setAiTrainingExp(payload.trainingExperience || "");
+    setAiTrainingAge(payload.trainingAge || "");
+    setAiAvailableMinutes(payload.availableMinutes || "");
 
     setFormData(makePrefilledCheckinForm(updated, activeCadence));
     setPrefilledSnapshot(makePrefilledSnapshot(updated, activeCadence));
@@ -1228,7 +1234,7 @@ export default function CheckinsPage() {
     try {
       if (updateWorkoutWithAi) {
         try {
-          const res = await withTimeout(generateWorkoutWithAi({ persist: true, goal: aiGoal, trainingAvailableDays: aiTrainingDays }));
+          const res = await withTimeout(generateWorkoutWithAi({ persist: true, goal: aiGoal, trainingAvailableDays: aiTrainingDays, trainingExperience: aiTrainingExp, trainingAge: aiTrainingAge, availableMinutes: aiAvailableMinutes }));
           if (res?.protocol) {
             await hydrateWorkoutExecutionFromApi();
             results.workout = res.protocol?.title || "Protocolo de treino atualizado";

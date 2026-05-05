@@ -233,8 +233,11 @@ export default function FirstCheckinModal({ planId, onComplete }) {
   const [dietError, setDietError]         = useState(null);
 
   // form snapshot para uso nos retries
-  const [savedGoal, setSavedGoal]                   = useState("");
-  const [savedTrainingDays, setSavedTrainingDays]   = useState("");
+  const [savedGoal, setSavedGoal]                           = useState("");
+  const [savedTrainingDays, setSavedTrainingDays]           = useState("");
+  const [savedTrainingExp, setSavedTrainingExp]             = useState("");
+  const [savedTrainingAge, setSavedTrainingAge]             = useState("");
+  const [savedAvailableMinutes, setSavedAvailableMinutes]   = useState("");
 
   const currentStep = steps[step];
   const isLast  = step === steps.length - 1;
@@ -277,10 +280,16 @@ export default function FirstCheckinModal({ planId, onComplete }) {
       }));
 
       // 3 — Salva snapshot dos dados para usar nos retries
-      const goal = form.goal || "";
+      const goal                = form.goal || "";
       const trainingAvailableDays = form.trainingAvailableDays || "";
+      const trainingExperience  = form.trainingExperience || "";
+      const trainingAge         = form.trainingAge || "";
+      const availableMinutes    = form.availableMinutes || "";
       setSavedGoal(goal);
       setSavedTrainingDays(trainingAvailableDays);
+      setSavedTrainingExp(trainingExperience);
+      setSavedTrainingAge(trainingAge);
+      setSavedAvailableMinutes(availableMinutes);
 
       // 4 — Exibe tela de geração imediatamente
       setWorkoutStatus("generating");
@@ -301,7 +310,7 @@ export default function FirstCheckinModal({ planId, onComplete }) {
       }
 
       await Promise.allSettled([
-        withTimeout(generateWorkoutWithAi({ persist: true, goal, trainingAvailableDays }))
+        withTimeout(generateWorkoutWithAi({ persist: true, goal, trainingAvailableDays, trainingExperience, trainingAge, availableMinutes }))
           .then(() => setWorkoutStatus("ok"))
           .catch(err => { setWorkoutStatus("error"); setWorkoutError(err?.message || "Erro desconhecido."); }),
 
@@ -324,7 +333,14 @@ export default function FirstCheckinModal({ planId, onComplete }) {
     setWorkoutStatus("generating");
     setWorkoutError(null);
     try {
-      await generateWorkoutWithAi({ persist: true, goal: savedGoal, trainingAvailableDays: savedTrainingDays });
+      await generateWorkoutWithAi({
+        persist: true,
+        goal: savedGoal,
+        trainingAvailableDays: savedTrainingDays,
+        trainingExperience: savedTrainingExp,
+        trainingAge: savedTrainingAge,
+        availableMinutes: savedAvailableMinutes,
+      });
       setWorkoutStatus("ok");
     } catch (err) {
       setWorkoutStatus("error");

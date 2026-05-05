@@ -3,7 +3,10 @@ import { loadAssistantContext } from "../assistant/assistant.service.js";
 import { saveDietPlan } from "../diets/diets.service.js";
 import { saveWorkoutPlan } from "../workouts/workouts.service.js";
 
-const defaultModel = process.env.OPENAI_MODEL || "gpt-4o-mini";
+const defaultModel       = process.env.OPENAI_MODEL         || "gpt-4o-mini";
+// Para geração de treino/dieta usa um modelo dedicado (pode ser diferente do chat)
+// gpt-4o-mini já é bom, mas se quiser mais qualidade troque por gpt-4.1-mini ou gpt-4o
+const structuredModel    = process.env.OPENAI_STRUCTURED_MODEL || defaultModel;
 const openAiUrl = "https://api.openai.com/v1/chat/completions";
 
 export async function ensureLocalAiTables() {
@@ -267,11 +270,11 @@ function buildSystemMessage(instructions, context, accountId, personalNameOverri
  * @param {Array}    [opts.history]        - histórico de conversa [{role, text}]
  * @param {boolean}  [opts.expectJson]    - true para dieta/treino (extrai JSON da resposta)
  */
-async function callOpenAi({ accountId, generationType, instructions, input, history = [], expectJson = false, personalNameOverride = null }) {
+async function callOpenAi({ accountId, generationType, instructions, input, history = [], expectJson = false, personalNameOverride = null, modelOverride = null, maxTokensOverride = null }) {
   requireOpenAiKey();
 
   const context = compactContext(await loadAssistantContext(accountId));
-  const model = defaultModel;
+  const model = modelOverride || (expectJson ? structuredModel : defaultModel);
 
   // Monta array de mensagens no formato Chat Completions
   const systemContent = buildSystemMessage(instructions, context, accountId, personalNameOverride);
@@ -311,7 +314,7 @@ async function callOpenAi({ accountId, generationType, instructions, input, hist
         model,
         messages,
         temperature: 0.7,
-        max_tokens: expectJson ? 4096 : 2048,
+        max_tokens: maxTokensOverride ?? (expectJson ? 12000 : 2048),
         // Para geração de JSON estruturado (dieta/treino), força JSON mode
         ...(expectJson ? { response_format: { type: "json_object" } } : {}),
       }),
@@ -463,88 +466,107 @@ Nao inclua texto fora do JSON.
   };
 }
 
-export async function generateAiWorkoutPlan(accountId, { goal, persist = false, trainingAvailableDays = "" } = {}) {
+export async function generateAiWorkoutPlan(accountId, { goal, persist = false, trainingAvailableDays = "", trainingExperience = "", trainingAge = "", availableMinutes = "" } = {}) {
   const instructions = `
 Gere um plano de treino personalizado em JSON valido para o Shape Certo.
 
-=== PRIORIDADE ABSOLUTA — DIAS DE TREINO ===
+=== PRIORIDADE ABSOLUTA 1 — DIAS DE TREINO ===
 Se "trainingAvailableDays" for fornecido na requisicao (campo nao vazio):
   - Use EXATAMENTE esses dias como "enabled": true no JSON de saida.
-  - TODOS os outros dias da semana devem ter "enabled": false e "exercises": [].
-  - NAO redistribua, NAO adicione e NAO remova nenhum dia. A selecao do usuario e definitiva.
-  - As regras de distribuicao da secao A abaixo so se aplicam quando trainingAvailableDays NAO for fornecido.
-=== FIM PRIORIDADE ===
+  - TODOS os outros dias devem ter "enabled": false e "exercises": [].
+  - NAO redistribua, NAO adicione, NAO remova nenhum dia. A selecao do usuario e definitiva.
+=== FIM PRIORIDADE 1 ===
+
+=== PRIORIDADE ABSOLUTA 2 — VOLUME POR NIVEL ===
+O numero de exercicios por sessao NAO e opcional — e obrigatorio calibrar pelo nivel:
+
+NIVEL INICIANTE (nunca treinou ou menos de 6 meses):
+  - 4 a 5 exercicios por dia de treino ativo
+  - 3 series por exercicio
+  - Compostos + 1-2 isolados por sessao
+  - Preferir Full Body ou Upper/Lower
+
+NIVEL INTERMEDIARIO (6 meses a 5 anos de treino):
+  - MINIMO 5 exercicios, IDEAL 6 a 7 exercicios por dia de treino ativo
+  - 3 a 4 series por exercicio
+  - Compostos multiarticulares + exercicios complementares + 2-3 isolados por sessao
+  - Splits ABC, ABCD ou Upper/Lower dependendo da frequencia semanal
+
+NIVEL AVANCADO (mais de 5 anos de treino):
+  - MINIMO 6 exercicios, IDEAL 7 a 8 exercicios por dia de treino ativo
+  - 4 a 5 series nos compostos, 3 a 4 nos isolados
+  - Variedade de angulos, tecnicas avancadas (drop-set, rest-pause no aiFeedback)
+  - Splits ABCDE, Push/Pull/Legs
+
+ATENCAO: gerar 3 ou 4 exercicios para um intermediario ou avancado e INCORRETO.
+Respeite os minimos acima independente de qualquer outro parametro.
+=== FIM PRIORIDADE 2 ===
 
 DADOS OBRIGATORIOS A LER NO CONTEXTO:
-1. DIAS DISPONIVEIS: se "trainingAvailableDays" nao foi fornecido na requisicao, leia-o no payload do check-in mais recente (checkins[0].payload.trainingAvailableDays). Se ainda vazio, leia "weeklyTrainingDays" e distribua os dias de forma equilibrada conforme as regras da secao A.
-2. EQUIPAMENTOS: leia "preferences.gymEquipment" e use SOMENTE os com "available: true". Se vazio, use maquinas de academia padrao (chest press, leg press, puxada, remada, shoulder press, cadeira extensora, mesa flexora).
-3. NIVEL: leia "trainingExperience" do check-in mais recente — "iniciante", "intermediario" ou "avancado". Calibre complexidade tecnica, numero de exercicios e volume total.
-4. SINAIS DE RECUPERACAO: leia fatigueLevel, sleepQuality, trainingPerformance do check-in mais recente:
-   - fatigueLevel 4-5 OU sleepQuality 1-2: reduza volume (menos 1 serie por exercicio)
-   - trainingPerformance 1-2: priorize exercicios basicos, evite movimentos tecnicos complexos
-5. OBJETIVO: use o objetivo informado. Se nao informado, use "goals" do contexto ou o "goal" do check-in.
-6. HISTORICO: leia "workout.recentSessions" para variar exercicios e nao repetir identicamente o ultimo treino.
+1. NIVEL DE EXPERIENCIA: use o valor informado explicitamente na requisicao (campo "trainingExperience"). Se vazio, leia "payload.trainingExperience" do checkin mais recente. Se ainda vazio, use "intermediario" como padrao.
+2. TEMPO DE TREINAMENTO: use "trainingAge" da requisicao para confirmar nivel. Ex: "2-5-anos" confirma intermediario mesmo que nao declarado.
+3. TEMPO DISPONIVEL: use "availableMinutes" da requisicao para ajustar densidade do treino. Se 45min, prefira 5-6 exercicios densos. Se 90min, pode ter 7-8 com mais volume.
+4. EQUIPAMENTOS: leia "preferences.gymEquipment" — use SOMENTE os com "available: true". Se vazio, use equipamentos de academia completa (barra, halteres, maquinas de musculacao, cabo).
+5. SINAIS DE RECUPERACAO: leia fatigueLevel, sleepQuality, trainingPerformance do checkin mais recente:
+   - fatigueLevel >= 4 OU sleepQuality <= 2: reduza 1 serie por exercicio (mas mantenha o numero de exercicios)
+   - trainingPerformance <= 2: priorize compostos basicos
+6. OBJETIVO: use o objetivo informado na requisicao. Se nao informado, use "goal" do contexto.
+7. HISTORICO: leia "workout.recentSessions" para variar exercicios e nao repetir identicamente.
 
-PRINCIPIOS CIENTIFICOS OBRIGATORIOS (evidence-based):
+DISTRIBUICAO DOS DIAS DE DESCANSO (so aplique quando trainingAvailableDays NAO for informado):
+- 3 dias: SEG/QUA/SEX ou TER/QUI/SAB
+- 4 dias: SEG/TER/QUI/SEX
+- 5 dias: SEG a SEX
+- Nunca concentre todos os descansos no final da semana
 
-A. DISTRIBUICAO DOS DIAS DE DESCANSO — so aplique quando trainingAvailableDays NAO for informado (Schoenfeld 2016 - muscle recovery):
-   - Cada grupo muscular precisa de 48-72h de recuperacao entre estimulos
-   - NUNCA concentre todos os dias de descanso ao final da semana
-   - Sugestoes de distribuicao quando o usuario nao especificou os dias:
-     * 3 dias: distribua com 1 dia de folga entre treinos — SEG/QUA/SEX ou TER/QUI/SAB
-     * 4 dias: distribua em blocos — SEG/TER/QUI/SEX ou TER/QUA/SEX/SAB
-     * 5 dias: SEG a SEX (folga SAB e DOM)
-     * 6 dias: 6 dias consecutivos mais proximos, 1 dia de descanso isolado
-   - Verifique se ha pelo menos 1 dia de descanso a cada 3 dias de treino consecutivos
+VOLUME SEMANAL POR GRUPO MUSCULAR (Krieger 2010):
+- Iniciante: 10-12 series/semana
+- Intermediario: 14-20 series/semana
+- Avancado: 18-25 series/semana
 
-B. VOLUME SEMANAL POR GRUPO MUSCULAR (Krieger 2010, Ralston 2017):
-   - Iniciante: 10-12 series/semana por grupo muscular
-   - Intermediario: 12-20 series/semana por grupo muscular
-   - Avancado: 16-25 series/semana por grupo muscular
+REP RANGES POR OBJETIVO (Schoenfeld 2017):
+- Hipertrofia: 6-12 reps, descanso 60-90s
+- Forca: 3-6 reps, descanso 120-180s
+- Emagrecimento/cutting: 12-15 reps, descanso 30-60s
+- Condicionamento/saude: 12-20 reps, descanso 45-60s
+- Recomposicao: 8-15 reps variados, descanso 60-90s
 
-C. REP RANGES POR OBJETIVO (Schoenfeld 2017 meta-analysis):
-   - Hipertrofia: 6-12 reps, descanso 60-90s
-   - Forca: 3-6 reps, descanso 120-180s
-   - Emagrecimento/cutting: 12-15 reps, descanso 30-60s, maior densidade de treino
-   - Condicionamento/saude: 12-20 reps, descanso 45-60s
-   - Recomposicao: varie 8-15 reps, descanso 60-90s
+ORDEM DOS EXERCICIOS (neurological priority):
+1. Compostos pesados (supino, agachamento, terra, puxada, remada, desenvolvimento)
+2. Compostos auxiliares ou maquinas pesadas
+3. Exercicios isolados (curl, extensao, elevacao lateral, crucifixo)
+Nunca coloque biceps no dia anterior a costas.
 
-D. ORDEM DOS EXERCICIOS (neurological priority principle):
-   - SEMPRE: compostos multiarticulares primeiro (supino, agachamento, terra, puxada, remada)
-   - Depois: exercicios complementares intermedios
-   - Por ultimo: isolados (curl de biceps, extensao de triceps, elevacao lateral)
-   - Nunca treine biceps no dia anterior a costas (pre-fadiga prejudica o composto principal)
-
-E. SPLITS RECOMENDADOS POR FREQUENCIA:
-   - 2 dias: Full Body A / Full Body B
-   - 3 dias: ABC (Peito+Triceps / Costas+Biceps / Pernas+Ombros)
-   - 4 dias: Upper A / Lower A / Upper B / Lower B — ou ABCD com grupos separados
-   - 5 dias: Push / Pull / Legs / Upper isolados / Pernas 2 — ou ABCDE
-   - Para emagrecimento: prefira Full Body ou Upper/Lower para maior gasto calorico por sessao
+SPLITS RECOMENDADOS:
+- 2 dias: Full Body A/B
+- 3 dias: ABC (Peito+Tri / Costas+Bi / Pernas+Ombros)
+- 4 dias: Upper A / Lower A / Upper B / Lower B  ou  ABCD
+- 5 dias: Push / Pull / Legs / Upper / Lower  ou  ABCDE
+- Emagrecimento: prefira Full Body ou Upper/Lower
 
 ESTRUTURA JSON OBRIGATORIA (inclua TODOS os 7 dias da semana):
 {
   "weeklyTrainingDays": <numero inteiro de dias ativos>,
   "trainingShift": "morning" | "afternoon" | "evening",
-  "split": "<nome do split, ex: ABC, Upper/Lower, Full Body>",
+  "split": "<nome do split>",
   "updatedAt": "<ISO timestamp>",
   "workouts": [
     {
       "id": "<monday|tuesday|wednesday|thursday|friday|saturday|sunday>",
-      "title": "<nome em portugues, ex: Segunda-feira>",
-      "shortTitle": "<nome curto, ex: Segunda>",
-      "enabled": <true se dia de treino, false se descanso>,
-      "focus": "<grupo muscular ou Descanso e recuperacao>",
+      "title": "<nome completo em portugues>",
+      "shortTitle": "<nome curto>",
+      "enabled": <true|false>,
+      "focus": "<grupo muscular principal ou Descanso e recuperacao>",
       "exercises": [
         {
           "id": "<ex-001, ex-002, etc>",
           "name": "<nome do exercicio em portugues>",
           "suggestedSets": <numero inteiro>,
-          "suggestedReps": "<ex: 10-12 ou 15>",
+          "suggestedReps": "<ex: 8-12 ou 15>",
           "restSeconds": <segundos inteiro>,
           "executionVideoUrl": "",
           "userVideoFileName": "",
-          "aiFeedback": "<dica personalizada: mencione equipamento, nivel e objetivo>",
+          "aiFeedback": "<dica personalizada com foco no nivel e objetivo do usuario — mencione angulo, grip, tecnica ou variacao relevante>",
           "notes": "",
           "sets": [{ "enabled": true, "weight": 0, "reps": 0 }]
         }
@@ -553,9 +575,11 @@ ESTRUTURA JSON OBRIGATORIA (inclua TODOS os 7 dias da semana):
   ]
 }
 
-OBRIGATORIO: dias de descanso devem ter exercises: [] e focus: "Descanso e recuperacao".
-Gere entre 5 e 8 exercicios por dia de treino ativo.
-Nao inclua texto fora do JSON.
+REGRAS FINAIS INEGOCIAVEIS:
+- Dias de descanso: exercises: [] e focus: "Descanso e recuperacao"
+- Intermediario: minimo 5, ideal 6-7 exercicios por dia ativo
+- Avancado: minimo 6, ideal 7-8 exercicios por dia ativo
+- Nao inclua texto fora do JSON
 `.trim();
 
   const ALL_WEEK_DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
@@ -565,23 +589,36 @@ Nao inclua texto fora do JSON.
     : [];
   const trainingDayCount = trainingDayList.length;
 
+  // Monta linha descritiva do nivel para reforcar no input
+  const expLabel = {
+    "iniciante": "INICIANTE (nunca treinou ou menos de 6 meses)",
+    "intermediario": "INTERMEDIARIO (6 meses a 5 anos de treino — minimo 5 exercicios por sessao)",
+    "avancado": "AVANCADO (mais de 5 anos de treino — minimo 6 exercicios por sessao)",
+  }[trainingExperience] || `"${trainingExperience || "nao informado"}"`;
+
+  const trainingAgeLabel = trainingAge ? ` Tempo de treino declarado: ${trainingAge}.` : "";
+  const minutesLabel = availableMinutes ? ` Duracao da sessao disponivel: ${availableMinutes} minutos.` : "";
+
   const result = await callOpenAi({
     accountId,
     generationType: "workout",
     expectJson: true,
+    maxTokensOverride: 14000,
     instructions,
     input: [
       `Gere um protocolo de treino completo e atualizado.`,
       goal ? `Objetivo principal: ${goal}.` : "",
+      `NIVEL DE EXPERIENCIA DO USUARIO: ${expLabel}.${trainingAgeLabel}${minutesLabel}`,
+      `LEMBRE: para nivel intermediario gere MINIMO 5 exercicios por dia ativo (ideal 6-7). Para avancado MINIMO 6 (ideal 7-8). Iniciante 4-5.`,
       trainingDayCount > 0
         ? [
             `DIAS DE TREINO SELECIONADOS PELO USUARIO (${trainingDayCount} dias — OBRIGATORIO):`,
-            `  Dias com "enabled": true: ${trainingDayList.join(", ")}.`,
-            `  Dias com "enabled": false e "exercises": []: todos os outros (${ALL_WEEK_DAYS.filter((d) => !trainingDayList.includes(d)).join(", ")}).`,
-            `  NAO altere esta selecao. NAO redistribua os dias. Use exatamente esses ${trainingDayCount} dias como dias de treino.`,
+            `  Ativar (enabled: true): ${trainingDayList.join(", ")}.`,
+            `  Descanso (enabled: false, exercises: []): ${ALL_WEEK_DAYS.filter((d) => !trainingDayList.includes(d)).join(", ")}.`,
+            `  NAO altere esta selecao.`,
           ].join(" ")
         : "Distribua os dias de treino de forma equilibrada, nunca concentrando todos os descansos no final da semana.",
-      `Use os equipamentos disponiveis (preferences.gymEquipment), o nivel de treino, os sinais de fadiga/sono/performance do ultimo check-in e o historico de sessoes para montar o protocolo.`,
+      `Consulte equipamentos disponiveis (preferences.gymEquipment), sinais de fadiga/sono/performance do ultimo checkin e historico de sessoes.`,
     ].filter(Boolean).join(" "),
   });
 
