@@ -1223,14 +1223,22 @@
   /* Tabs: scroll horizontal desde 720px */
   .dashboard-tabs {
     display: flex !important;
-    overflow-x: auto;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     gap: 8px;
-    padding-bottom: 4px;
+    padding: 6px 2px 8px;
     width: 100%;
+    /* remove border-radius para não clipar os itens ao rolar */
+    border-radius: 6px;
   }
   .dashboard-tabs::-webkit-scrollbar { display: none; }
+
+  /* garante que o wrapper não corte o scroll */
+  .dashboard-tabs-root {
+    overflow: visible;
+  }
 
   .dashboard-tab-trigger,
   .dashboard-tab-trigger--locked {
@@ -1268,6 +1276,10 @@
   }
 
   /* Tabs mais compactas */
+  .dashboard-tabs {
+    padding: 4px 2px 6px;
+  }
+
   .dashboard-tab-trigger,
   .dashboard-tab-trigger--locked {
     min-width: 82px !important;
