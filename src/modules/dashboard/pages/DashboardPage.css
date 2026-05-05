@@ -169,6 +169,46 @@
   gap: 10px;
 }
 
+.dashboard-hero__metric {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dashboard-hero__metric svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.dashboard-hero__metric span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dashboard-hero__metric strong {
+  font-size: 0.9rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dashboard-hero__metric small {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .dashboard-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1067,23 +1107,87 @@
   }
 }
 
+/* ── Mobile ≤ 720px ─────────────────────────────────────────────────────── */
 @media (max-width: 720px) {
   .dashboard-page {
-    gap: 18px;
+    gap: 12px;
   }
 
   .dashboard-hero,
   .dashboard-card {
-    padding: 18px;
+    padding: 14px;
   }
 
+  /* Hero compacto: logo pequeno inline com o texto */
   .dashboard-hero {
+    flex-direction: row;
     align-items: flex-start;
-    flex-direction: column;
+    gap: 12px;
   }
 
+  .dashboard-hero > div:last-child {
+    gap: 8px;
+  }
+
+  /* Quick stats menores no mobile */
+  .dashboard-hero__metric {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .dashboard-hero__metric svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .dashboard-hero__metric strong {
+    font-size: 0.82rem;
+  }
+
+  .dashboard-hero__metric small {
+    font-size: 0.68rem;
+  }
+
+  .dashboard-hero__logo {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  }
+
+  .dashboard-hero__logo img {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Esconde eyebrow "Dashboard" e descrição — informação redundante no mobile */
+  .dashboard-hero > div > span:first-child,
+  .dashboard-hero > div > p {
+    display: none;
+  }
+
+  .dashboard-hero h1 {
+    font-size: 1.25rem;
+    line-height: 1.2;
+    margin: 2px 0 10px;
+  }
+
+  /* Meta e métricas: 2×2 para reduzir rolagem */
   .dashboard-hero__meta,
-  .dashboard-metrics,
+  .dashboard-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .dashboard-metric {
+    padding: 12px;
+  }
+
+  .dashboard-metric .section-card__title {
+    font-size: 1.35rem;
+    white-space: normal;
+  }
+
+  /* Conteúdo interno: 1 coluna */
   .dashboard-grid,
   .dashboard-grid--wide,
   .dashboard-insight-grid,
@@ -1108,10 +1212,6 @@
     align-items: flex-start;
   }
 
-  .dashboard-metric .section-card__title {
-    white-space: normal;
-  }
-
   .workout-evolution-panel header {
     flex-direction: column;
   }
@@ -1119,55 +1219,70 @@
   .load-chart {
     padding: 12px 8px;
   }
-}
 
-/* ── Mobile fino ≤ 430px ────────────────────────────────────────────────── */
-@media (max-width: 430px) {
-  .dashboard-page {
-    gap: 14px;
-  }
-
-  .dashboard-hero,
-  .dashboard-card {
-    padding: 16px 14px;
-  }
-
-  .dashboard-hero h1 {
-    font-size: 1.4rem;
-  }
-
-  /* Tabs do dashboard: scroll horizontal */
+  /* Tabs: scroll horizontal desde 720px */
   .dashboard-tabs {
     display: flex !important;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    gap: 6px;
+    gap: 8px;
     padding-bottom: 4px;
     width: 100%;
-    max-width: 100%;
   }
   .dashboard-tabs::-webkit-scrollbar { display: none; }
 
-  /* Aplica ao seletor correto das tabs (era .dashboard-tab) */
   .dashboard-tab-trigger,
   .dashboard-tab-trigger--locked {
     flex: 0 0 auto !important;
-    min-width: 90px !important;
+    min-width: 100px !important;
+    min-height: 58px !important;
+    font-size: 0.82rem;
+    padding: 10px 12px !important;
+  }
+}
+
+/* ── Mobile fino ≤ 430px ────────────────────────────────────────────────── */
+@media (max-width: 430px) {
+  .dashboard-page {
+    gap: 10px;
+  }
+
+  .dashboard-hero,
+  .dashboard-card {
+    padding: 12px;
+  }
+
+  .dashboard-hero h1 {
+    font-size: 1.1rem;
+  }
+
+  .dashboard-hero__logo {
+    width: 38px;
+    height: 38px;
+  }
+
+  .dashboard-hero__logo img {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* Tabs mais compactas */
+  .dashboard-tab-trigger,
+  .dashboard-tab-trigger--locked {
+    min-width: 82px !important;
     min-height: 52px !important;
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     padding: 8px 10px !important;
   }
 
-  /* Métricas: 2 colunas */
   .dashboard-hero__meta,
   .dashboard-metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    gap: 6px;
   }
 
   .dashboard-metric {
-    padding: 12px;
+    padding: 10px;
   }
 
   /* Tabs de evolução de treinos */
@@ -1192,13 +1307,13 @@
 
   /* Collapsible */
   .dashboard-collapsible__summary {
-    padding: 12px 14px;
-    min-height: 58px;
+    padding: 12px;
+    min-height: 54px;
   }
 
   /* Comparação */
   .dashboard-comparison {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 8px;
   }
 }
