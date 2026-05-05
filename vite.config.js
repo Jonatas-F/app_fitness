@@ -13,6 +13,9 @@ export default defineConfig({
       includeAssets: ["logo_sp.svg", "robots.txt", "icons/*.png"],
       manifest: false, // usa o site.webmanifest existente em /public
       workbox: {
+        // Ativa o novo SW imediatamente sem precisar fechar todas as abas
+        skipWaiting: true,
+        clientsClaim: true,
         // Cachear apenas JS, CSS, HTML, SVG e woff2 — excluir imagens grandes
         globPatterns: ["**/*.{js,css,html,svg,woff2}"],
         // Excluir fotos dos personais e screenshots do precache
