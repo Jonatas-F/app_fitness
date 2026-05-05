@@ -24,6 +24,9 @@ Thumbs.db
 .vscode
 .idea
 
+# Claude Code — configurações locais (podem conter tokens de sessão)
+.claude/settings.local.json
+
 # Logs de processo (não commitar)
 *.log
 *.err.log
