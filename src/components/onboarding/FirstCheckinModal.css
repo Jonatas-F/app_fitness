@@ -225,3 +225,135 @@ textarea.ob-field__control {
 .ob-modal__skip {
   margin-right: auto;
 }
+
+/* ── Tela de Geração ────────────────────────────────────────────────────── */
+
+.ob-modal--generating {
+  max-width: 420px;
+  text-align: center;
+  gap: 20px;
+}
+
+.ob-gen-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Anel pulsante enquanto gera */
+.ob-gen-pulse {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.15);
+  border: 3px solid rgba(239, 68, 68, 0.5);
+  animation: ob-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes ob-pulse {
+  0%,100% { transform: scale(1);   opacity: 1; }
+  50%      { transform: scale(1.18); opacity: 0.6; }
+}
+
+.ob-gen-done-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.ob-gen-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin: 0;
+}
+
+.ob-gen-subtitle {
+  font-size: 0.88rem;
+  color: rgba(255,255,255,0.55);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Lista de itens */
+.ob-gen-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.ob-gen-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  transition: background 0.3s, border-color 0.3s;
+}
+
+.ob-gen-item--ok {
+  background: rgba(74, 222, 128, 0.08);
+  border-color: rgba(74, 222, 128, 0.25);
+}
+
+.ob-gen-item--error {
+  background: rgba(248, 113, 113, 0.08);
+  border-color: rgba(248, 113, 113, 0.25);
+}
+
+.ob-gen-item__emoji {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.ob-gen-item__label {
+  flex: 1;
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.8);
+  text-align: left;
+  font-weight: 500;
+}
+
+/* Ícones de status */
+.ob-gen-icon {
+  font-size: 1rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  width: 22px;
+  text-align: center;
+}
+
+.ob-gen-icon--ok  { color: #4ade80; }
+.ob-gen-icon--err { color: #f87171; }
+.ob-gen-icon--wait { color: rgba(255,255,255,0.2); }
+
+/* Spinner inline */
+.ob-gen-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.15);
+  border-top-color: #ef4444;
+  border-radius: 50%;
+  animation: ob-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes ob-spin {
+  to { transform: rotate(360deg); }
+}
+
+.ob-gen-note {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.3);
+  margin: 0;
+}
+
+.ob-gen-enter-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+}

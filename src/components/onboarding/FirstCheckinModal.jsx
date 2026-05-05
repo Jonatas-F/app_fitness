@@ -1,8 +1,12 @@
 import { useState } from "react";
 import { saveCheckin, defaultCheckinForm } from "../../data/checkinStorage";
 import { saveRemoteCheckin } from "../../services/checkinService";
+import { generateWorkoutWithAi } from "../../services/ai/workout.service";
+import { generateDietWithAi } from "../../services/ai/diet.service";
 import { personalAvatarCatalog } from "../../data/platformImageCatalog";
 import "./FirstCheckinModal.css";
+
+// ── Etapas por plano ────────────────────────────────────────────────────────
 
 const PERSONAL_STEP = {
   id: "personal",
@@ -11,35 +15,45 @@ const PERSONAL_STEP = {
   fields: ["personalName", "personalAvatar"],
 };
 
+const NUTRITION_STEP = {
+  id: "nutrition",
+  title: "Alimentação",
+  subtitle: "A IA usa essas informações para montar um plano alimentar que funciona pra você.",
+  fields: ["mealsPerDay", "dietaryRestrictions", "foodPreferences"],
+  optional: true,
+};
+
 const STEPS = {
   basico: [
-    { id: "basics",   title: "Seus dados básicos",     subtitle: "Informações essenciais para o Personal Virtual montar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
-    { id: "training", title: "Sua disponibilidade",    subtitle: "Marque os dias que você pode ir à academia.", fields: ["trainingAvailableDays"] },
-    { id: "goals",    title: "Suas expectativas",       subtitle: "Conte o que espera alcançar — quanto mais detalhes, melhor.", fields: ["notes"] },
+    { id: "basics",   title: "Seus dados básicos",    subtitle: "Informações essenciais para o Personal Virtual montar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
+    { id: "training", title: "Sua disponibilidade",   subtitle: "Marque os dias que você pode ir à academia.", fields: ["trainingAvailableDays"] },
+    NUTRITION_STEP,
+    { id: "goals",    title: "Suas expectativas",      subtitle: "Conte o que espera alcançar — quanto mais detalhes, melhor.", fields: ["notes"] },
     PERSONAL_STEP,
   ],
   intermediario: [
-    { id: "basics",   title: "Seus dados básicos",       subtitle: "Informações essenciais para personalizar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
-    { id: "profile",  title: "Perfil de treino",          subtitle: "Experiência, tempo disponível e limitações físicas.", fields: ["trainingExperience","trainingAge","availableMinutes","injuries"] },
-    { id: "state",    title: "Seu estado atual",           subtitle: "Como você está hoje e quais dias pode treinar.", fields: ["energy","sleepQuality","trainingAvailableDays"] },
-    { id: "goals",    title: "Suas expectativas",          subtitle: "Conte o que espera alcançar com o Shape Certo.", fields: ["notes"] },
+    { id: "basics",   title: "Seus dados básicos",     subtitle: "Informações essenciais para personalizar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
+    { id: "profile",  title: "Perfil de treino",        subtitle: "Experiência, tempo disponível e limitações físicas.", fields: ["trainingExperience","trainingAge","availableMinutes","injuries"] },
+    { id: "state",    title: "Seu estado atual",         subtitle: "Como você está hoje e quais dias pode treinar.", fields: ["energy","sleepQuality","trainingAvailableDays"] },
+    NUTRITION_STEP,
+    { id: "goals",    title: "Suas expectativas",        subtitle: "Conte o que espera alcançar com o Shape Certo.", fields: ["notes"] },
     PERSONAL_STEP,
   ],
   pro: [
-    { id: "basics",   title: "Seus dados básicos",         subtitle: "Informações essenciais para personalizar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
-    { id: "profile",  title: "Perfil de treino",            subtitle: "Experiência, tempo disponível e limitações físicas.", fields: ["trainingExperience","trainingAge","availableMinutes","injuries"] },
-    { id: "state",    title: "Seu estado atual",             subtitle: "Sinais de recuperação e disponibilidade semanal.", fields: ["energy","sleepQuality","fatigueLevel","trainingPerformance","trainingAvailableDays"] },
-    { id: "nutrition",title: "Alimentação", subtitle: "Restrições e preferências (opcional — pode pular).", fields: ["dietaryRestrictions","foodPreferences"], optional: true },
-    { id: "body",     title: "Dados corporais",              subtitle: "Bioimpedância e composição corporal (opcional).", fields: ["bodyFat","leanMass"], optional: true },
+    { id: "basics",    title: "Seus dados básicos",      subtitle: "Informações essenciais para personalizar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
+    { id: "profile",   title: "Perfil de treino",         subtitle: "Experiência, tempo disponível e limitações físicas.", fields: ["trainingExperience","trainingAge","availableMinutes","injuries"] },
+    { id: "state",     title: "Seu estado atual",          subtitle: "Sinais de recuperação e disponibilidade semanal.", fields: ["energy","sleepQuality","fatigueLevel","trainingPerformance","trainingAvailableDays"] },
+    { id: "nutrition", title: "Alimentação",               subtitle: "A IA usa essas informações para criar um plano alimentar preciso.", fields: ["mealsPerDay","dietaryRestrictions","foodPreferences"], optional: true },
+    { id: "body",      title: "Dados corporais",           subtitle: "Bioimpedância e composição corporal (opcional).", fields: ["bodyFat","leanMass"], optional: true },
     PERSONAL_STEP,
   ],
 };
 
 const WEEK_DAYS = [
-  { id: "monday", short: "SEG" }, { id: "tuesday", short: "TER" },
-  { id: "wednesday", short: "QUA" }, { id: "thursday", short: "QUI" },
-  { id: "friday", short: "SEX" }, { id: "saturday", short: "SAB" },
-  { id: "sunday", short: "DOM" },
+  { id: "monday",    short: "SEG" }, { id: "tuesday",   short: "TER" },
+  { id: "wednesday", short: "QUA" }, { id: "thursday",  short: "QUI" },
+  { id: "friday",    short: "SEX" }, { id: "saturday",  short: "SAB" },
+  { id: "sunday",    short: "DOM" },
 ];
 
 const FIELD_DEFS = {
@@ -51,7 +65,7 @@ const FIELD_DEFS = {
   height:             { label: "Altura (cm)",        type: "text",   required: true, placeholder: "Ex: 178" },
   weight:             { label: "Peso atual (kg)",    type: "text",   required: true, placeholder: "Ex: 85.4" },
   trainingAvailableDays: { label: "Quais dias pode treinar", type: "daypicker", required: false,
-                           hint: "Marque os dias com disponibilidade real. A IA distribui os treinos com folgas bem posicionadas." },
+                            hint: "Marque os dias com disponibilidade real. A IA distribui os treinos com folgas bem posicionadas." },
   trainingExperience: { label: "Nível de experiência", type: "select", required: false,
                         options: [["","Selecione"],["iniciante","Iniciante"],["intermediario","Intermediário"],["avancado","Avançado"]] },
   trainingAge:        { label: "Tempo de treinamento", type: "select", required: false,
@@ -68,10 +82,13 @@ const FIELD_DEFS = {
                         options: [["","Selecione"],...Array.from({length:10},(_,i)=>[String(i+1),String(i+1)])] },
   trainingPerformance:{ label: "Performance no treino", type: "select", required: false,
                         options: [["","Selecione"],["abaixo-media","Abaixo da média"],["media","Na média"],["acima-media","Acima da média"],["excelente","Excelente"]] },
+  mealsPerDay:        { label: "Quantas refeições por dia?", type: "select", required: false,
+                        options: [["","Selecione"],["3","3 refeições"],["4","4 refeições"],["5","5 refeições"],["6","6 refeições"],["7","7 ou mais"]],
+                        hint: "A IA monta o plano com o número de refeições que você consegue fazer" },
   dietaryRestrictions:{ label: "Restrições alimentares", type: "textarea", required: false,
-                        placeholder: "Ex: intolerância à lactose, sem glúten, vegano", hint: "Deixe em branco se não tiver" },
+                        placeholder: "Ex: intolerância à lactose, sem glúten, vegano, alergia a amendoim", hint: "Deixe em branco se não tiver" },
   foodPreferences:    { label: "Preferências alimentares", type: "textarea", required: false,
-                        placeholder: "Ex: prefiro frango, não gosto de peixe, como muito ovo", hint: "Opcional" },
+                        placeholder: "Ex: gosto de frango e ovos, não gosto de peixe, como muito arroz e feijão", hint: "Opcional — mas ajuda muito a IA a montar algo que você vai comer" },
   bodyFat:            { label: "Gordura corporal (%)", type: "text", required: false,
                         placeholder: "Ex: 18.5", hint: "Da bioimpedância — opcional" },
   leanMass:           { label: "Massa magra (kg)", type: "text", required: false,
@@ -85,8 +102,6 @@ const FIELD_DEFS = {
   personalAvatar:     { label: "Avatar", type: "avatarpicker", required: false },
 };
 
-// Pré-inicializa selects que não têm opção vazia como primeiro item
-// (o browser exibe o 1º item visualmente, mas o valor no estado fica undefined sem isso)
 function buildInitialForm() {
   const defaults = { cadence: "weekly" };
   for (const [key, def] of Object.entries(FIELD_DEFS)) {
@@ -97,18 +112,97 @@ function buildInitialForm() {
   return defaults;
 }
 
+// ── Tela de Geração ─────────────────────────────────────────────────────────
+
+function GenItem({ label, emoji, status }) {
+  const icon =
+    status === "generating" ? <span className="ob-gen-spinner" /> :
+    status === "ok"         ? <span className="ob-gen-icon ob-gen-icon--ok">✓</span> :
+    status === "error"      ? <span className="ob-gen-icon ob-gen-icon--err">✗</span> :
+                              <span className="ob-gen-icon ob-gen-icon--wait">—</span>;
+
+  return (
+    <div className={`ob-gen-item ob-gen-item--${status}`}>
+      <span className="ob-gen-item__emoji">{emoji}</span>
+      <span className="ob-gen-item__label">{label}</span>
+      {icon}
+    </div>
+  );
+}
+
+function GeneratingScreen({ workoutStatus, dietStatus, onEnter }) {
+  const allDone = workoutStatus !== "generating" && dietStatus !== "generating";
+  const hasError = workoutStatus === "error" || dietStatus === "error";
+
+  return (
+    <div className="ob-overlay" role="dialog" aria-modal="true">
+      <div className="ob-modal ob-modal--generating glass-panel">
+        {!allDone ? (
+          <>
+            <div className="ob-gen-header">
+              <div className="ob-gen-pulse" />
+              <h2 className="ob-gen-title">Criando seus protocolos...</h2>
+              <p className="ob-gen-subtitle">
+                A IA está analisando seus dados e montando protocolos personalizados para você.
+              </p>
+            </div>
+
+            <div className="ob-gen-list">
+              <GenItem emoji="🏋️" label="Protocolo de treino" status={workoutStatus} />
+              <GenItem emoji="🥗" label="Plano alimentar"     status={dietStatus} />
+            </div>
+
+            <p className="ob-gen-note">Isso pode levar até 60 segundos. Não feche o app.</p>
+          </>
+        ) : (
+          <>
+            <div className="ob-gen-header">
+              <div className="ob-gen-done-icon">{hasError ? "⚠️" : "🎉"}</div>
+              <h2 className="ob-gen-title">
+                {hasError ? "Protocolos criados com aviso" : "Tudo pronto!"}
+              </h2>
+              <p className="ob-gen-subtitle">
+                {hasError
+                  ? "Alguns protocolos podem não ter sido gerados. Você pode gerá-los na página de Treinos ou Dietas."
+                  : "Seus protocolos personalizados estão prontos. Bem-vindo ao Shape Certo!"}
+              </p>
+            </div>
+
+            <div className="ob-gen-list">
+              <GenItem emoji="🏋️" label="Protocolo de treino" status={workoutStatus} />
+              <GenItem emoji="🥗" label="Plano alimentar"     status={dietStatus} />
+            </div>
+
+            <div className="ob-modal__footer" style={{ justifyContent: "center" }}>
+              <button type="button" className="primary-button ob-gen-enter-btn" onClick={onEnter}>
+                Entrar no Shape Certo →
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Modal principal ──────────────────────────────────────────────────────────
+
 export default function FirstCheckinModal({ planId, onComplete }) {
   const steps = STEPS[planId] ?? STEPS.intermediario;
-  const [step, setStep] = useState(0);
-  const [form, setForm] = useState(buildInitialForm);
+  const [step, setStep]   = useState(0);
+  const [form, setForm]   = useState(buildInitialForm);
   const [saving, setSaving] = useState(false);
 
+  // Estados da tela de geração
+  const [showGen, setShowGen]           = useState(false);
+  const [workoutStatus, setWorkoutStatus] = useState("generating"); // generating | ok | error
+  const [dietStatus, setDietStatus]       = useState("generating");
+
   const currentStep = steps[step];
-  const isLast = step === steps.length - 1;
+  const isLast  = step === steps.length - 1;
   const progress = ((step + 1) / steps.length) * 100;
 
-  // Required fields for current step
-  const required = currentStep.fields.filter(f => FIELD_DEFS[f]?.required);
+  const required  = currentStep.fields.filter(f => FIELD_DEFS[f]?.required);
   const canAdvance = required.every(f => {
     const v = form[f];
     return v !== undefined && v !== "" && v !== null;
@@ -127,12 +221,12 @@ export default function FirstCheckinModal({ planId, onComplete }) {
   async function handleFinish() {
     setSaving(true);
     try {
-      // Salvar check-in
+      // 1 — Salva check-in local e remoto
       const payload = { ...defaultCheckinForm, ...form, cadence: "weekly" };
       const updated = saveCheckin(payload, { createdAt: new Date().toISOString() });
-      saveRemoteCheckin(updated[0]).catch(() => {});
+      await saveRemoteCheckin(updated[0]).catch(() => {});
 
-      // Salvar avatar e nome do Personal Virtual nas configurações
+      // 2 — Salva avatar e nome do Personal nas configurações
       const SETTINGS_KEY = "shapeCertoSettings";
       const existing = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
       localStorage.setItem(SETTINGS_KEY, JSON.stringify({
@@ -144,18 +238,59 @@ export default function FirstCheckinModal({ planId, onComplete }) {
         },
       }));
 
-      onComplete();
-    } finally {
+      // 3 — Exibe tela de geração imediatamente
+      setShowGen(true);
+      setSaving(false);
+
+      // 4 — Gera treino e dieta em paralelo
+      const goal = form.goal || "";
+      const trainingAvailableDays = form.trainingAvailableDays || "";
+
+      function withTimeout(promise, ms = 90_000) {
+        return Promise.race([
+          promise,
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Tempo limite excedido.")), ms)
+          ),
+        ]);
+      }
+
+      await Promise.allSettled([
+        withTimeout(generateWorkoutWithAi({ persist: true, goal, trainingAvailableDays }))
+          .then(() => setWorkoutStatus("ok"))
+          .catch(() => setWorkoutStatus("error")),
+
+        withTimeout(generateDietWithAi({ persist: true, goal }))
+          .then(() => setDietStatus("ok"))
+          .catch(() => setDietStatus("error")),
+      ]);
+
+    } catch {
+      // Erro inesperado no save — mostra tela de geração com erros
+      setWorkoutStatus("error");
+      setDietStatus("error");
+      setShowGen(true);
       setSaving(false);
     }
   }
 
-  // Render a field given its key
+  // ── Render: Tela de geração ───────────────────────────────────────────────
+  if (showGen) {
+    return (
+      <GeneratingScreen
+        workoutStatus={workoutStatus}
+        dietStatus={dietStatus}
+        onEnter={onComplete}
+      />
+    );
+  }
+
+  // ── Render: campos ───────────────────────────────────────────────────────
   function renderField(key) {
     const def = FIELD_DEFS[key];
     if (!def) return null;
+
     if (key === "trainingAvailableDays") {
-      // inline DayPicker
       const selected = (form[key] || "").split(",").filter(Boolean);
       return (
         <div key={key} className="ob-field">
@@ -168,7 +303,8 @@ export default function FirstCheckinModal({ planId, onComplete }) {
                 onClick={() => {
                   const next = selected.includes(d.id)
                     ? selected.filter(x => x !== d.id)
-                    : [...selected, d.id].sort((a,b) => WEEK_DAYS.findIndex(w=>w.id===a)-WEEK_DAYS.findIndex(w=>w.id===b));
+                    : [...selected, d.id].sort((a,b) =>
+                        WEEK_DAYS.findIndex(w=>w.id===a) - WEEK_DAYS.findIndex(w=>w.id===b));
                   handleChange(key, next.join(","));
                 }}>
                 {d.short}
@@ -181,7 +317,10 @@ export default function FirstCheckinModal({ planId, onComplete }) {
     if (def.type === "select") {
       return (
         <div key={key} className="ob-field">
-          <label className="ob-field__label">{def.label}{def.required && <span className="ob-field__req">*</span>}</label>
+          <label className="ob-field__label">
+            {def.label}{def.required && <span className="ob-field__req">*</span>}
+          </label>
+          {def.hint && <p className="ob-field__hint">{def.hint}</p>}
           <select className="ob-field__control" value={form[key] ?? ""} onChange={e => handleChange(key, e.target.value)}>
             {def.options.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
           </select>
@@ -205,9 +344,7 @@ export default function FirstCheckinModal({ planId, onComplete }) {
           <label className="ob-field__label">{def.label}</label>
           <div className="ob-avatar-picker">
             {personalAvatarCatalog.map(avatar => (
-              <button
-                key={avatar.id}
-                type="button"
+              <button key={avatar.id} type="button"
                 className={`ob-avatar-picker__item${selected === avatar.id ? " is-active" : ""}`}
                 onClick={() => handleChange(key, avatar.id)}
                 title={avatar.label}
@@ -221,12 +358,14 @@ export default function FirstCheckinModal({ planId, onComplete }) {
         </div>
       );
     }
-    // text/number
+    // text
     return (
       <div key={key} className="ob-field">
-        <label className="ob-field__label">{def.label}{def.required && <span className="ob-field__req">*</span>}</label>
+        <label className="ob-field__label">
+          {def.label}{def.required && <span className="ob-field__req">*</span>}
+        </label>
         {def.hint && <p className="ob-field__hint">{def.hint}</p>}
-        <input className="ob-field__control" type={def.type === "number" ? "number" : "text"}
+        <input className="ob-field__control" type="text"
           placeholder={def.placeholder ?? ""} value={form[key] ?? ""}
           onChange={e => handleChange(key, e.target.value)} />
       </div>
