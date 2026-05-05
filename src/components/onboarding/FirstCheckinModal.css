@@ -229,11 +229,12 @@ textarea.ob-field__control {
 /* ── Tela de Geração ────────────────────────────────────────────────────── */
 
 .ob-modal--generating {
-  max-width: 420px;
+  max-width: 520px;
   text-align: center;
-  gap: 20px;
+  gap: 18px;
 }
 
+/* Cabeçalho */
 .ob-gen-header {
   display: flex;
   flex-direction: column;
@@ -241,108 +242,268 @@ textarea.ob-field__control {
   gap: 10px;
 }
 
-/* Anel pulsante enquanto gera */
 .ob-gen-pulse {
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: rgba(239, 68, 68, 0.15);
   border: 3px solid rgba(239, 68, 68, 0.5);
   animation: ob-pulse 1.4s ease-in-out infinite;
+  flex-shrink: 0;
 }
 
 @keyframes ob-pulse {
-  0%,100% { transform: scale(1);   opacity: 1; }
+  0%,100% { transform: scale(1);    opacity: 1; }
   50%      { transform: scale(1.18); opacity: 0.6; }
 }
 
-.ob-gen-done-icon {
-  font-size: 2.5rem;
-  line-height: 1;
-}
+.ob-gen-done-icon { font-size: 2.4rem; line-height: 1; }
 
 .ob-gen-title {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: #f1f5f9;
   margin: 0;
 }
 
 .ob-gen-subtitle {
-  font-size: 0.88rem;
-  color: rgba(255,255,255,0.55);
+  font-size: 0.86rem;
+  color: rgba(255,255,255,0.5);
   margin: 0;
   line-height: 1.5;
 }
 
-/* Lista de itens */
-.ob-gen-list {
+/* Barra de progresso indeterminada */
+.ob-gen-bar-wrap {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
 }
 
-.ob-gen-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.07);
-  transition: background 0.3s, border-color 0.3s;
+.ob-gen-bar-track {
+  height: 3px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
 }
 
-.ob-gen-item--ok {
-  background: rgba(74, 222, 128, 0.08);
-  border-color: rgba(74, 222, 128, 0.25);
+.ob-gen-bar-fill {
+  position: absolute;
+  top: 0; left: -35%;
+  width: 35%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, #ef4444 50%, transparent);
+  animation: ob-bar-slide 1.6s ease-in-out infinite;
 }
 
-.ob-gen-item--error {
-  background: rgba(248, 113, 113, 0.08);
-  border-color: rgba(248, 113, 113, 0.25);
+@keyframes ob-bar-slide {
+  0%   { left: -35%; }
+  100% { left: 100%; }
 }
 
-.ob-gen-item__emoji {
-  font-size: 1.3rem;
-  flex-shrink: 0;
+.ob-gen-note {
+  font-size: 0.76rem;
+  color: rgba(255,255,255,0.28);
+  margin: 0;
 }
 
-.ob-gen-item__body {
-  flex: 1;
+/* Lista de cards */
+.ob-gen-list {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 12px;
+  width: 100%;
   text-align: left;
 }
 
-.ob-gen-item__label {
-  font-size: 0.9rem;
-  color: rgba(255,255,255,0.8);
-  font-weight: 500;
+/* ── Card expandido ──────────────────────────────────────────────────────── */
+
+.ob-gen-card {
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  overflow: hidden;
+  transition: border-color 0.3s, background 0.3s;
 }
 
-.ob-gen-item__error {
+.ob-gen-card--ok {
+  background: rgba(74, 222, 128, 0.06);
+  border-color: rgba(74, 222, 128, 0.22);
+}
+
+.ob-gen-card--error {
+  background: rgba(248, 113, 113, 0.06);
+  border-color: rgba(248, 113, 113, 0.22);
+}
+
+/* Cabeçalho do card */
+.ob-gen-card__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px 12px;
+}
+
+.ob-gen-card__emoji {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.ob-gen-card__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ob-gen-card__title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+}
+
+.ob-gen-card__sub {
   font-size: 0.76rem;
-  color: #f87171;
-  line-height: 1.35;
+  color: rgba(255,255,255,0.45);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.3s;
 }
 
-.ob-gen-item__right {
+.ob-gen-card__sub--ok    { color: #4ade80; }
+.ob-gen-card__sub--error { color: #f87171; }
+
+.ob-gen-card__badge {
   flex-shrink: 0;
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+}
+
+.ob-gen-check {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #4ade80;
+}
+
+.ob-gen-fail {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #f87171;
+}
+
+/* Spinner */
+.ob-gen-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.12);
+  border-top-color: #ef4444;
+  border-radius: 50%;
+  animation: ob-spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes ob-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Etapas ──────────────────────────────────────────────────────────────── */
+
+.ob-gen-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0 16px 14px 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.ob-gen-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.79rem;
+  line-height: 1.4;
+  transition: opacity 0.25s;
+}
+
+.ob-gen-step--wait {
+  opacity: 0.28;
+}
+
+.ob-gen-step--active {
+  opacity: 1;
+}
+
+.ob-gen-step--done {
+  opacity: 0.65;
+}
+
+.ob-gen-step__dot {
+  font-size: 0.72rem;
+  font-weight: 700;
+  width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+  color: inherit;
+}
+
+.ob-gen-step--done .ob-gen-step__dot  { color: #4ade80; }
+.ob-gen-step--active .ob-gen-step__dot { display: none; }
+
+/* Mini spinner inline para etapa ativa */
+.ob-gen-step__spin {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid rgba(255,255,255,0.12);
+  border-top-color: #ef4444;
+  border-radius: 50%;
+  animation: ob-spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
+.ob-gen-step__text {
+  color: rgba(255,255,255,0.8);
+}
+
+.ob-gen-step--done .ob-gen-step__text  { color: rgba(255,255,255,0.55); }
+.ob-gen-step--wait .ob-gen-step__text  { color: rgba(255,255,255,0.4); }
+.ob-gen-step--active .ob-gen-step__text { color: #fff; font-weight: 500; }
+
+/* ── Área de erro dentro do card ─────────────────────────────────────────── */
+
+.ob-gen-card__error {
+  padding: 0 16px 14px 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ob-gen-card__errmsg {
+  font-size: 0.76rem;
+  color: #f87171;
+  margin: 0;
+  line-height: 1.4;
 }
 
 .ob-gen-retry {
+  align-self: flex-start;
   background: rgba(239, 68, 68, 0.15);
   border: 1px solid rgba(239, 68, 68, 0.4);
   border-radius: 6px;
   color: #f87171;
   font-size: 0.8rem;
   font-weight: 600;
-  padding: 5px 10px;
+  padding: 5px 12px;
   cursor: pointer;
   font-family: inherit;
   transition: background 0.15s, border-color 0.15s;
@@ -355,41 +516,7 @@ textarea.ob-field__control {
   color: #fca5a5;
 }
 
-/* Ícones de status */
-.ob-gen-icon {
-  font-size: 1rem;
-  font-weight: 700;
-  flex-shrink: 0;
-  width: 22px;
-  text-align: center;
-}
-
-.ob-gen-icon--ok  { color: #4ade80; }
-.ob-gen-icon--err { color: #f87171; }
-.ob-gen-icon--wait { color: rgba(255,255,255,0.2); }
-
-/* Spinner inline */
-.ob-gen-spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255,255,255,0.15);
-  border-top-color: #ef4444;
-  border-radius: 50%;
-  animation: ob-spin 0.7s linear infinite;
-  flex-shrink: 0;
-}
-
-@keyframes ob-spin {
-  to { transform: rotate(360deg); }
-}
-
-.ob-gen-note {
-  font-size: 0.78rem;
-  color: rgba(255,255,255,0.3);
-  margin: 0;
-}
-
+/* Botão de entrada */
 .ob-gen-enter-btn {
   width: 100%;
   padding: 14px;
