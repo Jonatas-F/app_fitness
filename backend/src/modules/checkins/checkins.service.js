@@ -162,7 +162,7 @@ export async function saveCheckin(accountId, checkin) {
             ai_context,
             created_at
           )
-          values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11::jsonb, $12)
+          values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11::jsonb, $12::timestamptz)
           returning *;
         `,
         values,

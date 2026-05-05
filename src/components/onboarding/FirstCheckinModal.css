@@ -309,12 +309,50 @@ textarea.ob-field__control {
   flex-shrink: 0;
 }
 
-.ob-gen-item__label {
+.ob-gen-item__body {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+}
+
+.ob-gen-item__label {
   font-size: 0.9rem;
   color: rgba(255,255,255,0.8);
-  text-align: left;
   font-weight: 500;
+}
+
+.ob-gen-item__error {
+  font-size: 0.76rem;
+  color: #f87171;
+  line-height: 1.35;
+}
+
+.ob-gen-item__right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.ob-gen-retry {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 6px;
+  color: #f87171;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.ob-gen-retry:hover {
+  background: rgba(239, 68, 68, 0.28);
+  border-color: rgba(239, 68, 68, 0.65);
+  color: #fca5a5;
 }
 
 /* Ícones de status */

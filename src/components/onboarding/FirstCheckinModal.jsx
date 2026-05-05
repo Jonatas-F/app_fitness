@@ -114,7 +114,7 @@ function buildInitialForm() {
 
 // ── Tela de Geração ─────────────────────────────────────────────────────────
 
-function GenItem({ label, emoji, status }) {
+function GenItem({ label, emoji, status, errorMsg, onRetry }) {
   const icon =
     status === "generating" ? <span className="ob-gen-spinner" /> :
     status === "ok"         ? <span className="ob-gen-icon ob-gen-icon--ok">✓</span> :
@@ -124,13 +124,24 @@ function GenItem({ label, emoji, status }) {
   return (
     <div className={`ob-gen-item ob-gen-item--${status}`}>
       <span className="ob-gen-item__emoji">{emoji}</span>
-      <span className="ob-gen-item__label">{label}</span>
-      {icon}
+      <div className="ob-gen-item__body">
+        <span className="ob-gen-item__label">{label}</span>
+        {status === "error" && errorMsg && (
+          <span className="ob-gen-item__error">{errorMsg}</span>
+        )}
+      </div>
+      <div className="ob-gen-item__right">
+        {status === "error" && onRetry ? (
+          <button type="button" className="ob-gen-retry" onClick={onRetry} title="Tentar novamente">
+            ↺ Tentar
+          </button>
+        ) : icon}
+      </div>
     </div>
   );
 }
 
-function GeneratingScreen({ workoutStatus, dietStatus, onEnter }) {
+function GeneratingScreen({ workoutStatus, dietStatus, workoutError, dietError, onRetryWorkout, onRetryDiet, onEnter }) {
   const allDone = workoutStatus !== "generating" && dietStatus !== "generating";
   const hasError = workoutStatus === "error" || dietStatus === "error";
 
@@ -159,25 +170,46 @@ function GeneratingScreen({ workoutStatus, dietStatus, onEnter }) {
             <div className="ob-gen-header">
               <div className="ob-gen-done-icon">{hasError ? "⚠️" : "🎉"}</div>
               <h2 className="ob-gen-title">
-                {hasError ? "Protocolos criados com aviso" : "Tudo pronto!"}
+                {hasError ? "Atenção — um item falhou" : "Tudo pronto!"}
               </h2>
               <p className="ob-gen-subtitle">
                 {hasError
-                  ? "Alguns protocolos podem não ter sido gerados. Você pode gerá-los na página de Treinos ou Dietas."
+                  ? "Clique em ↺ Tentar para gerar o item que falhou."
                   : "Seus protocolos personalizados estão prontos. Bem-vindo ao Shape Certo!"}
               </p>
             </div>
 
             <div className="ob-gen-list">
-              <GenItem emoji="🏋️" label="Protocolo de treino" status={workoutStatus} />
-              <GenItem emoji="🥗" label="Plano alimentar"     status={dietStatus} />
+              <GenItem
+                emoji="🏋️" label="Protocolo de treino"
+                status={workoutStatus} errorMsg={workoutError}
+                onRetry={workoutStatus === "error" ? onRetryWorkout : null}
+              />
+              <GenItem
+                emoji="🥗" label="Plano alimentar"
+                status={dietStatus} errorMsg={dietError}
+                onRetry={dietStatus === "error" ? onRetryDiet : null}
+              />
             </div>
 
-            <div className="ob-modal__footer" style={{ justifyContent: "center" }}>
-              <button type="button" className="primary-button ob-gen-enter-btn" onClick={onEnter}>
-                Entrar no Shape Certo →
-              </button>
-            </div>
+            {!hasError && (
+              <div className="ob-modal__footer" style={{ justifyContent: "center" }}>
+                <button type="button" className="primary-button ob-gen-enter-btn" onClick={onEnter}>
+                  Entrar no Shape Certo →
+                </button>
+              </div>
+            )}
+
+            {hasError && (
+              <div className="ob-modal__footer" style={{ justifyContent: "center", flexDirection: "column", gap: "8px" }}>
+                <button type="button" className="primary-button ob-gen-enter-btn" onClick={onEnter}>
+                  Entrar mesmo assim →
+                </button>
+                <p className="ob-gen-note" style={{ textAlign: "center" }}>
+                  Você pode gerar os protocolos nas páginas de Treinos e Dietas.
+                </p>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -194,9 +226,15 @@ export default function FirstCheckinModal({ planId, onComplete }) {
   const [saving, setSaving] = useState(false);
 
   // Estados da tela de geração
-  const [showGen, setShowGen]           = useState(false);
+  const [showGen, setShowGen]             = useState(false);
   const [workoutStatus, setWorkoutStatus] = useState("generating"); // generating | ok | error
   const [dietStatus, setDietStatus]       = useState("generating");
+  const [workoutError, setWorkoutError]   = useState(null);
+  const [dietError, setDietError]         = useState(null);
+
+  // form snapshot para uso nos retries
+  const [savedGoal, setSavedGoal]                   = useState("");
+  const [savedTrainingDays, setSavedTrainingDays]   = useState("");
 
   const currentStep = steps[step];
   const isLast  = step === steps.length - 1;
@@ -238,14 +276,21 @@ export default function FirstCheckinModal({ planId, onComplete }) {
         },
       }));
 
-      // 3 — Exibe tela de geração imediatamente
+      // 3 — Salva snapshot dos dados para usar nos retries
+      const goal = form.goal || "";
+      const trainingAvailableDays = form.trainingAvailableDays || "";
+      setSavedGoal(goal);
+      setSavedTrainingDays(trainingAvailableDays);
+
+      // 4 — Exibe tela de geração imediatamente
+      setWorkoutStatus("generating");
+      setDietStatus("generating");
+      setWorkoutError(null);
+      setDietError(null);
       setShowGen(true);
       setSaving(false);
 
-      // 4 — Gera treino e dieta em paralelo
-      const goal = form.goal || "";
-      const trainingAvailableDays = form.trainingAvailableDays || "";
-
+      // 5 — Gera treino e dieta em paralelo
       function withTimeout(promise, ms = 90_000) {
         return Promise.race([
           promise,
@@ -258,11 +303,11 @@ export default function FirstCheckinModal({ planId, onComplete }) {
       await Promise.allSettled([
         withTimeout(generateWorkoutWithAi({ persist: true, goal, trainingAvailableDays }))
           .then(() => setWorkoutStatus("ok"))
-          .catch(() => setWorkoutStatus("error")),
+          .catch(err => { setWorkoutStatus("error"); setWorkoutError(err?.message || "Erro desconhecido."); }),
 
         withTimeout(generateDietWithAi({ persist: true, goal }))
           .then(() => setDietStatus("ok"))
-          .catch(() => setDietStatus("error")),
+          .catch(err => { setDietStatus("error"); setDietError(err?.message || "Erro desconhecido."); }),
       ]);
 
     } catch {
@@ -274,12 +319,41 @@ export default function FirstCheckinModal({ planId, onComplete }) {
     }
   }
 
+  // ── Retry handlers ────────────────────────────────────────────────────────
+  async function handleRetryWorkout() {
+    setWorkoutStatus("generating");
+    setWorkoutError(null);
+    try {
+      await generateWorkoutWithAi({ persist: true, goal: savedGoal, trainingAvailableDays: savedTrainingDays });
+      setWorkoutStatus("ok");
+    } catch (err) {
+      setWorkoutStatus("error");
+      setWorkoutError(err?.message || "Erro desconhecido.");
+    }
+  }
+
+  async function handleRetryDiet() {
+    setDietStatus("generating");
+    setDietError(null);
+    try {
+      await generateDietWithAi({ persist: true, goal: savedGoal });
+      setDietStatus("ok");
+    } catch (err) {
+      setDietStatus("error");
+      setDietError(err?.message || "Erro desconhecido.");
+    }
+  }
+
   // ── Render: Tela de geração ───────────────────────────────────────────────
   if (showGen) {
     return (
       <GeneratingScreen
         workoutStatus={workoutStatus}
         dietStatus={dietStatus}
+        workoutError={workoutError}
+        dietError={dietError}
+        onRetryWorkout={handleRetryWorkout}
+        onRetryDiet={handleRetryDiet}
         onEnter={onComplete}
       />
     );
