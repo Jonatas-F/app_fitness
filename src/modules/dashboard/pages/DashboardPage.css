@@ -12,6 +12,7 @@
 .dashboard-tabs {
   display: grid !important;
   grid-template-columns: repeat(5, minmax(0, 1fr));
+  justify-content: stretch !important; /* sobrescreve justify-center do Radix */
   width: 100% !important;
   height: auto !important;
   gap: 12px;
@@ -1223,12 +1224,17 @@
   /* Tabs: scroll horizontal desde 720px */
   .dashboard-tabs {
     display: flex !important;
+    /* justify-center do Radix/Tailwind causa overflow simétrico: lado esquerdo
+       fica inacessível ao scroll. Forçar flex-start corrige o problema. */
+    justify-content: flex-start !important;
+    align-items: stretch !important;
+    flex-wrap: nowrap !important;
     overflow-x: auto !important;
     overflow-y: visible !important;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     gap: 8px;
-    padding: 6px 2px 8px;
+    padding: 6px 4px 8px;
     width: 100%;
     /* remove border-radius para não clipar os itens ao rolar */
     border-radius: 6px;
