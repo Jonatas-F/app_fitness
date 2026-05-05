@@ -107,6 +107,10 @@ if (process.env.NODE_ENV === "production") {
 const app = express();
 const allowedOrigins = new Set(appConfig.allowedOrigins);
 
+// Confia no primeiro proxy reverso (Nginx) para que o express-rate-limit
+// leia corretamente o IP real do cliente via X-Forwarded-For
+app.set("trust proxy", 1);
+
 // ── Security headers ──────────────────────────────────────────────────────────
 app.use(
   helmet({
