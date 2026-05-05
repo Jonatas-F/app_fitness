@@ -77,6 +77,7 @@ import { ensureLocalPreferenceTables } from "./modules/preferences/preferences.s
 import { handleGoogleRiscEvent } from "./modules/security/googleRisc.controller.js";
 import { ensureGoogleRiscTables } from "./modules/security/googleRisc.service.js";
 import { handleLoadAssistantContext } from "./modules/assistant/assistant.controller.js";
+import { ensureLocalAssistantTables } from "./modules/assistant/assistant.service.js";
 import { handleLoadSettings, handleSaveSettings } from "./modules/settings/settings.controller.js";
 import { ensureLocalSettingsTables } from "./modules/settings/settings.service.js";
 import {
@@ -270,6 +271,7 @@ await ensureGoogleRiscTables();
 await ensureLocalSettingsTables();
 await ensureLocalAiTables();
 await ensureLocalChatTables();
+await ensureLocalAssistantTables();
 
 app.listen(appConfig.port, () => {
   console.log(`Shape Certo API running on http://localhost:${appConfig.port}`);

@@ -1,5 +1,113 @@
 import { pool } from "../../utils/db.js";
 
+/**
+ * Cria as tabelas auxiliares de contexto do assistente caso não existam.
+ * Estas tabelas armazenam dados de saúde, metas, medidas e fotos usados
+ * para enriquecer o contexto da IA.
+ */
+export async function ensureLocalAssistantTables() {
+  // Objetivos do usuário
+  await pool.query(`
+    create table if not exists user_goals (
+      id           bigint generated always as identity primary key,
+      account_id   bigint not null references accounts(id) on delete cascade,
+      title        varchar(255),
+      description  text,
+      goal_type    varchar(80),
+      target_value decimal(10,2),
+      unit         varchar(40),
+      is_active    boolean not null default true,
+      created_at   timestamptz not null default now(),
+      updated_at   timestamptz not null default now()
+    )
+  `);
+
+  // Perfil de saúde
+  await pool.query(`
+    create table if not exists user_health_profiles (
+      id                  bigint generated always as identity primary key,
+      account_id          bigint not null references accounts(id) on delete cascade,
+      height_cm           decimal(5,1),
+      birth_date          date,
+      biological_sex      varchar(20),
+      activity_level      varchar(40),
+      main_goal           varchar(80),
+      training_experience varchar(40),
+      health_conditions   text,
+      medications         text,
+      created_at          timestamptz not null default now(),
+      updated_at          timestamptz not null default now()
+    )
+  `);
+
+  // Preferências nutricionais
+  await pool.query(`
+    create table if not exists user_nutrition_preferences (
+      id                 bigint generated always as identity primary key,
+      account_id         bigint not null references accounts(id) on delete cascade,
+      diet_type          varchar(80),
+      meals_per_day      integer,
+      allergies_notes    text,
+      restrictions_notes text,
+      preferred_foods    text,
+      disliked_foods     text,
+      created_at         timestamptz not null default now(),
+      updated_at         timestamptz not null default now()
+    )
+  `);
+
+  // Medidas corporais
+  await pool.query(`
+    create table if not exists body_measurements (
+      id          bigint generated always as identity primary key,
+      account_id  bigint not null references accounts(id) on delete cascade,
+      measured_at timestamptz not null default now(),
+      weight_kg   decimal(6,2),
+      chest_cm    decimal(5,1),
+      waist_cm    decimal(5,1),
+      hips_cm     decimal(5,1),
+      thigh_cm    decimal(5,1),
+      arm_cm      decimal(5,1),
+      calf_cm     decimal(5,1),
+      neck_cm     decimal(5,1),
+      notes       text,
+      created_at  timestamptz not null default now()
+    )
+  `);
+
+  // Registros de bioimpedância
+  await pool.query(`
+    create table if not exists bioimpedance_records (
+      id                bigint generated always as identity primary key,
+      account_id        bigint not null references accounts(id) on delete cascade,
+      recorded_at       timestamptz not null default now(),
+      body_fat_pct      decimal(5,2),
+      muscle_mass_kg    decimal(6,2),
+      visceral_fat_level integer,
+      bone_mass_kg      decimal(5,2),
+      water_pct         decimal(5,2),
+      bmr               integer,
+      notes             text,
+      created_at        timestamptz not null default now()
+    )
+  `);
+
+  // Fotos de progresso
+  await pool.query(`
+    create table if not exists progress_photos (
+      id               bigint generated always as identity primary key,
+      account_id       bigint not null references accounts(id) on delete cascade,
+      captured_at      timestamptz not null default now(),
+      angle_type       varchar(40),
+      image_url        text,
+      storage_key      text,
+      comparison_group varchar(80),
+      notes            text,
+      created_at       timestamptz not null default now()
+    )
+  `);
+}
+
 function compactRows(rows, limit = 12) {
   return (rows || []).slice(0, limit);
 }
