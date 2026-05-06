@@ -174,7 +174,9 @@ export async function ensureLocalBillingTables() {
   // Seed: parceiros iniciais
   await pool.query(`
     insert into partners (email, notes)
-    values ('carolaine.s.freire@gmail.com', 'Parceira fundadora')
+    values
+      ('carolaine.s.freire@gmail.com', 'Parceira fundadora'),
+      ('fmagranero@gmail.com',         'Parceiro fundador')
     on conflict (email) do nothing;
   `);
 }
