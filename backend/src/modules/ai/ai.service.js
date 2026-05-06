@@ -484,7 +484,7 @@ Nao inclua texto fora do JSON.
   };
 }
 
-export async function generateAiWorkoutPlan(accountId, { goal, persist = false, trainingAvailableDays = "", trainingExperience = "", trainingAge = "", availableMinutes = "", trainingPreference = "" } = {}) {
+export async function generateAiWorkoutPlan(accountId, { goal, persist = false, trainingAvailableDays = "", trainingExperience = "", trainingAge = "", availableMinutes = "", trainingPreference = "", adherenceAdjustedDays = 0 } = {}) {
   const instructions = `
 Gere um plano de treino personalizado em JSON valido para o Shape Certo.
 
@@ -543,6 +543,20 @@ AJUSTES OBRIGATORIOS POR OBJETIVO:
   - powerlifting: use Periodizacao Powerlifting (ver secao abaixo)
   - recomposicao: Upper/Lower ou ABC
   - hipertrofia avancada: ABCDE com enfase em volume por grupo
+
+TREINO COM 7 DIAS (sem descanso total semanal):
+  - Obrigatorio incluir 1 a 2 dias de cardio/recuperacao ativa, NAO musculacao pesada
+  - Distribuicao ideal: ABCDE (5 dias) + 1 dia cardio moderado + 1 dia recuperacao ativa
+  - Dia de cardio: caminhada, bicicleta ergometrica, esteira (30-45min, FC 65-75% max)
+  - Dia de recuperacao ativa: mobilidade, alongamento, yoga, natacao leve
+  - Para o dia de cardio, use exercises com tipo "cardio" no aiFeedback
+  - NUNCA 7 dias de musculacao intensa sem recuperacao — risco de overtraining
+
+BASELINE MINIMO DE CARDIO (todos os planos — mencionar no aiFeedback dos dias de treino):
+  - Hipertrofia: 2 sessoes de cardio moderado por semana recomendadas (20-30min apos treino ou dia separado)
+  - Powerlifting: 2x cardio leve/semana para saude cardiovascular (bicicleta ou caminhada)
+  - Emagrecimento/cutting: cardio integrado ao plano (3-4x/semana, 30-45min)
+  - Condicionamento: cardio como foco — 3-4 sessoes longas + musculacao complementar
 
 AGRUPAMENTOS POSSIVEIS PARA ABC e variantes:
   Opcao Classica : A=Peito+Triceps / B=Costas+Biceps / C=Pernas+Ombros
@@ -680,6 +694,9 @@ REGRAS FINAIS INEGOCIAVEIS:
     : "Escolha o split ideal com base na matriz de selecao (nivel + dias + objetivo).";
 
   const isPowelifting = goal === "powerlifting" || trainingPreference === "powerlifting_split";
+  const adherenceLabel = adherenceAdjustedDays > 0
+    ? `AJUSTE DE ADERENCIA: O usuario confirmou que consegue treinar APENAS ${adherenceAdjustedDays} dia${adherenceAdjustedDays !== 1 ? "s" : ""} por semana na pratica. Distribua ${adherenceAdjustedDays} dia${adherenceAdjustedDays !== 1 ? "s" : ""} de treino de forma otimizada (sem dias fixos pre-selecionados). Use o split mais adequado para ${adherenceAdjustedDays} dias e o objetivo declarado.`
+    : "";
 
   const result = await callOpenAi({
     accountId,
@@ -692,24 +709,28 @@ REGRAS FINAIS INEGOCIAVEIS:
       goal ? `Objetivo principal: ${goal}${isPowelifting ? " — inclua obrigatoriamente os Big 4 (Agachamento, Supino, Terra, Desenvolvimento)" : ""}.` : "",
       `NIVEL DE EXPERIENCIA DO USUARIO: ${expLabel}.${trainingAgeLabel}${minutesLabel}`,
       prefLabel,
-      trainingDayCount > 0
+      adherenceLabel,
+      trainingDayCount > 0 && adherenceAdjustedDays === 0
         ? [
             `DIAS DE TREINO SELECIONADOS PELO USUARIO (${trainingDayCount} dias — OBRIGATORIO):`,
             `  Ativar (enabled: true): ${trainingDayList.join(", ")}.`,
             `  Descanso (enabled: false, exercises: []): ${ALL_WEEK_DAYS.filter((d) => !trainingDayList.includes(d)).join(", ")}.`,
             `  NAO altere esta selecao.`,
           ].join(" ")
-        : "Distribua os dias de treino de forma equilibrada, nunca concentrando todos os descansos no final da semana.",
+        : adherenceAdjustedDays === 0
+        ? "Distribua os dias de treino de forma equilibrada, nunca concentrando todos os descansos no final da semana."
+        : "",
       `Consulte equipamentos disponiveis (preferences.gymEquipment), sinais de fadiga/sono/performance do ultimo checkin e historico de sessoes.`,
     ].filter(Boolean).join(" "),
   });
 
   // ── Post-processamento determinístico ───────────────────────────────────────
-  // Independente do que o modelo retornou, aplica os dias selecionados pelo
-  // usuário como verdade absoluta. Isso garante que a contagem de dias esteja
-  // sempre correta mesmo quando o LLM ignora as instruções.
+  // Quando o usuário selecionou dias fixos (trainingAvailableDays), aplica esses
+  // dias como verdade absoluta independente do que o LLM retornou.
+  // Quando houve ajuste de aderência (adherenceAdjustedDays), deixa o LLM decidir
+  // os dias — apenas garante que weeklyTrainingDays bate com o count ajustado.
   let finalJson = result.json;
-  if (finalJson && trainingDayList.length > 0 && Array.isArray(finalJson.workouts)) {
+  if (finalJson && trainingDayList.length > 0 && adherenceAdjustedDays === 0 && Array.isArray(finalJson.workouts)) {
     const enabledSet = new Set(trainingDayList);
     finalJson = {
       ...finalJson,
@@ -726,6 +747,12 @@ REGRAS FINAIS INEGOCIAVEIS:
         };
       }),
     };
+  } else if (finalJson && adherenceAdjustedDays > 0 && Array.isArray(finalJson.workouts)) {
+    // Ajuste de aderência: garante que a contagem de dias ativos bate com o pedido
+    const activeDays = finalJson.workouts.filter((w) => w.enabled).length;
+    if (activeDays !== adherenceAdjustedDays) {
+      finalJson = { ...finalJson, weeklyTrainingDays: activeDays };
+    }
   }
 
   if (persist && finalJson) {

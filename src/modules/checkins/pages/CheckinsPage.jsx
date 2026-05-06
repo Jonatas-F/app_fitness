@@ -949,6 +949,11 @@ export default function CheckinsPage() {
   const [isGeneratingProtocols, setIsGeneratingProtocols] = useState(false);
   const [protocolUpdateResult, setProtocolUpdateResult] = useState(null);
   const [showAiModal, setShowAiModal] = useState(false);
+  // Estados do modal de aderência (detecta gap entre treinos planejados e realizados)
+  const [showAdherenceModal, setShowAdherenceModal]     = useState(false);
+  const [adherenceData, setAdherenceData]               = useState(null); // { planned, completed, plannedDays }
+  const [adherenceStep, setAdherenceStep]               = useState(1);    // 1=confirmar gap  2=oferecer ajuste
+  const [adherenceAdjustedDays, setAdherenceAdjustedDays] = useState(0);  // dias ajustados aceitos pelo usuário
   // Estados da tela de progresso por etapas
   const [showAiProgress, setShowAiProgress]     = useState(false);
   const [ciWorkoutStatus, setCiWorkoutStatus]   = useState("generating");
@@ -1217,9 +1222,25 @@ export default function CheckinsPage() {
       })
     );
 
-    // Abrir popup para perguntar se deseja atualizar protocolos com IA
-    setProtocolUpdateResult(null);
-    setShowAiModal(true);
+    // Detecta gap de aderência — só para check-ins semanais/mensais com plano configurado
+    const planned   = parseInt(payload.weeklyWorkoutsPlanned  || "0");
+    const completed = parseInt(payload.weeklyWorkoutsCompleted || "0");
+    const plannedDays = (payload.trainingAvailableDays || "").split(",").filter(Boolean).length;
+    const hasAdherenceGap =
+      (activeCadence === "weekly" || activeCadence === "monthly") &&
+      plannedDays >= 3 &&
+      planned > 0 &&
+      completed < planned - 1; // faltou 2+ sessões
+
+    if (hasAdherenceGap) {
+      setAdherenceData({ planned, completed, plannedDays });
+      setAdherenceStep(1);
+      setAdherenceAdjustedDays(0);
+      setShowAdherenceModal(true);
+    } else {
+      setProtocolUpdateResult(null);
+      setShowAiModal(true);
+    }
   }
 
   function withAiTimeout(promise, ms = 90_000) {
@@ -1249,14 +1270,17 @@ export default function CheckinsPage() {
     const tasks = [];
 
     if (updateWorkoutWithAi) {
+      // Se o usuário aceitou redução de dias, esvazia os dias fixos e passa o count ajustado
+      const effectiveDays = adherenceAdjustedDays > 0 ? "" : aiTrainingDays;
       tasks.push(
         withAiTimeout(generateWorkoutWithAi({
           persist: true, goal: aiGoal,
-          trainingAvailableDays: aiTrainingDays,
+          trainingAvailableDays: effectiveDays,
           trainingExperience: aiTrainingExp,
           trainingAge: aiTrainingAge,
           availableMinutes: aiAvailableMinutes,
           trainingPreference: aiTrainingPreference,
+          adherenceAdjustedDays: adherenceAdjustedDays > 0 ? adherenceAdjustedDays : undefined,
         }))
           .then(async (res) => {
             if (res?.protocol) await hydrateWorkoutExecutionFromApi();
@@ -1292,13 +1316,15 @@ export default function CheckinsPage() {
     setCiWorkoutStatus("generating");
     setCiWorkoutError(null);
     try {
+      const effectiveDays = adherenceAdjustedDays > 0 ? "" : aiTrainingDays;
       const res = await withAiTimeout(generateWorkoutWithAi({
         persist: true, goal: aiGoal,
-        trainingAvailableDays: aiTrainingDays,
+        trainingAvailableDays: effectiveDays,
         trainingExperience: aiTrainingExp,
         trainingAge: aiTrainingAge,
         availableMinutes: aiAvailableMinutes,
         trainingPreference: aiTrainingPreference,
+        adherenceAdjustedDays: adherenceAdjustedDays > 0 ? adherenceAdjustedDays : undefined,
       }));
       if (res?.protocol) await hydrateWorkoutExecutionFromApi();
       setCiWorkoutStatus("ok");
@@ -1544,6 +1570,84 @@ export default function CheckinsPage() {
           </div>
         </div>
       ) : null}
+
+      {/* ── Modal de aderência — exibido quando sessões < planejado ─────────── */}
+      {showAdherenceModal && adherenceData && (
+        <div className="checkins-modal" role="dialog" aria-modal="true" aria-labelledby="adherence-modal-title">
+          <div className="checkins-modal__panel glass-panel checkins-adherence-panel">
+
+            {adherenceStep === 1 && (
+              <>
+                <div className="checkins-adherence-panel__icon">💪</div>
+                <h2 id="adherence-modal-title" className="checkins-adherence-panel__title">
+                  Ei, tudo bem por aí?
+                </h2>
+                <p className="checkins-adherence-panel__text">
+                  Seu plano prevê <strong>{adherenceData.planned} treino{adherenceData.planned !== 1 ? "s" : ""}</strong> esta
+                  semana, mas registramos <strong>{adherenceData.completed} sessão{adherenceData.completed !== 1 ? "ões" : ""}</strong> no
+                  app. Isso acontece com todo mundo! 😊
+                </p>
+                <p className="checkins-adherence-panel__subtext">
+                  Você realmente não conseguiu ir nos outros dias?
+                </p>
+                <div className="checkins-modal__actions">
+                  <button type="button" className="ghost-button"
+                    onClick={() => {
+                      setShowAdherenceModal(false);
+                      setProtocolUpdateResult(null);
+                      setShowAiModal(true);
+                    }}>
+                    Não, treinei fora do app
+                  </button>
+                  <button type="button" className="primary-button"
+                    onClick={() => setAdherenceStep(2)}>
+                    Sim, faltei mesmo
+                  </button>
+                </div>
+              </>
+            )}
+
+            {adherenceStep === 2 && (
+              <>
+                <div className="checkins-adherence-panel__icon">✨</div>
+                <h2 id="adherence-modal-title" className="checkins-adherence-panel__title">
+                  Bora ajustar o plano?
+                </h2>
+                <p className="checkins-adherence-panel__text">
+                  Um plano que você <strong>consegue cumprir</strong> gera resultados muito
+                  melhores do que um plano perfeito no papel. Que tal reorganizar o protocolo
+                  para <strong>{Math.max(adherenceData.completed, 2)} dia{Math.max(adherenceData.completed, 2) !== 1 ? "s" : ""} por semana</strong>? 🎯
+                </p>
+                <p className="checkins-adherence-panel__subtext">
+                  A IA vai redistribuir os treinos com split otimizado para essa frequência real, incluindo folgas bem posicionadas.
+                </p>
+                <div className="checkins-modal__actions">
+                  <button type="button" className="ghost-button"
+                    onClick={() => {
+                      setShowAdherenceModal(false);
+                      setProtocolUpdateResult(null);
+                      setShowAiModal(true);
+                    }}>
+                    Não, quero manter {adherenceData.planned} dias
+                  </button>
+                  <button type="button" className="primary-button"
+                    onClick={() => {
+                      const adjusted = Math.max(adherenceData.completed, 2);
+                      setAdherenceAdjustedDays(adjusted);
+                      setAiTrainingDays(""); // IA escolhe os melhores dias
+                      setShowAdherenceModal(false);
+                      setProtocolUpdateResult(null);
+                      setShowAiModal(true);
+                    }}>
+                    Sim, ajustar para {Math.max(adherenceData.completed, 2)} dias 💪
+                  </button>
+                </div>
+              </>
+            )}
+
+          </div>
+        </div>
+      )}
 
       {/* Tela de progresso por etapas — exibida após o usuário confirmar a atualização */}
       {showAiProgress && (
