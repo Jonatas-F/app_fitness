@@ -321,24 +321,49 @@ async function callOpenAi({ accountId, generationType, instructions, input, hist
     inputContext: context,
   });
 
-  try {
-    const response = await fetch(openAiUrl, {
+  // Monta o body da requisição uma vez — reutilizado nos retries
+  const requestBody = JSON.stringify({
+    model,
+    messages,
+    temperature: 0.7,
+    max_tokens: maxTokensOverride ?? (expectJson ? 8000 : 2048),
+    // Para geração de JSON estruturado (dieta/treino), força JSON mode
+    ...(expectJson ? { response_format: { type: "json_object" } } : {}),
+  });
+
+  const MAX_RETRIES = 2;
+
+  async function doFetch() {
+    return fetch(openAiUrl, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model,
-        messages,
-        temperature: 0.7,
-        max_tokens: maxTokensOverride ?? (expectJson ? 12000 : 2048),
-        // Para geração de JSON estruturado (dieta/treino), força JSON mode
-        ...(expectJson ? { response_format: { type: "json_object" } } : {}),
-      }),
+      body: requestBody,
     });
+  }
 
-    const data = await response.json().catch(() => ({}));
+  try {
+    let response;
+    let data;
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      response = await doFetch();
+      data = await response.json().catch(() => ({}));
+
+      // Rate-limit: extrai o tempo de espera da mensagem e aguarda antes de tentar novamente
+      if (response.status === 429 && attempt < MAX_RETRIES) {
+        const msg = data?.error?.message || "";
+        const match = msg.match(/try again in ([\d.]+)s/i);
+        const waitMs = match ? Math.ceil(parseFloat(match[1]) * 1000) + 1500 : 8000;
+        console.log(`[OpenAI rate-limit] aguardando ${waitMs}ms (tentativa ${attempt + 1}/${MAX_RETRIES})...`);
+        await new Promise((resolve) => setTimeout(resolve, waitMs));
+        continue;
+      }
+
+      break; // sucesso ou erro não-recuperável
+    }
 
     if (!response.ok) {
       const error = new Error(data?.error?.message || "Falha ao chamar OpenAI.");
@@ -702,7 +727,7 @@ REGRAS FINAIS INEGOCIAVEIS:
     accountId,
     generationType: "workout",
     expectJson: true,
-    maxTokensOverride: 14000,
+    maxTokensOverride: 10000,
     instructions,
     input: [
       `Gere um protocolo de treino completo e atualizado.`,
