@@ -420,7 +420,12 @@ export default function FirstCheckinModal({ planId, onComplete }) {
     if (def.type === "textarea") {
       return (
         <div key={key} className="ob-field">
-          <label className="ob-field__label">{def.label}</label>
+          <label className="ob-field__label">
+            {def.label}
+            {def.required
+              ? <span className="ob-field__req">*</span>
+              : <span className="ob-field__optional">Opcional</span>}
+          </label>
           {def.hint && <p className="ob-field__hint">{def.hint}</p>}
           <textarea className="ob-field__control" rows={3} placeholder={def.placeholder ?? ""}
             value={form[key] ?? ""} onChange={e => handleChange(key, e.target.value)} />
@@ -433,7 +438,10 @@ export default function FirstCheckinModal({ planId, onComplete }) {
       const selected = (form[key] || "").split(",").filter(Boolean);
       return (
         <div key={key} className="ob-field">
-          <label className="ob-field__label">{def.label}</label>
+          <label className="ob-field__label">
+            {def.label}
+            {!def.required && <span className="ob-field__optional">Opcional</span>}
+          </label>
           {def.hint && <p className="ob-field__hint">{def.hint}</p>}
           {sex === "feminino" && (
             <p className="ob-field__hint ob-field__hint--gender">👩 Opções voltadas para treino feminino</p>
