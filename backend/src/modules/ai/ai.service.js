@@ -14,8 +14,8 @@ const plusModel          = process.env.OPENAI_PLUS_MODEL       || structuredMode
 
 function getModelForPlan(planId) {
   const p = String(planId || "").toLowerCase();
-  if (p === "pro" || p === "avancado") return proModel;
-  if (p === "intermediario")            return plusModel;
+  if (p === "pro" || p === "avancado" || p === "partner") return proModel;
+  if (p === "intermediario")                               return plusModel;
   return structuredModel;
 }
 const openAiUrl = "https://api.openai.com/v1/chat/completions";

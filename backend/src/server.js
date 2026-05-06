@@ -47,7 +47,7 @@ import {
   handleSetDefaultStripePaymentMethod,
   handleStripeWebhook,
 } from "./modules/billing/billing.controller.js";
-import { ensureLocalBillingTables } from "./modules/billing/billing.service.js";
+import { ensureLocalBillingTables, provisionPartnerSubscriptions } from "./modules/billing/billing.service.js";
 import { handleLoadProfile, handleSaveProfile } from "./modules/users/users.controller.js";
 import {
   handleListWorkoutHistory,
@@ -279,6 +279,7 @@ app.use(errorHandler);
 await ensureLocalAuthColumns();
 await ensureLocalCheckinColumns();
 await ensureLocalBillingTables();
+await provisionPartnerSubscriptions();
 await ensureLocalWorkoutTables();
 await ensureLocalDietTables();
 await ensureLocalPreferenceTables();

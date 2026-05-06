@@ -13,6 +13,8 @@ const plans = {
   pro:           { name: "Pro",           monthlyPrice: 99.90, tokenLimit: 4_500_000 },
   // Alias para registros antigos que usam 'avancado' no banco
   avancado:      { name: "Pro",           monthlyPrice: 99.90, tokenLimit: 4_500_000 },
+  // Parceiros — acesso Pro gratuito
+  partner:       { name: "Parceiro",      monthlyPrice: 0,     tokenLimit: 4_500_000 },
 };
 
 /** Normaliza 'avancado' → 'pro' para novas gravações no banco. */
@@ -132,7 +134,7 @@ export async function ensureLocalBillingTables() {
       on subscriptions (account_id, status);
   `);
 
-  // Migration: expandir CHECK constraints para incluir 'pro' (idempotente)
+  // Migration: expandir CHECK constraints para incluir 'pro' e 'partner' (idempotente)
   await pool.query(`
     DO $$
     BEGIN
@@ -140,22 +142,101 @@ export async function ensureLocalBillingTables() {
         DROP CONSTRAINT IF EXISTS subscriptions_plan_check;
       ALTER TABLE subscriptions
         ADD CONSTRAINT subscriptions_plan_check
-          CHECK (plan IN ('basico','intermediario','avancado','pro'));
+          CHECK (plan IN ('basico','intermediario','avancado','pro','partner'));
 
       ALTER TABLE plan_change_acceptances
         DROP CONSTRAINT IF EXISTS plan_change_acceptances_previous_plan_check;
       ALTER TABLE plan_change_acceptances
         ADD CONSTRAINT plan_change_acceptances_previous_plan_check
-          CHECK (previous_plan IN ('basico','intermediario','avancado','pro'));
+          CHECK (previous_plan IN ('basico','intermediario','avancado','pro','partner'));
 
       ALTER TABLE plan_change_acceptances
         DROP CONSTRAINT IF EXISTS plan_change_acceptances_next_plan_check;
       ALTER TABLE plan_change_acceptances
         ADD CONSTRAINT plan_change_acceptances_next_plan_check
-          CHECK (next_plan IN ('basico','intermediario','avancado','pro'));
+          CHECK (next_plan IN ('basico','intermediario','avancado','pro','partner'));
     EXCEPTION WHEN OTHERS THEN NULL;
     END $$;
   `);
+
+  // Tabela de parceiros — e-mails que recebem acesso Pro gratuito
+  await pool.query(`
+    create table if not exists partners (
+      id bigint generated always as identity primary key,
+      email text not null unique,
+      active boolean not null default true,
+      notes text,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    );
+  `);
+
+  // Seed: parceiros iniciais
+  await pool.query(`
+    insert into partners (email, notes)
+    values ('carolaine.s.freire@gmail.com', 'Parceira fundadora')
+    on conflict (email) do nothing;
+  `);
+}
+
+/**
+ * Para cada parceiro ativo que já possui uma conta, garante que existe
+ * uma subscription ativa no plano 'partner' (Pro gratuito).
+ * Usa gateway_subscription_id = 'partner:<accountId>' como chave de upsert.
+ * Chamada no boot, logo após ensureLocalBillingTables().
+ */
+export async function provisionPartnerSubscriptions() {
+  const partnerPlan = plans.partner;
+
+  // Busca todos os parceiros ativos que já têm conta
+  const result = await pool.query(`
+    select a.id as account_id, a.email
+    from partners p
+    join accounts a on lower(a.email) = lower(p.email)
+    where p.active = true;
+  `);
+
+  for (const { account_id, email } of result.rows) {
+    const gatewayId = `partner:${account_id}`;
+
+    // Upsert na tabela subscriptions
+    await pool.query(
+      `
+        insert into subscriptions (
+          account_id,
+          plan,
+          billing_cycle,
+          status,
+          token_limit,
+          token_balance,
+          current_period_start,
+          current_period_end,
+          gateway_subscription_id
+        )
+        values ($1, 'partner', 'monthly', 'active', $2, $2,
+                date_trunc('month', now()),
+                date_trunc('month', now()) + interval '1 month',
+                $3)
+        on conflict (gateway_subscription_id)
+        do update set
+          plan          = 'partner',
+          status        = 'active',
+          token_limit   = $2,
+          current_period_start = date_trunc('month', now()),
+          current_period_end   = date_trunc('month', now()) + interval '1 month',
+          updated_at    = current_timestamp;
+      `,
+      [account_id, partnerPlan.tokenLimit, gatewayId]
+    );
+
+    // Mantém a coluna plan_type em accounts sincronizada
+    await pool.query(
+      `update accounts set plan_type = 'partner', updated_at = current_timestamp where id = $1;`,
+      [account_id]
+    );
+
+    console.log(`[partners] Provisioned partner subscription for ${email} (account ${account_id})`);
+  }
 }
 
 function toPlanAcceptance(row) {
