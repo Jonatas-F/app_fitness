@@ -155,6 +155,9 @@ export async function ensureLocalAuthColumns() {
       add column if not exists google_signin_disabled boolean not null default false,
       add column if not exists auth_session_version integer not null default 1;
 
+    alter table accounts
+      add column if not exists is_partner boolean not null default false;
+
     create unique index if not exists idx_accounts_google_subject
       on accounts (google_subject)
       where google_subject is not null;

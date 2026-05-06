@@ -231,9 +231,9 @@ export async function provisionPartnerSubscriptions() {
       [account_id, partnerPlan.tokenLimit, gatewayId]
     );
 
-    // Mantém a coluna plan_type em accounts sincronizada
+    // Mantém plan_type e is_partner em accounts sincronizados
     await pool.query(
-      `update accounts set plan_type = 'partner', updated_at = current_timestamp where id = $1;`,
+      `update accounts set plan_type = 'partner', is_partner = true, updated_at = current_timestamp where id = $1;`,
       [account_id]
     );
 
