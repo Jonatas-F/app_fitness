@@ -4,6 +4,7 @@ import { saveRemoteCheckin } from "../../services/checkinService";
 import { generateWorkoutWithAi } from "../../services/ai/workout.service";
 import { generateDietWithAi } from "../../services/ai/diet.service";
 import { personalAvatarCatalog } from "../../data/platformImageCatalog";
+import AiGeneratingScreen from "../shared/AiGeneratingScreen";
 import "./FirstCheckinModal.css";
 
 // ── Etapas por plano ────────────────────────────────────────────────────────
@@ -152,192 +153,6 @@ function buildInitialForm() {
   return defaults;
 }
 
-// ── Tela de Geração ─────────────────────────────────────────────────────────
-
-const WORKOUT_STEPS = [
-  { text: "Lendo seu perfil, histórico e dias disponíveis", delay: 0 },
-  { text: "Definindo o split ideal para sua frequência",    delay: 5500 },
-  { text: "Selecionando exercícios por grupo muscular",     delay: 13000 },
-  { text: "Calculando volume, séries e intervalos",         delay: 24000 },
-  { text: "Personalizando dicas e revisando protocolo",     delay: 42000 },
-];
-
-const DIET_STEPS = [
-  { text: "Calculando sua necessidade calórica (TDEE)",     delay: 1000 },
-  { text: "Definindo macronutrientes por objetivo",         delay: 8500 },
-  { text: "Montando refeições com suas preferências",       delay: 18000 },
-  { text: "Criando variações para todos os 7 dias",         delay: 31000 },
-  { text: "Ajustando substituições e finalizando",          delay: 49000 },
-];
-
-function useSimulatedSteps(status, steps) {
-  const [activeIdx, setActiveIdx] = useState(0);
-  const timersRef = useRef([]);
-
-  useEffect(() => {
-    timersRef.current.forEach(clearTimeout);
-    timersRef.current = [];
-
-    if (status !== "generating") {
-      if (status === "ok") setActiveIdx(steps.length - 1);
-      return;
-    }
-
-    setActiveIdx(0);
-    steps.slice(1).forEach((step, i) => {
-      const t = setTimeout(() => setActiveIdx(prev => Math.max(prev, i + 1)), step.delay);
-      timersRef.current.push(t);
-    });
-
-    return () => timersRef.current.forEach(clearTimeout);
-  }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  return status === "ok" ? steps.length - 1 : activeIdx;
-}
-
-function GenItemExpanded({ emoji, label, steps, status, errorMsg, onRetry }) {
-  const activeIdx = useSimulatedSteps(status, steps);
-
-  const subText =
-    status === "generating"
-      ? (steps[activeIdx]?.text ?? steps[steps.length - 1].text)
-      : status === "ok"
-      ? "Concluído com sucesso"
-      : "Falhou — tente novamente";
-
-  return (
-    <div className={`ob-gen-card ob-gen-card--${status}`}>
-      {/* Cabeçalho do card */}
-      <div className="ob-gen-card__header">
-        <span className="ob-gen-card__emoji">{emoji}</span>
-        <div className="ob-gen-card__info">
-          <span className="ob-gen-card__title">{label}</span>
-          <span className={`ob-gen-card__sub ob-gen-card__sub--${status}`}>{subText}</span>
-        </div>
-        <div className="ob-gen-card__badge">
-          {status === "generating" && <span className="ob-gen-spinner" />}
-          {status === "ok"         && <span className="ob-gen-check">✓</span>}
-          {status === "error"      && <span className="ob-gen-fail">✗</span>}
-        </div>
-      </div>
-
-      {/* Etapas detalhadas */}
-      <ol className="ob-gen-steps">
-        {steps.map((step, i) => {
-          const s =
-            status === "ok"
-              ? "done"
-              : i < activeIdx
-              ? "done"
-              : i === activeIdx && status === "generating"
-              ? "active"
-              : "wait";
-          return (
-            <li key={i} className={`ob-gen-step ob-gen-step--${s}`}>
-              <span className="ob-gen-step__dot" aria-hidden="true">
-                {s === "done" ? "✓" : s === "active" ? "" : "·"}
-              </span>
-              {s === "active" && <span className="ob-gen-step__spin" />}
-              <span className="ob-gen-step__text">{step.text}</span>
-            </li>
-          );
-        })}
-      </ol>
-
-      {/* Erro + retry */}
-      {status === "error" && (
-        <div className="ob-gen-card__error">
-          {errorMsg && <p className="ob-gen-card__errmsg">{errorMsg}</p>}
-          {onRetry && (
-            <button type="button" className="ob-gen-retry" onClick={onRetry}>
-              ↺ Tentar novamente
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function GeneratingScreen({ workoutStatus, dietStatus, workoutError, dietError, onRetryWorkout, onRetryDiet, onEnter }) {
-  const allDone  = workoutStatus !== "generating" && dietStatus !== "generating";
-  const hasError = workoutStatus === "error" || dietStatus === "error";
-
-  return (
-    <div className="ob-overlay" role="dialog" aria-modal="true">
-      <div className="ob-modal ob-modal--generating glass-panel">
-
-        {/* Cabeçalho */}
-        <div className="ob-gen-header">
-          {!allDone ? (
-            <>
-              <div className="ob-gen-pulse" />
-              <h2 className="ob-gen-title">Criando seus protocolos...</h2>
-              <p className="ob-gen-subtitle">
-                A IA está analisando todos os seus dados. Acompanhe cada etapa abaixo.
-              </p>
-            </>
-          ) : hasError ? (
-            <>
-              <span className="ob-gen-done-icon">⚠️</span>
-              <h2 className="ob-gen-title">Atenção — um item falhou</h2>
-              <p className="ob-gen-subtitle">Clique em ↺ Tentar para regenerar o item que falhou.</p>
-            </>
-          ) : (
-            <>
-              <span className="ob-gen-done-icon">🎉</span>
-              <h2 className="ob-gen-title">Tudo pronto!</h2>
-              <p className="ob-gen-subtitle">Seus protocolos personalizados estão prontos. Bem-vindo ao Shape Certo!</p>
-            </>
-          )}
-        </div>
-
-        {/* Barra de progresso indeterminada enquanto gera */}
-        {!allDone && (
-          <div className="ob-gen-bar-wrap">
-            <div className="ob-gen-bar-track">
-              <div className="ob-gen-bar-fill" />
-            </div>
-            <p className="ob-gen-note">Isso pode levar até 90 segundos. Não feche o app.</p>
-          </div>
-        )}
-
-        {/* Cards expandidos */}
-        <div className="ob-gen-list">
-          <GenItemExpanded
-            emoji="🏋️" label="Protocolo de treino"
-            steps={WORKOUT_STEPS}
-            status={workoutStatus}
-            errorMsg={workoutError}
-            onRetry={workoutStatus === "error" ? onRetryWorkout : null}
-          />
-          <GenItemExpanded
-            emoji="🥗" label="Plano alimentar"
-            steps={DIET_STEPS}
-            status={dietStatus}
-            errorMsg={dietError}
-            onRetry={dietStatus === "error" ? onRetryDiet : null}
-          />
-        </div>
-
-        {/* Botão de entrada */}
-        {allDone && (
-          <div className="ob-modal__footer" style={{ justifyContent: "center", flexDirection: "column", gap: "8px" }}>
-            <button type="button" className="primary-button ob-gen-enter-btn" onClick={onEnter}>
-              {hasError ? "Entrar mesmo assim →" : "Entrar no Shape Certo →"}
-            </button>
-            {hasError && (
-              <p className="ob-gen-note" style={{ textAlign: "center" }}>
-                Você pode gerar os protocolos nas páginas de Treinos e Dietas.
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ── Modal principal ──────────────────────────────────────────────────────────
 
 export default function FirstCheckinModal({ planId, onComplete }) {
@@ -484,14 +299,15 @@ export default function FirstCheckinModal({ planId, onComplete }) {
   // ── Render: Tela de geração ───────────────────────────────────────────────
   if (showGen) {
     return (
-      <GeneratingScreen
+      <AiGeneratingScreen
         workoutStatus={workoutStatus}
         dietStatus={dietStatus}
         workoutError={workoutError}
         dietError={dietError}
         onRetryWorkout={handleRetryWorkout}
         onRetryDiet={handleRetryDiet}
-        onEnter={onComplete}
+        onComplete={onComplete}
+        completeLabel="Entrar no Shape Certo →"
       />
     );
   }

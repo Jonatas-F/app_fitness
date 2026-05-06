@@ -36,6 +36,7 @@ import { loadDietProtocol, hydrateDietProtocolFromApi } from "../../../data/diet
 import { hydrateWorkoutExecutionFromApi, loadWorkoutSessionHistory } from "../../../data/workoutExecutionStorage";
 import { generateDietWithAi } from "../../../services/ai/diet.service";
 import { generateWorkoutWithAi } from "../../../services/ai/workout.service";
+import AiGeneratingScreen from "../../../components/shared/AiGeneratingScreen";
 import "./CheckinsPage.css";
 
 const goalOptions = [
@@ -947,6 +948,12 @@ export default function CheckinsPage() {
   const [isGeneratingProtocols, setIsGeneratingProtocols] = useState(false);
   const [protocolUpdateResult, setProtocolUpdateResult] = useState(null);
   const [showAiModal, setShowAiModal] = useState(false);
+  // Estados da tela de progresso por etapas
+  const [showAiProgress, setShowAiProgress]     = useState(false);
+  const [ciWorkoutStatus, setCiWorkoutStatus]   = useState("generating");
+  const [ciDietStatus, setCiDietStatus]         = useState("generating");
+  const [ciWorkoutError, setCiWorkoutError]     = useState(null);
+  const [ciDietError, setCiDietError]           = useState(null);
   const [aiGoal, setAiGoal] = useState("");
   const [aiTrainingDays, setAiTrainingDays] = useState("");
   const [aiTrainingExp, setAiTrainingExp] = useState("");
@@ -1212,52 +1219,100 @@ export default function CheckinsPage() {
     setShowAiModal(true);
   }
 
+  function withAiTimeout(promise, ms = 90_000) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Tempo limite excedido (90s). Tente novamente.")), ms)
+      ),
+    ]);
+  }
+
   async function handleAiUpdate() {
     if (!updateWorkoutWithAi && !updateDietWithAi) {
       setShowAiModal(false);
       return;
     }
-    setIsGeneratingProtocols(true);
-    setProtocolUpdateResult(null);
-    const results = { workout: null, diet: null, errors: [] };
 
-    // Timeout de 90 segundos por chamada
-    function withTimeout(promise, ms = 90_000) {
-      return Promise.race([
-        promise,
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Tempo limite excedido (90s). Tente novamente.")), ms)
-        ),
-      ]);
+    // Fecha modal de seleção e abre tela de progresso
+    setShowAiModal(false);
+    setCiWorkoutStatus(updateWorkoutWithAi ? "generating" : "ok");
+    setCiDietStatus(updateDietWithAi ? "generating" : "ok");
+    setCiWorkoutError(null);
+    setCiDietError(null);
+    setShowAiProgress(true);
+    setIsGeneratingProtocols(true);
+
+    const tasks = [];
+
+    if (updateWorkoutWithAi) {
+      tasks.push(
+        withAiTimeout(generateWorkoutWithAi({
+          persist: true, goal: aiGoal,
+          trainingAvailableDays: aiTrainingDays,
+          trainingExperience: aiTrainingExp,
+          trainingAge: aiTrainingAge,
+          availableMinutes: aiAvailableMinutes,
+        }))
+          .then(async (res) => {
+            if (res?.protocol) await hydrateWorkoutExecutionFromApi();
+            setCiWorkoutStatus("ok");
+          })
+          .catch((err) => {
+            setCiWorkoutStatus("error");
+            setCiWorkoutError(err?.message || "Erro desconhecido.");
+          })
+      );
     }
 
-    try {
-      if (updateWorkoutWithAi) {
-        try {
-          const res = await withTimeout(generateWorkoutWithAi({ persist: true, goal: aiGoal, trainingAvailableDays: aiTrainingDays, trainingExperience: aiTrainingExp, trainingAge: aiTrainingAge, availableMinutes: aiAvailableMinutes }));
-          if (res?.protocol) {
-            await hydrateWorkoutExecutionFromApi();
-            results.workout = res.protocol?.title || "Protocolo de treino atualizado";
-          }
-        } catch (err) {
-          results.errors.push("Treino: " + (err.message || "erro desconhecido"));
-        }
-      }
+    if (updateDietWithAi) {
+      tasks.push(
+        withAiTimeout(generateDietWithAi({ persist: true, goal: aiGoal }))
+          .then(async (res) => {
+            if (res?.protocol) await hydrateDietProtocolFromApi();
+            setCiDietStatus("ok");
+          })
+          .catch((err) => {
+            setCiDietStatus("error");
+            setCiDietError(err?.message || "Erro desconhecido.");
+          })
+      );
+    }
 
-      if (updateDietWithAi) {
-        try {
-          const res = await withTimeout(generateDietWithAi({ persist: true, goal: aiGoal }));
-          if (res?.protocol) {
-            await hydrateDietProtocolFromApi();
-            results.diet = res.protocol?.title || "Protocolo de dieta atualizado";
-          }
-        } catch (err) {
-          results.errors.push("Dieta: " + (err.message || "erro desconhecido"));
-        }
-      }
-    } finally {
-      setIsGeneratingProtocols(false);
-      setProtocolUpdateResult(results);
+    await Promise.allSettled(tasks);
+    setIsGeneratingProtocols(false);
+  }
+
+  // Retry individual pelo botão dentro da tela de progresso
+  async function handleRetryWorkoutCi() {
+    setCiWorkoutStatus("generating");
+    setCiWorkoutError(null);
+    try {
+      const res = await withAiTimeout(generateWorkoutWithAi({
+        persist: true, goal: aiGoal,
+        trainingAvailableDays: aiTrainingDays,
+        trainingExperience: aiTrainingExp,
+        trainingAge: aiTrainingAge,
+        availableMinutes: aiAvailableMinutes,
+      }));
+      if (res?.protocol) await hydrateWorkoutExecutionFromApi();
+      setCiWorkoutStatus("ok");
+    } catch (err) {
+      setCiWorkoutStatus("error");
+      setCiWorkoutError(err?.message || "Erro desconhecido.");
+    }
+  }
+
+  async function handleRetryDietCi() {
+    setCiDietStatus("generating");
+    setCiDietError(null);
+    try {
+      const res = await withAiTimeout(generateDietWithAi({ persist: true, goal: aiGoal }));
+      if (res?.protocol) await hydrateDietProtocolFromApi();
+      setCiDietStatus("ok");
+    } catch (err) {
+      setCiDietStatus("error");
+      setCiDietError(err?.message || "Erro desconhecido.");
     }
   }
 
@@ -1484,6 +1539,22 @@ export default function CheckinsPage() {
           </div>
         </div>
       ) : null}
+
+      {/* Tela de progresso por etapas — exibida após o usuário confirmar a atualização */}
+      {showAiProgress && (
+        <AiGeneratingScreen
+          workoutStatus={ciWorkoutStatus}
+          dietStatus={ciDietStatus}
+          workoutError={ciWorkoutError}
+          dietError={ciDietError}
+          onRetryWorkout={handleRetryWorkoutCi}
+          onRetryDiet={handleRetryDietCi}
+          workoutEnabled={updateWorkoutWithAi}
+          dietEnabled={updateDietWithAi}
+          onComplete={() => setShowAiProgress(false)}
+          completeLabel="Fechar e ver resultados →"
+        />
+      )}
 
       {showAiModal && (
         <div className="checkins-modal" role="dialog" aria-modal="true" aria-labelledby="ai-modal-title">
