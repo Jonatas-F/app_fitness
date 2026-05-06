@@ -4,10 +4,14 @@ import { pool } from "../../utils/db.js";
 const tokenSecret = process.env.JWT_SECRET || "shape_certo_dev_secret";
 const tokenTtlSeconds = 60 * 60 * 24 * 7;
 
-/** Contas com acesso irrestrito: mapeadas para o plan_type garantido no login. */
+/**
+ * Contas com acesso irrestrito: mapeadas para o plan_type garantido no login.
+ * Parceiros e admin nunca são redirecionados para o checkout.
+ */
 const BYPASS_ACCOUNTS = {
-  "jonatas.freire.prof@gmail.com": "pro",
-  "fmagranero@gmail.com":          "pro",
+  "jonatas.freire.prof@gmail.com": "admin",
+  "fmagranero@gmail.com":          "partner",
+  "carolaine.s.freire@gmail.com":  "partner",
 };
 
 function base64Url(input) {
@@ -199,7 +203,21 @@ export async function signUpWithEmail({ email, password, fullName, plan }) {
       [account.id, fullName || ""]
     );
 
+    // Parceiros e admin nunca vão ao checkout — aplica bypass imediatamente
+    const bypassPlan = BYPASS_ACCOUNTS[normalizedEmail];
+    if (bypassPlan && account.plan_type !== bypassPlan) {
+      await client.query(
+        "update accounts set plan_type = $1 where id = $2;",
+        [bypassPlan, account.id]
+      );
+      account.plan_type = bypassPlan;
+    }
+
     await client.query("commit");
+
+    if (bypassPlan) {
+      return { ...toAuthResponse(account, profileResult.rows[0]), has_active_plan: true, is_new: false };
+    }
     return { ...toAuthResponse(account, profileResult.rows[0]), has_active_plan: false, is_new: true };
   } catch (error) {
     await client.query("rollback");
@@ -291,13 +309,14 @@ export async function signInWithGoogleProfile(profile) {
       );
       account = updated.rows[0];
     } else {
+      const initialPlan = BYPASS_ACCOUNTS[email] || "intermediario";
       const created = await client.query(
         `
           insert into accounts (email, auth_provider, google_subject, account_status, plan_type, last_login_at)
-          values ($1, 'google', $2, 'active', 'intermediario', current_timestamp)
+          values ($1, 'google', $2, 'active', $3, current_timestamp)
           returning *;
         `,
-        [email, profile.sub || null]
+        [email, profile.sub || null, initialPlan]
       );
       account = created.rows[0];
       isNewAccount = true;

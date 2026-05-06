@@ -28,9 +28,12 @@ export default function App() {
       // Legado — limpa a chave antiga também
       sessionStorage.removeItem(GOOGLE_RETURN_KEY);
 
+      // Parceiros e admins nunca vão ao checkout independente do is_new
+      const isPrivileged = ["partner", "admin"].includes(sessionData.plan_type);
+
       // Sem plano ativo → redirecionar para checkout com aviso
       let nextPath;
-      if (sessionData.is_new || sessionData.has_active_plan === false) {
+      if (!isPrivileged && (sessionData.is_new || sessionData.has_active_plan === false)) {
         const base = pendingReturnTo?.startsWith("/checkout") ? pendingReturnTo : "/checkout?plan=basico&cycle=monthly";
         const sep  = base.includes("?") ? "&" : "?";
         const flag = sessionData.is_new ? "new=1" : "no_plan=1";
