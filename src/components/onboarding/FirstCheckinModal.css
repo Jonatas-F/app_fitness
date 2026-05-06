@@ -226,6 +226,30 @@ textarea.ob-field__control {
   margin-right: auto;
 }
 
+/* ── Nota informativa da etapa ───────────────────────────────────────────── */
+.ob-step-note {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: rgba(99, 179, 237, 0.07);
+  border: 1px solid rgba(99, 179, 237, 0.2);
+}
+
+.ob-step-note__icon {
+  font-size: 1.3rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.ob-step-note__text {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.55;
+  margin: 0;
+}
+
 /* ── Tela de Geração ────────────────────────────────────────────────────── */
 
 .ob-modal--generating {

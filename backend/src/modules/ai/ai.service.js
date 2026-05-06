@@ -3,10 +3,21 @@ import { loadAssistantContext } from "../assistant/assistant.service.js";
 import { saveDietPlan } from "../diets/diets.service.js";
 import { saveWorkoutPlan } from "../workouts/workouts.service.js";
 
-const defaultModel       = process.env.OPENAI_MODEL         || "gpt-4o-mini";
-// Para geração de treino/dieta usa um modelo dedicado (pode ser diferente do chat)
-// gpt-4o-mini já é bom, mas se quiser mais qualidade troque por gpt-4.1-mini ou gpt-4o
+const defaultModel       = process.env.OPENAI_MODEL            || "gpt-4o-mini";
+// Modelo base para geração estruturada (treino/dieta) — todos os planos
 const structuredModel    = process.env.OPENAI_STRUCTURED_MODEL || defaultModel;
+// Modelos por plano — configure no .env do VPS para ativar modelos melhores
+// OPENAI_PRO_MODEL=gpt-4o      → plano Pro (análise de bioimpedância, mais dados)
+// OPENAI_PLUS_MODEL=gpt-4o-mini → plano Intermediário (manter mini por enquanto)
+const proModel           = process.env.OPENAI_PRO_MODEL        || structuredModel;
+const plusModel          = process.env.OPENAI_PLUS_MODEL       || structuredModel;
+
+function getModelForPlan(planId) {
+  const p = String(planId || "").toLowerCase();
+  if (p === "pro" || p === "avancado") return proModel;
+  if (p === "intermediario")            return plusModel;
+  return structuredModel;
+}
 const openAiUrl = "https://api.openai.com/v1/chat/completions";
 
 export async function ensureLocalAiTables() {
@@ -274,7 +285,14 @@ async function callOpenAi({ accountId, generationType, instructions, input, hist
   requireOpenAiKey();
 
   const context = compactContext(await loadAssistantContext(accountId));
-  const model = modelOverride || (expectJson ? structuredModel : defaultModel);
+
+  // Resolve modelo: override explícito > modelo por plano > default
+  const planId = context?.account?.plan_type || "basico";
+  const model  = modelOverride
+    ? modelOverride
+    : expectJson
+    ? getModelForPlan(planId)
+    : defaultModel;
 
   // Monta array de mensagens no formato Chat Completions
   const systemContent = buildSystemMessage(instructions, context, accountId, personalNameOverride);

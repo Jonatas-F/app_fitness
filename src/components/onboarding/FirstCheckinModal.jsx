@@ -23,6 +23,33 @@ const NUTRITION_STEP = {
   optional: true,
 };
 
+// Etapa de composição corporal — Intermediário
+// Pergunta bioimpedância básica + intenção de fotos
+const BODY_INTER_STEP = {
+  id: "body_inter",
+  title: "Composição corporal",
+  subtitle: "Com esses dados, a IA personaliza seu volume de treino, calorias e macros com muito mais precisão.",
+  note: {
+    icon: "💡",
+    text: "Não tem acesso a uma balança de bioimpedância agora? Sem problema — clique em Pular etapa. Você pode inserir esses dados no check-in quando tiver, e a IA remonta os protocolos automaticamente.",
+  },
+  fields: ["bodyFat", "leanMass", "photosAvailable"],
+  optional: true,
+};
+
+// Etapa de composição corporal — Pro (análise completa)
+const BODY_PRO_STEP = {
+  id: "body_pro",
+  title: "Bioimpedância e composição",
+  subtitle: "O plano Pro usa análise completa de composição para calcular TDEE real, zona de treinamento e periodização com precisão científica.",
+  note: {
+    icon: "💡",
+    text: "Se não tiver acesso à balança de bioimpedância agora, clique em Pular. No próximo check-in você pode inserir — a IA usa esses dados para regenerar os protocolos com ainda mais precisão.",
+  },
+  fields: ["bodyFat", "leanMass", "visceralFat", "muscleMass", "photosAvailable"],
+  optional: true,
+};
+
 const STEPS = {
   basico: [
     { id: "basics",   title: "Seus dados básicos",    subtitle: "Informações essenciais para o Personal Virtual montar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
@@ -36,6 +63,7 @@ const STEPS = {
     { id: "profile",  title: "Perfil de treino",        subtitle: "Experiência, tempo disponível e limitações físicas.", fields: ["trainingExperience","trainingAge","availableMinutes","injuries"] },
     { id: "state",    title: "Seu estado atual",         subtitle: "Como você está hoje e quais dias pode treinar.", fields: ["energy","sleepQuality","trainingAvailableDays"] },
     NUTRITION_STEP,
+    BODY_INTER_STEP,
     { id: "goals",    title: "Suas expectativas",        subtitle: "Conte o que espera alcançar com o Shape Certo.", fields: ["notes"] },
     PERSONAL_STEP,
   ],
@@ -44,7 +72,7 @@ const STEPS = {
     { id: "profile",   title: "Perfil de treino",         subtitle: "Experiência, tempo disponível e limitações físicas.", fields: ["trainingExperience","trainingAge","availableMinutes","injuries"] },
     { id: "state",     title: "Seu estado atual",          subtitle: "Sinais de recuperação e disponibilidade semanal.", fields: ["energy","sleepQuality","fatigueLevel","trainingPerformance","trainingAvailableDays"] },
     { id: "nutrition", title: "Alimentação",               subtitle: "A IA usa essas informações para criar um plano alimentar preciso.", fields: ["mealsPerDay","dietaryRestrictions","foodPreferences"], optional: true },
-    { id: "body",      title: "Dados corporais",           subtitle: "Bioimpedância e composição corporal (opcional).", fields: ["bodyFat","leanMass"], optional: true },
+    BODY_PRO_STEP,
     PERSONAL_STEP,
   ],
 };
@@ -90,9 +118,21 @@ const FIELD_DEFS = {
   foodPreferences:    { label: "Preferências alimentares", type: "textarea", required: false,
                         placeholder: "Ex: gosto de frango e ovos, não gosto de peixe, como muito arroz e feijão", hint: "Opcional — mas ajuda muito a IA a montar algo que você vai comer" },
   bodyFat:            { label: "Gordura corporal (%)", type: "text", required: false,
-                        placeholder: "Ex: 18.5", hint: "Da bioimpedância — opcional" },
+                        placeholder: "Ex: 18.5", hint: "% de gordura corporal total — encontrado no relatório da bioimpedância" },
   leanMass:           { label: "Massa magra (kg)", type: "text", required: false,
-                        placeholder: "Ex: 68.2", hint: "Da bioimpedância — opcional" },
+                        placeholder: "Ex: 68.2", hint: "Massa sem gordura (músculos + ossos + água) — da bioimpedância" },
+  visceralFat:        { label: "Gordura visceral (índice)", type: "text", required: false,
+                        placeholder: "Ex: 8", hint: "Índice de gordura visceral da bioimpedância — geralmente entre 1 e 20 (saudável: abaixo de 10)" },
+  muscleMass:         { label: "Massa muscular esquelética (kg)", type: "text", required: false,
+                        placeholder: "Ex: 42.1", hint: "Massa muscular esquelética total — da bioimpedância (se disponível)" },
+  photosAvailable:    { label: "Você tem fotos de progresso disponíveis?", type: "select", required: false,
+                        options: [
+                          ["","Selecione"],
+                          ["sim","Sim — vou adicionar no primeiro check-in"],
+                          ["nao","Ainda não tenho fotos"],
+                          ["nao-enviar","Prefiro não enviar fotos por enquanto"],
+                        ],
+                        hint: "Fotos de frente e de lado permitem análise visual de postura, simetria e composição muscular. Você pode enviá-las na tela de Check-in." },
   notes:              { label: "Expectativas e contexto", type: "textarea", required: false,
                         placeholder: "Conte o que espera alcançar, sua rotina atual, qualquer informação relevante...",
                         hint: "Quanto mais você descrever, mais preciso o protocolo inicial" },
@@ -558,6 +598,12 @@ export default function FirstCheckinModal({ planId, onComplete }) {
 
         {/* Fields */}
         <div className="ob-modal__body">
+          {currentStep.note && (
+            <div className="ob-step-note">
+              <span className="ob-step-note__icon">{currentStep.note.icon}</span>
+              <p className="ob-step-note__text">{currentStep.note.text}</p>
+            </div>
+          )}
           {currentStep.fields.map(f => renderField(f))}
         </div>
 
