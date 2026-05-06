@@ -54,14 +54,14 @@ const BODY_PRO_STEP = {
 const STEPS = {
   basico: [
     { id: "basics",   title: "Seus dados básicos",    subtitle: "Informações essenciais para o Personal Virtual montar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
-    { id: "training", title: "Sua disponibilidade",   subtitle: "Marque os dias que você pode ir à academia.", fields: ["trainingAvailableDays"] },
+    { id: "training", title: "Sua disponibilidade",   subtitle: "Marque os dias que você pode ir à academia e suas preferências de treino.", fields: ["trainingAvailableDays","muscleGroupCombinations","trainingPreferenceFreeText"] },
     NUTRITION_STEP,
     { id: "goals",    title: "Suas expectativas",      subtitle: "Conte o que espera alcançar — quanto mais detalhes, melhor.", fields: ["notes"] },
     PERSONAL_STEP,
   ],
   intermediario: [
     { id: "basics",   title: "Seus dados básicos",     subtitle: "Informações essenciais para personalizar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
-    { id: "profile",  title: "Perfil de treino",        subtitle: "Experiência, tempo disponível e preferências de divisão.", fields: ["trainingExperience","trainingAge","availableMinutes","trainingPreference","injuries"] },
+    { id: "profile",  title: "Perfil de treino",        subtitle: "Experiência, tempo disponível e preferências de divisão.", fields: ["trainingExperience","trainingAge","availableMinutes","trainingPreference","muscleGroupCombinations","trainingPreferenceFreeText","injuries"] },
     { id: "state",    title: "Seu estado atual",         subtitle: "Como você está hoje e quais dias pode treinar.", fields: ["energy","sleepQuality","trainingAvailableDays"] },
     NUTRITION_STEP,
     BODY_INTER_STEP,
@@ -70,7 +70,7 @@ const STEPS = {
   ],
   pro: [
     { id: "basics",    title: "Seus dados básicos",      subtitle: "Informações essenciais para personalizar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
-    { id: "profile",   title: "Perfil de treino",         subtitle: "Experiência, tempo disponível e preferências de divisão.", fields: ["trainingExperience","trainingAge","availableMinutes","trainingPreference","injuries"] },
+    { id: "profile",   title: "Perfil de treino",         subtitle: "Experiência, tempo disponível e preferências de divisão.", fields: ["trainingExperience","trainingAge","availableMinutes","trainingPreference","muscleGroupCombinations","trainingPreferenceFreeText","injuries"] },
     { id: "state",     title: "Seu estado atual",          subtitle: "Sinais de recuperação e disponibilidade semanal.", fields: ["energy","sleepQuality","fatigueLevel","trainingPerformance","trainingAvailableDays"] },
     { id: "nutrition", title: "Alimentação",               subtitle: "A IA usa essas informações para criar um plano alimentar preciso.", fields: ["mealsPerDay","dietaryRestrictions","foodPreferences"], optional: true },
     BODY_PRO_STEP,
@@ -154,6 +154,17 @@ const FIELD_DEFS = {
                           ["nao-enviar","Prefiro não enviar fotos por enquanto"],
                         ],
                         hint: "Fotos de frente e de lado permitem análise visual de postura, simetria e composição muscular. Você pode enviá-las na tela de Check-in." },
+  trainingPreferenceFreeText: {
+    label: "Descreva suas preferências de treino",
+    type: "textarea", required: false,
+    placeholder: "Ex: Prefiro exercícios compostos, não gosto de máquinas, curto treinos intensos com pouco descanso, gosto de agachamento e terra...",
+    hint: "A IA usa esse texto como contexto ao montar seu protocolo — mesmo com split automático ativado",
+  },
+  muscleGroupCombinations: {
+    label: "Combinações de grupos musculares preferidas",
+    type: "musclegroupicker", required: false,
+    hint: "Selecione as combinações que mais gosta. A IA priorizará essas divisões.",
+  },
   notes:              { label: "Expectativas e contexto", type: "textarea", required: false,
                         placeholder: "Conte o que espera alcançar, sua rotina atual, qualquer informação relevante...",
                         hint: "Quanto mais você descrever, mais preciso o protocolo inicial" },
@@ -162,6 +173,34 @@ const FIELD_DEFS = {
                         hint: "Deixe em branco para usar 'Personal Virtual'" },
   personalAvatar:     { label: "Avatar", type: "avatarpicker", required: false },
 };
+
+// ── Combinações de grupos musculares por sexo ─────────────────────────────────
+
+const MUSCLE_COMBOS_MASC = [
+  { id: "full_body",      label: "Full Body" },
+  { id: "push",           label: "Push (Peito + Ombros + Tri)" },
+  { id: "pull",           label: "Pull (Costas + Bíceps)" },
+  { id: "peito_tri",      label: "Peito + Tríceps" },
+  { id: "costas_bi",      label: "Costas + Bíceps" },
+  { id: "ombros_trap",    label: "Ombros + Trapézio" },
+  { id: "pernas",         label: "Pernas (Quad + Post + Glúteo)" },
+  { id: "peito_costas",   label: "Peito + Costas" },
+  { id: "bracos",         label: "Braços (Bíceps + Tríceps)" },
+  { id: "upper_lower",    label: "Superior + Inferior" },
+];
+
+const MUSCLE_COMBOS_FEM = [
+  { id: "full_body",           label: "Full Body" },
+  { id: "gluteos_posterior",   label: "Glúteos + Posteriores" },
+  { id: "gluteos_iso",         label: "Glúteo isolado" },
+  { id: "pernas_completas",    label: "Pernas completas (Quad + Post + Glúteo)" },
+  { id: "lower",               label: "Inferior completo" },
+  { id: "upper",               label: "Superior completo" },
+  { id: "costas_bi",           label: "Costas + Bíceps" },
+  { id: "peito_ombros",        label: "Peito + Ombros" },
+  { id: "core_abdomen",        label: "Core + Abdômen" },
+  { id: "upper_lower",         label: "Superior + Inferior" },
+];
 
 function buildInitialForm() {
   const defaults = { cadence: "weekly" };
@@ -388,6 +427,39 @@ export default function FirstCheckinModal({ planId, onComplete }) {
         </div>
       );
     }
+    if (def.type === "musclegroupicker") {
+      const sex = form.sex || "";
+      const combos = sex === "feminino" ? MUSCLE_COMBOS_FEM : MUSCLE_COMBOS_MASC;
+      const selected = (form[key] || "").split(",").filter(Boolean);
+      return (
+        <div key={key} className="ob-field">
+          <label className="ob-field__label">{def.label}</label>
+          {def.hint && <p className="ob-field__hint">{def.hint}</p>}
+          {sex === "feminino" && (
+            <p className="ob-field__hint ob-field__hint--gender">👩 Opções voltadas para treino feminino</p>
+          )}
+          {sex === "masculino" && (
+            <p className="ob-field__hint ob-field__hint--gender">💪 Opções voltadas para treino masculino</p>
+          )}
+          <div className="ob-combo-picker">
+            {combos.map(c => (
+              <button key={c.id} type="button"
+                className={`ob-combo-picker__btn${selected.includes(c.id) ? " is-active" : ""}`}
+                onClick={() => {
+                  const next = selected.includes(c.id)
+                    ? selected.filter(x => x !== c.id)
+                    : [...selected, c.id];
+                  handleChange(key, next.join(","));
+                }}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
     if (def.type === "avatarpicker") {
       const selected = form[key] || "default-personal";
       return (

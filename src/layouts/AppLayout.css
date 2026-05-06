@@ -337,14 +337,14 @@
   right: 16px;
   bottom: 16px;
   display: none;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-  padding: 10px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  padding: 8px 6px;
   z-index: 50;
 }
 
 .bottom-nav__link {
-  min-height: 70px;
+  min-height: 62px;
   border-radius: 8px;
   background: rgba(20, 20, 20, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -353,8 +353,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  font-size: 0.72rem;
+  gap: 4px;
+  font-size: 0.65rem;
+  padding: 0 2px;
 }
 
 @media (max-width: 960px) {
@@ -367,7 +368,9 @@
   }
 
   .app-shell__content {
-    padding: 20px 16px 112px;
+    padding: 20px 16px 120px;
+    /* Evita que grids/flex filhos causem overflow horizontal no iPhone */
+    overflow-x: clip;
   }
 
   .bottom-nav {
@@ -375,33 +378,42 @@
   }
 }
 
+/* ── Previne overflow horizontal global em mobile ─────────────────────────── */
+@media (max-width: 960px) {
+  .app-shell__content > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
 /* ── Mobile fino (iPhone SE, Android compact) ──────────────────────────── */
 @media (max-width: 430px) {
   .app-shell__content {
-    padding: 14px 12px 94px;
+    padding: 14px 10px 100px;
+    overflow-x: clip;
   }
 
   /* Bottom nav mais compacta */
   .bottom-nav {
-    left: 6px;
-    right: 6px;
+    left: 4px;
+    right: 4px;
     bottom: 8px;
-    gap: 4px;
-    padding: 8px 6px;
+    gap: 3px;
+    padding: 6px 4px;
   }
 
   .bottom-nav__link {
-    min-height: 56px;
-    font-size: 0.62rem;
-    gap: 4px;
-    border-radius: 10px;
-    padding: 0 4px;
+    min-height: 52px;
+    font-size: 0.58rem;
+    gap: 3px;
+    border-radius: 8px;
+    padding: 0 2px;
   }
 
   .bottom-nav__link svg,
   .bottom-nav__link [data-icon] {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
   }
 }
 
@@ -409,7 +421,7 @@
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   @media (max-width: 960px) {
     .app-shell__content {
-      padding-bottom: calc(112px + env(safe-area-inset-bottom));
+      padding-bottom: calc(120px + env(safe-area-inset-bottom));
     }
 
     .bottom-nav {
@@ -419,7 +431,7 @@
 
   @media (max-width: 430px) {
     .app-shell__content {
-      padding-bottom: calc(94px + env(safe-area-inset-bottom));
+      padding-bottom: calc(100px + env(safe-area-inset-bottom));
     }
 
     .bottom-nav {

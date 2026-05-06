@@ -9,13 +9,16 @@ export async function generateWorkoutWithAi({
   trainingAge = "",
   availableMinutes = "",
   trainingPreference = "",
+  trainingPreferenceFreeText = "",
+  muscleGroupCombinations = "",
   adherenceAdjustedDays = undefined,
 } = {}) {
   return apiRequest(apiEndpoints.aiWorkout, {
     method: "POST",
     body: JSON.stringify({
       goal, persist, trainingAvailableDays, trainingExperience, trainingAge,
-      availableMinutes, trainingPreference,
+      availableMinutes, trainingPreference, trainingPreferenceFreeText,
+      muscleGroupCombinations,
       ...(adherenceAdjustedDays != null ? { adherenceAdjustedDays } : {}),
     }),
   });

@@ -894,6 +894,58 @@ function CheckinsLoadingSkeleton() {
   );
 }
 
+// ── Combinações de grupos musculares ─────────────────────────────────────────
+
+const MUSCLE_COMBOS_MASC = [
+  { id: "full_body",      label: "Full Body" },
+  { id: "push",           label: "Push (Peito + Ombros + Tri)" },
+  { id: "pull",           label: "Pull (Costas + Bíceps)" },
+  { id: "peito_tri",      label: "Peito + Tríceps" },
+  { id: "costas_bi",      label: "Costas + Bíceps" },
+  { id: "ombros_trap",    label: "Ombros + Trapézio" },
+  { id: "pernas",         label: "Pernas (Quad + Post + Glúteo)" },
+  { id: "peito_costas",   label: "Peito + Costas" },
+  { id: "bracos",         label: "Braços (Bíceps + Tríceps)" },
+  { id: "upper_lower",    label: "Superior + Inferior" },
+];
+
+const MUSCLE_COMBOS_FEM = [
+  { id: "full_body",          label: "Full Body" },
+  { id: "gluteos_posterior",  label: "Glúteos + Posteriores" },
+  { id: "gluteos_iso",        label: "Glúteo isolado" },
+  { id: "pernas_completas",   label: "Pernas completas (Quad + Post + Glúteo)" },
+  { id: "lower",              label: "Inferior completo" },
+  { id: "upper",              label: "Superior completo" },
+  { id: "costas_bi",          label: "Costas + Bíceps" },
+  { id: "peito_ombros",       label: "Peito + Ombros" },
+  { id: "core_abdomen",       label: "Core + Abdômen" },
+  { id: "upper_lower",        label: "Superior + Inferior" },
+];
+
+function MuscleGroupPicker({ sex = "", value = "", onChange }) {
+  const combos = sex === "feminino" ? MUSCLE_COMBOS_FEM : MUSCLE_COMBOS_MASC;
+  const selected = (value || "").split(",").filter(Boolean);
+  return (
+    <div className="checkin-muscle-combo-picker">
+      {combos.map((c) => (
+        <button
+          key={c.id}
+          type="button"
+          className={`checkin-muscle-combo-btn${selected.includes(c.id) ? " is-active" : ""}`}
+          onClick={() => {
+            const next = selected.includes(c.id)
+              ? selected.filter((x) => x !== c.id)
+              : [...selected, c.id];
+            onChange(next.join(","));
+          }}
+        >
+          {c.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function getCadenceIntro(cadence) {
   if (cadence === "daily") {
     return {
@@ -966,6 +1018,8 @@ export default function CheckinsPage() {
   const [aiTrainingAge, setAiTrainingAge] = useState("");
   const [aiAvailableMinutes, setAiAvailableMinutes] = useState("");
   const [aiTrainingPreference, setAiTrainingPreference] = useState("");
+  const [aiTrainingPreferenceFreeText, setAiTrainingPreferenceFreeText] = useState("");
+  const [aiMuscleGroupCombinations, setAiMuscleGroupCombinations] = useState("");
   const cancelButtonRef = useRef(null);
   const [isHydratingCheckins, setIsHydratingCheckins] = useState(true);
 
@@ -1204,6 +1258,8 @@ export default function CheckinsPage() {
     setAiTrainingAge(payload.trainingAge || "");
     setAiAvailableMinutes(payload.availableMinutes || "");
     setAiTrainingPreference(payload.trainingPreference || "");
+    setAiTrainingPreferenceFreeText(payload.trainingPreferenceFreeText || "");
+    setAiMuscleGroupCombinations(payload.muscleGroupCombinations || "");
 
     setFormData(makePrefilledCheckinForm(updated, activeCadence));
     setPrefilledSnapshot(makePrefilledSnapshot(updated, activeCadence));
@@ -1280,6 +1336,8 @@ export default function CheckinsPage() {
           trainingAge: aiTrainingAge,
           availableMinutes: aiAvailableMinutes,
           trainingPreference: aiTrainingPreference,
+          trainingPreferenceFreeText: aiTrainingPreferenceFreeText,
+          muscleGroupCombinations: aiMuscleGroupCombinations,
           adherenceAdjustedDays: adherenceAdjustedDays > 0 ? adherenceAdjustedDays : undefined,
         }))
           .then(async (res) => {
@@ -1324,6 +1382,8 @@ export default function CheckinsPage() {
         trainingAge: aiTrainingAge,
         availableMinutes: aiAvailableMinutes,
         trainingPreference: aiTrainingPreference,
+        trainingPreferenceFreeText: aiTrainingPreferenceFreeText,
+        muscleGroupCombinations: aiMuscleGroupCombinations,
         adherenceAdjustedDays: adherenceAdjustedDays > 0 ? adherenceAdjustedDays : undefined,
       }));
       if (res?.protocol) await hydrateWorkoutExecutionFromApi();
@@ -2153,6 +2213,42 @@ export default function CheckinsPage() {
                     value={formData.trainingBackground}
                     onChange={handleChange}
                     placeholder="Ex.: musculação desde 2020, já fez crossfit por 1 ano, pouca experiência com agachamento livre."
+                  />
+                </Field>
+                ) : null}
+
+                {showMonthly ? (
+                <Field label="Divisão de treino preferida" hint="O split que a IA vai usar como base" className="checkin-field--full">
+                  <select name="trainingPreference" value={formData.trainingPreference} onChange={handleChange}>
+                    <option value="">Deixar a IA decidir o melhor split (recomendado)</option>
+                    <option value="full_body">Full Body — treino global em cada sessão</option>
+                    <option value="upper_lower">Upper / Lower — divisão superior e inferior</option>
+                    <option value="ppl">Push / Pull / Legs</option>
+                    <option value="abc">ABC — por grupo muscular</option>
+                    <option value="abcd">ABCD — 4 divisões</option>
+                    <option value="abcde">ABCDE — 5 divisões</option>
+                    <option value="powerlifting_split">Periodização Powerlifting (Squat / Bench / Deadlift)</option>
+                  </select>
+                </Field>
+                ) : null}
+
+                {showMonthly ? (
+                <Field label="Combinações de grupos musculares preferidas" hint="Selecione todas as combinações que você gosta" className="checkin-field--full">
+                  <MuscleGroupPicker
+                    sex={formData.sex}
+                    value={formData.muscleGroupCombinations}
+                    onChange={(v) => handleChange({ target: { name: "muscleGroupCombinations", value: v } })}
+                  />
+                </Field>
+                ) : null}
+
+                {showMonthly ? (
+                <Field label="Preferências livres de treino" hint="A IA usa como contexto mesmo com split automático" className="checkin-field--full">
+                  <textarea
+                    name="trainingPreferenceFreeText"
+                    value={formData.trainingPreferenceFreeText}
+                    onChange={handleChange}
+                    placeholder="Ex.: Prefiro exercícios compostos, não gosto de máquinas, curto treinos intensos com pouco descanso..."
                   />
                 </Field>
                 ) : null}

@@ -10,10 +10,11 @@ export const navigationItems = [
 ];
 
 export const mobileNavigationItems = [
-  { shortLabel: "Inicio",    path: ROUTE_PATHS.dashboard, iconKey: "dashboard" },
+  { shortLabel: "Início",    path: ROUTE_PATHS.dashboard, iconKey: "dashboard" },
   { shortLabel: "Treinos",   path: ROUTE_PATHS.workouts,  iconKey: "workouts"  },
   { shortLabel: "Check-in",  path: ROUTE_PATHS.checkins,  iconKey: "checkin"   },
   { shortLabel: "Dietas",    path: ROUTE_PATHS.diets,     iconKey: "diet"      },
+  { shortLabel: "Personal",  path: ROUTE_PATHS.chat,      iconKey: "chat"      },
   { shortLabel: "Ajustes",   path: ROUTE_PATHS.settings,  iconKey: "settings"  },
 ];
 

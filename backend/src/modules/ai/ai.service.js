@@ -509,7 +509,7 @@ Nao inclua texto fora do JSON.
   };
 }
 
-export async function generateAiWorkoutPlan(accountId, { goal, persist = false, trainingAvailableDays = "", trainingExperience = "", trainingAge = "", availableMinutes = "", trainingPreference = "", adherenceAdjustedDays = 0 } = {}) {
+export async function generateAiWorkoutPlan(accountId, { goal, persist = false, trainingAvailableDays = "", trainingExperience = "", trainingAge = "", availableMinutes = "", trainingPreference = "", trainingPreferenceFreeText = "", muscleGroupCombinations = "", adherenceAdjustedDays = 0 } = {}) {
   const instructions = `
 Gere um plano de treino personalizado em JSON valido para o Shape Certo.
 
@@ -744,6 +744,12 @@ REGRAS FINAIS INEGOCIAVEIS:
           ].join(" ")
         : adherenceAdjustedDays === 0
         ? "Distribua os dias de treino de forma equilibrada, nunca concentrando todos os descansos no final da semana."
+        : "",
+      muscleGroupCombinations
+        ? `COMBINACOES DE GRUPOS MUSCULARES PREFERIDAS PELO USUARIO: ${muscleGroupCombinations.split(",").join(", ")}. Priorize essas combinacoes ao definir a divisao dos treinos, respeitando o split escolhido.`
+        : "",
+      trainingPreferenceFreeText
+        ? `PREFERENCIAS LIVRES DE TREINO (texto do usuario — use como contexto de personalizacao): "${trainingPreferenceFreeText}"`
         : "",
       `Consulte equipamentos disponiveis (preferences.gymEquipment), sinais de fadiga/sono/performance do ultimo checkin e historico de sessoes.`,
     ].filter(Boolean).join(" "),

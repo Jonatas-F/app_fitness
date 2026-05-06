@@ -92,6 +92,47 @@
   margin: 0;
 }
 
+/* ── Muscle group combination picker ─────────────────────────────────────── */
+.checkin-muscle-combo-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.checkin-muscle-combo-btn {
+  padding: 7px 13px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.82rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.checkin-muscle-combo-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #fff;
+}
+
+.checkin-muscle-combo-btn.is-active {
+  background: rgba(229, 9, 20, 0.18);
+  border-color: rgba(229, 9, 20, 0.65);
+  color: #fff;
+  font-weight: 600;
+}
+
+@media (max-width: 430px) {
+  .checkin-muscle-combo-btn {
+    font-size: 0.76rem;
+    padding: 6px 10px;
+  }
+}
+
 .checkins-page button:focus-visible,
 .checkins-page input:focus-visible,
 .checkins-page select:focus-visible,
