@@ -212,6 +212,68 @@ function QueryResult({ result }) {
   );
 }
 
+function UserActionsPanel() {
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState(null); // { type: 'success'|'error', text }
+
+  async function handleResetOnboarding(e) {
+    e.preventDefault();
+    const trimmed = email.trim();
+    if (!trimmed) return;
+    setLoading(true);
+    setMessage(null);
+    try {
+      const result = await apiRequest(apiEndpoints.adminResetOnboarding, {
+        method: "POST",
+        body: JSON.stringify({ email: trimmed }),
+      });
+      setMessage({
+        type: "success",
+        text: `Onboarding resetado para ${result.email}. Na próxima vez que o usuário logar, o modal será exibido novamente.`,
+      });
+      setEmail("");
+    } catch (e) {
+      setMessage({ type: "error", text: e.message || "Erro ao resetar onboarding." });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="admin-actions">
+      <section className="admin-actions__section">
+        <h3 className="admin-actions__title">🔄 Resetar Onboarding</h3>
+        <p className="admin-actions__desc">
+          O usuário verá o modal de primeiro acesso novamente no próximo login.
+        </p>
+        <form className="admin-actions__form" onSubmit={handleResetOnboarding}>
+          <input
+            className="admin-actions__input"
+            type="email"
+            placeholder="E-mail do usuário"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <button
+            type="submit"
+            className="admin-actions__btn"
+            disabled={loading || !email.trim()}
+          >
+            {loading ? "Resetando…" : "Resetar"}
+          </button>
+        </form>
+        {message && (
+          <p className={`admin-actions__msg admin-actions__msg--${message.type}`}>
+            {message.text}
+          </p>
+        )}
+      </section>
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function AdminPage() {
@@ -230,7 +292,7 @@ export default function AdminPage() {
   const [page, setPage] = useState(1);
   const [loadingTables, setLoadingTables] = useState(true);
   const [loadingData, setLoadingData] = useState(false);
-  const [activeTab, setActiveTab] = useState("tables"); // 'tables' | 'query'
+  const [activeTab, setActiveTab] = useState("tables"); // 'tables' | 'query' | 'actions'
   const [queryResult, setQueryResult] = useState(null);
 
   // Carrega lista de tabelas
@@ -298,6 +360,13 @@ export default function AdminPage() {
           >
             SQL Console
           </button>
+          <button
+            type="button"
+            className={`admin-tab ${activeTab === "actions" ? "is-active" : ""}`}
+            onClick={() => setActiveTab("actions")}
+          >
+            Ações
+          </button>
         </div>
       </header>
 
@@ -331,6 +400,8 @@ export default function AdminPage() {
           <QueryResult result={queryResult} />
         </div>
       )}
+
+      {activeTab === "actions" && <UserActionsPanel />}
     </div>
   );
 }

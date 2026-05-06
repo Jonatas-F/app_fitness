@@ -1,4 +1,4 @@
-import { listTables, getTableData, runQuery } from "./admin.service.js";
+import { listTables, getTableData, runQuery, resetUserOnboarding } from "./admin.service.js";
 
 export async function handleListTables(req, res, next) {
   try {
@@ -15,6 +15,17 @@ export async function handleGetTableData(req, res, next) {
     const { page = 1, limit = 50, sort, order = "desc" } = req.query;
     const data = await getTableData(tableName, { page, limit, sort, order });
     res.json(data);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function handleResetUserOnboarding(req, res, next) {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "Informe o email." });
+    const result = await resetUserOnboarding(email);
+    res.json({ ok: true, ...result });
   } catch (error) {
     next(error);
   }

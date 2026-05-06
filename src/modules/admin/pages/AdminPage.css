@@ -401,3 +401,92 @@
   background: rgba(255,255,255,0.15);
   border-radius: 4px;
 }
+
+/* Actions Panel */
+.admin-actions {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 520px;
+}
+
+.admin-actions__section {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-actions__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text, #e2e8f0);
+  margin: 0;
+}
+
+.admin-actions__desc {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.45);
+  margin: 0;
+}
+
+.admin-actions__form {
+  display: flex;
+  gap: 10px;
+}
+
+.admin-actions__input {
+  flex: 1;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--color-text, #e2e8f0);
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.admin-actions__input:focus {
+  border-color: var(--color-accent, #7c6aff);
+}
+
+.admin-actions__btn {
+  background: var(--color-accent, #7c6aff);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+.admin-actions__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.admin-actions__msg {
+  font-size: 0.85rem;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.admin-actions__msg--success {
+  background: rgba(72, 199, 142, 0.12);
+  color: #48c78e;
+  border: 1px solid rgba(72, 199, 142, 0.25);
+}
+
+.admin-actions__msg--error {
+  background: rgba(255, 99, 99, 0.12);
+  color: #ff6363;
+  border: 1px solid rgba(255, 99, 99, 0.25);
+}

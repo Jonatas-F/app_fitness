@@ -31,4 +31,5 @@ export const apiEndpoints = {
   adminTables: "/admin/tables",
   adminTableData: (name) => `/admin/tables/${name}`,
   adminQuery: "/admin/query",
+  adminResetOnboarding: "/admin/reset-onboarding",
 };

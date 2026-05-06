@@ -92,6 +92,7 @@ import {
   handleListTables,
   handleGetTableData,
   handleRunQuery,
+  handleResetUserOnboarding,
 } from "./modules/admin/admin.controller.js";
 import { requireAdmin } from "./modules/admin/admin.service.js";
 
@@ -269,9 +270,10 @@ app.post("/ai/workout", requireAuth, aiLimiter, validate(aiGenerateSchema), hand
 app.get( "/chat/history", requireAuth, handleLoadChatHistory);
 
 // ── Admin (acesso restrito ao admin) ─────────────────────────────────────────
-app.get( "/admin/tables",             requireAuth, requireAdmin, handleListTables);
-app.get( "/admin/tables/:tableName",  requireAuth, requireAdmin, handleGetTableData);
-app.post("/admin/query",              requireAuth, requireAdmin, handleRunQuery);
+app.get( "/admin/tables",                  requireAuth, requireAdmin, handleListTables);
+app.get( "/admin/tables/:tableName",       requireAuth, requireAdmin, handleGetTableData);
+app.post("/admin/query",                   requireAuth, requireAdmin, handleRunQuery);
+app.post("/admin/reset-onboarding",        requireAuth, requireAdmin, handleResetUserOnboarding);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

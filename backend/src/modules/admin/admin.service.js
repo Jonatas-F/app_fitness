@@ -76,6 +76,24 @@ export async function getTableData(tableName, { page = 1, limit = 50, sort, orde
   };
 }
 
+/** Marca o onboarding de um usuário para ser resetado no próximo login */
+export async function resetUserOnboarding(email) {
+  const normalized = String(email || "").trim().toLowerCase();
+  const result = await pool.query(
+    `update accounts
+     set reset_onboarding_at = current_timestamp, updated_at = current_timestamp
+     where lower(email) = $1
+     returning id, email, reset_onboarding_at;`,
+    [normalized]
+  );
+  if (result.rowCount === 0) {
+    const err = new Error(`Conta não encontrada: ${email}`);
+    err.status = 404;
+    throw err;
+  }
+  return result.rows[0];
+}
+
 /** Executa uma query SQL arbitrária (somente SELECT) */
 export async function runQuery(sql) {
   const clean = sql.trim().toLowerCase();

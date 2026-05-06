@@ -29,6 +29,14 @@ export function useOnboarding() {
       setOnboardingDone(true);
       return;
     }
+    // Se o admin pediu reset de onboarding para este usuário, limpa as flags
+    if (user.reset_onboarding === true) {
+      localStorage.removeItem(FIRST_CHECKIN_KEY);
+      localStorage.removeItem(ONBOARDING_DONE_KEY);
+      setFirstCheckinDone(false);
+      setOnboardingDone(false);
+      return;
+    }
     // Login: relê as flags — usuário novo não terá nada salvo
     const { firstCheckinDone: f, onboardingDone: o } = readFromStorage();
     setFirstCheckinDone(f);
