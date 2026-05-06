@@ -14,7 +14,7 @@ const plusModel          = process.env.OPENAI_PLUS_MODEL       || structuredMode
 
 function getModelForPlan(planId) {
   const p = String(planId || "").toLowerCase();
-  if (p === "pro" || p === "avancado" || p === "partner") return proModel;
+  if (p === "pro" || p === "avancado" || p === "partner" || p === "admin") return proModel;
   if (p === "intermediario")                               return plusModel;
   return structuredModel;
 }

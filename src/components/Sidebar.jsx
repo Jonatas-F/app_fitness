@@ -9,7 +9,7 @@ import { ROUTE_PATHS } from "../routes/routePaths";
 
 const ADMIN_EMAIL = "jonatas.freire.prof@gmail.com";
 const OVERRIDE_KEY = "shapeCertoAdminPlanOverride";
-const PLAN_LABELS = { basico: "Básico", intermediario: "Intermediário", pro: "Pro", partner: "Parceiro" };
+const PLAN_LABELS = { basico: "Básico", intermediario: "Intermediário", pro: "Pro", partner: "Parceiro", admin: "ADM" };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

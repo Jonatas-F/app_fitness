@@ -15,6 +15,8 @@ const plans = {
   avancado:      { name: "Pro",           monthlyPrice: 99.90, tokenLimit: 4_500_000 },
   // Parceiros — acesso Pro gratuito
   partner:       { name: "Parceiro",      monthlyPrice: 0,     tokenLimit: 4_500_000 },
+  // Administrador — acesso Pro, sem custo
+  admin:         { name: "Admin",         monthlyPrice: 0,     tokenLimit: 4_500_000 },
 };
 
 /** Normaliza 'avancado' → 'pro' para novas gravações no banco. */
@@ -142,19 +144,19 @@ export async function ensureLocalBillingTables() {
         DROP CONSTRAINT IF EXISTS subscriptions_plan_check;
       ALTER TABLE subscriptions
         ADD CONSTRAINT subscriptions_plan_check
-          CHECK (plan IN ('basico','intermediario','avancado','pro','partner'));
+          CHECK (plan IN ('basico','intermediario','avancado','pro','partner','admin'));
 
       ALTER TABLE plan_change_acceptances
         DROP CONSTRAINT IF EXISTS plan_change_acceptances_previous_plan_check;
       ALTER TABLE plan_change_acceptances
         ADD CONSTRAINT plan_change_acceptances_previous_plan_check
-          CHECK (previous_plan IN ('basico','intermediario','avancado','pro','partner'));
+          CHECK (previous_plan IN ('basico','intermediario','avancado','pro','partner','admin'));
 
       ALTER TABLE plan_change_acceptances
         DROP CONSTRAINT IF EXISTS plan_change_acceptances_next_plan_check;
       ALTER TABLE plan_change_acceptances
         ADD CONSTRAINT plan_change_acceptances_next_plan_check
-          CHECK (next_plan IN ('basico','intermediario','avancado','pro','partner'));
+          CHECK (next_plan IN ('basico','intermediario','avancado','pro','partner','admin'));
     EXCEPTION WHEN OTHERS THEN NULL;
     END $$;
   `);
@@ -238,6 +240,58 @@ export async function provisionPartnerSubscriptions() {
     );
 
     console.log(`[partners] Provisioned partner subscription for ${email} (account ${account_id})`);
+  }
+}
+
+const ADMIN_EMAILS = ["jonatas.freire.prof@gmail.com"];
+
+/**
+ * Garante que a conta do administrador tem uma subscription ativa no plano 'admin'
+ * (mesmos limites do Pro, $0). Chamada no boot após ensureLocalBillingTables().
+ */
+export async function provisionAdminSubscriptions() {
+  const adminPlan = plans.admin;
+
+  for (const email of ADMIN_EMAILS) {
+    const result = await pool.query(
+      `select id from accounts where lower(email) = lower($1) limit 1;`,
+      [email]
+    );
+    if (!result.rows[0]) continue;
+
+    const account_id = result.rows[0].id;
+    const gatewayId  = `admin:${account_id}`;
+
+    await pool.query(
+      `
+        insert into subscriptions (
+          account_id, plan, billing_cycle, status, token_limit, token_balance,
+          current_period_start, current_period_end, gateway_subscription_id
+        )
+        values ($1, 'admin', 'monthly', 'active', $2, $2,
+                date_trunc('month', now()),
+                date_trunc('month', now()) + interval '1 month',
+                $3)
+        on conflict (gateway_subscription_id)
+        do update set
+          plan         = 'admin',
+          status       = 'active',
+          token_limit  = $2,
+          current_period_start = date_trunc('month', now()),
+          current_period_end   = date_trunc('month', now()) + interval '1 month',
+          updated_at   = current_timestamp;
+      `,
+      [account_id, adminPlan.tokenLimit, gatewayId]
+    );
+
+    await pool.query(
+      `update accounts
+       set plan_type = 'admin', is_admin = true, updated_at = current_timestamp
+       where id = $1;`,
+      [account_id]
+    );
+
+    console.log(`[admin] Provisioned admin subscription for ${email} (account ${account_id})`);
   }
 }
 
