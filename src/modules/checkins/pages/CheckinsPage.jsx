@@ -40,13 +40,14 @@ import AiGeneratingScreen from "../../../components/shared/AiGeneratingScreen";
 import "./CheckinsPage.css";
 
 const goalOptions = [
-  { value: "hipertrofia", label: "Hipertrofia" },
+  { value: "hipertrofia",  label: "Hipertrofia — ganho de massa muscular" },
+  { value: "powerlifting", label: "Powerlifting / Força máxima" },
   { value: "emagrecimento", label: "Emagrecimento" },
   { value: "recomposicao", label: "Recomposição corporal" },
-  { value: "cutting", label: "Cutting" },
-  { value: "condicionamento", label: "Condicionamento" },
-  { value: "performance", label: "Esporte específico" },
-  { value: "saude", label: "Saúde geral" },
+  { value: "cutting",      label: "Cutting (definição muscular)" },
+  { value: "condicionamento", label: "Condicionamento físico" },
+  { value: "performance",  label: "Esporte específico" },
+  { value: "saude",        label: "Saúde geral" },
 ];
 
 const experienceOptions = [
@@ -959,6 +960,7 @@ export default function CheckinsPage() {
   const [aiTrainingExp, setAiTrainingExp] = useState("");
   const [aiTrainingAge, setAiTrainingAge] = useState("");
   const [aiAvailableMinutes, setAiAvailableMinutes] = useState("");
+  const [aiTrainingPreference, setAiTrainingPreference] = useState("");
   const cancelButtonRef = useRef(null);
   const [isHydratingCheckins, setIsHydratingCheckins] = useState(true);
 
@@ -1196,6 +1198,7 @@ export default function CheckinsPage() {
     setAiTrainingExp(payload.trainingExperience || "");
     setAiTrainingAge(payload.trainingAge || "");
     setAiAvailableMinutes(payload.availableMinutes || "");
+    setAiTrainingPreference(payload.trainingPreference || "");
 
     setFormData(makePrefilledCheckinForm(updated, activeCadence));
     setPrefilledSnapshot(makePrefilledSnapshot(updated, activeCadence));
@@ -1253,6 +1256,7 @@ export default function CheckinsPage() {
           trainingExperience: aiTrainingExp,
           trainingAge: aiTrainingAge,
           availableMinutes: aiAvailableMinutes,
+          trainingPreference: aiTrainingPreference,
         }))
           .then(async (res) => {
             if (res?.protocol) await hydrateWorkoutExecutionFromApi();
@@ -1294,6 +1298,7 @@ export default function CheckinsPage() {
         trainingExperience: aiTrainingExp,
         trainingAge: aiTrainingAge,
         availableMinutes: aiAvailableMinutes,
+        trainingPreference: aiTrainingPreference,
       }));
       if (res?.protocol) await hydrateWorkoutExecutionFromApi();
       setCiWorkoutStatus("ok");

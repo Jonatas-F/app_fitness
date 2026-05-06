@@ -484,7 +484,7 @@ Nao inclua texto fora do JSON.
   };
 }
 
-export async function generateAiWorkoutPlan(accountId, { goal, persist = false, trainingAvailableDays = "", trainingExperience = "", trainingAge = "", availableMinutes = "" } = {}) {
+export async function generateAiWorkoutPlan(accountId, { goal, persist = false, trainingAvailableDays = "", trainingExperience = "", trainingAge = "", availableMinutes = "", trainingPreference = "" } = {}) {
   const instructions = `
 Gere um plano de treino personalizado em JSON valido para o Shape Certo.
 
@@ -496,55 +496,111 @@ Se "trainingAvailableDays" for fornecido na requisicao (campo nao vazio):
 === FIM PRIORIDADE 1 ===
 
 === PRIORIDADE ABSOLUTA 2 — VOLUME POR NIVEL ===
-O numero de exercicios por sessao NAO e opcional — e obrigatorio calibrar pelo nivel:
+O numero de exercicios por sessao NAO e opcional:
 
-NIVEL INICIANTE (nunca treinou ou menos de 6 meses):
+NIVEL INICIANTE (nunca treinou ou menos de 6 meses — FASE DE ADAPTACAO):
   - 4 a 5 exercicios por dia de treino ativo
-  - 3 series por exercicio
-  - Compostos + 1-2 isolados por sessao
-  - Preferir Full Body ou Upper/Lower
+  - 3 series por exercicio, RPE 7 (3 reps na reserva)
+  - Foco em aprender o movimento correto — compostos basicos + 1-2 isolados
+  - Preferir Full Body 3x/semana ou Upper/Lower
+  - NUNCA usar tecnicas avancadas (drop-set, rest-pause, cluster) para iniciantes
+  - Volume semanal: 10-12 series por grupo muscular
 
 NIVEL INTERMEDIARIO (6 meses a 5 anos de treino):
   - MINIMO 5 exercicios, IDEAL 6 a 7 exercicios por dia de treino ativo
   - 3 a 4 series por exercicio
-  - Compostos multiarticulares + exercicios complementares + 2-3 isolados por sessao
-  - Splits ABC, ABCD ou Upper/Lower dependendo da frequencia semanal
+  - Compostos multiarticulares + complementares + 2-3 isolados
+  - Volume semanal: 14-20 series por grupo muscular
 
 NIVEL AVANCADO (mais de 5 anos de treino):
   - MINIMO 6 exercicios, IDEAL 7 a 8 exercicios por dia de treino ativo
   - 4 a 5 series nos compostos, 3 a 4 nos isolados
-  - Variedade de angulos, tecnicas avancadas (drop-set, rest-pause no aiFeedback)
-  - Splits ABCDE, Push/Pull/Legs
+  - Variedade de angulos, tecnicas avancadas mencionadas no aiFeedback
+  - Volume semanal: 18-25 series por grupo muscular
 
 ATENCAO: gerar 3 ou 4 exercicios para um intermediario ou avancado e INCORRETO.
-Respeite os minimos acima independente de qualquer outro parametro.
 === FIM PRIORIDADE 2 ===
 
+=== SELECAO INTELIGENTE DO SPLIT ===
+Se "trainingPreference" for informado e diferente de vazio, USE ESSA PREFERENCIA.
+Caso contrario, escolha o split ideal seguindo esta matriz:
+
+MATRIZ DE SPLIT (dias x nivel):
+  2 dias   → Full Body A/B (todos os niveis)
+  3 dias, iniciante  → Full Body A/B/C
+  3 dias, intermediario → ABC (Peito+Tri / Costas+Bi / Pernas+Ombros) ou PPL
+  3 dias, avancado   → PPL (Push/Pull/Legs)
+  4 dias, iniciante  → Upper/Lower (A/B/A/B)
+  4 dias, intermediario → Upper/Lower ou ABCD
+  4 dias, avancado   → ABCD ou PPL + Upper
+  5 dias, iniciante  → Upper/Lower 2x + Full Body (nao recomendado; oriente a descansar mais)
+  5 dias, intermediario → ABCDE ou PPL+Upper+Lower
+  5 dias, avancado   → ABCDE com especializacao ou PPL x1.5
+  6 dias   → ABCDE + cardio/mobilidade ou PPL x2 (avancados apenas)
+
+AJUSTES OBRIGATORIOS POR OBJETIVO:
+  - emagrecimento / condicionamento: prefira Full Body ou Upper/Lower independente do nivel
+  - powerlifting: use Periodizacao Powerlifting (ver secao abaixo)
+  - recomposicao: Upper/Lower ou ABC
+  - hipertrofia avancada: ABCDE com enfase em volume por grupo
+
+AGRUPAMENTOS POSSIVEIS PARA ABC e variantes:
+  Opcao Classica : A=Peito+Triceps / B=Costas+Biceps / C=Pernas+Ombros
+  Opcao PPL      : Push=Peito+Ombro+Tri / Pull=Costas+Bi+Rear-delt / Legs=Quadriceps+Posterior+Gluteos
+  Opcao ABCD     : A=Peito+Tri / B=Costas+Bi / C=Pernas Anterior(Quadriceps) / D=Posterior+Gluteos+Ombros
+  Opcao ABCDE    : A=Peito / B=Costas / C=Ombros+Trapezio / D=Pernas Anterior / E=Pernas Post+Gluteos (Bi+Tri nas sessoes de Peito/Costas)
+  Opcao Upper/Lower: Upper A=Peito+Costas / Upper B=Ombros+Braco / Lower A=Quad+Gluteos / Lower B=Posterior+Panturrilha
+
+Nunca coloque biceps no dia anterior a costas.
+Nunca coloque triceps no dia anterior a peito.
+=== FIM SELECAO DE SPLIT ===
+
+=== POWERLIFTING / FORCA MAXIMA ===
+Quando objetivo = "powerlifting" OU trainingPreference = "powerlifting_split":
+
+EXERCICIOS PRINCIPAIS OBRIGATORIOS (Big 4):
+  - Agachamento livre (Squat)
+  - Supino reto com barra (Bench Press)
+  - Levantamento terra (Deadlift)
+  - Desenvolvimento militar com barra (Overhead Press)
+
+ESTRUTURA DOS DIAS:
+  3 dias: A=Squat+Terra leve+acessorios / B=Bench+OHP leve+acessorios / C=Terra+Squat leve+acessorios
+  4 dias: A=Squat pesado / B=Bench pesado / C=Terra pesado / D=OHP+acessorios gerais
+  5 dias: A=Squat / B=Bench / C=Terra / D=OHP+Upper aux / E=Acessorios gerais
+
+REP RANGES POWERLIFTING:
+  - Compostos principais (Big 4): 1-5 reps, descanso 3-5 min, RPE 8-9
+  - Auxiliares de forca (Stiff, Agachamento frontal, Supino close-grip): 3-6 reps, descanso 2-3 min
+  - Acessorios de suporte: 6-10 reps, descanso 90-120s
+
+ACESSORIOS OBRIGATORIOS PARA SUPORTE:
+  - Costas/Core: Remada com barra, Pull-up/Pulldown, Core (prancha, remada alta, vacuo)
+  - Acessorios de quadril: Stiff, Avancos, Hip Thrust
+  - Braco para estabilidade: Rosca direta, Extensao de triceps (necessarios para bench)
+  - Face pull e rotacao externa para saude do ombro
+
+NO aiFeedback DOS COMPOSTOS PRINCIPAIS:
+  - Mencione trabalho com percentuais do 1RM (ex: "execute com 75-85% do 1RM")
+  - Mencione progressao linear (adicione 2.5kg a cada sessao bem-sucedida)
+  - Para avancados: mencione ondulacao de carga (DUP — Daily Undulating Periodization)
+=== FIM POWERLIFTING ===
+
 DADOS OBRIGATORIOS A LER NO CONTEXTO:
-1. NIVEL DE EXPERIENCIA: use o valor informado explicitamente na requisicao (campo "trainingExperience"). Se vazio, leia "payload.trainingExperience" do checkin mais recente. Se ainda vazio, use "intermediario" como padrao.
-2. TEMPO DE TREINAMENTO: use "trainingAge" da requisicao para confirmar nivel. Ex: "2-5-anos" confirma intermediario mesmo que nao declarado.
-3. TEMPO DISPONIVEL: use "availableMinutes" da requisicao para ajustar densidade do treino. Se 45min, prefira 5-6 exercicios densos. Se 90min, pode ter 7-8 com mais volume.
-4. EQUIPAMENTOS: leia "preferences.gymEquipment" — use SOMENTE os com "available: true". Se vazio, use equipamentos de academia completa (barra, halteres, maquinas de musculacao, cabo).
-5. SINAIS DE RECUPERACAO: leia fatigueLevel, sleepQuality, trainingPerformance do checkin mais recente:
-   - fatigueLevel >= 4 OU sleepQuality <= 2: reduza 1 serie por exercicio (mas mantenha o numero de exercicios)
+1. NIVEL: use "trainingExperience" da requisicao. Se vazio, leia do checkin. Default: "intermediario".
+2. TEMPO DE TREINO: use "trainingAge" para confirmar nivel.
+3. TEMPO DISPONIVEL: use "availableMinutes". Se 45min → 5-6 exercicios densos. Se 90min → 7-8 com volume.
+4. EQUIPAMENTOS: leia "preferences.gymEquipment" — use SOMENTE os com "available: true". Se vazio, use academia completa.
+5. SINAIS DE RECUPERACAO do checkin mais recente:
+   - fatigueLevel >= 4 OU sleepQuality <= 2: reduza 1 serie por exercicio (mantenha o numero de exercicios)
    - trainingPerformance <= 2: priorize compostos basicos
-6. OBJETIVO: use o objetivo informado na requisicao. Se nao informado, use "goal" do contexto.
-7. HISTORICO: leia "workout.recentSessions" para variar exercicios e nao repetir identicamente.
+6. OBJETIVO: da requisicao ou do contexto.
+7. HISTORICO: leia "workout.recentSessions" para variar e nao repetir identicamente.
+8. PLANO PRO com fotos disponíveis: se "payload.photosAvailable" = "sim" no checkin, mencione no aiFeedback dos compostos como monitorar postura e simetria nas fotos.
 
-DISTRIBUICAO DOS DIAS DE DESCANSO (so aplique quando trainingAvailableDays NAO for informado):
-- 3 dias: SEG/QUA/SEX ou TER/QUI/SAB
-- 4 dias: SEG/TER/QUI/SEX
-- 5 dias: SEG a SEX
-- Nunca concentre todos os descansos no final da semana
-
-VOLUME SEMANAL POR GRUPO MUSCULAR (Krieger 2010):
-- Iniciante: 10-12 series/semana
-- Intermediario: 14-20 series/semana
-- Avancado: 18-25 series/semana
-
-REP RANGES POR OBJETIVO (Schoenfeld 2017):
+REP RANGES POR OBJETIVO:
 - Hipertrofia: 6-12 reps, descanso 60-90s
-- Forca: 3-6 reps, descanso 120-180s
+- Powerlifting/Forca: 1-5 reps principais, descanso 180-300s
 - Emagrecimento/cutting: 12-15 reps, descanso 30-60s
 - Condicionamento/saude: 12-20 reps, descanso 45-60s
 - Recomposicao: 8-15 reps variados, descanso 60-90s
@@ -553,20 +609,12 @@ ORDEM DOS EXERCICIOS (neurological priority):
 1. Compostos pesados (supino, agachamento, terra, puxada, remada, desenvolvimento)
 2. Compostos auxiliares ou maquinas pesadas
 3. Exercicios isolados (curl, extensao, elevacao lateral, crucifixo)
-Nunca coloque biceps no dia anterior a costas.
-
-SPLITS RECOMENDADOS:
-- 2 dias: Full Body A/B
-- 3 dias: ABC (Peito+Tri / Costas+Bi / Pernas+Ombros)
-- 4 dias: Upper A / Lower A / Upper B / Lower B  ou  ABCD
-- 5 dias: Push / Pull / Legs / Upper / Lower  ou  ABCDE
-- Emagrecimento: prefira Full Body ou Upper/Lower
 
 ESTRUTURA JSON OBRIGATORIA (inclua TODOS os 7 dias da semana):
 {
   "weeklyTrainingDays": <numero inteiro de dias ativos>,
   "trainingShift": "morning" | "afternoon" | "evening",
-  "split": "<nome do split>",
+  "split": "<nome descritivo do split escolhido>",
   "updatedAt": "<ISO timestamp>",
   "workouts": [
     {
@@ -580,11 +628,11 @@ ESTRUTURA JSON OBRIGATORIA (inclua TODOS os 7 dias da semana):
           "id": "<ex-001, ex-002, etc>",
           "name": "<nome do exercicio em portugues>",
           "suggestedSets": <numero inteiro>,
-          "suggestedReps": "<ex: 8-12 ou 15>",
+          "suggestedReps": "<ex: 8-12 ou 3-5>",
           "restSeconds": <segundos inteiro>,
           "executionVideoUrl": "",
           "userVideoFileName": "",
-          "aiFeedback": "<dica personalizada com foco no nivel e objetivo do usuario — mencione angulo, grip, tecnica ou variacao relevante>",
+          "aiFeedback": "<dica personalizada — tecnica, angulo, grip, percentual 1RM para powerlifting, ou tecnica avancada para avancados>",
           "notes": "",
           "sets": [{ "enabled": true, "weight": 0, "reps": 0 }]
         }
@@ -597,6 +645,7 @@ REGRAS FINAIS INEGOCIAVEIS:
 - Dias de descanso: exercises: [] e focus: "Descanso e recuperacao"
 - Intermediario: minimo 5, ideal 6-7 exercicios por dia ativo
 - Avancado: minimo 6, ideal 7-8 exercicios por dia ativo
+- Powerlifting: Big 4 obrigatorios + acessorios de suporte
 - Nao inclua texto fora do JSON
 `.trim();
 
@@ -609,13 +658,28 @@ REGRAS FINAIS INEGOCIAVEIS:
 
   // Monta linha descritiva do nivel para reforcar no input
   const expLabel = {
-    "iniciante": "INICIANTE (nunca treinou ou menos de 6 meses)",
-    "intermediario": "INTERMEDIARIO (6 meses a 5 anos de treino — minimo 5 exercicios por sessao)",
-    "avancado": "AVANCADO (mais de 5 anos de treino — minimo 6 exercicios por sessao)",
+    "iniciante":     "INICIANTE (nunca treinou ou menos de 6 meses — fase de adaptacao, 4-5 exercicios/sessao)",
+    "intermediario": "INTERMEDIARIO (6 meses a 5 anos — minimo 5 exercicios/sessao, ideal 6-7)",
+    "avancado":      "AVANCADO (mais de 5 anos — minimo 6 exercicios/sessao, ideal 7-8)",
   }[trainingExperience] || `"${trainingExperience || "nao informado"}"`;
 
   const trainingAgeLabel = trainingAge ? ` Tempo de treino declarado: ${trainingAge}.` : "";
   const minutesLabel = availableMinutes ? ` Duracao da sessao disponivel: ${availableMinutes} minutos.` : "";
+
+  const splitPrefLabels = {
+    "full_body":         "Full Body (treino global em cada sessao)",
+    "upper_lower":       "Upper / Lower (divisao superior e inferior)",
+    "ppl":               "Push / Pull / Legs",
+    "abc":               "ABC (Peito+Tri / Costas+Bi / Pernas+Ombros)",
+    "abcd":              "ABCD (4 divisoes)",
+    "abcde":             "ABCDE (5 divisoes)",
+    "powerlifting_split":"Periodizacao Powerlifting (Squat/Bench/Deadlift/OHP)",
+  };
+  const prefLabel = trainingPreference
+    ? `PREFERENCIA DE SPLIT DO USUARIO: ${splitPrefLabels[trainingPreference] || trainingPreference}. Respeite esta preferencia ao escolher o split.`
+    : "Escolha o split ideal com base na matriz de selecao (nivel + dias + objetivo).";
+
+  const isPowelifting = goal === "powerlifting" || trainingPreference === "powerlifting_split";
 
   const result = await callOpenAi({
     accountId,
@@ -625,9 +689,9 @@ REGRAS FINAIS INEGOCIAVEIS:
     instructions,
     input: [
       `Gere um protocolo de treino completo e atualizado.`,
-      goal ? `Objetivo principal: ${goal}.` : "",
+      goal ? `Objetivo principal: ${goal}${isPowelifting ? " — inclua obrigatoriamente os Big 4 (Agachamento, Supino, Terra, Desenvolvimento)" : ""}.` : "",
       `NIVEL DE EXPERIENCIA DO USUARIO: ${expLabel}.${trainingAgeLabel}${minutesLabel}`,
-      `LEMBRE: para nivel intermediario gere MINIMO 5 exercicios por dia ativo (ideal 6-7). Para avancado MINIMO 6 (ideal 7-8). Iniciante 4-5.`,
+      prefLabel,
       trainingDayCount > 0
         ? [
             `DIAS DE TREINO SELECIONADOS PELO USUARIO (${trainingDayCount} dias — OBRIGATORIO):`,

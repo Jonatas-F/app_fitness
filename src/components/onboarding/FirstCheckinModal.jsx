@@ -61,7 +61,7 @@ const STEPS = {
   ],
   intermediario: [
     { id: "basics",   title: "Seus dados básicos",     subtitle: "Informações essenciais para personalizar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
-    { id: "profile",  title: "Perfil de treino",        subtitle: "Experiência, tempo disponível e limitações físicas.", fields: ["trainingExperience","trainingAge","availableMinutes","injuries"] },
+    { id: "profile",  title: "Perfil de treino",        subtitle: "Experiência, tempo disponível e preferências de divisão.", fields: ["trainingExperience","trainingAge","availableMinutes","trainingPreference","injuries"] },
     { id: "state",    title: "Seu estado atual",         subtitle: "Como você está hoje e quais dias pode treinar.", fields: ["energy","sleepQuality","trainingAvailableDays"] },
     NUTRITION_STEP,
     BODY_INTER_STEP,
@@ -70,7 +70,7 @@ const STEPS = {
   ],
   pro: [
     { id: "basics",    title: "Seus dados básicos",      subtitle: "Informações essenciais para personalizar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
-    { id: "profile",   title: "Perfil de treino",         subtitle: "Experiência, tempo disponível e limitações físicas.", fields: ["trainingExperience","trainingAge","availableMinutes","injuries"] },
+    { id: "profile",   title: "Perfil de treino",         subtitle: "Experiência, tempo disponível e preferências de divisão.", fields: ["trainingExperience","trainingAge","availableMinutes","trainingPreference","injuries"] },
     { id: "state",     title: "Seu estado atual",          subtitle: "Sinais de recuperação e disponibilidade semanal.", fields: ["energy","sleepQuality","fatigueLevel","trainingPerformance","trainingAvailableDays"] },
     { id: "nutrition", title: "Alimentação",               subtitle: "A IA usa essas informações para criar um plano alimentar preciso.", fields: ["mealsPerDay","dietaryRestrictions","foodPreferences"], optional: true },
     BODY_PRO_STEP,
@@ -87,7 +87,15 @@ const WEEK_DAYS = [
 
 const FIELD_DEFS = {
   goal:               { label: "Objetivo principal", type: "select", required: true,
-                        options: [["hipertrofia","Hipertrofia"],["emagrecimento","Emagrecimento"],["recomposicao","Recomposição corporal"],["cutting","Cutting"],["condicionamento","Condicionamento"],["saude","Saúde geral"]] },
+                        options: [
+                          ["hipertrofia","Hipertrofia — ganho de massa muscular"],
+                          ["powerlifting","Powerlifting / Força máxima"],
+                          ["emagrecimento","Emagrecimento"],
+                          ["recomposicao","Recomposição corporal"],
+                          ["cutting","Cutting (definição muscular)"],
+                          ["condicionamento","Condicionamento físico"],
+                          ["saude","Saúde geral"],
+                        ] },
   sex:                { label: "Sexo biológico",     type: "select", required: true,
                         options: [["","Selecione"],["masculino","Masculino"],["feminino","Feminino"]] },
   age:                { label: "Idade",              type: "text",   required: true, placeholder: "Ex: 28" },
@@ -101,6 +109,18 @@ const FIELD_DEFS = {
                         options: [["","Selecione"],["nunca","Nunca treinou"],["menos-6-meses","Menos de 6 meses"],["6-12-meses","6 a 12 meses"],["1-2-anos","1 a 2 anos"],["2-5-anos","2 a 5 anos"],["mais-5-anos","Mais de 5 anos"]] },
   availableMinutes:   { label: "Tempo por sessão", type: "select", required: false,
                         options: [["","Selecione"],["30","30 min"],["45","45 min"],["60","60 min"],["75","75 min"],["90","90 min"],["120","120 min ou mais"]] },
+  trainingPreference: { label: "Preferência de divisão de treino", type: "select", required: false,
+                        options: [
+                          ["","Deixar a IA decidir o melhor split (recomendado)"],
+                          ["full_body","Full Body — treino global em cada sessão"],
+                          ["upper_lower","Upper / Lower — divisão superior e inferior"],
+                          ["ppl","Push / Pull / Legs"],
+                          ["abc","ABC — por grupo muscular (Peito+Tri / Costas+Bi / Pernas+Ombros)"],
+                          ["abcd","ABCD — 4 divisões"],
+                          ["abcde","ABCDE — 5 divisões"],
+                          ["powerlifting_split","Periodização Powerlifting (Squat / Bench / Deadlift)"],
+                        ],
+                        hint: "Opcional — se deixar em branco, a IA escolhe o split ideal para seu objetivo e disponibilidade" },
   injuries:           { label: "Lesões ou limitações", type: "textarea", required: false,
                         placeholder: "Ex: dor no joelho, hérnia L4-L5", hint: "Deixe em branco se não tiver" },
   energy:             { label: "Energia hoje (1–10)", type: "select", required: false,
@@ -169,11 +189,12 @@ export default function FirstCheckinModal({ planId, onComplete }) {
   const [dietError, setDietError]         = useState(null);
 
   // form snapshot para uso nos retries
-  const [savedGoal, setSavedGoal]                           = useState("");
-  const [savedTrainingDays, setSavedTrainingDays]           = useState("");
-  const [savedTrainingExp, setSavedTrainingExp]             = useState("");
-  const [savedTrainingAge, setSavedTrainingAge]             = useState("");
-  const [savedAvailableMinutes, setSavedAvailableMinutes]   = useState("");
+  const [savedGoal, setSavedGoal]                               = useState("");
+  const [savedTrainingDays, setSavedTrainingDays]               = useState("");
+  const [savedTrainingExp, setSavedTrainingExp]                 = useState("");
+  const [savedTrainingAge, setSavedTrainingAge]                 = useState("");
+  const [savedAvailableMinutes, setSavedAvailableMinutes]       = useState("");
+  const [savedTrainingPreference, setSavedTrainingPreference]   = useState("");
 
   const currentStep = steps[step];
   const isLast  = step === steps.length - 1;
@@ -216,16 +237,18 @@ export default function FirstCheckinModal({ planId, onComplete }) {
       }));
 
       // 3 — Salva snapshot dos dados para usar nos retries
-      const goal                = form.goal || "";
+      const goal                  = form.goal || "";
       const trainingAvailableDays = form.trainingAvailableDays || "";
-      const trainingExperience  = form.trainingExperience || "";
-      const trainingAge         = form.trainingAge || "";
-      const availableMinutes    = form.availableMinutes || "";
+      const trainingExperience    = form.trainingExperience || "";
+      const trainingAge           = form.trainingAge || "";
+      const availableMinutes      = form.availableMinutes || "";
+      const trainingPreference    = form.trainingPreference || "";
       setSavedGoal(goal);
       setSavedTrainingDays(trainingAvailableDays);
       setSavedTrainingExp(trainingExperience);
       setSavedTrainingAge(trainingAge);
       setSavedAvailableMinutes(availableMinutes);
+      setSavedTrainingPreference(trainingPreference);
 
       // 4 — Exibe tela de geração imediatamente
       setWorkoutStatus("generating");
@@ -246,7 +269,7 @@ export default function FirstCheckinModal({ planId, onComplete }) {
       }
 
       await Promise.allSettled([
-        withTimeout(generateWorkoutWithAi({ persist: true, goal, trainingAvailableDays, trainingExperience, trainingAge, availableMinutes }))
+        withTimeout(generateWorkoutWithAi({ persist: true, goal, trainingAvailableDays, trainingExperience, trainingAge, availableMinutes, trainingPreference }))
           .then(() => setWorkoutStatus("ok"))
           .catch(err => { setWorkoutStatus("error"); setWorkoutError(err?.message || "Erro desconhecido."); }),
 
@@ -276,6 +299,7 @@ export default function FirstCheckinModal({ planId, onComplete }) {
         trainingExperience: savedTrainingExp,
         trainingAge: savedTrainingAge,
         availableMinutes: savedAvailableMinutes,
+        trainingPreference: savedTrainingPreference,
       });
       setWorkoutStatus("ok");
     } catch (err) {

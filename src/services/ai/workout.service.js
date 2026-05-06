@@ -8,9 +8,10 @@ export async function generateWorkoutWithAi({
   trainingExperience = "",
   trainingAge = "",
   availableMinutes = "",
+  trainingPreference = "",
 } = {}) {
   return apiRequest(apiEndpoints.aiWorkout, {
     method: "POST",
-    body: JSON.stringify({ goal, persist, trainingAvailableDays, trainingExperience, trainingAge, availableMinutes }),
+    body: JSON.stringify({ goal, persist, trainingAvailableDays, trainingExperience, trainingAge, availableMinutes, trainingPreference }),
   });
 }
