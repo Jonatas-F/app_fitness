@@ -34,7 +34,7 @@ const BODY_INTER_STEP = {
     icon: "💡",
     text: "Não tem acesso a uma balança de bioimpedância agora? Sem problema — clique em Pular etapa. Você pode inserir esses dados no check-in quando tiver, e a IA remonta os protocolos automaticamente.",
   },
-  fields: ["bodyFat", "leanMass", "photosAvailable"],
+  fields: ["bodyFat", "leanMass", "skeletalMuscleMass", "visceralFat", "totalBodyWater", "boneMass", "basalMetabolicRate", "photosAvailable"],
   optional: true,
 };
 
@@ -47,7 +47,7 @@ const BODY_PRO_STEP = {
     icon: "💡",
     text: "Se não tiver acesso à balança de bioimpedância agora, clique em Pular. No próximo check-in você pode inserir — a IA usa esses dados para regenerar os protocolos com ainda mais precisão.",
   },
-  fields: ["bodyFat", "leanMass", "visceralFat", "muscleMass", "photosAvailable"],
+  fields: ["bodyFat", "leanMass", "skeletalMuscleMass", "muscleMass", "visceralFat", "totalBodyWater", "boneMass", "basalMetabolicRate", "metabolicAge", "bmi", "photosAvailable"],
   optional: true,
 };
 
@@ -61,7 +61,7 @@ const STEPS = {
   ],
   intermediario: [
     { id: "basics",   title: "Seus dados básicos",     subtitle: "Informações essenciais para personalizar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
-    { id: "profile",  title: "Perfil de treino",        subtitle: "Experiência, tempo disponível e preferências de divisão.", fields: ["trainingExperience","trainingAge","availableMinutes","trainingPreference","muscleGroupCombinations","trainingPreferenceFreeText","injuries"] },
+    { id: "profile",  title: "Perfil de treino",        subtitle: "Experiência, tempo disponível e preferências de divisão.", fields: ["trainingExperience","trainingAge","availableMinutes","trainingPreference","muscleGroupCombinations","trainingPreferenceFreeText","favoriteExercises","workoutDayProtocol","injuries"] },
     { id: "state",    title: "Seu estado atual",         subtitle: "Como você está hoje e quais dias pode treinar.", fields: ["energy","sleepQuality","trainingAvailableDays"] },
     NUTRITION_STEP,
     BODY_INTER_STEP,
@@ -70,7 +70,7 @@ const STEPS = {
   ],
   pro: [
     { id: "basics",    title: "Seus dados básicos",      subtitle: "Informações essenciais para personalizar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
-    { id: "profile",   title: "Perfil de treino",         subtitle: "Experiência, tempo disponível e preferências de divisão.", fields: ["trainingExperience","trainingAge","availableMinutes","trainingPreference","muscleGroupCombinations","trainingPreferenceFreeText","injuries"] },
+    { id: "profile",   title: "Perfil de treino",         subtitle: "Experiência, tempo disponível e preferências de divisão.", fields: ["trainingExperience","trainingAge","availableMinutes","trainingPreference","muscleGroupCombinations","trainingPreferenceFreeText","favoriteExercises","workoutDayProtocol","injuries"] },
     { id: "state",     title: "Seu estado atual",          subtitle: "Sinais de recuperação e disponibilidade semanal.", fields: ["energy","sleepQuality","fatigueLevel","trainingPerformance","trainingAvailableDays"] },
     { id: "nutrition", title: "Alimentação",               subtitle: "A IA usa essas informações para criar um plano alimentar preciso.", fields: ["mealsPerDay","dietaryRestrictions","foodPreferences"], optional: true },
     BODY_PRO_STEP,
@@ -146,6 +146,18 @@ const FIELD_DEFS = {
                         placeholder: "Ex: 8", hint: "Índice de gordura visceral da bioimpedância — geralmente entre 1 e 20 (saudável: abaixo de 10)" },
   muscleMass:         { label: "Massa muscular esquelética (kg)", type: "text", required: false,
                         placeholder: "Ex: 42.1", hint: "Massa muscular esquelética total — da bioimpedância (se disponível)" },
+  skeletalMuscleMass: { label: "Massa muscular esquelética (kg)", type: "text", required: false,
+                        placeholder: "Ex: 38.0", hint: "Massa muscular esquelética total da balança de bioimpedância" },
+  totalBodyWater:     { label: "Água corporal total (%)", type: "text", required: false,
+                        placeholder: "Ex: 57.2", hint: "% de água corporal total da bioimpedância" },
+  boneMass:           { label: "Massa óssea (kg)", type: "text", required: false,
+                        placeholder: "Ex: 3.4", hint: "Massa óssea da bioimpedância" },
+  basalMetabolicRate: { label: "Taxa metabólica basal (kcal)", type: "text", required: false,
+                        placeholder: "Ex: 1840", hint: "Calorias em repouso — da balança ou calculada" },
+  metabolicAge:       { label: "Idade metabólica", type: "text", required: false,
+                        placeholder: "Ex: 28", hint: "Idade metabólica da bioimpedância (se disponível)" },
+  bmi:                { label: "IMC", type: "text", required: false,
+                        placeholder: "Ex: 26.7", hint: "Índice de massa corporal" },
   photosAvailable:    { label: "Você tem fotos de progresso disponíveis?", type: "select", required: false,
                         options: [
                           ["","Selecione"],
@@ -164,6 +176,17 @@ const FIELD_DEFS = {
     label: "Combinações de grupos musculares preferidas",
     type: "musclegroupicker", required: false,
     hint: "Selecione as combinações que mais gosta. A IA priorizará essas divisões.",
+  },
+  favoriteExercises: {
+    label: "Exercícios favoritos",
+    type: "textarea", required: false,
+    placeholder: "Ex.: Supino com barra, Agachamento livre, Rosca direta, Puxada no pulley...",
+    hint: "A IA prioriza esses exercícios ao montar seu protocolo",
+  },
+  workoutDayProtocol: {
+    label: "Protocolo por dia de treino",
+    type: "dayprotocol", required: false,
+    hint: "Defina quais grupos musculares você quer treinar em cada dia. Opcional — se deixar vazio, a IA decide.",
   },
   notes:              { label: "Expectativas e contexto", type: "textarea", required: false,
                         placeholder: "Conte o que espera alcançar, sua rotina atual, qualquer informação relevante...",
@@ -202,6 +225,102 @@ const MUSCLE_COMBOS_FEM = [
   { id: "upper_lower",         label: "Superior + Inferior" },
 ];
 
+// ── Grupos musculares disponíveis para o protocolo por dia ───────────────────
+const ALL_MUSCLE_GROUPS_MASC = [
+  { id: "peito",     label: "Peito" },
+  { id: "costas",    label: "Costas" },
+  { id: "ombros",    label: "Ombros" },
+  { id: "triceps",   label: "Tríceps" },
+  { id: "biceps",    label: "Bíceps" },
+  { id: "pernas",    label: "Pernas" },
+  { id: "gluteos",   label: "Glúteos" },
+  { id: "trapezio",  label: "Trapézio" },
+  { id: "abdomen",   label: "Abdômen" },
+  { id: "panturrilha", label: "Panturrilha" },
+];
+
+const ALL_MUSCLE_GROUPS_FEM = [
+  { id: "gluteos",   label: "Glúteos" },
+  { id: "pernas",    label: "Pernas" },
+  { id: "costas",    label: "Costas" },
+  { id: "ombros",    label: "Ombros" },
+  { id: "peito",     label: "Peito" },
+  { id: "biceps",    label: "Bíceps" },
+  { id: "triceps",   label: "Tríceps" },
+  { id: "abdomen",   label: "Abdômen" },
+  { id: "panturrilha", label: "Panturrilha" },
+  { id: "trapezio",  label: "Trapézio" },
+];
+
+const SPLIT_DAY_LABELS = {
+  full_body: ["Treino A", "Treino B", "Treino C"],
+  upper_lower: ["Superior A", "Inferior A", "Superior B", "Inferior B"],
+  ppl: ["Push", "Pull", "Legs"],
+  abc: ["Treino A", "Treino B", "Treino C"],
+  abcd: ["Treino A", "Treino B", "Treino C", "Treino D"],
+  abcde: ["Treino A", "Treino B", "Treino C", "Treino D", "Treino E"],
+  powerlifting_split: ["Agachamento", "Supino", "Terra", "Acessórios"],
+};
+
+function WorkoutDayProtocolBuilder({ value = "", onChange, trainingPreference = "", sex = "" }) {
+  const dayLabels = SPLIT_DAY_LABELS[trainingPreference] || ["Treino A", "Treino B", "Treino C"];
+  const muscleGroups = sex === "feminino" ? ALL_MUSCLE_GROUPS_FEM : ALL_MUSCLE_GROUPS_MASC;
+
+  // Parse value: "A:peito,costas;B:biceps,triceps"
+  function parseProtocol(raw) {
+    const result = {};
+    if (!raw) return result;
+    raw.split(";").forEach(part => {
+      const [label, muscles] = part.split(":");
+      if (label && muscles) result[label.trim()] = muscles.split(",").filter(Boolean);
+    });
+    return result;
+  }
+
+  function serializeProtocol(proto) {
+    return Object.entries(proto)
+      .filter(([, muscles]) => muscles.length > 0)
+      .map(([label, muscles]) => `${label}:${muscles.join(",")}`)
+      .join(";");
+  }
+
+  const protocol = parseProtocol(value);
+
+  function toggleMuscle(dayLabel, muscleId) {
+    const current = protocol[dayLabel] || [];
+    const next = current.includes(muscleId)
+      ? current.filter(m => m !== muscleId)
+      : [...current, muscleId];
+    const updated = { ...protocol, [dayLabel]: next };
+    onChange(serializeProtocol(updated));
+  }
+
+  return (
+    <div className="ob-day-protocol">
+      {dayLabels.map(dayLabel => {
+        const selected = protocol[dayLabel] || [];
+        return (
+          <div key={dayLabel} className="ob-day-protocol__day">
+            <span className="ob-day-protocol__day-label">{dayLabel}</span>
+            <div className="ob-day-protocol__muscles">
+              {muscleGroups.map(g => (
+                <button
+                  key={g.id}
+                  type="button"
+                  className={`ob-day-protocol__muscle-btn${selected.includes(g.id) ? " is-active" : ""}`}
+                  onClick={() => toggleMuscle(dayLabel, g.id)}
+                >
+                  {g.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function buildInitialForm() {
   const defaults = { cadence: "weekly" };
   for (const [key, def] of Object.entries(FIELD_DEFS)) {
@@ -234,6 +353,8 @@ export default function FirstCheckinModal({ planId, onComplete }) {
   const [savedTrainingAge, setSavedTrainingAge]                 = useState("");
   const [savedAvailableMinutes, setSavedAvailableMinutes]       = useState("");
   const [savedTrainingPreference, setSavedTrainingPreference]   = useState("");
+  const [savedFavoriteExercises, setSavedFavoriteExercises]     = useState("");
+  const [savedWorkoutDayProtocol, setSavedWorkoutDayProtocol]   = useState("");
 
   const currentStep = steps[step];
   const isLast  = step === steps.length - 1;
@@ -288,6 +409,8 @@ export default function FirstCheckinModal({ planId, onComplete }) {
       setSavedTrainingAge(trainingAge);
       setSavedAvailableMinutes(availableMinutes);
       setSavedTrainingPreference(trainingPreference);
+      setSavedFavoriteExercises(form.favoriteExercises || "");
+      setSavedWorkoutDayProtocol(form.workoutDayProtocol || "");
 
       // 4 — Exibe tela de geração imediatamente
       setWorkoutStatus("generating");
@@ -308,7 +431,13 @@ export default function FirstCheckinModal({ planId, onComplete }) {
       }
 
       await Promise.allSettled([
-        withTimeout(generateWorkoutWithAi({ persist: true, goal, trainingAvailableDays, trainingExperience, trainingAge, availableMinutes, trainingPreference }))
+        withTimeout(generateWorkoutWithAi({
+          persist: true, goal, trainingAvailableDays, trainingExperience, trainingAge, availableMinutes, trainingPreference,
+          trainingPreferenceFreeText: form.trainingPreferenceFreeText || "",
+          muscleGroupCombinations: form.muscleGroupCombinations || "",
+          workoutDayProtocol: form.workoutDayProtocol || "",
+          favoriteExercises: form.favoriteExercises || "",
+        }))
           .then(() => setWorkoutStatus("ok"))
           .catch(err => { setWorkoutStatus("error"); setWorkoutError(err?.message || "Erro desconhecido."); }),
 
@@ -339,6 +468,8 @@ export default function FirstCheckinModal({ planId, onComplete }) {
         trainingAge: savedTrainingAge,
         availableMinutes: savedAvailableMinutes,
         trainingPreference: savedTrainingPreference,
+        favoriteExercises: savedFavoriteExercises,
+        workoutDayProtocol: savedWorkoutDayProtocol,
       });
       setWorkoutStatus("ok");
     } catch (err) {
@@ -432,7 +563,31 @@ export default function FirstCheckinModal({ planId, onComplete }) {
         </div>
       );
     }
+    if (def.type === "dayprotocol") {
+      const exp = form.trainingExperience || "";
+      const isAdvanced = exp === "intermediario" || exp === "avancado";
+      if (!isAdvanced) return null;
+      const split = form.trainingPreference || "";
+      return (
+        <div key={key} className="ob-field">
+          <label className="ob-field__label">
+            {def.label}
+            <span className="ob-field__optional">Opcional</span>
+          </label>
+          {def.hint && <p className="ob-field__hint">{def.hint}</p>}
+          <WorkoutDayProtocolBuilder
+            value={form[key] || ""}
+            onChange={v => handleChange(key, v)}
+            trainingPreference={split}
+            sex={form.sex || ""}
+          />
+        </div>
+      );
+    }
     if (def.type === "musclegroupicker") {
+      const expForMuscle = form.trainingExperience || form.trainingAge || "";
+      const isBeginnerMuscle = expForMuscle === "iniciante" || expForMuscle === "nunca" || expForMuscle === "menos-6-meses";
+      if (key === "muscleGroupCombinations" && isBeginnerMuscle) return null;
       const sex = form.sex || "";
       const combos = sex === "feminino" ? MUSCLE_COMBOS_FEM : MUSCLE_COMBOS_MASC;
       const selected = (form[key] || "").split(",").filter(Boolean);

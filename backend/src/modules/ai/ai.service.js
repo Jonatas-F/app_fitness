@@ -509,7 +509,7 @@ Nao inclua texto fora do JSON.
   };
 }
 
-export async function generateAiWorkoutPlan(accountId, { goal, persist = false, trainingAvailableDays = "", trainingExperience = "", trainingAge = "", availableMinutes = "", trainingPreference = "", trainingPreferenceFreeText = "", muscleGroupCombinations = "", adherenceAdjustedDays = 0 } = {}) {
+export async function generateAiWorkoutPlan(accountId, { goal, persist = false, trainingAvailableDays = "", trainingExperience = "", trainingAge = "", availableMinutes = "", trainingPreference = "", trainingPreferenceFreeText = "", muscleGroupCombinations = "", workoutDayProtocol = "", favoriteExercises = "", adherenceAdjustedDays = 0, keepWorkoutProtocol = "", lastProtocolFeeling = "", muscularSoreness = "", generalDisposition = "", laggingMuscleGroups = "", requestedWorkoutChanges = "" } = {}) {
   const instructions = `
 Gere um plano de treino personalizado em JSON valido para o Shape Certo.
 
@@ -750,6 +750,23 @@ REGRAS FINAIS INEGOCIAVEIS:
         : "",
       trainingPreferenceFreeText
         ? `PREFERENCIAS LIVRES DE TREINO (texto do usuario — use como contexto de personalizacao): "${trainingPreferenceFreeText}"`
+        : "",
+      workoutDayProtocol
+        ? `PROTOCOLO DE DIAS DEFINIDO PELO USUARIO (respeite esta divisao por dia): ${workoutDayProtocol}. Use exatamente esses agrupamentos musculares para cada dia de treino ativo, apenas redistribuindo exercicios dentro de cada grupo.`
+        : "",
+      favoriteExercises
+        ? `EXERCICIOS FAVORITOS DO USUARIO (priorize-os no protocolo quando tecnicamente adequado): "${favoriteExercises}"`
+        : "",
+      keepWorkoutProtocol === "nao"
+        ? [
+            lastProtocolFeeling ? `FEEDBACK DO ULTIMO PROTOCOLO: o usuario se sentiu "${lastProtocolFeeling}" com o protocolo anterior.` : "",
+            muscularSoreness ? `DOR MUSCULAR NO ULTIMO CICLO: "${muscularSoreness}". ${muscularSoreness === "intensa" ? "Reduza volume ou reorganize a ordem dos treinos para mais recuperacao." : muscularSoreness === "moderada" ? "Considere redistribuir volume entre os dias." : ""}` : "",
+            generalDisposition ? `DISPOSICAO GERAL NO ULTIMO CICLO: "${generalDisposition}". ${generalDisposition === "baixa" ? "Priorize compostos basicos, reduza tecnicas avancadas e aumente recuperacao." : ""}` : "",
+            laggingMuscleGroups ? `GRUPOS MUSCULARES QUE FICARAM PARA TRAS: "${laggingMuscleGroups}". Aumente volume e prioridade para esses grupos no novo protocolo.` : "",
+            requestedWorkoutChanges ? `MUDANCAS SOLICITADAS PELO USUARIO: "${requestedWorkoutChanges}". Implemente essas mudancas no novo protocolo.` : "",
+          ].filter(Boolean).join(" ")
+        : keepWorkoutProtocol === "manter"
+        ? `INSTRUCAO: O usuario quer MANTER O MESMO PROTOCOLO DE TREINO (split, grupos musculares e estrutura). Apenas atualize exercicios para evitar acomodacao e ajuste volume/intensidade conforme os sinais do checkin.`
         : "",
       `Consulte equipamentos disponiveis (preferences.gymEquipment), sinais de fadiga/sono/performance do ultimo checkin e historico de sessoes.`,
     ].filter(Boolean).join(" "),

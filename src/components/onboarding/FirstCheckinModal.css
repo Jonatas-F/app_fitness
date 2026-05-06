@@ -336,3 +336,51 @@ textarea.ob-field__control {
  * src/components/shared/AiGeneratingScreen.css
  * (importados automaticamente via AiGeneratingScreen.jsx)
  */
+
+/* WorkoutDayProtocolBuilder */
+.ob-day-protocol {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ob-day-protocol__day {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ob-day-protocol__day-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-accent, #7c6aff);
+}
+
+.ob-day-protocol__muscles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ob-day-protocol__muscle-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.65);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.ob-day-protocol__muscle-btn.is-active {
+  background: rgba(124,106,255,0.25);
+  border-color: var(--color-accent, #7c6aff);
+  color: #fff;
+}

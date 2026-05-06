@@ -40,7 +40,8 @@ export async function handleGenerateAiDiet(req, res, next) {
 
 export async function handleGenerateAiWorkout(req, res, next) {
   try {
-    const result = await generateAiWorkoutPlan(req.auth.sub, req.body);
+    const { goal, persist, trainingAvailableDays, trainingExperience, trainingAge, availableMinutes, trainingPreference, trainingPreferenceFreeText, muscleGroupCombinations, workoutDayProtocol, favoriteExercises, adherenceAdjustedDays, keepWorkoutProtocol, lastProtocolFeeling, muscularSoreness, generalDisposition, laggingMuscleGroups, requestedWorkoutChanges } = req.body;
+    const result = await generateAiWorkoutPlan(req.auth.sub, { goal, persist, trainingAvailableDays, trainingExperience, trainingAge, availableMinutes, trainingPreference, trainingPreferenceFreeText, muscleGroupCombinations, workoutDayProtocol, favoriteExercises, adherenceAdjustedDays, keepWorkoutProtocol, lastProtocolFeeling, muscularSoreness, generalDisposition, laggingMuscleGroups, requestedWorkoutChanges });
     res.json(result);
   } catch (error) {
     next(error);

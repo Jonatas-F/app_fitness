@@ -11,14 +11,25 @@ export async function generateWorkoutWithAi({
   trainingPreference = "",
   trainingPreferenceFreeText = "",
   muscleGroupCombinations = "",
+  workoutDayProtocol = "",
+  favoriteExercises = "",
   adherenceAdjustedDays = undefined,
+  // monthly protocol review fields
+  keepWorkoutProtocol = "",
+  lastProtocolFeeling = "",
+  muscularSoreness = "",
+  generalDisposition = "",
+  laggingMuscleGroups = "",
+  requestedWorkoutChanges = "",
 } = {}) {
   return apiRequest(apiEndpoints.aiWorkout, {
     method: "POST",
     body: JSON.stringify({
       goal, persist, trainingAvailableDays, trainingExperience, trainingAge,
       availableMinutes, trainingPreference, trainingPreferenceFreeText,
-      muscleGroupCombinations,
+      muscleGroupCombinations, workoutDayProtocol, favoriteExercises,
+      keepWorkoutProtocol, lastProtocolFeeling, muscularSoreness,
+      generalDisposition, laggingMuscleGroups, requestedWorkoutChanges,
       ...(adherenceAdjustedDays != null ? { adherenceAdjustedDays } : {}),
     }),
   });
