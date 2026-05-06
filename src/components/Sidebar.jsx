@@ -11,53 +11,76 @@ const ADMIN_EMAIL = "jonatas.freire.prof@gmail.com";
 const OVERRIDE_KEY = "shapeCertoAdminPlanOverride";
 const PLAN_LABELS = { basico: "Básico", intermediario: "Intermediário", pro: "Pro" };
 
-// ── Token Counter ────────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-function TokenCounter({ subscription }) {
+function fmtTokens(n) {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(".", ",")}M`;
+  if (n >= 1_000)     return `${Math.round(n / 1_000)}K`;
+  return String(n);
+}
+
+// ── Token Chip (compacto, próximo ao logo) ───────────────────────────────────
+
+function TokenChip({ subscription, loading }) {
+  if (loading) {
+    return (
+      <div className="sidebar__token-chip sidebar__token-chip--loading">
+        <div className="sidebar__token-chip__bar">
+          <div className="sidebar__token-chip__fill" style={{ width: "0%" }} />
+        </div>
+      </div>
+    );
+  }
   if (!subscription) return null;
 
-  const total = subscription.token_limit ?? 0;
+  const total   = subscription.token_limit   ?? 0;
   const balance = subscription.token_balance ?? 0;
-  const used = Math.max(0, total - balance);
-  const pct = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
+  const used    = Math.max(0, total - balance);
+  const pct     = total > 0 ? Math.min(100, (used / total) * 100) : 0;
+  const pctRound = Math.round(pct);
+
   const refill = subscription.current_period_end
     ? new Date(subscription.current_period_end).toLocaleDateString("pt-BR", {
-        day: "2-digit",
-        month: "short",
-      })
-    : "—";
+        day: "2-digit", month: "short",
+      }).replace(".", "")
+    : null;
 
-  const planLabel = PLAN_LABELS[subscription.plan] ?? subscription.plan ?? "—";
+  const planLabel = PLAN_LABELS[subscription.plan] ?? subscription.plan ?? "";
+  const variant   = pct >= 95 ? "critical" : pct >= 80 ? "warning" : "";
 
   return (
-    <section className="sidebar__summary glass-panel">
-      <h3 className="sidebar__summary-title">
-        <span>Plano {planLabel}</span>
-      </h3>
-
-      <div className="sidebar__token-bar" title={`${pct}% dos tokens usados`}>
-        <div
-          className="sidebar__token-fill"
-          style={{ width: `${pct}%` }}
-          aria-label={`${pct}% dos tokens usados`}
-        />
+    <div
+      className={`sidebar__token-chip${variant ? ` sidebar__token-chip--${variant}` : ""}`}
+      title={`${fmtTokens(used)} de ${fmtTokens(total)} tokens usados (${pctRound}%)`}
+    >
+      {/* Barra fina de progresso */}
+      <div className="sidebar__token-chip__bar">
+        <div className="sidebar__token-chip__fill" style={{ width: `${pct}%` }} />
       </div>
 
-      <ul className="sidebar__summary-list">
-        <li>
-          <span>Usados</span>
-          <strong>{used.toLocaleString("pt-BR")}</strong>
-        </li>
-        <li>
-          <span>Restantes</span>
-          <strong>{balance.toLocaleString("pt-BR")}</strong>
-        </li>
-        <li>
-          <span>Recarga em</span>
-          <strong>{refill}</strong>
-        </li>
-      </ul>
-    </section>
+      {/* Linha de números */}
+      <div className="sidebar__token-chip__row">
+        <span className="sidebar__token-chip__used">{fmtTokens(used)}</span>
+        <span className="sidebar__token-chip__sep">/</span>
+        <span className="sidebar__token-chip__total">{fmtTokens(total)}</span>
+        <span className="sidebar__token-chip__sep">·</span>
+        <span className="sidebar__token-chip__pct">{pctRound}%</span>
+        {planLabel && (
+          <>
+            <span className="sidebar__token-chip__sep">·</span>
+            <span className="sidebar__token-chip__plan">{planLabel}</span>
+          </>
+        )}
+      </div>
+
+      {/* Data de recarga */}
+      {refill && (
+        <div className="sidebar__token-chip__reset">
+          <span className="sidebar__token-chip__reset-icon">↻</span>
+          recarga {refill}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -144,24 +167,29 @@ function AdminPlanSwitcher() {
 
 export default function Sidebar() {
   const [subscription, setSubscription] = useState(null);
+  const [subLoading, setSubLoading]     = useState(true);
 
   useEffect(() => {
     const user = getStoredApiUser();
-    if (!user) return;
+    if (!user) { setSubLoading(false); return; }
 
+    setSubLoading(true);
     apiRequest(apiEndpoints.billingSubscription)
       .then((data) => setSubscription(data?.subscription ?? null))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setSubLoading(false));
   }, []);
 
   // Recarrega subscription quando o usuário faz login
   useEffect(() => {
     function onAuth() {
       const user = getStoredApiUser();
-      if (!user) { setSubscription(null); return; }
+      if (!user) { setSubscription(null); setSubLoading(false); return; }
+      setSubLoading(true);
       apiRequest(apiEndpoints.billingSubscription)
         .then((data) => setSubscription(data?.subscription ?? null))
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => setSubLoading(false));
     }
     window.addEventListener("shape-certo-auth-updated", onAuth);
     return () => window.removeEventListener("shape-certo-auth-updated", onAuth);
@@ -178,6 +206,9 @@ export default function Sidebar() {
           <p className="sidebar__brand-subtitle">Personal Virtual</p>
         </div>
       </div>
+
+      {/* Token chip — compacto, logo abaixo do brand */}
+      <TokenChip subscription={subscription} loading={subLoading} />
 
       <nav className="sidebar__nav">
         {navigationItems.map((item) => {
@@ -222,7 +253,6 @@ export default function Sidebar() {
         )}
       </nav>
 
-      <TokenCounter subscription={subscription} />
       <AdminPlanSwitcher />
     </aside>
   );
