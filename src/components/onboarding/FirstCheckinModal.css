@@ -359,7 +359,7 @@ textarea.ob-field__control {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--color-accent, #7c6aff);
+  color: rgba(229, 9, 20, 0.85);
 }
 
 .ob-day-protocol__muscles {
@@ -380,9 +380,10 @@ textarea.ob-field__control {
 }
 
 .ob-day-protocol__muscle-btn.is-active {
-  background: rgba(124,106,255,0.25);
-  border-color: var(--color-accent, #7c6aff);
+  background: rgba(229, 9, 20, 0.18);
+  border-color: rgba(229, 9, 20, 0.65);
   color: #fff;
+  font-weight: 600;
 }
 
 /* Training Level Picker */
@@ -402,7 +403,7 @@ textarea.ob-field__control {
   padding: 12px 16px;
   cursor: pointer;
   text-align: left;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.12s;
   width: 100%;
 }
 
@@ -412,8 +413,10 @@ textarea.ob-field__control {
 }
 
 .ob-traininglevel__btn.is-active {
-  background: rgba(124,106,255,0.15);
-  border-color: var(--color-accent, #7c6aff);
+  background: rgba(229, 9, 20, 0.14);
+  border-color: rgba(229, 9, 20, 0.7);
+  box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.2);
+  transform: scale(1.01);
 }
 
 .ob-traininglevel__badge {

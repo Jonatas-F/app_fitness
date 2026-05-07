@@ -683,9 +683,8 @@ export default function FirstCheckinModal({ planId, onComplete }) {
       );
     }
     if (def.type === "musclegroupicker") {
-      const expForMuscle = form.trainingExperience || form.trainingAge || "";
-      const isBeginnerMuscle = expForMuscle === "iniciante" || expForMuscle === "nunca" || expForMuscle === "menos-6-meses";
-      if (key === "muscleGroupCombinations" && isBeginnerMuscle) return null;
+      // Só para intermediário/avançado — oculto enquanto não selecionado ou para iniciantes
+      if (form.trainingExperience !== "intermediario" && form.trainingExperience !== "avancado") return null;
       const sex = form.sex || "";
       const combos = sex === "feminino" ? MUSCLE_COMBOS_FEM : MUSCLE_COMBOS_MASC;
       const selected = (form[key] || "").split(",").filter(Boolean);
