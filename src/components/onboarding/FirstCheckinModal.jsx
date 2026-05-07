@@ -4,6 +4,7 @@ import { saveRemoteCheckin } from "../../services/checkinService";
 import { generateWorkoutWithAi } from "../../services/ai/workout.service";
 import { generateDietWithAi } from "../../services/ai/diet.service";
 import { personalAvatarCatalog } from "../../data/platformImageCatalog";
+import { saveRemoteSettings, loadRemoteSettings } from "../../services/settingsService";
 import AiGeneratingScreen from "../shared/AiGeneratingScreen";
 import "./FirstCheckinModal.css";
 
@@ -472,17 +473,37 @@ export default function FirstCheckinModal({ planId, onComplete }) {
       const updated = saveCheckin(payload, { createdAt: new Date().toISOString() });
       await saveRemoteCheckin(updated[0]).catch(() => {});
 
-      // 2 — Salva avatar e nome do Personal nas configurações
+      // 2 — Salva avatar e nome do Personal nas configurações (local + remoto)
+      const personalName   = (form.personalName || "").trim() || "Personal Virtual";
+      const personalAvatar = form.personalAvatar || "default-personal";
+
+      // 2a — localStorage (fallback imediato)
       const SETTINGS_KEY = "shapeCertoSettings";
       const existing = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
       localStorage.setItem(SETTINGS_KEY, JSON.stringify({
         ...existing,
         personal: {
           ...(existing.personal || {}),
-          name: (form.personalName || "").trim() || "Personal Virtual",
-          avatarId: form.personalAvatar || "default-personal",
+          name: personalName,
+          avatarId: personalAvatar,
         },
       }));
+
+      // 2b — Persiste no backend para sobreviver à limpeza do localStorage (iOS Safari)
+      //      Carrega as configurações existentes para não sobrescrever notificações/privacidade
+      loadRemoteSettings()
+        .then(({ settings: remote }) => {
+          const merged = {
+            ...(remote || {}),
+            personal: {
+              ...(remote?.personal || {}),
+              name: personalName,
+              avatarId: personalAvatar,
+            },
+          };
+          return saveRemoteSettings(merged);
+        })
+        .catch(() => {}); // falha silenciosa — não bloqueia o onboarding
 
       // 3 — Salva snapshot dos dados para usar nos retries
       const goal                  = form.goal || "";
