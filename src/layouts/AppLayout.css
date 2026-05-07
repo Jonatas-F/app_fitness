@@ -249,19 +249,27 @@ button.sidebar__token-chip:hover {
   background: rgba(255,255,255,0.04);
 }
 
-/* ── Painel de histórico de tokens ───────────────────────────── */
-.token-history-panel {
+/* ── Modal de histórico de tokens — overlay centralizado ─────── */
+.token-history-overlay {
   position: fixed;
-  left: var(--sidebar-width, 220px);
-  top: 0;
-  width: 320px;
-  height: 100dvh;
-  background: #111118;
-  border-right: 1px solid rgba(255,255,255,0.1);
-  box-shadow: 6px 0 24px rgba(0,0,0,0.5);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9800;
+  padding: 16px;
+}
+
+.token-history-panel {
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  background: #16161e;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 18px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.7);
   display: flex;
   flex-direction: column;
-  z-index: 500;
   overflow: hidden;
 }
 
@@ -407,11 +415,10 @@ button.sidebar__token-chip:hover {
   font-weight: 700;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 480px) {
   .token-history-panel {
-    left: 0;
-    width: 100vw;
-    z-index: 600;
+    width: calc(100vw - 24px);
+    max-height: calc(100dvh - 32px);
   }
 }
 
