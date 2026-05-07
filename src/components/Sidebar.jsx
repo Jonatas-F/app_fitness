@@ -19,91 +19,12 @@ function fmtTokens(n) {
   return String(n);
 }
 
-// ── Helpers de tipo de geração ───────────────────────────────────────────────
-
-const GEN_TYPE_LABELS = {
-  workout:        "Treino",
-  diet:           "Dieta",
-  chat:           "Chat",
-  recommendation: "Recomendação",
-};
-
-// ── Painel de Histórico de Tokens ────────────────────────────────────────────
-
-function TokenHistoryPanel({ subscription, onClose }) {
-  const [history, setHistory]   = useState(null);
-  const [loading, setLoading]   = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    apiRequest(apiEndpoints.billingTokenHistory)
-      .then((data) => setHistory(data?.history ?? []))
-      .catch(() => setHistory([]))
-      .finally(() => setLoading(false));
-  }, []);
-
-  const periodStart = subscription?.current_period_start
-    ? new Date(subscription.current_period_start).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }).replace(".", "")
-    : null;
-  const periodEnd = subscription?.current_period_end
-    ? new Date(subscription.current_period_end).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }).replace(".", "")
-    : null;
-
-  const totalUsed = (history || []).reduce((s, r) => s + (r.tokensTotal || 0), 0);
-
-  return (
-    <div className="token-history-panel" role="dialog" aria-label="Histórico de tokens">
-      <div className="token-history-panel__header">
-        <div>
-          <strong>Uso de Tokens</strong>
-          {periodStart && periodEnd && (
-            <span className="token-history-panel__period">{periodStart} – {periodEnd}</span>
-          )}
-        </div>
-        <button type="button" className="token-history-panel__close" onClick={onClose} aria-label="Fechar">✕</button>
-      </div>
-
-      {loading ? (
-        <div className="token-history-panel__loading">Carregando…</div>
-      ) : !history?.length ? (
-        <div className="token-history-panel__empty">Nenhuma geração neste período.</div>
-      ) : (
-        <>
-          <ul className="token-history-panel__list">
-            {history.map((item) => (
-              <li key={item.id} className="token-history-panel__item">
-                <div className="token-history-panel__item-top">
-                  <span className={`token-history-panel__badge token-history-panel__badge--${item.type}`}>
-                    {GEN_TYPE_LABELS[item.type] ?? item.type}
-                  </span>
-                  <span className="token-history-panel__tokens">{fmtTokens(item.tokensTotal)}</span>
-                </div>
-                <div className="token-history-panel__item-bottom">
-                  <span className="token-history-panel__date">
-                    {new Date(item.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }).replace(".", "")}
-                    {" "}
-                    {new Date(item.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                  </span>
-                  <span className="token-history-panel__detail">
-                    ↑{fmtTokens(item.tokensInput)} ↓{fmtTokens(item.tokensOutput)}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <div className="token-history-panel__footer">
-            <span>Total no período</span>
-            <strong>{fmtTokens(totalUsed)} tokens</strong>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 // ── Token Chip (compacto, próximo ao logo) ───────────────────────────────────
 
-function TokenChip({ subscription, loading, onOpenHistory }) {
+function TokenChip({ subscription, loading }) {
+  function openHistory() {
+    window.dispatchEvent(new CustomEvent("shape-certo-open-token-history", { detail: { subscription } }));
+  }
   if (loading) {
     return (
       <div className="sidebar__token-chip sidebar__token-chip--loading">
@@ -135,7 +56,7 @@ function TokenChip({ subscription, loading, onOpenHistory }) {
       type="button"
       className={`sidebar__token-chip${variant ? ` sidebar__token-chip--${variant}` : ""}`}
       title="Clique para ver o histórico de uso"
-      onClick={onOpenHistory}
+      onClick={openHistory}
     >
       {/* Barra fina de progresso */}
       <div className="sidebar__token-chip__bar">
@@ -252,7 +173,6 @@ function AdminPlanSwitcher() {
 export default function Sidebar() {
   const [subscription, setSubscription] = useState(null);
   const [subLoading, setSubLoading]     = useState(true);
-  const [historyOpen, setHistoryOpen]   = useState(false);
 
   useEffect(() => {
     const user = getStoredApiUser();
@@ -306,16 +226,7 @@ export default function Sidebar() {
       <TokenChip
         subscription={subscription}
         loading={subLoading}
-        onOpenHistory={() => setHistoryOpen(true)}
       />
-
-      {/* Painel de histórico de tokens */}
-      {historyOpen && (
-        <TokenHistoryPanel
-          subscription={subscription}
-          onClose={() => setHistoryOpen(false)}
-        />
-      )}
 
       <nav className="sidebar__nav">
         {navigationItems.map((item) => {
