@@ -61,7 +61,7 @@ const STEPS = {
   ],
   intermediario: [
     { id: "basics",   title: "Seus dados básicos",     subtitle: "Informações essenciais para personalizar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
-    { id: "profile",  title: "Perfil de treino",        subtitle: "Experiência, tempo disponível e preferências de divisão.", fields: ["trainingLevel","availableMinutes","trainingPreference","muscleGroupCombinations","trainingPreferenceFreeText","favoriteExercises","workoutDayProtocol","injuries"] },
+    { id: "profile",  title: "Perfil de treino",        subtitle: "Experiência, tempo disponível e preferências de divisão.", fields: ["trainingLevel","availableMinutes","trainingPreference","muscleGroupCombinations","trainingPreferenceFreeText","favoriteExercises","injuries"] },
     { id: "state",    title: "Seu estado atual",         subtitle: "Como você está hoje e quais dias pode treinar.", fields: ["energy","sleepQuality","trainingAvailableDays"] },
     NUTRITION_STEP,
     BODY_INTER_STEP,
@@ -70,7 +70,7 @@ const STEPS = {
   ],
   pro: [
     { id: "basics",    title: "Seus dados básicos",      subtitle: "Informações essenciais para personalizar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
-    { id: "profile",   title: "Perfil de treino",         subtitle: "Experiência, tempo disponível e preferências de divisão.", fields: ["trainingLevel","availableMinutes","trainingPreference","muscleGroupCombinations","trainingPreferenceFreeText","favoriteExercises","workoutDayProtocol","injuries"] },
+    { id: "profile",   title: "Perfil de treino",         subtitle: "Experiência, tempo disponível e preferências de divisão.", fields: ["trainingLevel","availableMinutes","trainingPreference","muscleGroupCombinations","trainingPreferenceFreeText","favoriteExercises","injuries"] },
     { id: "state",     title: "Seu estado atual",          subtitle: "Sinais de recuperação e disponibilidade semanal.", fields: ["energy","sleepQuality","fatigueLevel","trainingPerformance","trainingAvailableDays"] },
     { id: "nutrition", title: "Alimentação",               subtitle: "A IA usa essas informações para criar um plano alimentar preciso.", fields: ["mealsPerDay","dietaryRestrictions","foodPreferences"], optional: true },
     BODY_PRO_STEP,
@@ -253,29 +253,59 @@ const FIELD_DEFS = {
 // ── Combinações de grupos musculares por sexo ─────────────────────────────────
 
 const MUSCLE_COMBOS_MASC = [
-  { id: "full_body",      label: "Full Body" },
-  { id: "push",           label: "Push (Peito + Ombros + Tri)" },
-  { id: "pull",           label: "Pull (Costas + Bíceps)" },
-  { id: "peito_tri",      label: "Peito + Tríceps" },
-  { id: "costas_bi",      label: "Costas + Bíceps" },
-  { id: "ombros_trap",    label: "Ombros + Trapézio" },
-  { id: "pernas",         label: "Pernas (Quad + Post + Glúteo)" },
-  { id: "peito_costas",   label: "Peito + Costas" },
-  { id: "bracos",         label: "Braços (Bíceps + Tríceps)" },
-  { id: "upper_lower",    label: "Superior + Inferior" },
+  // ── Splits clássicos ────────────────────────────────────────────────────────
+  { id: "full_body",           label: "Full Body" },
+  { id: "upper_lower",         label: "Superior + Inferior" },
+  { id: "push",                label: "Push (Peito + Ombros + Tríceps)" },
+  { id: "pull",                label: "Pull (Costas + Bíceps + Deltoide Post.)" },
+  { id: "legs",                label: "Legs (Quad + Post + Glúteo + Panturrilha)" },
+  // ── Por grupo muscular (ABC/ABCD) ───────────────────────────────────────────
+  { id: "peito_tri",           label: "Peito + Tríceps" },
+  { id: "costas_bi",           label: "Costas + Bíceps" },
+  { id: "ombros_trap",         label: "Ombros + Trapézio" },
+  { id: "peito_ombros",        label: "Peito + Ombros" },
+  { id: "costas_del_post",     label: "Costas + Deltoide Posterior" },
+  // ── Antagonistas (ciência do treino) ────────────────────────────────────────
+  { id: "peito_costas",        label: "Peito + Costas (antagonistas)" },
+  { id: "peito_bi",            label: "Peito + Bíceps (antagônico)" },
+  { id: "costas_tri",          label: "Costas + Tríceps (antagônico)" },
+  { id: "quad_posterior",      label: "Quadríceps + Posteriores (antagonistas)" },
+  // ── Cadeia anterior / posterior ─────────────────────────────────────────────
+  { id: "cadeia_anterior",     label: "Cadeia Anterior (Quad + Peito + Bíceps)" },
+  { id: "cadeia_posterior",    label: "Cadeia Posterior (Post + Costas + Glúteo)" },
+  // ── Grupos isolados / auxiliares ────────────────────────────────────────────
+  { id: "bracos",              label: "Braços (Bíceps + Tríceps)" },
+  { id: "ombros_bracos",       label: "Ombros + Braços" },
+  { id: "pernas_completas",    label: "Pernas completas (Quad + Post + Glúteo)" },
+  { id: "core_abdomen",        label: "Core + Abdômen" },
 ];
 
 const MUSCLE_COMBOS_FEM = [
-  { id: "full_body",           label: "Full Body" },
-  { id: "gluteos_posterior",   label: "Glúteos + Posteriores" },
+  // ── Foco inferior (prioridade feminina) ─────────────────────────────────────
   { id: "gluteos_iso",         label: "Glúteo isolado" },
+  { id: "gluteos_posterior",   label: "Glúteos + Posteriores" },
+  { id: "gluteos_core",        label: "Glúteos + Core" },
   { id: "pernas_completas",    label: "Pernas completas (Quad + Post + Glúteo)" },
+  { id: "quad_gluteos",        label: "Quadríceps + Glúteos (cadeia anterior)" },
+  { id: "posterior_panturr",   label: "Posteriores + Panturrilha" },
+  { id: "adutor_gluteos",      label: "Adutores + Glúteos (isolamento)" },
   { id: "lower",               label: "Inferior completo" },
+  // ── Splits global / superior ────────────────────────────────────────────────
+  { id: "full_body",           label: "Full Body" },
+  { id: "upper_lower",         label: "Superior + Inferior" },
   { id: "upper",               label: "Superior completo" },
+  // ── Push / Pull adaptado ────────────────────────────────────────────────────
+  { id: "push",                label: "Push (Peito + Ombros + Tríceps)" },
+  { id: "pull",                label: "Pull (Costas + Bíceps + Deltoide Post.)" },
+  // ── Grupos superiores combinados ────────────────────────────────────────────
   { id: "costas_bi",           label: "Costas + Bíceps" },
   { id: "peito_ombros",        label: "Peito + Ombros" },
+  { id: "peito_tri",           label: "Peito + Tríceps" },
+  { id: "ombros_bracos",       label: "Ombros + Braços" },
+  // ── Cadeia posterior completa ───────────────────────────────────────────────
+  { id: "cadeia_posterior",    label: "Cadeia Posterior (Post + Costas + Glúteo)" },
+  // ── Core / funcional ────────────────────────────────────────────────────────
   { id: "core_abdomen",        label: "Core + Abdômen" },
-  { id: "upper_lower",         label: "Superior + Inferior" },
 ];
 
 // ── Grupos musculares disponíveis para o protocolo por dia ───────────────────
