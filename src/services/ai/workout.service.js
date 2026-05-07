@@ -1,6 +1,10 @@
 import { apiEndpoints } from "../api/endpoints";
 import { apiRequest } from "../api/client";
 
+function dispatchTokensUpdated() {
+  window.dispatchEvent(new CustomEvent("shape-certo-tokens-updated"));
+}
+
 export async function generateWorkoutWithAi({
   goal = "",
   persist = false,
@@ -22,7 +26,7 @@ export async function generateWorkoutWithAi({
   laggingMuscleGroups = "",
   requestedWorkoutChanges = "",
 } = {}) {
-  return apiRequest(apiEndpoints.aiWorkout, {
+  const result = await apiRequest(apiEndpoints.aiWorkout, {
     method: "POST",
     body: JSON.stringify({
       goal, persist, trainingAvailableDays, trainingExperience, trainingAge,
@@ -33,4 +37,6 @@ export async function generateWorkoutWithAi({
       ...(adherenceAdjustedDays != null ? { adherenceAdjustedDays } : {}),
     }),
   });
+  dispatchTokensUpdated();
+  return result;
 }

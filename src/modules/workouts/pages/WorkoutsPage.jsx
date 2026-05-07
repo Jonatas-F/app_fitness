@@ -128,8 +128,22 @@ function getInitialWorkoutState() {
   return { plan, selectedWorkoutId };
 }
 
+const DAY_SHORT_LABELS = {
+  monday:    "SEG",
+  tuesday:   "TER",
+  wednesday: "QUA",
+  thursday:  "QUI",
+  friday:    "SEX",
+  saturday:  "SÁB",
+  sunday:    "DOM",
+};
+
 function getDayPrefix(title) {
   return title.slice(0, 3).toUpperCase();
+}
+
+function getDayLabel(workoutId) {
+  return DAY_SHORT_LABELS[workoutId] || getDayPrefix(workoutId);
 }
 
 function countCompletedExercises(workout) {
@@ -961,7 +975,7 @@ function WorkoutExecutionSection() {
             disabled={!workout.enabled}
             onClick={() => handleSelectWorkout(workout)}
           >
-            <strong>{getDayPrefix(workout.title)}</strong>
+            <strong>{getDayLabel(workout.id)}</strong>
             <span>{workout.focus}</span>
           </button>
         ))}
@@ -1927,7 +1941,7 @@ function WorkoutHistorySection() {
               disabled={!workout.enabled && sessionCount === 0}
               onClick={() => setSelectedWorkoutId(workout.id)}
             >
-              <strong>{getDayPrefix(workout.title)}</strong>
+              <strong>{getDayLabel(workout.id)}</strong>
               <span>{sessionCount} registro(s)</span>
             </button>
           );

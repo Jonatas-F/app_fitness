@@ -2139,6 +2139,17 @@
   gap: 16px;
 }
 
+/* Sobrescreve o grid de 5 colunas do dashboard-tabs para 3 abas do treino */
+.workout-tabs {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+@media (max-width: 720px) {
+  .workout-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
 /* ── Mobile fino ≤ 430px ────────────────────────────────────────────────── */
 @media (max-width: 430px) {
   .workouts-clean-hero,

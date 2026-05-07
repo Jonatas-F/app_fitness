@@ -180,19 +180,29 @@ export default function Sidebar() {
       .finally(() => setSubLoading(false));
   }, []);
 
-  // Recarrega subscription quando o usuário faz login
+  // Recarrega subscription quando o usuário faz login ou quando a IA gera algo
   useEffect(() => {
-    function onAuth() {
+    function refreshSub() {
       const user = getStoredApiUser();
       if (!user) { setSubscription(null); setSubLoading(false); return; }
-      setSubLoading(true);
       apiRequest(apiEndpoints.billingSubscription)
         .then((data) => setSubscription(data?.subscription ?? null))
-        .catch(() => {})
-        .finally(() => setSubLoading(false));
+        .catch(() => {});
     }
+
+    function onAuth() {
+      setSubLoading(true);
+      refreshSub();
+      setSubLoading(false);
+    }
+
     window.addEventListener("shape-certo-auth-updated", onAuth);
-    return () => window.removeEventListener("shape-certo-auth-updated", onAuth);
+    // Dispatchado por workout.service e diet.service após geração com IA
+    window.addEventListener("shape-certo-tokens-updated", refreshSub);
+    return () => {
+      window.removeEventListener("shape-certo-auth-updated", onAuth);
+      window.removeEventListener("shape-certo-tokens-updated", refreshSub);
+    };
   }, []);
 
   return (
