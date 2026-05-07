@@ -158,6 +158,41 @@ function compactContext(context) {
   };
 }
 
+/**
+ * Contexto reduzido para geração de treino.
+ * Limita checkins ao mais recente e sessões ao histórico das últimas 3 semanas,
+ * para não explodir o context window.
+ */
+function compactWorkoutContext(context) {
+  const full = compactContext(context);
+  return {
+    ...full,
+    // Apenas o checkin mais recente — histórico completo não agrega valor para montagem do split
+    checkins: Array.isArray(full.checkins) ? full.checkins.slice(0, 1) : full.checkins,
+    // Limita sessões recentes a 5 para referência de exercícios já feitos
+    workout: full.workout
+      ? {
+          ...full.workout,
+          recentSessions: Array.isArray(full.workout.recentSessions)
+            ? full.workout.recentSessions.slice(0, 5)
+            : full.workout.recentSessions,
+        }
+      : full.workout,
+    // Histórico de progresso: apenas as últimas 2 medições
+    progress: full.progress
+      ? {
+          ...full.progress,
+          measurements: Array.isArray(full.progress.measurements)
+            ? full.progress.measurements.slice(0, 2)
+            : full.progress.measurements,
+          bioimpedance: Array.isArray(full.progress.bioimpedance)
+            ? full.progress.bioimpedance.slice(0, 1)
+            : full.progress.bioimpedance,
+        }
+      : full.progress,
+  };
+}
+
 function extractJson(text) {
   if (!text) {
     return null;
@@ -281,10 +316,11 @@ function buildSystemMessage(instructions, context, accountId, personalNameOverri
  * @param {Array}    [opts.history]        - histórico de conversa [{role, text}]
  * @param {boolean}  [opts.expectJson]    - true para dieta/treino (extrai JSON da resposta)
  */
-async function callOpenAi({ accountId, generationType, instructions, input, history = [], expectJson = false, personalNameOverride = null, modelOverride = null, maxTokensOverride = null }) {
+async function callOpenAi({ accountId, generationType, instructions, input, history = [], expectJson = false, personalNameOverride = null, modelOverride = null, maxTokensOverride = null, contextBuilder = null }) {
   requireOpenAiKey();
 
-  const context = compactContext(await loadAssistantContext(accountId));
+  const rawContext = await loadAssistantContext(accountId);
+  const context = contextBuilder ? contextBuilder(rawContext) : compactContext(rawContext);
 
   // Resolve modelo: override explícito > modelo por plano > default
   const planId = context?.account?.plan_type || "basico";
@@ -727,7 +763,8 @@ REGRAS FINAIS INEGOCIAVEIS:
     accountId,
     generationType: "workout",
     expectJson: true,
-    maxTokensOverride: 10000,
+    maxTokensOverride: 7000,
+    contextBuilder: compactWorkoutContext,
     instructions,
     input: [
       `Gere um protocolo de treino completo e atualizado.`,
