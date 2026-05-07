@@ -54,14 +54,14 @@ const BODY_PRO_STEP = {
 const STEPS = {
   basico: [
     { id: "basics",   title: "Seus dados básicos",    subtitle: "Informações essenciais para o Personal Virtual montar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
-    { id: "training", title: "Sua disponibilidade",   subtitle: "Marque os dias que você pode ir à academia e suas preferências de treino.", fields: ["trainingAvailableDays","muscleGroupCombinations","trainingPreferenceFreeText"] },
+    { id: "training", title: "Sua disponibilidade",   subtitle: "Marque os dias que você pode ir à academia e suas preferências de treino.", fields: ["trainingLevel","trainingAvailableDays","muscleGroupCombinations","trainingPreferenceFreeText"] },
     NUTRITION_STEP,
     { id: "goals",    title: "Suas expectativas",      subtitle: "Conte o que espera alcançar — quanto mais detalhes, melhor.", fields: ["notes"] },
     PERSONAL_STEP,
   ],
   intermediario: [
     { id: "basics",   title: "Seus dados básicos",     subtitle: "Informações essenciais para personalizar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
-    { id: "profile",  title: "Perfil de treino",        subtitle: "Experiência, tempo disponível e preferências de divisão.", fields: ["trainingExperience","trainingAge","availableMinutes","trainingPreference","muscleGroupCombinations","trainingPreferenceFreeText","favoriteExercises","workoutDayProtocol","injuries"] },
+    { id: "profile",  title: "Perfil de treino",        subtitle: "Experiência, tempo disponível e preferências de divisão.", fields: ["trainingLevel","availableMinutes","trainingPreference","muscleGroupCombinations","trainingPreferenceFreeText","favoriteExercises","workoutDayProtocol","injuries"] },
     { id: "state",    title: "Seu estado atual",         subtitle: "Como você está hoje e quais dias pode treinar.", fields: ["energy","sleepQuality","trainingAvailableDays"] },
     NUTRITION_STEP,
     BODY_INTER_STEP,
@@ -70,13 +70,68 @@ const STEPS = {
   ],
   pro: [
     { id: "basics",    title: "Seus dados básicos",      subtitle: "Informações essenciais para personalizar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
-    { id: "profile",   title: "Perfil de treino",         subtitle: "Experiência, tempo disponível e preferências de divisão.", fields: ["trainingExperience","trainingAge","availableMinutes","trainingPreference","muscleGroupCombinations","trainingPreferenceFreeText","favoriteExercises","workoutDayProtocol","injuries"] },
+    { id: "profile",   title: "Perfil de treino",         subtitle: "Experiência, tempo disponível e preferências de divisão.", fields: ["trainingLevel","availableMinutes","trainingPreference","muscleGroupCombinations","trainingPreferenceFreeText","favoriteExercises","workoutDayProtocol","injuries"] },
     { id: "state",     title: "Seu estado atual",          subtitle: "Sinais de recuperação e disponibilidade semanal.", fields: ["energy","sleepQuality","fatigueLevel","trainingPerformance","trainingAvailableDays"] },
     { id: "nutrition", title: "Alimentação",               subtitle: "A IA usa essas informações para criar um plano alimentar preciso.", fields: ["mealsPerDay","dietaryRestrictions","foodPreferences"], optional: true },
     BODY_PRO_STEP,
     PERSONAL_STEP,
   ],
 };
+
+// ── Nível de experiência unificado ────────────────────────────────────────────
+// Uma única pergunta que infere automaticamente trainingExperience + trainingAge
+
+export const TRAINING_LEVEL_OPTIONS = [
+  {
+    id: "nunca",
+    label: "Nunca treinei",
+    sublabel: "Iniciante",
+    badge: "🌱",
+    hint: "Começando do zero — a IA monta tudo com base no seu objetivo",
+    experience: "iniciante",
+    age: "nunca",
+  },
+  {
+    id: "menos-1-ano",
+    label: "Menos de 1 ano treinando",
+    sublabel: "Iniciante",
+    badge: "💪",
+    hint: "Menos de 12 meses — ainda na fase de adaptação e aprendizado dos movimentos",
+    experience: "iniciante",
+    age: "menos-6-meses",
+  },
+  {
+    id: "1-3-anos",
+    label: "1 a 3 anos treinando",
+    sublabel: "Intermediário",
+    badge: "🔥",
+    hint: "Já domina os movimentos básicos e tem consistência no treino",
+    experience: "intermediario",
+    age: "1-2-anos",
+  },
+  {
+    id: "3-5-anos",
+    label: "3 a 5 anos treinando",
+    sublabel: "Intermediário",
+    badge: "⚡",
+    hint: "Treinamento sólido com bom controle de volume e técnica",
+    experience: "intermediario",
+    age: "2-5-anos",
+  },
+  {
+    id: "mais-5-anos",
+    label: "Mais de 5 anos treinando",
+    sublabel: "Avançado",
+    badge: "🏆",
+    hint: "Alto domínio técnico, periodi­zação e otimização de volume",
+    experience: "avancado",
+    age: "mais-5-anos",
+  },
+];
+
+const TRAINING_LEVEL_MAP = Object.fromEntries(
+  TRAINING_LEVEL_OPTIONS.map(o => [o.id, { experience: o.experience, age: o.age }])
+);
 
 const WEEK_DAYS = [
   { id: "monday",    short: "SEG" }, { id: "tuesday",   short: "TER" },
@@ -103,10 +158,8 @@ const FIELD_DEFS = {
   weight:             { label: "Peso atual (kg)",    type: "text",   required: true, placeholder: "Ex: 85.4" },
   trainingAvailableDays: { label: "Quais dias pode treinar", type: "daypicker", required: false,
                             hint: "Marque os dias com disponibilidade real. A IA distribui os treinos com folgas bem posicionadas." },
-  trainingExperience: { label: "Nível de experiência", type: "select", required: false,
-                        options: [["","Selecione"],["iniciante","Iniciante"],["intermediario","Intermediário"],["avancado","Avançado"]] },
-  trainingAge:        { label: "Tempo de treinamento", type: "select", required: false,
-                        options: [["","Selecione"],["nunca","Nunca treinou"],["menos-6-meses","Menos de 6 meses"],["6-12-meses","6 a 12 meses"],["1-2-anos","1 a 2 anos"],["2-5-anos","2 a 5 anos"],["mais-5-anos","Mais de 5 anos"]] },
+  trainingLevel:      { label: "Há quanto tempo você treina?", type: "traininglevel", required: false },
+  // trainingExperience e trainingAge são derivados automaticamente de trainingLevel
   availableMinutes:   { label: "Tempo por sessão", type: "select", required: false,
                         options: [["","Selecione"],["30","30 min"],["45","45 min"],["60","60 min"],["75","75 min"],["90","90 min"],["120","120 min ou mais"]] },
   trainingPreference: { label: "Preferência de divisão de treino", type: "select", required: false,
@@ -372,6 +425,11 @@ export default function FirstCheckinModal({ planId, onComplete }) {
       if (field === "trainingAvailableDays") {
         next.weeklyTrainingDays = value ? String(value.split(",").filter(Boolean).length) : "";
       }
+      if (field === "trainingLevel") {
+        const mapped = TRAINING_LEVEL_MAP[value] || {};
+        next.trainingExperience = mapped.experience || "";
+        next.trainingAge        = mapped.age        || "";
+      }
       return next;
     });
   }
@@ -535,7 +593,42 @@ export default function FirstCheckinModal({ planId, onComplete }) {
         </div>
       );
     }
+    if (def.type === "traininglevel") {
+      const selected = form[key] || "";
+      return (
+        <div key={key} className="ob-field">
+          <label className="ob-field__label">{def.label}</label>
+          <div className="ob-traininglevel">
+            {TRAINING_LEVEL_OPTIONS.map(opt => (
+              <button
+                key={opt.id}
+                type="button"
+                className={`ob-traininglevel__btn${selected === opt.id ? " is-active" : ""}`}
+                onClick={() => handleChange(key, opt.id)}
+              >
+                <span className="ob-traininglevel__badge">{opt.badge}</span>
+                <span className="ob-traininglevel__info">
+                  <span className="ob-traininglevel__label">{opt.label}</span>
+                  <span className={`ob-traininglevel__sublabel ob-traininglevel__sublabel--${TRAINING_LEVEL_MAP[opt.id]?.experience || "iniciante"}`}>
+                    {opt.sublabel}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+          {selected && (
+            <p className="ob-field__hint ob-traininglevel__hint">
+              {TRAINING_LEVEL_OPTIONS.find(o => o.id === selected)?.hint}
+            </p>
+          )}
+        </div>
+      );
+    }
     if (def.type === "select") {
+      // Split preference só para inter/avançado
+      if (key === "trainingPreference" && form.trainingExperience !== "intermediario" && form.trainingExperience !== "avancado") {
+        return null;
+      }
       return (
         <div key={key} className="ob-field">
           <label className="ob-field__label">
@@ -549,6 +642,11 @@ export default function FirstCheckinModal({ planId, onComplete }) {
       );
     }
     if (def.type === "textarea") {
+      // Campos avançados só aparecem para intermediário/avançado
+      const isAdvancedOnlyField = key === "trainingPreferenceFreeText" || key === "favoriteExercises";
+      if (isAdvancedOnlyField && form.trainingExperience !== "intermediario" && form.trainingExperience !== "avancado") {
+        return null;
+      }
       return (
         <div key={key} className="ob-field">
           <label className="ob-field__label">
