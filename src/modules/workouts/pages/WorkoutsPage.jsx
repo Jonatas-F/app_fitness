@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useParams } from "react-router-dom";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StatusPill from "@/components/ui/StatusPill";
 import Skeleton from "@/components/ui/skeleton";
 import {
@@ -981,14 +980,27 @@ function WorkoutExecutionSection() {
         ))}
       </nav>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="workout-content-tabs">
-        <TabsList className="dashboard-tabs workout-tabs">
-          <TabsTrigger value="treino" className="dashboard-tab-trigger">Treino</TabsTrigger>
-          <TabsTrigger value="historico" className="dashboard-tab-trigger">Histórico</TabsTrigger>
-          <TabsTrigger value="calendario" className="dashboard-tab-trigger">Calendário</TabsTrigger>
-        </TabsList>
+      <div className="workout-content-tabs">
+        <nav className="workout-section-tabs" role="tablist" aria-label="Seções do treino">
+          {[
+            { id: "treino",    label: "Treino"     },
+            { id: "historico", label: "Histórico"  },
+            { id: "calendario",label: "Calendário" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              className={`workout-section-tab${activeTab === tab.id ? " is-active" : ""}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
 
-        <TabsContent value="treino">
+        {activeTab === "treino" && <div role="tabpanel">
           {isSessionActive && selectedExercise ? createPortal(
             <div className="live-session-overlay" role="dialog" aria-modal="true">
               <section className="live-session-panel">
@@ -1472,9 +1484,9 @@ function WorkoutExecutionSection() {
               })}
             </div>
           </article>
-        </TabsContent>
+        </div>}
 
-        <TabsContent value="historico">
+        {activeTab === "historico" && <div role="tabpanel">
           <div className="workout-history-overview">
             <article>
               <span>Última execução</span>
@@ -1530,9 +1542,9 @@ function WorkoutExecutionSection() {
               </div>
             </div>
           )}
-        </TabsContent>
+        </div>}
 
-        <TabsContent value="calendario">
+        {activeTab === "calendario" && <div role="tabpanel">
           <div className="workout-calendar glass-panel">
             {/* Navegação de mês */}
             <div className="workout-calendar__nav">
@@ -1633,8 +1645,8 @@ function WorkoutExecutionSection() {
               <span className="legend-item is-rest">· Descanso</span>
             </div>
           </div>
-        </TabsContent>
-      </Tabs>
+        </div>}
+      </div>
 
       {/* ── Modal de registro retroativo — fora das Tabs para funcionar de qualquer aba ── */}
       {isRetroLogging && retroWorkout && createPortal(
