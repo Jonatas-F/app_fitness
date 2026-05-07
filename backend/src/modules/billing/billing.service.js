@@ -863,6 +863,53 @@ export async function createSubscriptionChangeSession(
   return { url: portal.url, id: portal.id, mode: "portal", proration: prorationSummary };
 }
 
+/**
+ * Retorna o histórico de gerações de IA do período de cobrança vigente.
+ * Se não houver assinatura ativa, usa o mês corrente como fallback.
+ */
+export async function loadTokenHistory(accountId) {
+  const result = await pool.query(
+    `
+      WITH active_sub AS (
+        SELECT current_period_start, current_period_end
+        FROM subscriptions
+        WHERE account_id = $1
+        ORDER BY updated_at DESC, id DESC
+        LIMIT 1
+      )
+      SELECT
+        r.id,
+        r.generation_type,
+        r.status,
+        r.model,
+        r.tokens_input,
+        r.tokens_output,
+        r.tokens_total,
+        r.created_at
+      FROM ai_generation_runs r
+      WHERE r.account_id = $1
+        AND r.status = 'completed'
+        AND r.created_at >= COALESCE(
+          (SELECT current_period_start FROM active_sub),
+          date_trunc('month', now())
+        )
+      ORDER BY r.created_at DESC
+      LIMIT 200;
+    `,
+    [accountId]
+  );
+
+  return result.rows.map((row) => ({
+    id: String(row.id),
+    type: row.generation_type,
+    model: row.model,
+    tokensInput:  row.tokens_input  ?? 0,
+    tokensOutput: row.tokens_output ?? 0,
+    tokensTotal:  row.tokens_total  ?? 0,
+    createdAt: row.created_at,
+  }));
+}
+
 export async function loadBillingSummary(accountId) {
   const [paymentResult, subscriptionResult, paymentMethods] = await Promise.all([
     pool.query("select * from payment_profiles where account_id = $1 and gateway = 'stripe' limit 1;", [accountId]),

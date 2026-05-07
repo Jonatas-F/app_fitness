@@ -243,6 +243,34 @@ async function createRun({ accountId, generationType, model, instructions, input
   return result.rows[0];
 }
 
+/**
+ * Debita tokens consumidos do saldo da assinatura ativa do usuário.
+ * Usa GREATEST para nunca ir abaixo de zero.
+ */
+async function deductTokens(accountId, tokensUsed) {
+  if (!tokensUsed || tokensUsed <= 0) return;
+  try {
+    await pool.query(
+      `
+        UPDATE subscriptions
+        SET token_balance = GREATEST(0, token_balance - $2),
+            updated_at    = now()
+        WHERE id = (
+          SELECT id FROM subscriptions
+          WHERE account_id = $1
+            AND status IN ('active', 'trialing', 'past_due')
+          ORDER BY updated_at DESC, id DESC
+          LIMIT 1
+        )
+      `,
+      [accountId, tokensUsed]
+    );
+  } catch (err) {
+    // Não quebrar a geração por falha no débito — apenas loga
+    console.error("[ai] Falha ao debitar tokens:", err.message);
+  }
+}
+
 async function completeRun(runId, { text, usage, responseJson = null }) {
   const result = await pool.query(
     `
@@ -413,6 +441,11 @@ async function callOpenAi({ accountId, generationType, instructions, input, hist
     const responseJson = expectJson ? extractJson(text) : null;
 
     const completedRun = await completeRun(run.id, { text, usage, responseJson });
+
+    // Debitar tokens do saldo da assinatura ativa
+    if (usage.total) {
+      await deductTokens(accountId, usage.total);
+    }
 
     return {
       run: completedRun,

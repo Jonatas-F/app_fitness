@@ -9,6 +9,7 @@ export const apiEndpoints = {
   checkins: "/checkins",
   planChangeAcceptances: "/billing/plan-change-acceptances",
   billingSubscription: "/billing/subscription",
+  billingTokenHistory: "/billing/token-history",
   stripeCheckoutSession: "/billing/stripe/checkout-session",
   stripeSubscriptionChangeSession: "/billing/stripe/subscription-change-session",
   stripePaymentMethodSession: "/billing/stripe/payment-method-session",
