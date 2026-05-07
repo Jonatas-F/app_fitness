@@ -250,7 +250,7 @@ async function createRun({ accountId, generationType, model, instructions, input
 async function deductTokens(accountId, tokensUsed) {
   if (!tokensUsed || tokensUsed <= 0) return;
   try {
-    await pool.query(
+    const result = await pool.query(
       `
         UPDATE subscriptions
         SET token_balance = GREATEST(0, token_balance - $2),
@@ -262,9 +262,12 @@ async function deductTokens(accountId, tokensUsed) {
           ORDER BY updated_at DESC, id DESC
           LIMIT 1
         )
+        RETURNING token_balance
       `,
       [accountId, tokensUsed]
     );
+    const newBalance = result.rows[0]?.token_balance;
+    console.log(`[ai] tokens debitados: -${tokensUsed} → saldo=${newBalance ?? "n/a"} (account ${accountId})`);
   } catch (err) {
     // Não quebrar a geração por falha no débito — apenas loga
     console.error("[ai] Falha ao debitar tokens:", err.message);

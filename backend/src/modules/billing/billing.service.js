@@ -226,6 +226,11 @@ export async function provisionPartnerSubscriptions() {
           plan          = 'partner',
           status        = 'active',
           token_limit   = $2,
+          token_balance = CASE
+            WHEN date_trunc('month', subscriptions.current_period_start) < date_trunc('month', now())
+            THEN $2
+            ELSE subscriptions.token_balance
+          END,
           current_period_start = date_trunc('month', now()),
           current_period_end   = date_trunc('month', now()) + interval '1 month',
           updated_at    = current_timestamp;
@@ -277,6 +282,12 @@ export async function provisionAdminSubscriptions() {
           plan         = 'admin',
           status       = 'active',
           token_limit  = $2,
+          -- Reseta o saldo apenas quando começa um novo período (mês virou)
+          token_balance = CASE
+            WHEN date_trunc('month', subscriptions.current_period_start) < date_trunc('month', now())
+            THEN $2
+            ELSE subscriptions.token_balance
+          END,
           current_period_start = date_trunc('month', now()),
           current_period_end   = date_trunc('month', now()) + interval '1 month',
           updated_at   = current_timestamp;
