@@ -82,40 +82,63 @@
 .sidebar__link,
 .bottom-nav__link {
   text-decoration: none;
-  color: rgba(255, 255, 255, 0.78);
-  transition: all 0.2s ease-in-out;
+  color: rgba(255, 255, 255, 0.55);
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
+/* ── Menu geral (desktop) — estilo base PDF ─────────────────── */
 .sidebar__link {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 16px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.02);
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-.sidebar__link:hover,
+.sidebar__link:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.sidebar__link--active {
+  color: #fff;
+  background: rgba(255, 46, 46, 0.12);
+  border-color: rgba(255, 46, 46, 0.38);
+}
+
+.sidebar__link--active .sidebar__link-icon {
+  color: #ff2e2e;
+}
+
+/* ── Menu geral (mobile / bottom nav) — estilo base PDF ─────── */
 .bottom-nav__link:hover {
-  transform: scale(1.02);
-  color: #ffffff;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
-.sidebar__link--active,
 .bottom-nav__link--active {
-  color: #ffffff;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 46, 46, 0.18),
-    rgba(255, 255, 255, 0.08)
-  );
-  border: 1px solid rgba(255, 46, 46, 0.34);
-  box-shadow: 0 10px 28px rgba(255, 46, 46, 0.12);
+  color: #fff;
+  background: rgba(255, 46, 46, 0.14);
+  border-color: rgba(255, 46, 46, 0.4);
+}
+
+.bottom-nav__link--active .bottom-nav__icon,
+.bottom-nav__link--active svg {
+  color: #ff2e2e;
 }
 
 .sidebar__link-icon,
 .bottom-nav__icon {
   font-size: 1.05rem;
+  display: inline-flex;
+  align-items: center;
 }
 
 /* ── Token Chip — compacto, próximo ao logo ─────────────────── */
@@ -522,7 +545,7 @@ button.sidebar__token-chip:hover {
   right: 16px;
   bottom: 16px;
   display: none;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 6px;
   padding: 8px 6px;
   z-index: 50;
