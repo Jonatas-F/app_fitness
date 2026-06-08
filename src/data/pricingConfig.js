@@ -22,10 +22,10 @@ export const COST_CONFIG = {
   usdToBrl: 5.70,
 
   openai: {
-    /** GPT-4o-mini — USD por 1 milhão de tokens */
-    inputPricePerMToken:  0.150,
-    outputPricePerMToken: 0.600,
-    model: "gpt-4o-mini",
+    /** GPT-4o — USD por 1 milhão de tokens (revisão 2026-06: modelo único p/ todos os planos) */
+    inputPricePerMToken:  2.50,
+    outputPricePerMToken: 10.00,
+    model: "gpt-4o",
   },
 
   stripe: {
@@ -113,7 +113,9 @@ export const PLAN_PRICES = {
 };
 
 // ─── Custos calculados por usuário/mês (cenário moderado, 1.000 users) ──────
-// Valores de referência — NÃO usados em runtime, apenas para documentação
+// Valores de referência — NÃO usados em runtime, apenas para documentação.
+// ⚠️ REVISÃO 2026-06: estes números foram calculados com gpt-4o-mini e estão
+// DEFASADOS após a troca para gpt-4o (~16x o custo). Recalcular no xlsx.
 export const UNIT_COSTS_REFERENCE = {
   /** Custo OpenAI (USD/usuário/mês) — cenário moderado */
   openaiUsdPerUser: {

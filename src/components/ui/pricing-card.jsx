@@ -54,7 +54,7 @@ function PricingCard({
   onPlanSelect,
   className,
   title = "Escolha o plano ideal para sua rotina.",
-  description = "Compare acompanhamento, tokens e recursos antes de finalizar a assinatura.",
+  description = "Todos os planos usam a mesma IA de ponta (GPT-4o). Compare créditos de IA, acompanhamento e recursos antes de assinar.",
   locale = "pt-BR",
   currency = "BRL",
   ...props

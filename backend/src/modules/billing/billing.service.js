@@ -7,12 +7,14 @@ const stripe = process.env.STRIPE_SECRET_KEY
     })
   : null;
 
+// REVISÃO 2026-06: créditos recalibrados para GPT-4o (~16x o custo do mini),
+// mantendo preços-âncora e margem-alvo COGS ≤ ~30%. partner/admin seguem altos.
 const plans = {
-  basico:        { name: "Basico",        monthlyPrice: 29.90, tokenLimit: 260_000   },
-  intermediario: { name: "Intermediario", monthlyPrice: 59.90, tokenLimit: 1_500_000 },
-  pro:           { name: "Pro",           monthlyPrice: 99.90, tokenLimit: 4_500_000 },
+  basico:        { name: "Basico",        monthlyPrice: 29.90, tokenLimit: 350_000   },
+  intermediario: { name: "Intermediario", monthlyPrice: 59.90, tokenLimit: 900_000   },
+  pro:           { name: "Pro",           monthlyPrice: 99.90, tokenLimit: 1_600_000 },
   // Alias para registros antigos que usam 'avancado' no banco
-  avancado:      { name: "Pro",           monthlyPrice: 99.90, tokenLimit: 4_500_000 },
+  avancado:      { name: "Pro",           monthlyPrice: 99.90, tokenLimit: 1_600_000 },
   // Parceiros — acesso Pro gratuito
   partner:       { name: "Parceiro",      monthlyPrice: 0,     tokenLimit: 4_500_000 },
   // Administrador — acesso Pro, sem custo

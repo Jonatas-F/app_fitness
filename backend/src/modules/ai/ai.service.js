@@ -3,12 +3,13 @@ import { loadAssistantContext } from "../assistant/assistant.service.js";
 import { saveDietPlan } from "../diets/diets.service.js";
 import { saveWorkoutPlan } from "../workouts/workouts.service.js";
 
-const defaultModel       = process.env.OPENAI_MODEL            || "gpt-4o-mini";
+// REVISÃO 2026-06: GPT-4o em TODOS os planos (o gpt-4o-mini fazia alterações
+// incorretas). A diferença entre planos passa a ser só a quantidade de créditos.
+// Dá para sobrescrever via OPENAI_MODEL no .env do VPS se precisar dialer custo.
+const defaultModel       = process.env.OPENAI_MODEL            || "gpt-4o";
 // Modelo base para geração estruturada (treino/dieta) — todos os planos
 const structuredModel    = process.env.OPENAI_STRUCTURED_MODEL || defaultModel;
-// Modelos por plano — configure no .env do VPS para ativar modelos melhores
-// OPENAI_PRO_MODEL=gpt-4o      → plano Pro (análise de bioimpedância, mais dados)
-// OPENAI_PLUS_MODEL=gpt-4o-mini → plano Intermediário (manter mini por enquanto)
+// Overrides opcionais por plano (por padrão herdam gpt-4o)
 const proModel           = process.env.OPENAI_PRO_MODEL        || structuredModel;
 const plusModel          = process.env.OPENAI_PLUS_MODEL       || structuredModel;
 

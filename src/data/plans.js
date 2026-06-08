@@ -100,11 +100,20 @@ export const featureMatrix = [
     plans: ["intermediario", "pro"],
   },
 
-  // ── Tokens ───────────────────────────────────────────────────
+  // ── Créditos de IA ───────────────────────────────────────────
   {
-    name: "Tokens de IA por mês",
-    category: "Tokens",
-    plans: { basico: "~260k", intermediario: "~1,5M", pro: "~4,5M" },
+    name: "Modelo de IA",
+    category: "Créditos de IA",
+    plans: { basico: "GPT-4o", intermediario: "GPT-4o", pro: "GPT-4o" },
+  },
+  {
+    name: "Créditos de IA por mês",
+    category: "Créditos de IA",
+    plans: {
+      basico:        "~4 protocolos + 20 conversas",
+      intermediario: "~10 protocolos + 50 conversas",
+      pro:           "~18 protocolos + 90 conversas",
+    },
   },
 ];
 
@@ -116,9 +125,9 @@ export const subscriptionPlans = [
     monthlyPrice: 29.90,
     /** Preço anual em BRL (20% de desconto vs. 12x mensal) */
     annualPrice: 287.04,
-    tokens: "~260.000 tokens/mês",
-    workouts: "2-4 gerações de treino/mês",
-    meals: "2-4 gerações de dieta/mês",
+    tokens: "~4 protocolos + 20 conversas/mês",
+    workouts: "~4 gerações de treino/mês",
+    meals: "~4 gerações de dieta/mês",
     highlight: "Para começar com direção",
     /**
      * Destaques exibidos no cartão do plano.
@@ -126,11 +135,11 @@ export const subscriptionPlans = [
      */
     highlights: [
       { name: "Check-in semanal (peso, sinais, aderência)", isIncluded: true },
-      { name: "Geração de treino com IA", isIncluded: true },
-      { name: "Geração de dieta com IA", isIncluded: true },
+      { name: "Geração de treino com IA (GPT-4o)", isIncluded: true },
+      { name: "Geração de dieta com IA (GPT-4o)", isIncluded: true },
       { name: "Chat com Personal Virtual IA", isIncluded: true },
       { name: "Dashboard básico (resumo e feedback)", isIncluded: true },
-      { name: "~260k tokens de IA por mês", isIncluded: true },
+      { name: "~4 protocolos + 20 conversas de IA/mês", isIncluded: true },
     ],
     features: [
       "Check-in semanal (peso, altura, saciedade, sono, treino)",
@@ -145,9 +154,9 @@ export const subscriptionPlans = [
     name: "Intermediário",
     monthlyPrice: 59.90,
     annualPrice: 575.04,
-    tokens: "~1.500.000 tokens/mês",
-    workouts: "4-6 gerações/ajustes de treino",
-    meals: "4-6 gerações/ajustes de dieta",
+    tokens: "~10 protocolos + 50 conversas/mês",
+    workouts: "~10 gerações/ajustes de treino",
+    meals: "~10 gerações/ajustes de dieta",
     highlight: "Mais acompanhamento na rotina",
     featured: true,
     /**
@@ -155,6 +164,7 @@ export const subscriptionPlans = [
      */
     highlights: [
       { name: "Tudo do plano Básico, e mais:", isIncluded: true },
+      { name: "~10 protocolos + 50 conversas de IA/mês", isIncluded: true },
       { name: "Check-in mensal completo", isIncluded: true },
       { name: "Medidas corporais completas + bioimpedância", isIncluded: true },
       { name: "Fotos de progresso por check-in", isIncluded: true },
@@ -176,8 +186,8 @@ export const subscriptionPlans = [
     name: "Pro",
     monthlyPrice: 99.90,
     annualPrice: 959.04,
-    tokens: "~4.500.000 tokens/mês",
-    workouts: "Gerações ilimitadas por protocolo",
+    tokens: "~18 protocolos + 90 conversas/mês",
+    workouts: "~18 gerações/ajustes de treino",
     meals: "Dietas e substituições completas",
     highlight: "Acesso total à plataforma",
     /**
@@ -185,11 +195,11 @@ export const subscriptionPlans = [
      */
     highlights: [
       { name: "Tudo do plano Intermediário, e mais:", isIncluded: true },
+      { name: "~18 protocolos + 90 conversas de IA/mês", isIncluded: true },
       { name: "Check-in diário de sinais", isIncluded: true },
       { name: "Fotos de progresso por check-in", isIncluded: true },
       { name: "IA com contexto total e histórico completo", isIncluded: true },
       { name: "Upload de vídeos de exercícios", isIncluded: true },
-      { name: "~4,5M tokens de IA por mês", isIncluded: true },
     ],
     features: [
       "Todos os check-ins (diário, semanal, mensal)",

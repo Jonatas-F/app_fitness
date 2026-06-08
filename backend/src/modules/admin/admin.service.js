@@ -5,10 +5,11 @@ const ADMIN_EMAIL = "jonatas.freire.prof@gmail.com";
 /** Planos disponíveis para atribuição manual pelo admin */
 const ALLOWED_PLANS = ["basico", "intermediario", "pro", "partner", "admin"];
 
+// REVISÃO 2026-06: créditos recalibrados para GPT-4o (ver billing.service.js / nota 05).
 const PLAN_TOKEN_LIMITS = {
-  basico:        260_000,
-  intermediario: 1_500_000,
-  pro:           4_500_000,
+  basico:        350_000,
+  intermediario: 900_000,
+  pro:           1_600_000,
   partner:       4_500_000,
   admin:         4_500_000,
 };
