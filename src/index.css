@@ -557,50 +557,64 @@ ol {
   margin-top: 22px;
 }
 
+/* ── Botões padrão (base = .plan-cta da base PDF) ──────────────────────────
+   Primário: vermelho sólido · Ghost: contorno que vira accent no hover.
+   Replicado de WorkoutPlanOverview "Iniciar treino" / "Baixar plano". */
 .primary-button,
 .secondary-button,
 .ghost-button {
-  min-height: 48px;
-  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 20px;
   border-radius: 8px;
   font-weight: 700;
-  transition: var(--transition);
+  letter-spacing: 0.03em;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
 }
 
 .primary-button {
   color: #fff;
-  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
-  box-shadow: 0 12px 24px rgba(229, 9, 20, 0.28);
+  background: #ff2e2e;
+  border-color: #ff2e2e;
 }
 
 .primary-button:hover {
-  transform: scale(1.03);
-  filter: brightness(1.06);
-  box-shadow: 0 18px 34px rgba(229, 9, 20, 0.35);
+  background: #ff4444;
+  border-color: #ff4444;
+}
+
+.primary-button:active,
+.ghost-button:active,
+.secondary-button:active {
+  transform: scale(0.98);
 }
 
 .secondary-button {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .secondary-button:hover {
-  transform: scale(1.03);
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.10);
+  border-color: rgba(255, 255, 255, 0.22);
 }
 
 .ghost-button {
-  color: var(--text-secondary);
+  color: rgba(255, 255, 255, 0.80);
   background: transparent;
-  border: 1px dashed rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 .ghost-button:hover {
-  transform: scale(1.03);
-  color: var(--text-primary);
-  border-color: rgba(255, 255, 255, 0.20);
-  background: rgba(255, 255, 255, 0.05);
+  color: #ff2e2e;
+  border-color: rgba(255, 46, 46, 0.50);
+  background: rgba(255, 46, 46, 0.06);
 }
 
 .grid {
@@ -1034,13 +1048,9 @@ ol {
     inset 0 1px 0 rgba(255,255,255,0.10) !important;
 }
 
-/* Botão primário — glow no hover */
+/* Botão primário — sombra sutil no hover (estilo flat .plan-cta) */
 .primary-button:hover {
-  box-shadow:
-    0 0 0 1px rgba(255, 77, 61, 0.40),
-    0 8px 24px rgba(255, 77, 61, 0.40),
-    0 16px 40px rgba(255, 77, 61, 0.20),
-    inset 0 1px 0 rgba(255,255,255,0.20) !important;
+  box-shadow: 0 8px 22px rgba(255, 46, 46, 0.22) !important;
 }
 
 /* Badge ativo — glow */
