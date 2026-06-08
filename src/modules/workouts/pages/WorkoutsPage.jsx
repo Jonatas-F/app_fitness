@@ -71,6 +71,7 @@ function createEditExercise(workoutId, name, sourceEx = null) {
 }
 import { PlanExportButton } from "@/components/PlanExportButton";
 import WorkoutPlanOverview from "@/components/plan/WorkoutPlanOverview";
+import WorkoutSessionModal from "@/components/plan/WorkoutSessionModal";
 import { loadCheckins } from "../../../data/checkinStorage";
 import "./WorkoutsPage.css";
 
@@ -2017,19 +2018,21 @@ export default function WorkoutsPage() {
           onStartWorkout={() => setMode("execute")}
         />
         {mode === "execute" && (
-          <div className="plan-exec-overlay" role="dialog" aria-modal="true" onClick={() => setMode("overview")}>
-            <div className="plan-exec-modal" onClick={(e) => e.stopPropagation()}>
-              <div className="plan-exec-modal__bar">
-                <button type="button" className="plan-back-bar" onClick={() => setMode("overview")}>
-                  ← Voltar ao plano
-                </button>
-                <button type="button" className="plan-exec-close" aria-label="Fechar" onClick={() => setMode("overview")}>
-                  ✕
-                </button>
-              </div>
-              <WorkoutExecutionSection />
-            </div>
-          </div>
+          <WorkoutSessionModal
+            plan={overviewData.plan}
+            onClose={(res) => {
+              setMode("overview");
+              if (res?.finished) {
+                hydrateWorkoutExecutionFromApi().then((r) => {
+                  if (r?.error) return;
+                  setOverviewData({
+                    plan: r.plan || loadWorkoutExecution(),
+                    checkin: loadCheckins().find((c) => c.status !== "missed") || {},
+                  });
+                });
+              }
+            }}
+          />
         )}
       </div>
     );
