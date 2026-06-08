@@ -2006,9 +2006,9 @@ export default function WorkoutsPage() {
     return () => { ignore = true; };
   }, []);
 
-  const showOverview = viewKey === "list" && mode === "overview";
-
-  if (showOverview) {
+  // Rota padrão (/treinos): visão geral estilo PDF; "Iniciar treino" abre o
+  // console de execução como POP-UP no mesmo layout (não troca para a página antiga).
+  if (viewKey === "list") {
     return (
       <div className="workouts-page">
         <WorkoutPlanOverview
@@ -2016,23 +2016,34 @@ export default function WorkoutsPage() {
           checkin={overviewData.checkin}
           onStartWorkout={() => setMode("execute")}
         />
+        {mode === "execute" && (
+          <div className="plan-exec-overlay" role="dialog" aria-modal="true" onClick={() => setMode("overview")}>
+            <div className="plan-exec-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="plan-exec-modal__bar">
+                <button type="button" className="plan-back-bar" onClick={() => setMode("overview")}>
+                  ← Voltar ao plano
+                </button>
+                <button type="button" className="plan-exec-close" aria-label="Fechar" onClick={() => setMode("overview")}>
+                  ✕
+                </button>
+              </div>
+              <WorkoutExecutionSection />
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
+  // Rotas específicas (/treinos/gerar, /treinos/:id, /treinos/historico) — layout próprio
   return (
     <div className="workouts-page">
-      {viewKey === "list" && mode === "execute" && (
-        <button type="button" className="plan-back-bar" onClick={() => setMode("overview")}>
-          ← Voltar ao plano
-        </button>
-      )}
       <header className="workouts-clean-hero glass-panel">
         <span>{content.badge}</span>
         <h1>{content.title}</h1>
         <p>Plano de treino, execução, vídeos e histórico de cargas do protocolo atual.</p>
       </header>
-      {["list", "generate", "detail"].includes(viewKey) ? <WorkoutExecutionSection /> : null}
+      {["generate", "detail"].includes(viewKey) ? <WorkoutExecutionSection /> : null}
       {viewKey === "history" ? <WorkoutHistorySection /> : null}
     </div>
   );
