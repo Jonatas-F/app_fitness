@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StatusPill from "@/components/ui/StatusPill";
+import { PlanExportButton } from "@/components/PlanExportButton";
+import DietPlanOverview from "@/components/plan/DietPlanOverview";
+import MealTrackingView from "@/components/plan/MealTrackingView";
+import AiGeneratingScreen from "@/components/shared/AiGeneratingScreen";
+import { generateDietWithAi } from "../../../services/ai/diet.service";
 import { loadCheckins } from "../../../data/checkinStorage";
 import {
   dietDays,
@@ -283,6 +288,14 @@ export default function NutritionPage() {
   const [retroMealEntries, setRetroMealEntries] = useState([]);
   const [openMeals, setOpenMeals] = useState([]);
   const [mealCompletionModal, setMealCompletionModal] = useState(null);
+  // Visão geral estilo PDF é o padrão; "Acompanhar refeições" abre a gestão completa.
+  const [viewMode, setViewMode] = useState("overview"); // overview | track
+  // Regeneração / ajuste da dieta
+  const [showGen, setShowGen] = useState(false);
+  const [dietStatus, setDietStatus] = useState("generating");
+  const [dietError, setDietError] = useState(null);
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  const [adjustText, setAdjustText] = useState("");
   const metrics = getDietMetrics(diet, dietHistory);
   const latestCheckin = getLatestCompletedCheckin();
   const waterRecommendation = getWaterRecommendation(latestCheckin);
@@ -658,722 +671,95 @@ export default function NutritionPage() {
     closeMealDoneModal();
   }
 
+
+  // ── Ações da dieta: regenerar plano / ajustar (substituir, eliminar) ───────
+  async function regenerateDiet(requestedDietChanges = "") {
+    setDietError(null);
+    setDietStatus("generating");
+    setShowGen(true);
+    try {
+      await generateDietWithAi({
+        persist: true,
+        goal: latestCheckin?.goal || diet?.goal || "",
+        keepDietProtocol: "nao",
+        requestedDietChanges,
+      });
+      const fresh = await hydrateDietProtocolFromApi().catch(() => null);
+      setDiet(fresh && !fresh.error && fresh.diet ? fresh.diet : loadDietProtocol());
+      setDietStatus("ok");
+    } catch (err) {
+      setDietStatus("error");
+      setDietError(err?.message || "Não foi possível gerar a dieta.");
+    }
+  }
+
+  function handleApplyAdjust() {
+    const text = adjustText.trim();
+    if (!text) return;
+    setAdjustOpen(false);
+    setAdjustText("");
+    regenerateDiet(text);
+  }
+
+  // Tela de geração (reaproveita o loader da IA, só a dieta)
+  if (showGen) {
+    return (
+      <AiGeneratingScreen
+        workoutEnabled={false}
+        dietStatus={dietStatus}
+        dietError={dietError}
+        onRetryDiet={() => regenerateDiet()}
+        onComplete={() => { setShowGen(false); setViewMode("overview"); }}
+        completeLabel="Ver dieta atualizada →"
+      />
+    );
+  }
+
+  // Acompanhamento simples — só marcar refeições feitas + histórico
+  if (viewMode === "track") {
+    return (
+      <section className="nutrition-page">
+        <button type="button" className="plan-back-bar" onClick={() => setViewMode("overview")}>
+          ← Voltar ao plano
+        </button>
+        <MealTrackingView diet={diet} />
+      </section>
+    );
+  }
+
+  // Padrão: visão geral estilo PDF + ações de ajuste
   return (
     <section className="nutrition-page">
-      <header className="nutrition-hero glass-panel" data-tour="diet-content">
-        <span>Dietas</span>
-        <h1>Plano alimentar por refeições habilitadas.</h1>
-        <p>
-          O Personal Virtual define quais refeições entram no plano com base na
-          agenda, objetivo, check-in e preferências do usuário.
-        </p>
-      </header>
+      <DietPlanOverview
+        diet={diet}
+        checkin={latestCheckin}
+        onTrack={() => setViewMode("track")}
+        onRegenerate={() => regenerateDiet()}
+        onAdjust={() => setAdjustOpen(true)}
+      />
 
-      {feedback ? <p className="nutrition-feedback">{feedback}</p> : null}
-
-      <section className="nutrition-metrics">
-        {nutritionMetrics.map((item) => (
-          <article
-            key={item.label}
-            className={`module-stat glass-panel ${item.label === "Meta de água" ? "nutrition-water-card" : ""}`}
-          >
-            <span className="module-stat__label">{item.label}</span>
-            <strong className="module-stat__value">{item.value}</strong>
-            <span className="module-stat__helper">{item.trend}</span>
-            {item.detail ? <small>{item.detail}</small> : null}
-          </article>
-        ))}
-      </section>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="nutrition-tabs-root">
-        <TabsList className="nutrition-tabs dashboard-tabs" variant="line">
-          <TabsTrigger value="refeicoes" className="nutrition-tab-trigger dashboard-tab-trigger">
-            <strong>Refeições</strong>
-            <StatusPill tone="neutral">{selectedDayActiveMeals} ativas</StatusPill>
-          </TabsTrigger>
-          <TabsTrigger value="historico" className="nutrition-tab-trigger dashboard-tab-trigger">
-            <strong>Histórico</strong>
-            <StatusPill tone="neutral">{mealLogs.length} registros</StatusPill>
-          </TabsTrigger>
-          <TabsTrigger value="config" className="nutrition-tab-trigger dashboard-tab-trigger">
-            <strong>Config</strong>
-            <StatusPill tone="neutral">{diet.userAvailableMeals || "--"} refeições</StatusPill>
-          </TabsTrigger>
-          <TabsTrigger value="calendario" className="nutrition-tab-trigger dashboard-tab-trigger">
-            <strong>Calendário</strong>
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="historico" className="nutrition-tab-panel dashboard-tab-panel">
-        {/* === HISTÓRICO === */}
-        <section className="nutrition-history-panel">
-          <div>
-            <h2>Últimos registros de refeição</h2>
-            <p>
-              Dias com confirmação manual ou automática alimentam o dashboard, check-ins e futuras análises do Personal Virtual.
-            </p>
-          </div>
-
-          <div className="nutrition-meal-calendar">
-            {recentMealCalendar.map((day) => (
-              <article
-                key={day.key}
-                className={`nutrition-meal-calendar__day ${day.completed ? "has-meals" : "is-empty"}`}
-              >
-                <span>{day.label}</span>
-                <strong>{day.completed}</strong>
-                <small>{day.automatic ? `${day.automatic} auto` : "manual"}</small>
-              </article>
-            ))}
-          </div>
-
-          <div className="nutrition-history-list">
-            <h3>Registros do dia selecionado</h3>
-            {selectedDayMealLogs.length ? (
-              selectedDayMealLogs.map((log) => (
-                <article key={log.id || `${log.dayId}-${log.slotId}-${log.logDate}`}>
-                  <strong>{log.mealName || "Refeição registrada"}</strong>
-                  <span>
-                    {log.logDate}
-                  </span>
-                </article>
-              ))
-            ) : (
-              <NutritionEmptyState
-                title="Nenhuma refeição registrada neste dia"
-                description="Ao confirmar uma refeição, ela aparece aqui e passa a alimentar o dashboard e a IA."
-                helper="Use o botão de check nas refeições habilitadas para registrar a execução."
-              />
-            )}
-          </div>
-
-          <div className="nutrition-history-list">
-            <h3>Dietas anteriores</h3>
-            {dietHistory.length ? (
-              dietHistory.slice(0, 10).map((item) => (
-                <article key={item.id || item.metadata?.closedAt} className="nutrition-protocol-history-item">
-                  <div>
-                    <strong>{item.title || "Dieta arquivada"}</strong>
-                    <span>
-                      {item.created_at
-                        ? new Date(item.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })
-                        : (item.startDate || "--")}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    className="ghost-button"
-                    disabled={isRestoringDiet === item.id}
-                    onClick={() => handleRestoreDietPlan(item.id)}
-                  >
-                    {isRestoringDiet === item.id ? "Restaurando..." : "Restaurar"}
-                  </button>
-                </article>
-              ))
-            ) : (
-              <NutritionEmptyState
-                title="Nenhuma dieta arquivada"
-                description="Quando um protocolo alimentar for substituído, o histórico antigo fica salvo aqui."
-              />
-            )}
-          </div>
-        </section>
-        </TabsContent>
-
-        <TabsContent value="config" className="nutrition-tab-panel dashboard-tab-panel">
-        {/* === CONFIG === */}
-      <section className="nutrition-config">
-        <div>
-          <h2>Agenda alimentar e restrições</h2>
-          <p>
-            Se o usuário informar poucas refeições disponíveis, o Personal
-            Virtual respeita a agenda e indica quando o ideal seria aumentar.
-          </p>
-        </div>
-
-        <div className="nutrition-config__grid">
-          <label>
-            Refeições disponíveis por dia
-            <select
-              value={diet.userAvailableMeals}
-              onChange={(event) => handleDietField("userAvailableMeals", event.target.value)}
-            >
-              <option value="">Selecione</option>
-              {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((value) => (
-                <option key={value} value={value}>
-                  {value} refeição{value === "1" ? "" : "ões"}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            Recomendação do Personal Virtual
-            <input
-              value={diet.recommendedMeals}
-              onChange={(event) => handleDietField("recommendedMeals", event.target.value)}
-              placeholder="Ex.: 5"
-            />
-          </label>
-
-          <label>
-            Restrições, alergias e intolerâncias
+      {adjustOpen && (
+        <div className="diet-adjust-overlay" role="dialog" aria-modal="true" onClick={() => setAdjustOpen(false)}>
+          <div className="diet-adjust-panel glass-panel" onClick={(e) => e.stopPropagation()}>
+            <h3>Ajustar dieta</h3>
+            <p>Descreva o que mudar — substituir um alimento, eliminar um ingrediente, pedir mais variedade. A IA regenera o plano mantendo seus macros.</p>
             <textarea
-              value={diet.restrictionNotes}
-              onChange={(event) => handleDietField("restrictionNotes", event.target.value)}
-              placeholder="Ex.: lactose, glúten, oleaginosas, frutos do mar..."
+              rows={4}
+              value={adjustText}
+              onChange={(e) => setAdjustText(e.target.value)}
+              placeholder="Ex: trocar frango por peixe no almoço; eliminar lactose; mais opções no café da manhã"
             />
-          </label>
-
-          <label>
-            Preferências e alimentos favoritos
-            <textarea
-              value={diet.preferenceNotes}
-              onChange={(event) => handleDietField("preferenceNotes", event.target.value)}
-              placeholder="Ex.: ovos, arroz, carne, frutas, café..."
-            />
-          </label>
-        </div>
-
-        <button type="button" className="primary-button" onClick={requestDietFeedback}>
-          Solicitar ajuste do Personal Virtual
-        </button>
-      </section>
-        </TabsContent>
-
-        <TabsContent value="refeicoes" className="nutrition-tab-panel dashboard-tab-panel">
-        {/* === REFEIÇÕES === */}
-      <section className="nutrition-week-panel">
-        <div>
-          <h2>Dietas por dia da semana</h2>
-          <p>
-            A IA usa a variação definida no check-in para decidir se repete pratos
-            ao longo da semana ou cria mais diversidade entre os dias.
-          </p>
-        </div>
-
-        <nav className="nutrition-week-tabs" role="tablist" aria-label="Dias da dieta" data-tour="diet-days">
-          {dietDays.map((day) => {
-            const dayPlan = diet.dayPlans?.find((item) => item.id === day.id);
-            const enabledMeals = (dayPlan?.meals || []).filter((meal) => meal.enabled).length;
-
-            return (
-              <button
-                key={day.id}
-                type="button"
-                className={selectedDayId === day.id ? "is-selected" : ""}
-                onClick={() => {
-                  setSelectedDayId(day.id);
-                  setOpenMeals([]);
-                }}
-              >
-                <strong>{day.short}</strong>
-                <span>{day.name}</span>
-                <em>{enabledMeals} refeições</em>
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="nutrition-selected-day">
-          <div>
-            <span>Dia selecionado</span>
-            <strong>Dieta de {selectedDayPlan.name}</strong>
-          </div>
-          <div>
-            <span>Refeições ativas</span>
-            <strong>{selectedDayActiveMeals}/{selectedDayPlan.meals.length}</strong>
-          </div>
-        </div>
-
-        <div className="nutrition-schedule-summary">
-          <article>
-            <span>Janela alimentar</span>
-            <strong>
-              {latestCheckin?.firstMealTime && latestCheckin?.lastMealTime
-                ? `${latestCheckin.firstMealTime} até ${latestCheckin.lastMealTime}`
-                : "Falta preencher"}
-            </strong>
-            <p>Usada para distribuir os horários das refeições ativas.</p>
-          </article>
-          <article>
-            <span>Agua no dia</span>
-            <strong>{waterRecommendation.value}</strong>
-            <p>
-              {waterSchedule.portions} · {waterSchedule.window}
-            </p>
-          </article>
-          <article>
-            <span>Espaçamento</span>
-            <strong>{waterSchedule.detail}</strong>
-            <p>Esses horários alimentam as notificações configuradas.</p>
-          </article>
-        </div>
-      </section>
-
-      <section className="meal-grid">
-        {selectedDayPlan.meals.map((meal, mealIndex) => {
-          const mealLogKey = `${selectedDayPlan.id}-${meal.id}-${todayKey}`;
-          const mealLog = mealLogMap.get(mealLogKey);
-          const suggestedTime = mealSchedule[meal.id] || meal.time || "";
-
-          return (
-            <article
-              key={`${selectedDayPlan.id}-${meal.id}`}
-              data-tour={meal.id === "almoco" ? "diet-meal" : undefined}
-              className={`meal-card glass-panel ${meal.enabled ? "is-enabled" : "is-disabled"} ${
-                openMeals.includes(meal.id) ? "is-open" : ""
-              } ${mealLog ? "is-completed" : ""}`}
-            >
-            <div className="meal-card__header">
-              <button
-                type="button"
-                className="meal-card__toggle"
-                onClick={() => toggleMeal(meal)}
-                disabled={!meal.enabled}
-                aria-expanded={openMeals.includes(meal.id)}
-              >
-                <span><ChevronDown aria-hidden="true" /></span>
-                <div>
-                  <h2>{meal.name}</h2>
-                  <p>
-                    {mealLog
-                      ? `Refeição realizada ${formatTime(mealLog.performedAt || mealLog.scheduledAt)}`
-                      : meal.enabled
-                        ? "Habilitada no plano"
-                        : "Desabilitada neste protocolo"}
-                  </p>
-                  <small>
-                    {meal.enabled
-                      ? suggestedTime
-                        ? `Horário sugerido: ${suggestedTime}`
-                        : "Horário pendente no check-in"
-                      : "Sem horário neste protocolo"}
-                  </small>
-                </div>
-              </button>
-              <span className={mealLog ? "meal-card__status is-done" : "meal-card__status"}>
-                {mealLog ? <CheckIcon /> : null}
-                {mealLog ? "Realizada" : meal.enabled ? "Ativa" : "Inativa"}
-              </span>
-            </div>
-
-            {openMeals.includes(meal.id) ? (
-              <>
-                <div className="meal-card__tracking">
-                  <article>
-                    <span>Horário recomendado</span>
-                    <strong>{suggestedTime || "Pendente"}</strong>
-                  </article>
-                  <article>
-                    <span>Status de hoje</span>
-                    <strong>
-                      {mealLog
-                        ? `${mealLog.source === "automatic" ? "Automático" : "Manual"} às ${formatTime(
-                            mealLog.performedAt || mealLog.scheduledAt
-                          )}`
-                        : "Não registrado"}
-                    </strong>
-                  </article>
-                  <button
-                    type="button"
-                    className="primary-button"
-                    disabled={!meal.enabled}
-                    onClick={() => openMealDoneModal(meal)}
-                  >
-                    {mealLog ? "Atualizar refeição realizada" : "Marcar refeição realizada"}
-                  </button>
-                </div>
-
-                {/* ── Campos travados: somente o Personal Virtual pode editar ──── */}
-                <div className="meal-card__ai-lock">
-                  <span>🔒</span>
-                  <span>Campos definidos pelo Personal Virtual — use o campo abaixo para solicitar ajustes</span>
-                </div>
-
-                <div className="meal-card__macros">
-                  <label>
-                    Calorias
-                    <input
-                      readOnly
-                      value={meal.calories || ""}
-                      className="meal-field--readonly"
-                      placeholder="--"
-                    />
-                  </label>
-                  <label>
-                    Proteína
-                    <input
-                      readOnly
-                      value={meal.protein || ""}
-                      className="meal-field--readonly"
-                      placeholder="--"
-                    />
-                  </label>
-                  <label>
-                    Carboidrato
-                    <input
-                      readOnly
-                      value={meal.carbs || ""}
-                      className="meal-field--readonly"
-                      placeholder="--"
-                    />
-                  </label>
-                  <label>
-                    Gorduras
-                    <input
-                      readOnly
-                      value={meal.fats || ""}
-                      className="meal-field--readonly"
-                      placeholder="--"
-                    />
-                  </label>
-                </div>
-
-                <label className="meal-card__textarea">
-                  Alimentos e quantidades
-                  <textarea
-                    readOnly
-                    value={meal.foods || ""}
-                    className="meal-field--readonly"
-                    placeholder="O Personal Virtual preencherá os alimentos desta refeição."
-                  />
-                </label>
-
-                <label className="meal-card__textarea">
-                  Observações
-                  <textarea
-                    readOnly
-                    value={meal.notes || ""}
-                    className="meal-field--readonly"
-                    placeholder="Substituições, horários, preparo..."
-                  />
-                </label>
-
-                {/* ── Solicitar ajuste ─────────────────────────────────────── */}
-                <div className="meal-adjustment-request">
-                  <p className="meal-adjustment-request__title">
-                    Solicitar ajuste ao Personal Virtual
-                  </p>
-                  <textarea
-                    className="meal-adjustment-request__textarea"
-                    value={adjustmentText[meal.id] || ""}
-                    onChange={(e) =>
-                      setAdjustmentText((prev) => ({ ...prev, [meal.id]: e.target.value }))
-                    }
-                    placeholder="Ex.: Quero retirar a aveia e substituir por granola. Prefiro adicionar mais proteina..."
-                  />
-                  <div className="meal-adjustment-scope">
-                    <label
-                      className={`meal-adjustment-scope__option${
-                        (adjustmentScope[meal.id] || "day") === "day" ? " is-selected" : ""
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name={`adj-scope-${meal.id}`}
-                        value="day"
-                        checked={(adjustmentScope[meal.id] || "day") === "day"}
-                        onChange={() =>
-                          setAdjustmentScope((prev) => ({ ...prev, [meal.id]: "day" }))
-                        }
-                      />
-                      Apenas {selectedDayPlan.name}
-                    </label>
-                    <label
-                      className={`meal-adjustment-scope__option${
-                        adjustmentScope[meal.id] === "all" ? " is-selected" : ""
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name={`adj-scope-${meal.id}`}
-                        value="all"
-                        checked={adjustmentScope[meal.id] === "all"}
-                        onChange={() =>
-                          setAdjustmentScope((prev) => ({ ...prev, [meal.id]: "all" }))
-                        }
-                      />
-                      Todos os {meal.name}
-                    </label>
-                  </div>
-                  <button
-                    type="button"
-                    className="meal-adjustment-btn"
-                    disabled={!adjustmentText[meal.id]}
-                    onClick={() => handleSendAdjustmentRequest(meal)}
-                  >
-                    Solicitar ajuste
-                  </button>
-                </div>
-              </>
-            ) : null}
-          </article>
-          );
-        })}
-      </section>
-        </TabsContent>
-
-        {/* ═══════════════════════════════════════════════════════════
-            CALENDÁRIO — lançamento retroativo de refeições
-            ═══════════════════════════════════════════════════════════ */}
-        <TabsContent value="calendario" className="nutrition-tab-panel dashboard-tab-panel">
-          <div className="diet-calendar glass-panel">
-            {/* Navegação de mês */}
-            <div className="diet-calendar__nav">
-              <button
-                type="button"
-                className="diet-calendar__nav-btn"
-                onClick={() =>
-                  setMealCalendarDate((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))
-                }
-              >
-                ←
-              </button>
-              <strong className="diet-calendar__nav-title">
-                {mealCalendarDate.toLocaleDateString("pt-BR", {
-                  month: "long",
-                  year: "numeric",
-                })}
-              </strong>
-              <button
-                type="button"
-                className="diet-calendar__nav-btn"
-                onClick={() =>
-                  setMealCalendarDate((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))
-                }
-              >
-                →
-              </button>
-            </div>
-
-            {/* Grade 7 colunas */}
-            <div className="diet-calendar__grid">
-              {["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"].map((d) => (
-                <div key={d} className="diet-calendar-weekday">{d}</div>
-              ))}
-
-              {buildDietCalendarCells(
-                mealCalendarDate.getFullYear(),
-                mealCalendarDate.getMonth()
-              ).map((cell, i) => {
-                const today = new Date();
-                const isToday =
-                  !cell.outside &&
-                  cell.date.getDate() === today.getDate() &&
-                  cell.date.getMonth() === today.getMonth() &&
-                  cell.date.getFullYear() === today.getFullYear();
-                const status = cell.outside
-                  ? null
-                  : getDietDayStatus(cell.date, diet, mealLogs);
-                const dayId = getDietDayIdFromDate(cell.date);
-                const dayPlan = !cell.outside
-                  ? diet.dayPlans?.find((p) => p.id === dayId)
-                  : null;
-                const enabledCount = (dayPlan?.meals || []).filter((m) => m.enabled).length;
-                const isClickable =
-                  !cell.outside &&
-                  status !== null &&
-                  status !== "rest" &&
-                  status !== "future";
-
-                return (
-                  <div
-                    key={i}
-                    role={isClickable ? "button" : undefined}
-                    tabIndex={isClickable ? 0 : undefined}
-                    className={[
-                      "diet-calendar-day",
-                      cell.outside ? "diet-calendar-day--outside" : "",
-                      isToday ? "is-today" : "",
-                      status ? `is-${status}` : "",
-                      isClickable ? "is-clickable" : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                    onClick={() => isClickable && handleDietCalendarDayClick(cell.date)}
-                    onKeyDown={(e) =>
-                      e.key === "Enter" &&
-                      isClickable &&
-                      handleDietCalendarDayClick(cell.date)
-                    }
-                    title={
-                      !cell.outside && enabledCount
-                        ? `${dayPlan?.name || ""} — ${enabledCount} refeição(ões)`
-                        : undefined
-                    }
-                  >
-                    <span className="diet-calendar-day__num">{cell.date.getDate()}</span>
-                    {!cell.outside && status === "done" && (
-                      <span className="diet-calendar-day__dot" />
-                    )}
-                    {!cell.outside && enabledCount > 0 && (
-                      <span className="diet-calendar-day__count">{enabledCount}</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Legenda */}
-            <div className="diet-calendar__legend">
-              <span className="diet-legend-item is-done">✓ Registrado</span>
-              <span className="diet-legend-item is-missed">✗ Perdido</span>
-              <span className="diet-legend-item is-future">○ Previsto</span>
-              <span className="diet-legend-item is-rest">· Sem refeições</span>
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
-
-      {/* ── Modal retroativo de refeições ─────────────────────────────────── */}
-      {isRetroMealLogging && retroMealDayPlan && (
-        <div
-          className="nutrition-modal-backdrop"
-          role="presentation"
-          onClick={() => setIsRetroMealLogging(false)}
-        >
-          <section
-            className="nutrition-modal glass-panel"
-            role="dialog"
-            aria-modal="true"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <header>
-              <div>
-                <span>Registrar refeições retroativas</span>
-                <strong>
-                  {retroMealDayPlan.name} —{" "}
-                  {retroMealDate
-                    ? new Date(retroMealDate + "T12:00:00").toLocaleDateString("pt-BR")
-                    : ""}
-                </strong>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsRetroMealLogging(false)}
-                aria-label="Fechar"
-              >
-                ✕
-              </button>
-            </header>
-
-            <div className="nutrition-modal__content retro-meal-list">
-              <p className="retro-meal-hint">
-                Marque as refeições realizadas e informe o horário aproximado. Os dados
-                alimentarão o histórico e os dashboards.
-              </p>
-              {retroMealEntries.map((entry, idx) => (
-                <div key={entry.meal.id} className="retro-meal-row">
-                  <label className="retro-meal-row__check">
-                    <input
-                      type="checkbox"
-                      checked={entry.done}
-                      onChange={(e) =>
-                        handleRetroMealEntryChange(idx, "done", e.target.checked)
-                      }
-                    />
-                    <span>{entry.meal.name}</span>
-                    {entry.meal.calories ? (
-                      <em>{entry.meal.calories} kcal</em>
-                    ) : null}
-                  </label>
-                  {entry.done && (
-                    <label className="retro-meal-row__time">
-                      Horário
-                      <input
-                        type="time"
-                        value={entry.time}
-                        onChange={(e) =>
-                          handleRetroMealEntryChange(idx, "time", e.target.value)
-                        }
-                      />
-                    </label>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <footer>
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() => setIsRetroMealLogging(false)}
-              >
+            <div className="diet-adjust-actions">
+              <button type="button" className="plan-cta plan-cta--ghost" onClick={() => { setAdjustOpen(false); setAdjustText(""); }}>
                 Cancelar
               </button>
-              <button
-                type="button"
-                className="primary-button"
-                onClick={handleSaveRetroMealLogs}
-                disabled={!retroMealEntries.some((e) => e.done)}
-              >
-                Salvar registros
+              <button type="button" className="plan-cta" onClick={handleApplyAdjust} disabled={!adjustText.trim()}>
+                Aplicar e gerar →
               </button>
-            </footer>
-          </section>
+            </div>
+          </div>
         </div>
       )}
-
-      {mealCompletionModal ? (
-        <div className="nutrition-modal-backdrop" role="presentation" onClick={closeMealDoneModal}>
-          <section
-            className="nutrition-modal glass-panel"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="nutrition-meal-modal-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <header>
-              <span>Registro de refeição</span>
-              <button type="button" onClick={closeMealDoneModal} aria-label="Fechar">
-                x
-              </button>
-            </header>
-
-            <div className="nutrition-modal__content">
-              <div>
-                <h2 id="nutrition-meal-modal-title">{mealCompletionModal.meal.name}</h2>
-                <p>
-                  {mealCompletionModal.dayName} · horário recomendado{" "}
-                  <strong>{mealCompletionModal.suggestedTime || "pendente"}</strong>
-                </p>
-              </div>
-
-              {mealCompletionModal.existingLog ? (
-                <p className="nutrition-modal__notice">
-                  Esta refeição já estava registrada às{" "}
-                  {formatTime(mealCompletionModal.existingLog.performedAt || mealCompletionModal.existingLog.scheduledAt)}.
-                  Ao confirmar, o horário será substituído.
-                </p>
-              ) : null}
-
-              <label>
-                Horário em que a refeição foi realizada
-                <input
-                  type="time"
-                  value={mealCompletionModal.performedTime}
-                  onChange={(event) =>
-                    setMealCompletionModal((current) => ({
-                      ...current,
-                      performedTime: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-            </div>
-
-            <footer>
-              <button type="button" className="secondary-button" onClick={closeMealDoneModal}>
-                Cancelar
-              </button>
-              <button type="button" className="primary-button" onClick={confirmMealDone}>
-                Confirmar refeição
-              </button>
-            </footer>
-          </section>
-        </div>
-      ) : null}
     </section>
   );
 }

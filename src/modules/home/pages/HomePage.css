@@ -804,3 +804,51 @@
   }
 }
 
+/* ── GlowCard em pricing plans ──────────────────────────────────────────────── */
+/* O wrapper GlowCard é agora o item de grid — precisa herdar stretch behavior  */
+.home-pricing-card .pricing-card__plans .glow-card-wrapper {
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px !important;
+  min-height: 360px;
+}
+
+/* Card interno preenche o wrapper por completo */
+.home-pricing-card .pricing-card__plans .glow-card-wrapper .pricing-card__plan {
+  flex: 1;
+  width: 100%;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  /* Mantém a borda do Card como linha estática base */
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+}
+
+.home-pricing-card .pricing-card__plans .glow-card-wrapper .pricing-card__plan.is-featured {
+  background: linear-gradient(135deg, rgba(255, 46, 46, 0.10), rgba(255, 255, 255, 0.03)) !important;
+  border-color: rgba(255, 46, 46, 0.30) !important;
+}
+
+@media (max-width: 1060px) {
+  .home-pricing-card .pricing-card__plans .glow-card-wrapper {
+    min-height: auto;
+  }
+}
+
+/* ── GlowCard em feature cards da home ──────────────────────────────────────── */
+/* O wrapper GlowCard vira o item de grid — precisa se comportar como article    */
+.home-feature-grid .glow-card-wrapper {
+  border-radius: 8px !important;
+  display: flex;
+  flex-direction: column;
+}
+
+/* O article interno fica transparente — o glow é exibido pelo wrapper          */
+.home-feature-card--glow {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+}
+

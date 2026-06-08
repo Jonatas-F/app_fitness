@@ -1,0 +1,81 @@
+.plan-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  user-select: none;
+  padding: 8px 14px;
+  text-transform: uppercase;
+}
+
+/* ── Ghost (default) ── */
+.plan-export-btn--ghost {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.7);
+}
+.plan-export-btn--ghost:hover {
+  border-color: rgba(255, 46, 46, 0.5);
+  color: #ff2e2e;
+  background: rgba(255, 46, 46, 0.06);
+}
+
+/* ── Primary ── */
+.plan-export-btn--primary {
+  background: #ff2e2e;
+  border: 1px solid #ff2e2e;
+  color: #fff;
+}
+.plan-export-btn--primary:hover {
+  background: #ff4444;
+  border-color: #ff4444;
+}
+
+/* ── Inline ── */
+.plan-export-btn--inline {
+  background: rgba(255, 46, 46, 0.08);
+  border: 1px solid rgba(255, 46, 46, 0.25);
+  color: #ff2e2e;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+.plan-export-btn--inline:hover {
+  background: rgba(255, 46, 46, 0.15);
+  border-color: rgba(255, 46, 46, 0.5);
+}
+
+/* ── Estados ── */
+.plan-export-btn--generating {
+  opacity: 0.7;
+  cursor: default;
+}
+.plan-export-btn--done.plan-export-btn--ghost {
+  border-color: rgba(0, 230, 118, 0.4);
+  color: #00e676;
+  background: rgba(0, 230, 118, 0.06);
+}
+.plan-export-btn--done.plan-export-btn--primary {
+  background: #00e676;
+  border-color: #00e676;
+  color: #000;
+}
+.plan-export-btn--done.plan-export-btn--inline {
+  background: rgba(0, 230, 118, 0.08);
+  border-color: rgba(0, 230, 118, 0.3);
+  color: #00e676;
+}
+
+.plan-export-btn__icon {
+  font-size: 14px;
+  line-height: 1;
+}
+.plan-export-btn__label {
+  line-height: 1;
+}

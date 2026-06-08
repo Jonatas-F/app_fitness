@@ -1,4 +1,4 @@
-import { listTables, getTableData, runQuery, resetUserOnboarding } from "./admin.service.js";
+import { listTables, getTableData, runQuery, resetUserOnboarding, searchUsers, setUserPlan, resetUserData } from "./admin.service.js";
 
 export async function handleListTables(req, res, next) {
   try {
@@ -25,6 +25,42 @@ export async function handleResetUserOnboarding(req, res, next) {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: "Informe o email." });
     const result = await resetUserOnboarding(email);
+    res.json({ ok: true, ...result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function handleSearchUsers(req, res, next) {
+  try {
+    const { q = "" } = req.query;
+    const users = await searchUsers(q);
+    res.json({ users });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function handleSetUserPlan(req, res, next) {
+  try {
+    const { email, plan } = req.body;
+    if (!email || !plan) return res.status(400).json({ error: "Informe email e plan." });
+    // adminEmail vem do JWT validado — nunca do body
+    const result = await setUserPlan(email, plan, req.auth.email);
+    res.json({ ok: true, ...result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function handleResetUserData(req, res, next) {
+  try {
+    const { email, options } = req.body;
+    if (!email) return res.status(400).json({ error: "Informe o email." });
+    if (!options || typeof options !== "object") {
+      return res.status(400).json({ error: "Informe as opções de reset (objeto)." });
+    }
+    const result = await resetUserData(email, options, req.auth.email);
     res.json({ ok: true, ...result });
   } catch (error) {
     next(error);

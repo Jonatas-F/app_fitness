@@ -69,6 +69,9 @@ function createEditExercise(workoutId, name, sourceEx = null) {
     })),
   };
 }
+import { PlanExportButton } from "@/components/PlanExportButton";
+import WorkoutPlanOverview from "@/components/plan/WorkoutPlanOverview";
+import { loadCheckins } from "../../../data/checkinStorage";
 import "./WorkoutsPage.css";
 
 // ── Calendar helpers ──────────────────────────────────────────────────────────
@@ -913,6 +916,7 @@ function WorkoutExecutionSection() {
         </div>
 
         <div className="workout-header-actions">
+          <PlanExportButton variant="ghost" label="Baixar Plano" />
           <button type="button" className="workout-edit-button" onClick={handleOpenEditWorkout}>
             Editar treino
           </button>
@@ -981,11 +985,9 @@ function WorkoutExecutionSection() {
       </nav>
 
       <div className="workout-content-tabs">
-        <nav className="workout-section-tabs" role="tablist" aria-label="Seções do treino">
+        <nav className="workout-section-tabs" role="tablist" aria-label="Seções do treino" hidden>
           {[
             { id: "treino",    label: "Treino"     },
-            { id: "historico", label: "Histórico"  },
-            { id: "calendario",label: "Calendário" },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -1984,8 +1986,47 @@ export default function WorkoutsPage() {
     content.footerNote = `Rota dinâmica funcionando em /treinos/${workoutId}. Depois ela deve buscar o dia de treino real pelo id no backend.`;
   }
 
+  // Visão geral estilo PDF é o padrão; "Iniciar treino" abre o console de execução.
+  const [mode, setMode] = useState("overview");
+  const [overviewData, setOverviewData] = useState(() => ({
+    plan: loadWorkoutExecution(),
+    checkin: loadCheckins().find((c) => c.status !== "missed") || {},
+  }));
+
+  // Mantém a visão geral sincronizada com a API ao abrir
+  useEffect(() => {
+    let ignore = false;
+    hydrateWorkoutExecutionFromApi().then((res) => {
+      if (ignore || res?.error) return;
+      setOverviewData({
+        plan: res.plan || loadWorkoutExecution(),
+        checkin: loadCheckins().find((c) => c.status !== "missed") || {},
+      });
+    });
+    return () => { ignore = true; };
+  }, []);
+
+  const showOverview = viewKey === "list" && mode === "overview";
+
+  if (showOverview) {
+    return (
+      <div className="workouts-page">
+        <WorkoutPlanOverview
+          plan={overviewData.plan}
+          checkin={overviewData.checkin}
+          onStartWorkout={() => setMode("execute")}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="workouts-page">
+      {viewKey === "list" && mode === "execute" && (
+        <button type="button" className="plan-back-bar" onClick={() => setMode("overview")}>
+          ← Voltar ao plano
+        </button>
+      )}
       <header className="workouts-clean-hero glass-panel">
         <span>{content.badge}</span>
         <h1>{content.title}</h1>

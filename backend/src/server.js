@@ -94,6 +94,9 @@ import {
   handleGetTableData,
   handleRunQuery,
   handleResetUserOnboarding,
+  handleSearchUsers,
+  handleSetUserPlan,
+  handleResetUserData,
 } from "./modules/admin/admin.controller.js";
 import { requireAdmin } from "./modules/admin/admin.service.js";
 
@@ -276,6 +279,10 @@ app.get( "/admin/tables",                  requireAuth, requireAdmin, handleList
 app.get( "/admin/tables/:tableName",       requireAuth, requireAdmin, handleGetTableData);
 app.post("/admin/query",                   requireAuth, requireAdmin, handleRunQuery);
 app.post("/admin/reset-onboarding",        requireAuth, requireAdmin, handleResetUserOnboarding);
+// Gerenciamento de usuários
+app.get( "/admin/users",                   requireAuth, requireAdmin, handleSearchUsers);
+app.post("/admin/users/set-plan",          requireAuth, requireAdmin, handleSetUserPlan);
+app.post("/admin/users/reset-data",        requireAuth, requireAdmin, handleResetUserData);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

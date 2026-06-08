@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PricingCard from "@/components/ui/pricing-card";
+import { GlowCard } from "@/components/ui/spotlight-card";
 import logoMark from "../../../assets/logo_sp.svg";
 import { featureMatrix, getAnnualPrice, subscriptionPlans } from "../../../data/plans";
 import {
@@ -314,10 +315,12 @@ export default function HomePage() {
 
         <div className="home-feature-grid">
           {platformItems.map((item) => (
-            <article key={item} className="home-feature-card">
-              <span />
-              <strong>{item}</strong>
-            </article>
+            <GlowCard key={item} glowColor="brand-soft" style={{ borderRadius: '8px' }}>
+              <article className="home-feature-card home-feature-card--glow">
+                <span />
+                <strong>{item}</strong>
+              </article>
+            </GlowCard>
           ))}
         </div>
       </section>

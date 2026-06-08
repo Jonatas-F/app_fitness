@@ -17,6 +17,7 @@ export async function generateWorkoutWithAi({
   muscleGroupCombinations = "",
   workoutDayProtocol = "",
   favoriteExercises = "",
+  trainingFocus = "",
   adherenceAdjustedDays = undefined,
   // monthly protocol review fields
   keepWorkoutProtocol = "",
@@ -31,7 +32,7 @@ export async function generateWorkoutWithAi({
     body: JSON.stringify({
       goal, persist, trainingAvailableDays, trainingExperience, trainingAge,
       availableMinutes, trainingPreference, trainingPreferenceFreeText,
-      muscleGroupCombinations, workoutDayProtocol, favoriteExercises,
+      muscleGroupCombinations, workoutDayProtocol, favoriteExercises, trainingFocus,
       keepWorkoutProtocol, lastProtocolFeeling, muscularSoreness,
       generalDisposition, laggingMuscleGroups, requestedWorkoutChanges,
       ...(adherenceAdjustedDays != null ? { adherenceAdjustedDays } : {}),

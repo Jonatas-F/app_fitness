@@ -61,7 +61,10 @@ export function useOnboarding() {
 
   function completeFirstCheckin() {
     localStorage.setItem(FIRST_CHECKIN_KEY, "true");
+    // Marca onboarding como concluído junto (tour removido)
+    localStorage.setItem(ONBOARDING_DONE_KEY, "true");
     setFirstCheckinDone(true);
+    setOnboardingDone(true);
   }
   function completeOnboarding() {
     localStorage.setItem(ONBOARDING_DONE_KEY, "true");
@@ -76,7 +79,7 @@ export function useOnboarding() {
 
   return {
     showFirstCheckin: !firstCheckinDone,
-    showTour: firstCheckinDone && !onboardingDone,
+    showTour: false, // tour removido
     completeFirstCheckin,
     completeOnboarding,
     resetOnboarding,

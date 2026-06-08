@@ -1,10 +1,16 @@
 {
   "name": "Shape Certo",
   "short_name": "Shape Certo",
+  "id": "/",
   "description": "Plataforma fitness com IA: treinos personalizados, dieta, check-ins e evolução corporal.",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
+  "serviceworker": {
+    "src": "/sw.js",
+    "scope": "/",
+    "update_via_cache": "none"
+  },
   "orientation": "portrait",
   "background_color": "#070708",
   "theme_color": "#e02020",
@@ -43,6 +49,13 @@
       "type": "image/png",
       "form_factor": "narrow",
       "label": "Dashboard de evolução"
+    },
+    {
+      "src": "/screenshots/dashboard-wide.png",
+      "sizes": "1920x1080",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Shape Certo no tablet"
     }
   ],
   "shortcuts": [

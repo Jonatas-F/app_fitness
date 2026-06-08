@@ -1,0 +1,251 @@
+/* ── Segment buttons (sim/parcial/não etc.) ──────────────────────────────── */
+.ck-segment {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ck-segment__btn {
+  flex: 1 1 0;
+  min-width: 90px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s, color 0.18s;
+}
+
+.ck-segment--compact {
+  flex: 0 0 auto;
+}
+
+.ck-segment--compact .ck-segment__btn {
+  flex: 0 0 auto;
+  min-width: 72px;
+  flex-direction: row;
+  padding: 8px 14px;
+  font-size: 0.8rem;
+}
+
+.ck-segment__btn:hover {
+  border-color: rgba(255, 46, 46, 0.4);
+  color: #fff;
+}
+
+.ck-segment__btn.is-active {
+  border-color: var(--brand, #ff2e2e);
+  background: rgba(255, 46, 46, 0.12);
+  color: #fff;
+}
+
+.ck-segment__btn--warn.is-active {
+  border-color: #ffb800;
+  background: rgba(255, 184, 0, 0.14);
+  color: #ffb800;
+}
+
+.ck-segment__badge {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.ck-daycount .ob-daypicker__btn {
+  min-width: 48px;
+}
+
+/* ── Lista de exercícios para avaliar ────────────────────────────────────── */
+.ck-exercise-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 46vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.ck-exercise {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
+.ck-exercise__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ck-exercise__name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ck-exercise__day {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ck-rating {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.ck-rating__btn {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9px;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.ck-rating__btn:hover {
+  opacity: 0.9;
+}
+
+.ck-rating__btn.is-active {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.ck-rating__btn--like.is-active    { border-color: #00e676; background: rgba(0, 230, 118, 0.14); }
+.ck-rating__btn--neutral.is-active { border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.1); }
+.ck-rating__btn--dislike.is-active { border-color: #ff4444; background: rgba(255, 68, 68, 0.14); }
+
+/* ── Lista de refeições ──────────────────────────────────────────────────── */
+.ck-meal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 46vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.ck-meal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
+.ck-meal__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ck-meal__name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.ck-meal__desc {
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.45);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+/* ── Grid de campos (bioimpedância + subjetivo) ──────────────────────────── */
+.ck-body-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.ck-body-grid .ob-field {
+  margin: 0;
+}
+
+/* ── Objetivo atual ──────────────────────────────────────────────────────── */
+.ck-current-goal {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 2px;
+}
+
+/* ── Resumo final ────────────────────────────────────────────────────────── */
+.ck-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ck-summary__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.ck-summary__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.ck-summary__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  background: rgba(0, 230, 118, 0.06);
+  border: 1px solid rgba(0, 230, 118, 0.2);
+  border-radius: 12px;
+}
+
+.ck-summary__note p {
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.55;
+  margin: 0;
+}
+
+@media (max-width: 520px) {
+  .ck-body-grid { grid-template-columns: 1fr; }
+  .ck-meal__desc { max-width: 120px; }
+}

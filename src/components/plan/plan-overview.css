@@ -1,0 +1,556 @@
+/* ───────────────────────────────────────────────────────────────────────────
+   Plan Overview — linguagem visual única para Treino e Dieta,
+   inspirada no PDF de plano gerado (mobile-first, tudo em uma tela).
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.plan-overview {
+  --po-accent: #ff2e2e;
+  --po-accent2: #ff7043;
+  --po-green: #00e676;
+  --po-blue: #4fc3f7;
+  --po-purple: #d4a4ff;
+  --po-surface: rgba(255, 255, 255, 0.035);
+  --po-surface2: rgba(255, 255, 255, 0.06);
+  --po-border: rgba(255, 255, 255, 0.1);
+  --po-muted: rgba(255, 255, 255, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* ── Hero ────────────────────────────────────────────────────────────────── */
+.plan-hero {
+  border-bottom: 1px solid var(--po-border);
+  padding-bottom: 24px;
+}
+
+.plan-hero__label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--po-accent);
+  margin-bottom: 10px;
+}
+
+.plan-hero__title {
+  font-size: clamp(2.4rem, 9vw, 4.4rem);
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: #fff;
+  margin: 0;
+}
+
+.plan-hero__title span {
+  color: var(--po-accent);
+}
+
+.plan-hero__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+  margin-top: 20px;
+}
+
+.plan-stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.plan-stat__val {
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+}
+
+.plan-stat__val small {
+  font-size: 0.9rem;
+  color: var(--po-muted);
+  font-weight: 600;
+}
+
+.plan-stat__val.is-accent { color: var(--po-accent); }
+.plan-stat__val.is-orange { color: var(--po-accent2); }
+
+.plan-stat__label {
+  font-size: 0.68rem;
+  color: var(--po-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 4px;
+}
+
+.plan-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.plan-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 22px;
+  background: var(--po-accent);
+  border: 1px solid var(--po-accent);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.plan-cta:hover { background: #ff4444; }
+.plan-cta:active { transform: scale(0.98); }
+
+.plan-cta--ghost {
+  background: transparent;
+  border-color: var(--po-border);
+  color: rgba(255, 255, 255, 0.8);
+}
+.plan-cta--ghost:hover { border-color: var(--po-accent); color: var(--po-accent); background: rgba(255,46,46,0.06); }
+
+/* ── Section header ──────────────────────────────────────────────────────── */
+.plan-section { display: flex; flex-direction: column; gap: 16px; }
+
+.plan-section__header {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  border-bottom: 1px solid var(--po-border);
+  padding-bottom: 10px;
+}
+
+.plan-section__num {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--po-accent);
+  letter-spacing: 0.1em;
+}
+
+.plan-section__title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.plan-info-box {
+  background: rgba(79, 195, 247, 0.06);
+  border: 1px solid rgba(79, 195, 247, 0.18);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
+}
+.plan-info-box strong { color: var(--po-blue); }
+
+.plan-warn-box {
+  background: rgba(255, 112, 67, 0.07);
+  border: 1px solid rgba(255, 112, 67, 0.22);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.5;
+}
+.plan-warn-box strong { color: var(--po-accent2); }
+
+/* ── Week grid ───────────────────────────────────────────────────────────── */
+.plan-week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+}
+
+.plan-wday {
+  background: var(--po-surface);
+  border: 1px solid var(--po-border);
+  border-radius: 8px;
+  padding: 9px 4px;
+  text-align: center;
+}
+
+.plan-wday__name {
+  color: var(--po-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.6rem;
+  margin-bottom: 4px;
+}
+
+.plan-wday__label {
+  font-weight: 700;
+  font-size: 0.72rem;
+  line-height: 1.25;
+  color: #fff;
+}
+
+.plan-wday.is-rest { opacity: 0.4; }
+.plan-wday.c-accent .plan-wday__label { color: var(--po-accent); }
+.plan-wday.c-blue   .plan-wday__label { color: var(--po-blue); }
+.plan-wday.c-orange .plan-wday__label { color: var(--po-accent2); }
+.plan-wday.c-green  .plan-wday__label { color: var(--po-green); }
+.plan-wday.c-purple .plan-wday__label { color: var(--po-purple); }
+
+/* ── Day cards (colapsáveis) ─────────────────────────────────────────────── */
+.plan-day-cards { display: flex; flex-direction: column; gap: 12px; }
+
+.plan-day-card {
+  background: var(--po-surface);
+  border: 1px solid var(--po-border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.18s;
+}
+.plan-day-card.is-open { border-color: rgba(255, 46, 46, 0.3); }
+
+.plan-day-card__header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--po-surface2);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  border: none;
+}
+
+.plan-day-card__badge {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  min-width: 34px;
+  color: var(--po-accent);
+}
+
+.plan-day-card__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.plan-day-card__name {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.plan-day-card__focus {
+  font-size: 0.66rem;
+  color: var(--po-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.plan-day-card__tag {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(255, 46, 46, 0.1);
+  color: var(--po-accent);
+  border: 1px solid rgba(255, 46, 46, 0.2);
+  white-space: nowrap;
+}
+.plan-day-card__tag.c-orange { background: rgba(255,112,67,0.1); color: var(--po-accent2); border-color: rgba(255,112,67,0.2); }
+.plan-day-card__tag.c-blue   { background: rgba(79,195,247,0.1); color: var(--po-blue); border-color: rgba(79,195,247,0.2); }
+.plan-day-card__tag.c-green  { background: rgba(0,230,118,0.1); color: var(--po-green); border-color: rgba(0,230,118,0.2); }
+.plan-day-card__tag.c-purple { background: rgba(212,164,255,0.1); color: var(--po-purple); border-color: rgba(212,164,255,0.2); }
+
+.plan-day-card__chevron {
+  color: var(--po-muted);
+  font-size: 0.7rem;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+.plan-day-card.is-open .plan-day-card__chevron { transform: rotate(180deg); }
+
+.plan-day-card__body { padding: 14px 16px; }
+
+/* ── Exercise table ──────────────────────────────────────────────────────── */
+.plan-ex-table { width: 100%; border-collapse: collapse; }
+
+.plan-ex-table th {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--po-muted);
+  text-align: left;
+  padding: 0 10px 8px 0;
+  border-bottom: 1px solid var(--po-border);
+}
+.plan-ex-table th:last-child, .plan-ex-table td:last-child { text-align: right; }
+.plan-ex-table th:nth-child(2), .plan-ex-table td:nth-child(2) { text-align: center; }
+
+.plan-ex-table td {
+  padding: 9px 10px 9px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  vertical-align: top;
+  font-size: 0.85rem;
+}
+.plan-ex-table tr:last-child td { border-bottom: none; }
+
+.plan-ex-name { font-weight: 600; color: #fff; }
+.plan-ex-note { font-size: 0.68rem; color: var(--po-muted); margin-top: 2px; line-height: 1.4; }
+.plan-ex-sets { font-weight: 800; color: var(--po-accent); white-space: nowrap; }
+.plan-ex-rest { font-size: 0.74rem; color: var(--po-muted); white-space: nowrap; }
+
+/* ── Macro bars (dieta) ──────────────────────────────────────────────────── */
+.plan-macro-wrap { display: flex; flex-direction: column; gap: 12px; }
+
+.plan-macro-row { display: flex; align-items: center; gap: 14px; }
+
+.plan-macro-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  width: 92px;
+  flex-shrink: 0;
+}
+
+.plan-macro-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--po-surface2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.plan-macro-fill { height: 100%; border-radius: 4px; }
+
+.plan-macro-val {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #fff;
+  width: 76px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── Meal cards (dieta) ──────────────────────────────────────────────────── */
+.plan-meal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.plan-meal-card {
+  background: var(--po-surface);
+  border: 1px solid var(--po-border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+}
+.plan-meal-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--po-accent), transparent);
+}
+.plan-meal-card.c-orange::before { background: linear-gradient(90deg, var(--po-accent2), transparent); }
+.plan-meal-card.c-blue::before   { background: linear-gradient(90deg, var(--po-blue), transparent); }
+.plan-meal-card.c-purple::before { background: linear-gradient(90deg, var(--po-purple), transparent); }
+
+.plan-meal-time {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--po-accent);
+  margin-bottom: 4px;
+}
+.plan-meal-card.c-orange .plan-meal-time { color: var(--po-accent2); }
+.plan-meal-card.c-blue .plan-meal-time   { color: var(--po-blue); }
+.plan-meal-card.c-purple .plan-meal-time { color: var(--po-purple); }
+
+.plan-meal-name { font-weight: 600; font-size: 0.92rem; color: #fff; margin-bottom: 10px; }
+
+.plan-meal-items { list-style: none; font-size: 0.8rem; color: rgba(255,255,255,0.7); line-height: 1.7; padding: 0; margin: 0; }
+.plan-meal-items li::before { content: '— '; color: var(--po-muted); }
+
+.plan-meal-kcal {
+  margin-top: 10px;
+  font-size: 0.72rem;
+  color: var(--po-muted);
+  border-top: 1px solid var(--po-border);
+  padding-top: 9px;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.plan-meal-kcal strong { color: var(--po-accent2); }
+
+/* ── Empty state ─────────────────────────────────────────────────────────── */
+.plan-empty {
+  text-align: center;
+  padding: 32px 20px;
+  color: var(--po-muted);
+  font-size: 0.9rem;
+}
+.plan-empty strong { display: block; color: #fff; font-size: 1rem; margin-bottom: 6px; }
+
+/* ── Meal tracking (acompanhamento simples) ──────────────────────────────── */
+.plan-track-list { display: flex; flex-direction: column; gap: 8px; }
+
+.plan-track-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  background: var(--po-surface);
+  border: 1px solid var(--po-border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.plan-track-row:hover { border-color: rgba(255, 46, 46, 0.4); }
+.plan-track-row.is-done {
+  border-color: rgba(0, 230, 118, 0.4);
+  background: rgba(0, 230, 118, 0.06);
+}
+
+.plan-track-check {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 7px;
+  border: 1px solid var(--po-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #00e676;
+}
+.plan-track-row.is-done .plan-track-check {
+  background: rgba(0, 230, 118, 0.16);
+  border-color: rgba(0, 230, 118, 0.5);
+}
+
+.plan-track-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.plan-track-name { font-weight: 600; font-size: 0.9rem; color: #fff; }
+.plan-track-meta { font-size: 0.72rem; color: var(--po-muted); }
+
+.plan-track-state {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--po-muted);
+  flex-shrink: 0;
+}
+.plan-track-row.is-done .plan-track-state { color: #00e676; }
+
+/* Histórico 14 dias */
+.plan-track-history {
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  gap: 5px;
+  align-items: end;
+}
+
+.plan-track-day { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+
+.plan-track-day__bar {
+  width: 100%;
+  height: 56px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: var(--po-surface2);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.plan-track-day__fill {
+  width: 100%;
+  background: linear-gradient(180deg, var(--po-green), rgba(0, 230, 118, 0.3));
+  border-radius: 5px 5px 0 0;
+}
+.plan-track-day__num { font-size: 0.6rem; color: var(--po-muted); }
+
+/* ── Overlay de ajuste da dieta ──────────────────────────────────────────── */
+.diet-adjust-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9900;
+  padding: 16px;
+}
+
+.diet-adjust-panel {
+  width: min(460px, calc(100vw - 32px));
+  padding: 22px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.diet-adjust-panel h3 { margin: 0; font-size: 1.2rem; font-weight: 800; color: #fff; }
+.diet-adjust-panel p { margin: 0; font-size: 0.84rem; color: rgba(255, 255, 255, 0.6); line-height: 1.5; }
+.diet-adjust-panel textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 12px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+}
+.diet-adjust-panel textarea:focus { outline: none; border-color: rgba(255, 46, 46, 0.5); }
+.diet-adjust-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.plan-cta:disabled { opacity: 0.5; cursor: default; }
+
+@media (max-width: 600px) {
+  .plan-track-history { grid-template-columns: repeat(7, 1fr); }
+}
+
+/* ── Back bar (modo execução) ────────────────────────────────────────────── */
+.plan-back-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid var(--po-border, rgba(255,255,255,0.1));
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.plan-back-bar:hover { border-color: var(--po-accent, #ff2e2e); color: #fff; }
+
+/* ── Mobile ──────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .plan-week-grid { grid-template-columns: repeat(4, 1fr); }
+  .plan-meal-grid { grid-template-columns: 1fr; }
+  .plan-hero__stats { gap: 16px; }
+}

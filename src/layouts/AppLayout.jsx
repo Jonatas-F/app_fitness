@@ -3,7 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import BottomNav from '../components/BottomNav';
 import FirstCheckinModal from '../components/onboarding/FirstCheckinModal';
-import GuidedTour from '../components/onboarding/GuidedTour';
+import CheckinReviewModal from '../components/checkin/CheckinReviewModal';
 import TokenHistoryModal from '../components/TokenHistoryModal';
 import { useOnboarding } from '../hooks/useOnboarding';
 import { usePlan } from '../hooks/usePlan';
@@ -39,7 +39,7 @@ function syncSettingsFromBackend() {
 }
 
 export default function AppLayout() {
-  const { showFirstCheckin, showTour, completeFirstCheckin, completeOnboarding } = useOnboarding();
+  const { showFirstCheckin, completeFirstCheckin } = useOnboarding();
   const { planId } = usePlan();
 
   // Só exibe os modais de onboarding quando há sessão ativa
@@ -68,6 +68,15 @@ export default function AppLayout() {
     return () => window.removeEventListener("shape-certo-open-token-history", onOpen);
   }, []);
 
+  // Modal de check-in (revisão do protocolo) — aberto por botão no Dashboard
+  const [checkinOpen, setCheckinOpen] = useState(false);
+
+  useEffect(() => {
+    function onOpenCheckin() { setCheckinOpen(true); }
+    window.addEventListener("shape-certo-open-checkin", onOpenCheckin);
+    return () => window.removeEventListener("shape-certo-open-checkin", onOpenCheckin);
+  }, []);
+
   return (
     <div className="app-shell">
       <Sidebar />
@@ -81,14 +90,23 @@ export default function AppLayout() {
       {isLoggedIn && showFirstCheckin && (
         <FirstCheckinModal planId={planId} onComplete={completeFirstCheckin} />
       )}
-      {isLoggedIn && showTour && (
-        <GuidedTour onComplete={completeOnboarding} />
-      )}
 
       {tokenHistoryOpen && (
         <TokenHistoryModal
           subscription={tokenHistorySub}
           onClose={() => setTokenHistoryOpen(false)}
+        />
+      )}
+
+      {checkinOpen && (
+        <CheckinReviewModal
+          onClose={(result) => {
+            setCheckinOpen(false);
+            if (result?.regenerated) {
+              // Atualiza dados após regeneração
+              window.dispatchEvent(new CustomEvent("shape-certo-tokens-updated"));
+            }
+          }}
         />
       )}
     </div>

@@ -159,6 +159,46 @@ function compactContext(context) {
 }
 
 /**
+ * Contexto reduzido para geração de dieta.
+ * Para dieta importam: preferências alimentares, restrições, número de refeições,
+ * último check-in (sinal de adesão/fome), medidas e bioimpedância recentes.
+ * Sessões de treino detalhadas e histórico longo não agregam para o plano alimentar.
+ */
+function compactDietContext(context) {
+  const full = compactContext(context);
+  return {
+    ...full,
+    // Apenas os 2 check-ins mais recentes (adesão à dieta anterior, fome, peso)
+    checkins: Array.isArray(full.checkins) ? full.checkins.slice(0, 2) : full.checkins,
+    // Treino: só plano ativo (referência de carga calórica), sem sessões detalhadas
+    workout: full.workout
+      ? { activePlan: full.workout.activePlan }
+      : full.workout,
+    // Histórico de dieta: últimos 2 (evita repetir o que já foi gerado)
+    diet: full.diet
+      ? {
+          activePlan: full.diet.activePlan,
+          history: Array.isArray(full.diet.history)
+            ? full.diet.history.slice(0, 2)
+            : full.diet.history,
+        }
+      : full.diet,
+    // Progresso: últimas 3 medições e últimas 2 bioimpedâncias (para TDEE)
+    progress: full.progress
+      ? {
+          measurements: Array.isArray(full.progress.measurements)
+            ? full.progress.measurements.slice(0, 3)
+            : full.progress.measurements,
+          bioimpedance: Array.isArray(full.progress.bioimpedance)
+            ? full.progress.bioimpedance.slice(0, 2)
+            : full.progress.bioimpedance,
+          photos: [], // fotos não são relevantes para geração de dieta
+        }
+      : full.progress,
+  };
+}
+
+/**
  * Contexto reduzido para geração de treino.
  * Limita checkins ao mais recente e sessões ao histórico das últimas 3 semanas,
  * para não explodir o context window.
@@ -485,7 +525,7 @@ export async function generateAiChatResponse(accountId, { message, history = [],
   };
 }
 
-export async function generateAiDietPlan(accountId, { goal, persist = false } = {}) {
+export async function generateAiDietPlan(accountId, { goal, persist = false, dietApproach = "", trainingFocus = "", keepDietProtocol = "", requestedDietChanges = "" } = {}) {
   const instructions = `
 Gere um plano alimentar personalizado em JSON valido para o Shape Certo.
 
@@ -549,12 +589,41 @@ ESTRUTURA JSON OBRIGATORIA:
 Nao inclua texto fora do JSON.
 `.trim();
 
+  const dietApproachLabels = {
+    "bulk-limpo":          "BULK LIMPO — superavit moderado (~200-300 kcal), alimentos limpos e ricos em fibras e proteina, minimo acumulo de gordura.",
+    "bulk-inteligente":    "BULK INTELIGENTE — superavit calculado (~300-500 kcal) ajustado por check-in, controle ativo de gordura.",
+    "bulk-sujo":           "BULK SUJO — superavit alto (+500 kcal), foco maximo em volume muscular, aceita ganho de gordura.",
+    "recomposicao":        "RECOMPOSICAO — calorias proximas a manutencao, proteina alta, ganhar musculo e perder gordura simultaneamente.",
+    "cutting-conservador": "CUTTING CONSERVADOR — deficit leve (~200-300 kcal), proteina alta, maxima preservacao de massa magra.",
+    "cutting-moderado":    "CUTTING MODERADO — deficit moderado (~400-500 kcal), bom equilibrio entre velocidade e retencao muscular.",
+    "cutting-agressivo":   "CUTTING AGRESSIVO — deficit alto (~600-800 kcal), proteina muito alta para minimizar perda muscular.",
+    "manutencao":          "MANUTENCAO — calorias no ponto de equilibrio, foco em qualidade alimentar e desempenho.",
+  };
+  const approachLabel = dietApproach
+    ? `ESTRATEGIA ALIMENTAR DEFINIDA PELO USUARIO: ${dietApproachLabels[dietApproach] || dietApproach} Calibre calorias e macros de acordo com essa estrategia.`
+    : "";
+  const reviewLabel = keepDietProtocol === "nao"
+    ? [
+        "REVISAO DE PROTOCOLO: o usuario pediu ajustes na dieta com base no check-in.",
+        requestedDietChanges ? `MUDANCAS SOLICITADAS: "${requestedDietChanges}". Implemente essas mudancas mantendo o equilibrio de macros e o objetivo.` : "",
+      ].filter(Boolean).join(" ")
+    : keepDietProtocol === "manter"
+    ? "INSTRUCAO: o usuario quer MANTER a estrutura da dieta atual. Apenas atualize variedade de alimentos e ajuste porcoes conforme sinais do checkin."
+    : "";
+
   const result = await callOpenAi({
     accountId,
     generationType: "diet",
     expectJson: true,
     instructions,
-    input: `Gere um plano alimentar completo e atualizado com base em todos os dados do usuario.${goal ? ` Objetivo principal: ${goal}.` : ""} Consulte as preferencias e restricoes alimentares, o numero de refeicoes, os sinais do ultimo check-in e as medidas corporais para calcular as necessidades calorias e macros.`,
+    input: [
+      `Gere um plano alimentar completo e atualizado com base em todos os dados do usuario.`,
+      goal ? `Objetivo principal: ${goal}.` : "",
+      approachLabel,
+      reviewLabel,
+      `Consulte as preferencias e restricoes alimentares, o numero de refeicoes, os sinais do ultimo check-in e as medidas corporais para calcular as necessidades calorias e macros.`,
+    ].filter(Boolean).join(" "),
+    contextBuilder: compactDietContext,
   });
 
   if (persist && result.json) {
@@ -581,7 +650,7 @@ Nao inclua texto fora do JSON.
   };
 }
 
-export async function generateAiWorkoutPlan(accountId, { goal, persist = false, trainingAvailableDays = "", trainingExperience = "", trainingAge = "", availableMinutes = "", trainingPreference = "", trainingPreferenceFreeText = "", muscleGroupCombinations = "", workoutDayProtocol = "", favoriteExercises = "", adherenceAdjustedDays = 0, keepWorkoutProtocol = "", lastProtocolFeeling = "", muscularSoreness = "", generalDisposition = "", laggingMuscleGroups = "", requestedWorkoutChanges = "" } = {}) {
+export async function generateAiWorkoutPlan(accountId, { goal, persist = false, trainingAvailableDays = "", trainingExperience = "", trainingAge = "", availableMinutes = "", trainingPreference = "", trainingPreferenceFreeText = "", muscleGroupCombinations = "", workoutDayProtocol = "", favoriteExercises = "", trainingFocus = "", adherenceAdjustedDays = 0, keepWorkoutProtocol = "", lastProtocolFeeling = "", muscularSoreness = "", generalDisposition = "", laggingMuscleGroups = "", requestedWorkoutChanges = "" } = {}) {
   const instructions = `
 Gere um plano de treino personalizado em JSON valido para o Shape Certo.
 
@@ -790,6 +859,17 @@ REGRAS FINAIS INEGOCIAVEIS:
     ? `PREFERENCIA DE SPLIT DO USUARIO: ${splitPrefLabels[trainingPreference] || trainingPreference}. Respeite esta preferencia ao escolher o split.`
     : "Escolha o split ideal com base na matriz de selecao (nivel + dias + objetivo).";
 
+  const focusLabels = {
+    hipertrofia:     "HIPERTROFIA — volume alto, 8-15 reps, foco em tensao mecanica e tempo sob tensao.",
+    forca:           "FORCA MAXIMA — 3-6 reps, cargas altas, pausas longas, enfase nos compostos fundamentais.",
+    resistencia:     "RESISTENCIA MUSCULAR — 15-25 reps, descanso curto, treino em circuito ou alta densidade.",
+    condicionamento: "CONDICIONAMENTO — circuitos de alta intensidade, exercicios funcionais, foco em gasto calorico e cardio.",
+    funcional:       "FUNCIONAL / MOBILIDADE — exercicios multiplanares, mobilidade articular, estabilidade, prevencao de lesoes.",
+  };
+  const focusLabel = trainingFocus
+    ? `FOCO DO TREINO ESCOLHIDO PELO USUARIO: ${focusLabels[trainingFocus] || trainingFocus} Ajuste rep ranges, descanso e selecao de exercicios para refletir esse foco.`
+    : "";
+
   const isPowelifting = goal === "powerlifting" || trainingPreference === "powerlifting_split";
   const adherenceLabel = adherenceAdjustedDays > 0
     ? `AJUSTE DE ADERENCIA: O usuario confirmou que consegue treinar APENAS ${adherenceAdjustedDays} dia${adherenceAdjustedDays !== 1 ? "s" : ""} por semana na pratica. Distribua ${adherenceAdjustedDays} dia${adherenceAdjustedDays !== 1 ? "s" : ""} de treino de forma otimizada (sem dias fixos pre-selecionados). Use o split mais adequado para ${adherenceAdjustedDays} dias e o objetivo declarado.`
@@ -807,6 +887,7 @@ REGRAS FINAIS INEGOCIAVEIS:
       goal ? `Objetivo principal: ${goal}${isPowelifting ? " — inclua obrigatoriamente os Big 4 (Agachamento, Supino, Terra, Desenvolvimento)" : ""}.` : "",
       `NIVEL DE EXPERIENCIA DO USUARIO: ${expLabel}.${trainingAgeLabel}${minutesLabel}`,
       prefLabel,
+      focusLabel,
       adherenceLabel,
       trainingDayCount > 0 && adherenceAdjustedDays === 0
         ? [

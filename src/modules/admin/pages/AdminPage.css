@@ -490,3 +490,292 @@
   color: #ff6363;
   border: 1px solid rgba(255, 99, 99, 0.25);
 }
+
+/* ── Admin User Manager ───────────────────────────────────────────────────── */
+
+.admin-users {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 760px;
+}
+
+.admin-users__search {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-users__input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  padding: 9px 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.admin-users__input:focus {
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+.admin-users__input::placeholder {
+  color: rgba(226, 232, 240, 0.35);
+}
+
+.admin-users__search-btn {
+  background: rgba(139, 92, 246, 0.75);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 9px 20px;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.admin-users__search-btn:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.95);
+}
+
+.admin-users__search-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-users__hint,
+.admin-users__empty {
+  color: rgba(226, 232, 240, 0.45);
+  font-size: 0.875rem;
+  margin: 0;
+  padding: 12px 0;
+}
+
+.admin-users__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Admin User Card ─────────────────────────────────────────────────────── */
+
+.admin-user-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.admin-user-card__head {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.admin-user-card__email {
+  color: #e2e8f0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0;
+  word-break: break-all;
+}
+
+.admin-user-card__name {
+  color: rgba(226, 232, 240, 0.55);
+  font-size: 0.8rem;
+  margin: 2px 0 0;
+}
+
+.admin-user-card__plan-badge {
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 3px 10px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Token usage */
+.admin-user-card__tokens {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.admin-user-card__token-bar {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  height: 6px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.admin-user-card__token-fill {
+  background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+  border-radius: 999px;
+  height: 100%;
+  transition: width 0.4s ease;
+}
+
+.admin-user-card__token-txt {
+  color: rgba(226, 232, 240, 0.5);
+  font-size: 0.78rem;
+}
+
+/* Sections */
+.admin-user-card__section {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+}
+
+.admin-user-card__section-title {
+  color: rgba(226, 232, 240, 0.55);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+/* Plan change buttons */
+.admin-user-card__plan-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-user-card__plan-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  color: rgba(226, 232, 240, 0.7);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 5px 14px;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.admin-user-card__plan-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+}
+
+.admin-user-card__plan-btn.is-current {
+  background: rgba(139, 92, 246, 0.12);
+  font-weight: 700;
+}
+
+.admin-user-card__plan-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+/* Reset toggle */
+.admin-user-card__reset-toggle {
+  background: rgba(255, 99, 99, 0.08);
+  border: 1px solid rgba(255, 99, 99, 0.2);
+  border-radius: 7px;
+  color: #f87272;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  text-align: left;
+  transition: background 0.15s;
+  width: fit-content;
+}
+
+.admin-user-card__reset-toggle:hover {
+  background: rgba(255, 99, 99, 0.14);
+}
+
+/* Reset form */
+.admin-user-card__reset-form {
+  background: rgba(255, 99, 99, 0.04);
+  border: 1px solid rgba(255, 99, 99, 0.12);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+.admin-user-card__reset-warn {
+  color: #f87272;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.admin-user-card__reset-opt {
+  align-items: center;
+  color: rgba(226, 232, 240, 0.75);
+  cursor: pointer;
+  display: flex;
+  font-size: 0.85rem;
+  gap: 8px;
+}
+
+.admin-user-card__reset-opt input[type="checkbox"] {
+  accent-color: #8b5cf6;
+  cursor: pointer;
+  height: 15px;
+  width: 15px;
+}
+
+.admin-user-card__reset-btn {
+  background: #ef4444;
+  border: none;
+  border-radius: 7px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin-top: 4px;
+  padding: 8px 18px;
+  transition: background 0.15s;
+  width: fit-content;
+}
+
+.admin-user-card__reset-btn:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.admin-user-card__reset-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* Status message */
+.admin-user-card__msg {
+  border-radius: 7px;
+  font-size: 0.83rem;
+  margin: 0;
+  padding: 7px 12px;
+}
+
+.admin-user-card__msg--success {
+  background: rgba(72, 199, 142, 0.1);
+  border: 1px solid rgba(72, 199, 142, 0.22);
+  color: #48c78e;
+}
+
+.admin-user-card__msg--error {
+  background: rgba(255, 99, 99, 0.1);
+  border: 1px solid rgba(255, 99, 99, 0.22);
+  color: #f87272;
+}

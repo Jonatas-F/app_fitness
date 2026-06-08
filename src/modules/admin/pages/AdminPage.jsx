@@ -274,6 +274,226 @@ function UserActionsPanel() {
   );
 }
 
+// ── User Manager ─────────────────────────────────────────────────────────────
+
+const PLAN_LABELS = {
+  basico: "Básico", intermediario: "Intermediário", pro: "Pro",
+  partner: "Parceiro", admin: "ADM",
+};
+const PLAN_COLORS = {
+  basico: "#6b7280", intermediario: "#3b82f6", pro: "#e50914",
+  partner: "#10b981", admin: "#f59e0b",
+};
+const ALL_PLANS = ["basico", "intermediario", "pro", "partner"];
+
+function fmtTokens(n) {
+  if (!n && n !== 0) return "–";
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(".", ",")}M`;
+  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
+  return String(n);
+}
+
+function UserCard({ user, onRefresh }) {
+  const [planLoading, setPlanLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [msg, setMsg] = useState(null);
+  const [showReset, setShowReset] = useState(false);
+  const [resetOpts, setResetOpts] = useState({
+    checkins: false, workouts: false, diet: false,
+    chat: false, settings: false, onboarding: false,
+  });
+
+  const currentPlan = user.plan_type || user.sub_plan || "basico";
+  const used  = (user.token_limit ?? 0) - (user.token_balance ?? 0);
+  const pct   = user.token_limit > 0 ? Math.round((Math.max(0, used) / user.token_limit) * 100) : 0;
+
+  async function handleSetPlan(newPlan) {
+    if (newPlan === currentPlan) return;
+    if (!window.confirm(`Alterar plano de "${user.email}" de "${PLAN_LABELS[currentPlan] ?? currentPlan}" para "${PLAN_LABELS[newPlan]}"?`)) return;
+    setPlanLoading(true);
+    setMsg(null);
+    try {
+      await apiRequest(apiEndpoints.adminSetUserPlan, {
+        method: "POST",
+        body: JSON.stringify({ email: user.email, plan: newPlan }),
+      });
+      setMsg({ type: "success", text: `Plano alterado para ${PLAN_LABELS[newPlan]}.` });
+      onRefresh();
+    } catch (e) {
+      setMsg({ type: "error", text: e.message || "Erro ao alterar plano." });
+    } finally {
+      setPlanLoading(false);
+    }
+  }
+
+  async function handleReset(e) {
+    e.preventDefault();
+    const selected = Object.entries(resetOpts).filter(([, v]) => v).map(([k]) => k);
+    if (selected.length === 0) { setMsg({ type: "error", text: "Selecione ao menos uma opção." }); return; }
+    if (!window.confirm(`⚠️ ATENÇÃO: Isso apagará permanentemente dados de "${user.email}".\n\nItens: ${selected.join(", ")}\n\nConfirmar?`)) return;
+    setResetLoading(true);
+    setMsg(null);
+    try {
+      const result = await apiRequest(apiEndpoints.adminResetUserData, {
+        method: "POST",
+        body: JSON.stringify({ email: user.email, options: resetOpts }),
+      });
+      setMsg({ type: "success", text: `Resetado: ${result.cleared?.join(", ") || "nada"}` });
+      setShowReset(false);
+      setResetOpts({ checkins: false, workouts: false, diet: false, chat: false, settings: false, onboarding: false });
+    } catch (e) {
+      setMsg({ type: "error", text: e.message || "Erro ao resetar." });
+    } finally {
+      setResetLoading(false);
+    }
+  }
+
+  return (
+    <div className="admin-user-card">
+      <div className="admin-user-card__head">
+        <div>
+          <p className="admin-user-card__email">{user.email}</p>
+        </div>
+        <span
+          className="admin-user-card__plan-badge"
+          style={{ background: PLAN_COLORS[currentPlan] ?? "#6b7280" }}
+        >
+          {PLAN_LABELS[currentPlan] ?? currentPlan}
+        </span>
+      </div>
+
+      {/* Token bar */}
+      {user.token_limit > 0 && (
+        <div className="admin-user-card__tokens">
+          <div className="admin-user-card__token-bar">
+            <div className="admin-user-card__token-fill" style={{ width: `${pct}%` }} />
+          </div>
+          <span className="admin-user-card__token-txt">
+            {fmtTokens(Math.max(0, used))} / {fmtTokens(user.token_limit)} tokens ({pct}%)
+          </span>
+        </div>
+      )}
+
+      {/* Trocar plano */}
+      <div className="admin-user-card__section">
+        <p className="admin-user-card__section-title">Alterar plano</p>
+        <div className="admin-user-card__plan-btns">
+          {ALL_PLANS.map(p => (
+            <button
+              key={p}
+              type="button"
+              className={`admin-user-card__plan-btn${currentPlan === p ? " is-current" : ""}`}
+              style={currentPlan === p ? { borderColor: PLAN_COLORS[p], color: PLAN_COLORS[p] } : {}}
+              onClick={() => handleSetPlan(p)}
+              disabled={planLoading}
+            >
+              {PLAN_LABELS[p]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Reset seletivo */}
+      <div className="admin-user-card__section">
+        <button
+          type="button"
+          className="admin-user-card__reset-toggle"
+          onClick={() => setShowReset(v => !v)}
+        >
+          {showReset ? "▲ Fechar reset" : "🗑 Resetar dados"}
+        </button>
+        {showReset && (
+          <form className="admin-user-card__reset-form" onSubmit={handleReset}>
+            <p className="admin-user-card__reset-warn">⚠️ Ação irreversível. Selecione o que apagar:</p>
+            {[
+              ["checkins",   "Check-ins"],
+              ["workouts",   "Treinos (planos + sessões)"],
+              ["diet",       "Dieta (planos + registros)"],
+              ["chat",       "Chat + Histórico de IA"],
+              ["settings",   "Configurações (avatar, nome do personal)"],
+              ["onboarding", "Forçar re-onboarding no próximo login"],
+            ].map(([key, label]) => (
+              <label key={key} className="admin-user-card__reset-opt">
+                <input
+                  type="checkbox"
+                  checked={resetOpts[key]}
+                  onChange={e => setResetOpts(prev => ({ ...prev, [key]: e.target.checked }))}
+                />
+                {label}
+              </label>
+            ))}
+            <button
+              type="submit"
+              className="admin-user-card__reset-btn"
+              disabled={resetLoading || !Object.values(resetOpts).some(Boolean)}
+            >
+              {resetLoading ? "Resetando…" : "Confirmar reset"}
+            </button>
+          </form>
+        )}
+      </div>
+
+      {msg && (
+        <p className={`admin-user-card__msg admin-user-card__msg--${msg.type}`}>{msg.text}</p>
+      )}
+    </div>
+  );
+}
+
+function UserManager() {
+  const [query, setQuery] = useState("");
+  const [users, setUsers] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
+
+  async function search(e) {
+    e?.preventDefault();
+    setLoading(true);
+    setSearched(true);
+    try {
+      const data = await apiRequest(`${apiEndpoints.adminUsers}?q=${encodeURIComponent(query.trim())}`);
+      setUsers(data.users || []);
+    } catch (err) {
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="admin-users">
+      <form className="admin-users__search" onSubmit={search}>
+        <input
+          className="admin-users__input"
+          type="text"
+          placeholder="Buscar por e-mail…"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+        />
+        <button type="submit" className="admin-users__search-btn" disabled={loading}>
+          {loading ? "Buscando…" : "Buscar"}
+        </button>
+      </form>
+
+      {!searched && (
+        <p className="admin-users__hint">Digite um e-mail (parcial) e clique em Buscar.</p>
+      )}
+
+      {searched && !loading && users?.length === 0 && (
+        <p className="admin-users__empty">Nenhum usuário encontrado.</p>
+      )}
+
+      {users?.length > 0 && (
+        <div className="admin-users__list">
+          {users.map(u => (
+            <UserCard key={u.id} user={u} onRefresh={() => search()} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function AdminPage() {
@@ -291,18 +511,24 @@ export default function AdminPage() {
   const [order, setOrder] = useState("desc");
   const [page, setPage] = useState(1);
   const [loadingTables, setLoadingTables] = useState(true);
+  const [tablesError, setTablesError] = useState(null);
   const [loadingData, setLoadingData] = useState(false);
-  const [activeTab, setActiveTab] = useState("tables"); // 'tables' | 'query' | 'actions'
+  const [activeTab, setActiveTab] = useState("tables"); // 'tables' | 'query' | 'users' | 'actions'
   const [queryResult, setQueryResult] = useState(null);
 
   // Carrega lista de tabelas
-  useEffect(() => {
+  const loadTables = useCallback(() => {
     setLoadingTables(true);
+    setTablesError(null);
     apiRequest(apiEndpoints.adminTables)
       .then((data) => setTables(data.tables || []))
-      .catch(() => {})
+      .catch((err) => setTablesError(err?.message || "Erro ao carregar tabelas."))
       .finally(() => setLoadingTables(false));
   }, []);
+
+  useEffect(() => {
+    loadTables();
+  }, [loadTables]);
 
   // Carrega dados da tabela selecionada
   const loadTableData = useCallback(
@@ -362,6 +588,13 @@ export default function AdminPage() {
           </button>
           <button
             type="button"
+            className={`admin-tab ${activeTab === "users" ? "is-active" : ""}`}
+            onClick={() => setActiveTab("users")}
+          >
+            👤 Usuários
+          </button>
+          <button
+            type="button"
             className={`admin-tab ${activeTab === "actions" ? "is-active" : ""}`}
             onClick={() => setActiveTab("actions")}
           >
@@ -374,6 +607,17 @@ export default function AdminPage() {
         <div className="admin-layout">
           {loadingTables ? (
             <div className="admin-loading">Carregando tabelas…</div>
+          ) : tablesError ? (
+            <aside className="admin-sidebar">
+              <p style={{ color: "#f87272", fontSize: "0.82rem", padding: "12px" }}>{tablesError}</p>
+              <button
+                type="button"
+                onClick={loadTables}
+                style={{ margin: "0 12px", padding: "6px 14px", background: "rgba(139,92,246,0.7)", border: "none", borderRadius: "7px", color: "#fff", cursor: "pointer", fontSize: "0.82rem" }}
+              >
+                Tentar novamente
+              </button>
+            </aside>
           ) : (
             <TableList tables={tables} selected={selectedTable} onSelect={selectTable} />
           )}
@@ -400,6 +644,8 @@ export default function AdminPage() {
           <QueryResult result={queryResult} />
         </div>
       )}
+
+      {activeTab === "users" && <UserManager />}
 
       {activeTab === "actions" && <UserActionsPanel />}
     </div>

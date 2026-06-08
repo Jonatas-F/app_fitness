@@ -122,13 +122,24 @@
 
 .dashboard-hero {
   display: flex;
-  align-items: center;
-  gap: 16px;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 0 0 22px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .dashboard-hero > div:last-child {
   display: grid;
   gap: 12px;
+}
+
+/* Eyebrow accent — mesma linguagem das telas de plano */
+.dashboard-hero > div > span:first-child {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #ff2e2e;
 }
 
 .dashboard-hero__logo {
@@ -153,9 +164,10 @@
 
 .dashboard-hero h1 {
   max-width: 880px;
-  margin: 12px 0 8px;
-  font-size: clamp(1.8rem, 3vw, 2.6rem);
-  line-height: 1.08;
+  margin: 0;
+  font-size: clamp(1.9rem, 3.2vw, 2.8rem);
+  line-height: 1.04;
+  font-weight: 800;
 }
 
 .dashboard-hero p,
@@ -210,10 +222,147 @@
   text-overflow: ellipsis;
 }
 
+.dashboard-checkin-cta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin-top: 20px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, rgba(255, 46, 46, 0.16), rgba(255, 46, 46, 0.06));
+  border: 1px solid rgba(255, 46, 46, 0.35);
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.18s, background 0.18s, transform 0.1s;
+}
+
+.dashboard-checkin-cta:hover {
+  border-color: rgba(255, 46, 46, 0.6);
+  background: linear-gradient(135deg, rgba(255, 46, 46, 0.22), rgba(255, 46, 46, 0.1));
+}
+
+.dashboard-checkin-cta:active {
+  transform: scale(0.99);
+}
+
+.dashboard-checkin-cta > svg {
+  width: 26px;
+  height: 26px;
+  color: #ff5a5a;
+  flex-shrink: 0;
+}
+
+.dashboard-checkin-cta span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dashboard-checkin-cta strong {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.dashboard-checkin-cta small {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.dashboard-checkin-cta__arrow {
+  margin-left: auto;
+  font-size: 1.3rem;
+  color: #ff5a5a;
+  font-weight: 700;
+}
+
 .dashboard-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
+}
+
+/* ── Toggle de gráficos sob demanda ── */
+.dashboard-charts-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.18s, background 0.18s;
+}
+
+.dashboard-charts-toggle:hover {
+  border-color: rgba(255, 46, 46, 0.5);
+  background: rgba(255, 46, 46, 0.05);
+}
+
+.dashboard-charts-toggle > span:first-child {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.dashboard-charts-toggle small {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.dashboard-charts-toggle__arrow {
+  margin-left: auto;
+  font-size: 1.2rem;
+  color: #ff5a5a;
+  font-weight: 700;
+}
+
+.dashboard-charts-hide {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+}
+.dashboard-charts-hide:hover { border-color: rgba(255, 46, 46, 0.5); color: #fff; }
+
+/* ── Seções numeradas estilo PDF ── */
+.dashboard-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dashboard-section__head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 10px;
+}
+
+.dashboard-section__num {
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #ff2e2e;
+}
+
+.dashboard-section__title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #fff;
+  margin: 0;
 }
 
 .dashboard-grid {
@@ -1192,13 +1341,33 @@
   .dashboard-grid,
   .dashboard-grid--wide,
   .dashboard-insight-grid,
-  .dashboard-comparison,
   .body-chart-grid,
   .workout-evolution-tabs,
   .workout-evolution-exercise,
   .workout-evolution-detail {
     grid-template-columns: 1fr;
   }
+
+  /* Mini-stats de comparação ficam em linha (3 colunas), não empilham */
+  .dashboard-comparison {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .dashboard-comparison strong {
+    font-size: 1rem;
+  }
+
+  /* Seções numeradas estilo PDF — compactas no mobile */
+  .dashboard-section { gap: 12px; }
+  .dashboard-section__title { font-size: 1.05rem; }
+  .dashboard-section__head { padding-bottom: 8px; }
+
+  /* CTA de check-in compacta */
+  .dashboard-checkin-cta { padding: 13px 14px; gap: 10px; margin-top: 14px; }
+  .dashboard-checkin-cta strong { font-size: 0.92rem; }
+  .dashboard-checkin-cta small { font-size: 0.7rem; }
+  .dashboard-checkin-cta > svg { width: 22px; height: 22px; }
 
   .dashboard-collapsible__summary {
     grid-template-columns: 32px minmax(0, 1fr);
@@ -1329,9 +1498,21 @@
     min-height: 54px;
   }
 
-  /* Comparação */
+  /* Comparação — mini-stats em linha (3 colunas) também no mobile fino */
   .dashboard-comparison {
-    grid-template-columns: 1fr;
-    gap: 8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .dashboard-comparison div {
+    padding: 10px 8px;
+  }
+
+  .dashboard-comparison strong {
+    font-size: 0.92rem;
+  }
+
+  .dashboard-comparison span {
+    font-size: 0.62rem;
   }
 }

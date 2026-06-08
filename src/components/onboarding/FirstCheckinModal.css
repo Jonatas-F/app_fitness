@@ -497,3 +497,213 @@ textarea.ob-field__control {
 .ob-traininglevel__hint {
   margin-top: 4px;
 }
+
+/* ── Protocol picker (diet approach + training focus) ────────────────────── */
+.ob-protocol-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ob-protocol-picker__btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.18s, background 0.18s;
+  width: 100%;
+}
+
+.ob-protocol-picker__btn:hover {
+  border-color: rgba(255, 46, 46, 0.4);
+  background: rgba(255, 46, 46, 0.05);
+}
+
+.ob-protocol-picker__btn.is-active {
+  border-color: var(--brand, #ff2e2e);
+  background: rgba(255, 46, 46, 0.1);
+  box-shadow: 0 0 0 1px rgba(255, 46, 46, 0.25);
+}
+
+.ob-protocol-picker__badge {
+  font-size: 1.6rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.ob-protocol-picker__info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ob-protocol-picker__label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+}
+
+.ob-protocol-picker__tagline {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--brand, #ff2e2e);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.ob-protocol-picker__desc {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.5;
+  margin-top: 2px;
+}
+
+.ob-field__hint--warn {
+  color: rgba(255, 184, 0, 0.9);
+}
+
+/* ── Profile summary screen ──────────────────────────────────────────────── */
+.ob-profile-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ob-profile-summary__card {
+  padding: 18px 20px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ob-profile-summary__card--training {
+  border-color: rgba(255, 46, 46, 0.3);
+  background: rgba(255, 46, 46, 0.05);
+}
+
+.ob-profile-summary__card--diet {
+  border-color: rgba(72, 199, 142, 0.3);
+  background: rgba(72, 199, 142, 0.05);
+}
+
+.ob-profile-summary__card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ob-profile-summary__icon {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.ob-profile-summary__card-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+  margin: 0;
+}
+
+.ob-profile-summary__card-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 2px 0 0;
+  line-height: 1.25;
+}
+
+.ob-profile-summary__tagline {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.03em;
+  margin: 0;
+}
+
+.ob-profile-summary__desc {
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.ob-profile-summary__desc--empty {
+  color: rgba(255, 255, 255, 0.35);
+  font-style: italic;
+}
+
+.ob-profile-summary__level {
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 10px;
+}
+
+.ob-profile-summary__level--iniciante {
+  background: rgba(72, 199, 142, 0.18);
+  color: #48c78e;
+}
+
+.ob-profile-summary__level--intermediario {
+  background: rgba(255, 184, 0, 0.18);
+  color: #ffb800;
+}
+
+.ob-profile-summary__level--avancado {
+  background: rgba(220, 75, 55, 0.18);
+  color: #e05a3a;
+}
+
+.ob-profile-summary__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.ob-profile-summary__meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 4px 12px;
+}
+
+.ob-profile-summary__ai-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  background: rgba(255, 215, 0, 0.06);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-radius: 12px;
+}
+
+.ob-profile-summary__ai-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.ob-profile-summary__ai-note p {
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.55;
+  margin: 0;
+}
