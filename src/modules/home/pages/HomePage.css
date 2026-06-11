@@ -134,18 +134,16 @@
   max-width: 760px;
 }
 
+/* Label accent — mesma linguagem do .plan-hero__label (base PDF) */
 .home-eyebrow {
   display: inline-flex;
   width: fit-content;
-  min-height: 30px;
   align-items: center;
-  padding: 0 12px;
-  border-radius: 999px;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  font-size: 0.78rem;
-  font-weight: 900;
+  color: #ff2e2e;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 
 .home-hero h1,
@@ -155,12 +153,47 @@
   line-height: 1.04;
 }
 
+/* Título estilo .plan-hero__title (base PDF) */
 .home-hero h1 {
-  font-size: clamp(2.4rem, 6vw, 5.4rem);
+  font-size: clamp(2.6rem, 6.4vw, 5.2rem);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 0.98;
+}
+
+.home-hero h1 span {
+  color: #ff2e2e;
 }
 
 .home-section h2 {
-  font-size: clamp(1.7rem, 3.2vw, 3rem);
+  font-size: clamp(1.5rem, 2.8vw, 2.4rem);
+  font-weight: 800;
+}
+
+/* Cabeçalho de seção numerado — mesma linguagem do .plan-section__header */
+.home-section__header {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+}
+
+.home-section__num {
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #ff2e2e;
+}
+
+.home-section__title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
 }
 
 .home-hero p,
