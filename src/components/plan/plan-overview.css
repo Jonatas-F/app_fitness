@@ -596,21 +596,24 @@
   background: rgba(0, 0, 0, 0.78);
   z-index: 9800;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  padding: 20px 14px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  padding: 16px 14px;
 }
 
+/* Coluna fixa: head + timers fixos, exercícios com scroll interno,
+   footer (Finalizar) sempre visível — nada corta fora da tela. */
 .plan-session-modal {
   width: min(620px, 100%);
-  margin: auto;
+  max-height: calc(100dvh - 32px);
+  display: flex;
+  flex-direction: column;
   background: #0d0d0f;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 16px;
-  padding: 18px 18px 20px;
+  padding: 16px 16px 14px;
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
 }
 
 .plan-session-head {
@@ -629,6 +632,14 @@
   color: #fff;
   margin: 4px 0 0;
   line-height: 1.1;
+}
+
+/* Passo de seleção: lista rola dentro do modal se for grande */
+.plan-session-modal > .plan-day-cards {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Cards de seleção do treino */
@@ -698,8 +709,18 @@
   margin-bottom: 14px;
 }
 
-/* Exercícios e séries */
-.plan-session-exercises { display: flex; flex-direction: column; gap: 12px; }
+/* Exercícios e séries — área rolável dentro do modal */
+.plan-session-exercises {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 4px;
+  margin-right: -4px;
+}
 
 .plan-session-ex {
   background: var(--po-surface);
@@ -785,17 +806,34 @@
   display: flex;
   gap: 10px;
   justify-content: space-between;
-  margin-top: 18px;
-  padding-top: 14px;
+  flex-shrink: 0;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid var(--po-border);
 }
 
 @media (max-width: 600px) {
-  .plan-session-overlay { padding: 10px 8px; }
-  .plan-session-modal { padding: 14px; border-radius: 12px; }
-  .plan-session-timer__val { font-size: 1.7rem; }
-  .plan-session-footer { flex-direction: column-reverse; }
-  .plan-session-footer .plan-cta { width: 100%; justify-content: center; }
+  .plan-session-overlay { padding: 0; }
+  /* Mobile: ocupa a tela inteira (estilo app), respeitando notch/gesture bar */
+  .plan-session-modal {
+    max-height: 100dvh;
+    height: 100dvh;
+    border-radius: 0;
+    border: none;
+    padding: 12px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+  .plan-session-head { padding-bottom: 10px; margin-bottom: 10px; }
+  .plan-session-title { font-size: 1.25rem; }
+  .plan-session-timers { gap: 8px; margin-bottom: 8px; }
+  .plan-session-timer { padding: 10px 12px; }
+  .plan-session-timer__val { font-size: 1.55rem; }
+  .plan-session-progress { margin-bottom: 8px; }
+  .plan-session-ex { padding: 10px 12px; }
+  .plan-session-set { padding: 4px 0; }
+  .plan-session-set__input { padding: 8px 6px; font-size: 0.9rem; }
+  .plan-session-set__check { height: 34px; }
+  .plan-session-footer { gap: 8px; }
+  .plan-session-footer .plan-cta { flex: 1; justify-content: center; padding: 10px 12px; }
 }
 
 /* ── Back bar (modo execução) ────────────────────────────────────────────── */
