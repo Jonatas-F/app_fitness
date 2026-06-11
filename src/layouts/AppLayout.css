@@ -86,52 +86,62 @@
   transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
-/* ── Menu geral (desktop) — estilo base PDF ─────────────────── */
+/* ── Menu geral (desktop) — padrão dos botões (.plan-cta) ─────
+   Inativo = ghost (contorno) · Ativo = primário (vermelho sólido). */
 .sidebar__link {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 11px 14px;
-  border-radius: 10px;
+  border-radius: 8px;
   background: transparent;
-  border: 1px solid transparent;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.80);
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
+/* Hover ghost — vira accent vermelho */
 .sidebar__link:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  color: #ff2e2e;
+  border-color: rgba(255, 46, 46, 0.50);
+  background: rgba(255, 46, 46, 0.06);
 }
 
+/* Ativo = botão primário sólido */
 .sidebar__link--active {
   color: #fff;
-  background: rgba(255, 46, 46, 0.12);
-  border-color: rgba(255, 46, 46, 0.38);
+  background: #ff2e2e;
+  border-color: #ff2e2e;
+}
+
+.sidebar__link--active:hover {
+  color: #fff;
+  background: #ff4444;
+  border-color: #ff4444;
 }
 
 .sidebar__link--active .sidebar__link-icon {
-  color: #ff2e2e;
+  color: #fff;
 }
 
-/* ── Menu geral (mobile / bottom nav) — estilo base PDF ─────── */
+/* ── Menu geral (mobile / bottom nav) — mesmo padrão ───────── */
 .bottom-nav__link:hover {
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.16);
+  color: #ff2e2e;
+  border-color: rgba(255, 46, 46, 0.45);
 }
 
 .bottom-nav__link--active {
   color: #fff;
-  background: rgba(255, 46, 46, 0.14);
-  border-color: rgba(255, 46, 46, 0.4);
+  background: #ff2e2e;
+  border-color: #ff2e2e;
 }
 
 .bottom-nav__link--active .bottom-nav__icon,
 .bottom-nav__link--active svg {
-  color: #ff2e2e;
+  color: #fff;
 }
 
 .sidebar__link-icon,
