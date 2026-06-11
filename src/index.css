@@ -948,76 +948,36 @@ ol {
   transition: stroke 0.2s ease, filter 0.2s ease;
 }
 
-/* Ativo: ícone recebe cor accent + glow suave */
-.sidebar__link--active .sidebar__link-icon svg {
-  stroke: #ff5a4f;
-  filter: drop-shadow(0 0 5px rgba(255, 77, 61, 0.70))
-          drop-shadow(0 0 12px rgba(255, 77, 61, 0.35));
-}
-
+/* Item ativo do menu = botão primário sólido → ícone branco */
+.sidebar__link--active .sidebar__link-icon svg,
 .bottom-nav__link--active .bottom-nav__icon svg {
-  stroke: #ff5a4f;
-  filter: drop-shadow(0 0 4px rgba(255, 77, 61, 0.65))
-          drop-shadow(0 0 10px rgba(255, 77, 61, 0.30));
+  stroke: #fff;
+  filter: none;
 }
 
-/* Hover: leve brilho antes de ativar */
-.sidebar__link:hover .sidebar__link-icon svg {
-  stroke: #e8ecf7;
-  filter: drop-shadow(0 0 3px rgba(232, 236, 247, 0.25));
+/* Hover (ghost) em item inativo → ícone vira accent vermelho */
+.sidebar__link:not(.sidebar__link--active):hover .sidebar__link-icon svg {
+  stroke: #ff2e2e;
+  filter: none;
 }
 
-/* ── Glow intenso no item ativo (sobrescreve o anterior) ───── */
-.sidebar__link--active {
-  color: var(--text-primary) !important;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 77,  61,  0.20) 0%,
-    rgba(255, 46, 46, 0.22) 60%,
-    rgba(255, 255, 255, 0.05) 100%
-  ) !important;
-  border-color: rgba(255, 77, 61, 0.38) !important;
-
-  /* Glow externo em camadas — efeito PrismaFlow */
-  box-shadow:
-    0 0 0 1px rgba(255, 77, 61, 0.15),
-    0 4px 16px rgba(255, 77, 61, 0.22),
-    0 8px 32px rgba(255, 77, 61, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.10),
-    inset 0 0 20px rgba(255, 77, 61, 0.06) !important;
-}
-
-/* Barra lateral — mais brilhante */
-.sidebar__link--active::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 18%;
-  height: 64%;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: linear-gradient(180deg, #ff2e2e, #ff3b3b);
-  box-shadow:
-    0 0 6px  rgba(255, 77, 61, 0.80),
-    0 0 14px rgba(255, 77, 61, 0.50),
-    0 0 28px rgba(255, 77, 61, 0.25);
-}
-
-/* Bottom nav ativo */
+/* ── Menu geral no padrão dos botões (.plan-cta) ─────────────
+   Ativo = primário sólido vermelho. Sem gradiente/glow/barra. */
+.sidebar__link--active,
 .bottom-nav__link--active {
-  color: var(--text-primary) !important;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 77,  61,  0.22),
-    rgba(255, 46, 46, 0.18)
-  ) !important;
-  border-color: rgba(255, 77, 61, 0.35) !important;
-  box-shadow:
-    0 0 0 1px rgba(255, 77, 61, 0.12),
-    0 4px 18px rgba(255, 77, 61, 0.28),
-    0 8px 30px rgba(255, 77, 61, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+  color: #fff !important;
+  background: #ff2e2e !important;
+  border-color: #ff2e2e !important;
+  box-shadow: none !important;
 }
+
+.sidebar__link--active:hover,
+.bottom-nav__link--active:hover {
+  background: #ff4444 !important;
+  border-color: #ff4444 !important;
+}
+
+.sidebar__link--active::after { display: none; }
 
 /* ── Brand mark: glow pulsante ──────────────────────────────── */
 .sidebar__brand-mark {
