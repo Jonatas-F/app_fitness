@@ -474,6 +474,9 @@ function buildAiContext(checkinData, completeness, status) {
       weeklyWorkoutsPlanned: checkinData.weeklyWorkoutsPlanned || "",
       weeklyWorkoutsCompleted: checkinData.weeklyWorkoutsCompleted || "",
       workoutAdherence: checkinData.workoutAdherence || "",
+      keepWorkoutProtocol: checkinData.keepWorkoutProtocol || "",
+      requestedWorkoutChanges: checkinData.requestedWorkoutChanges || "",
+      exerciseRatings: Array.isArray(checkinData.exerciseRatings) ? checkinData.exerciseRatings : [],
     },
     nutritionContext: {
       dietaryRestrictions: checkinData.dietaryRestrictions || "",
@@ -489,6 +492,9 @@ function buildAiContext(checkinData, completeness, status) {
       dietAdherence: checkinData.dietAdherence || "",
       hunger: checkinData.hunger || "",
       digestion: checkinData.digestion || "",
+      keepDietProtocol: checkinData.keepDietProtocol || "",
+      requestedDietChanges: checkinData.requestedDietChanges || "",
+      mealFeedback: Array.isArray(checkinData.mealFeedback) ? checkinData.mealFeedback : [],
     },
     subjectiveContext: {
       sex: checkinData.sex || "",
@@ -621,6 +627,13 @@ export function saveCheckin(checkinData, options = {}) {
     dietMealsCompleted: checkinData.dietMealsCompleted || "",
     dietAdherence: checkinData.dietAdherence || "",
     protocolAction: checkinData.protocolAction || "none",
+    // Campos de revisão de protocolo (check-in de acompanhamento)
+    keepWorkoutProtocol: checkinData.keepWorkoutProtocol || "",
+    keepDietProtocol: checkinData.keepDietProtocol || "",
+    requestedWorkoutChanges: checkinData.requestedWorkoutChanges || "",
+    requestedDietChanges: checkinData.requestedDietChanges || "",
+    exerciseRatings: Array.isArray(checkinData.exerciseRatings) ? checkinData.exerciseRatings : [],
+    mealFeedback: Array.isArray(checkinData.mealFeedback) ? checkinData.mealFeedback : [],
     notes:
       status === "missed"
         ? options.reason || "Check-in nao realizado."

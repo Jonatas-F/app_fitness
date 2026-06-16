@@ -29,6 +29,14 @@ export function useOnboarding() {
       setOnboardingDone(true);
       return;
     }
+    // Se o admin pediu reset de onboarding para este usuário, limpa as flags
+    if (user.reset_onboarding === true) {
+      localStorage.removeItem(FIRST_CHECKIN_KEY);
+      localStorage.removeItem(ONBOARDING_DONE_KEY);
+      setFirstCheckinDone(false);
+      setOnboardingDone(false);
+      return;
+    }
     // Login: relê as flags — usuário novo não terá nada salvo
     const { firstCheckinDone: f, onboardingDone: o } = readFromStorage();
     setFirstCheckinDone(f);
@@ -53,7 +61,10 @@ export function useOnboarding() {
 
   function completeFirstCheckin() {
     localStorage.setItem(FIRST_CHECKIN_KEY, "true");
+    // Marca onboarding como concluído junto (tour removido)
+    localStorage.setItem(ONBOARDING_DONE_KEY, "true");
     setFirstCheckinDone(true);
+    setOnboardingDone(true);
   }
   function completeOnboarding() {
     localStorage.setItem(ONBOARDING_DONE_KEY, "true");
@@ -68,7 +79,7 @@ export function useOnboarding() {
 
   return {
     showFirstCheckin: !firstCheckinDone,
-    showTour: firstCheckinDone && !onboardingDone,
+    showTour: false, // tour removido
     completeFirstCheckin,
     completeOnboarding,
     resetOnboarding,

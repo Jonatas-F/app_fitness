@@ -4,6 +4,7 @@ import { saveRemoteCheckin } from "../../services/checkinService";
 import { generateWorkoutWithAi } from "../../services/ai/workout.service";
 import { generateDietWithAi } from "../../services/ai/diet.service";
 import { personalAvatarCatalog } from "../../data/platformImageCatalog";
+import { saveRemoteSettings, loadRemoteSettings } from "../../services/settingsService";
 import AiGeneratingScreen from "../shared/AiGeneratingScreen";
 import "./FirstCheckinModal.css";
 
@@ -34,7 +35,7 @@ const BODY_INTER_STEP = {
     icon: "💡",
     text: "Não tem acesso a uma balança de bioimpedância agora? Sem problema — clique em Pular etapa. Você pode inserir esses dados no check-in quando tiver, e a IA remonta os protocolos automaticamente.",
   },
-  fields: ["bodyFat", "leanMass", "photosAvailable"],
+  fields: ["bodyFat", "leanMass", "skeletalMuscleMass", "visceralFat", "totalBodyWater", "boneMass", "basalMetabolicRate", "photosAvailable"],
   optional: true,
 };
 
@@ -47,36 +48,327 @@ const BODY_PRO_STEP = {
     icon: "💡",
     text: "Se não tiver acesso à balança de bioimpedância agora, clique em Pular. No próximo check-in você pode inserir — a IA usa esses dados para regenerar os protocolos com ainda mais precisão.",
   },
-  fields: ["bodyFat", "leanMass", "visceralFat", "muscleMass", "photosAvailable"],
+  fields: ["bodyFat", "leanMass", "skeletalMuscleMass", "muscleMass", "visceralFat", "totalBodyWater", "boneMass", "basalMetabolicRate", "metabolicAge", "bmi", "photosAvailable"],
   optional: true,
 };
 
+// ── Fluxo unificado — todos os planos usam o mesmo onboarding simplificado ──
+// Nível de experiência é derivado automaticamente de trainingLevel × trainingFrequency.
+const STEPS_UNIFIED = [
+  {
+    id: "basics",
+    title: "Seus dados básicos",
+    subtitle: "Informações essenciais para o Personal Virtual montar seu protocolo.",
+    fields: ["goal", "sex", "age", "height", "weight"],
+  },
+  {
+    id: "training",
+    title: "Treino e disponibilidade",
+    subtitle: "Conte um pouco sobre sua experiência e disponibilidade para treinar.",
+    fields: ["trainingAvailableDays", "trainingLevel", "trainingFrequency", "availableMinutes", "injuries", "trainingPreferenceFreeText"],
+  },
+  {
+    id: "trainingfocus",
+    title: "Foco do treino",
+    subtitle: "Qual é a principal qualidade que você quer desenvolver? Isso define a estrutura do seu protocolo — rep range, volume, tipo de splits.",
+    fields: ["trainingFocus"],
+    optional: true,
+  },
+  {
+    id: "bodygoal",
+    title: "Como você quer seu corpo?",
+    subtitle: "Essa resposta define sua estratégia alimentar. Com base no que você escolher, a IA vai calcular calorias, macros e tipo de dieta ideal.",
+    fields: ["bodyGoal"],
+    optional: true,
+  },
+  {
+    ...NUTRITION_STEP,
+    subtitle: "Essas informações ajudam a IA a montar um plano alimentar que você realmente vai seguir.",
+  },
+  {
+    id: "body",
+    title: "Composição corporal",
+    subtitle: "Se tiver acesso a uma balança de bioimpedância, esses dados tornam o protocolo muito mais preciso.",
+    note: {
+      icon: "💡",
+      text: "Não tem bioimpedância agora? Sem problema — clique em Pular etapa. Você pode inserir esses dados no próximo check-in e a IA remonta os protocolos.",
+    },
+    fields: ["bodyFat", "leanMass", "visceralFat", "basalMetabolicRate"],
+    optional: true,
+  },
+  {
+    id: "goals",
+    title: "Suas expectativas",
+    subtitle: "Conte o que espera alcançar — quanto mais detalhes, melhor.",
+    fields: ["notes"],
+    optional: true,
+  },
+  {
+    id: "summary",
+    title: "Seu perfil está pronto",
+    subtitle: "Veja o protocolo que o Personal Virtual vai montar para você — antes de entrar no app.",
+    fields: ["_summary"],
+  },
+  PERSONAL_STEP,
+];
+
 const STEPS = {
-  basico: [
-    { id: "basics",   title: "Seus dados básicos",    subtitle: "Informações essenciais para o Personal Virtual montar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
-    { id: "training", title: "Sua disponibilidade",   subtitle: "Marque os dias que você pode ir à academia e suas preferências de treino.", fields: ["trainingAvailableDays","muscleGroupCombinations","trainingPreferenceFreeText"] },
-    NUTRITION_STEP,
-    { id: "goals",    title: "Suas expectativas",      subtitle: "Conte o que espera alcançar — quanto mais detalhes, melhor.", fields: ["notes"] },
-    PERSONAL_STEP,
+  basico:        STEPS_UNIFIED,
+  intermediario: STEPS_UNIFIED,
+  pro:           STEPS_UNIFIED,
+};
+
+// ── Nível de experiência unificado ────────────────────────────────────────────
+// Uma única pergunta que infere automaticamente trainingExperience + trainingAge
+
+export const TRAINING_LEVEL_OPTIONS = [
+  {
+    id: "nunca",
+    label: "Nunca treinei",
+    sublabel: "Iniciante",
+    badge: "🌱",
+    hint: "Começando do zero — a IA monta tudo com base no seu objetivo",
+    experience: "iniciante",
+    age: "nunca",
+  },
+  {
+    id: "menos-1-ano",
+    label: "Menos de 1 ano treinando",
+    sublabel: "Iniciante",
+    badge: "💪",
+    hint: "Menos de 12 meses — ainda na fase de adaptação e aprendizado dos movimentos",
+    experience: "iniciante",
+    age: "menos-6-meses",
+  },
+  {
+    id: "1-3-anos",
+    label: "1 a 3 anos treinando",
+    sublabel: "Intermediário",
+    badge: "🔥",
+    hint: "Já domina os movimentos básicos e tem consistência no treino",
+    experience: "intermediario",
+    age: "1-2-anos",
+  },
+  {
+    id: "3-5-anos",
+    label: "3 a 5 anos treinando",
+    sublabel: "Intermediário",
+    badge: "⚡",
+    hint: "Treinamento sólido com bom controle de volume e técnica",
+    experience: "intermediario",
+    age: "2-5-anos",
+  },
+  {
+    id: "mais-5-anos",
+    label: "Mais de 5 anos treinando",
+    sublabel: "Avançado",
+    badge: "🏆",
+    hint: "Alto domínio técnico, periodi­zação e otimização de volume",
+    experience: "avancado",
+    age: "mais-5-anos",
+  },
+];
+
+const TRAINING_LEVEL_MAP = Object.fromEntries(
+  TRAINING_LEVEL_OPTIONS.map(o => [o.id, { experience: o.experience, age: o.age }])
+);
+
+// ── Frequência semanal de treino ──────────────────────────────────────────────
+export const TRAINING_FREQUENCY_OPTIONS = [
+  { id: "1x",   label: "1x por semana",    badge: "🚶", hint: "Treino leve — adaptação muito gradual" },
+  { id: "2x",   label: "2x por semana",    badge: "🏃", hint: "Base sólida — bom para iniciantes consistentes" },
+  { id: "3-4x", label: "3–4x por semana",  badge: "💪", hint: "Frequência ideal para a maioria dos objetivos" },
+  { id: "5x",   label: "5+ vezes/semana",  badge: "🔥", hint: "Alta dedicação — adaptação acelerada" },
+];
+
+// ── Derivação de experiência real: tempo × frequência ────────────────────────
+// Matriz: (trainingLevel) × (trainingFrequency) → { experience, age }
+// Lógica: frequência baixa comprime o volume acumulado, "downgradeando" o nível.
+function deriveTrainingExperience(levelId, frequencyId) {
+  if (!levelId || levelId === "nunca") return { experience: "iniciante", age: "nunca" };
+
+  const isLow  = frequencyId === "1x" || frequencyId === "2x";
+  const isHigh = frequencyId === "5x";
+
+  if (levelId === "menos-1-ano") {
+    // < 1 ano: sempre iniciante independente da frequência
+    return { experience: "iniciante", age: isHigh ? "menos-6-meses" : "nunca" };
+  }
+  if (levelId === "1-3-anos") {
+    // 1–3 anos: só sobe para intermediário se treinava ≥ 3x/semana
+    return isLow
+      ? { experience: "iniciante",     age: "menos-6-meses" }
+      : { experience: "intermediario", age: "1-2-anos" };
+  }
+  if (levelId === "3-5-anos") {
+    return isLow
+      ? { experience: "iniciante",     age: "1-2-anos" }
+      : { experience: "intermediario", age: "2-5-anos" };
+  }
+  if (levelId === "mais-5-anos") {
+    if (isLow)   return { experience: "intermediario", age: "1-2-anos" };
+    if (isHigh)  return { experience: "avancado",      age: "mais-5-anos" };
+    return         { experience: "intermediario",      age: "2-5-anos" };
+  }
+  return TRAINING_LEVEL_MAP[levelId] || { experience: "iniciante", age: "menos-6-meses" };
+}
+
+// ── Abordagem de dieta por objetivo ──────────────────────────────────────────
+const DIET_APPROACH_OPTIONS = {
+  gain: [
+    { id: "bulk-limpo",       label: "Bulk Limpo",       badge: "🥗", tagline: "Crescer com qualidade",                description: "Superávit moderado (~200–300 kcal), alimentos limpos, ricos em proteínas e fibras. Crescimento lento com pouco acúmulo de gordura. Boa opção para quem não quer perder a definição enquanto cresce." },
+    { id: "bulk-inteligente", label: "Bulk Inteligente", badge: "📊", tagline: "Superávit calculado semana a semana",  description: "Superávit de ~300–500 kcal ajustado pelo check-in semanal. Monitora peso e composição continuamente para maximizar ganho muscular com controle ativo de gordura." },
+    { id: "bulk-sujo",        label: "Bulk Sujo",        badge: "🔥", tagline: "Máximo crescimento, sem restrições",  description: "Superávit alto (+500 kcal). Prioridade total no volume muscular — refeições calóricas são bem-vindas. Aceita ganho de gordura junto: o foco é crescer agora e definir depois." },
+    { id: "recomposicao",     label: "Recomposição",     badge: "⚖️", tagline: "Ganhar músculo e perder gordura",    description: "Calorias próximas ao gasto total. Processo mais lento, mas muda a composição sem ciclos separados de bulk e cutting. Ideal para iniciantes e intermediários com gordura corporal moderada." },
   ],
-  intermediario: [
-    { id: "basics",   title: "Seus dados básicos",     subtitle: "Informações essenciais para personalizar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
-    { id: "profile",  title: "Perfil de treino",        subtitle: "Experiência, tempo disponível e preferências de divisão.", fields: ["trainingExperience","trainingAge","availableMinutes","trainingPreference","muscleGroupCombinations","trainingPreferenceFreeText","injuries"] },
-    { id: "state",    title: "Seu estado atual",         subtitle: "Como você está hoje e quais dias pode treinar.", fields: ["energy","sleepQuality","trainingAvailableDays"] },
-    NUTRITION_STEP,
-    BODY_INTER_STEP,
-    { id: "goals",    title: "Suas expectativas",        subtitle: "Conte o que espera alcançar com o Shape Certo.", fields: ["notes"] },
-    PERSONAL_STEP,
+  loss: [
+    { id: "cutting-conservador", label: "Cutting Conservador", badge: "🌿", tagline: "Perder gordura preservando músculo",     description: "Déficit leve (~200–300 kcal). Resultados graduais — perde gordura devagar mas preserva ao máximo a massa magra. Ideal para quem já tem boa composição e quer refinar." },
+    { id: "cutting-moderado",    label: "Cutting Moderado",    badge: "⚡", tagline: "Equilíbrio entre velocidade e músculo",  description: "Déficit de ~400–500 kcal. O protocolo mais utilizado — velocidade razoável de perda de gordura com boa retenção muscular. Recomendado para a maioria dos objetivos de emagrecimento." },
+    { id: "cutting-agressivo",   label: "Cutting Agressivo",   badge: "🔥", tagline: "Emagrecimento rápido",                 description: "Déficit de ~600–800 kcal. Resultados visíveis em poucas semanas. Exige proteína alta para minimizar perda muscular. Indicado para quem tem urgência ou excesso significativo de gordura." },
   ],
-  pro: [
-    { id: "basics",    title: "Seus dados básicos",      subtitle: "Informações essenciais para personalizar seu protocolo.", fields: ["goal","sex","age","height","weight"] },
-    { id: "profile",   title: "Perfil de treino",         subtitle: "Experiência, tempo disponível e preferências de divisão.", fields: ["trainingExperience","trainingAge","availableMinutes","trainingPreference","muscleGroupCombinations","trainingPreferenceFreeText","injuries"] },
-    { id: "state",     title: "Seu estado atual",          subtitle: "Sinais de recuperação e disponibilidade semanal.", fields: ["energy","sleepQuality","fatigueLevel","trainingPerformance","trainingAvailableDays"] },
-    { id: "nutrition", title: "Alimentação",               subtitle: "A IA usa essas informações para criar um plano alimentar preciso.", fields: ["mealsPerDay","dietaryRestrictions","foodPreferences"], optional: true },
-    BODY_PRO_STEP,
-    PERSONAL_STEP,
+  neutral: [
+    { id: "recomposicao", label: "Recomposição Corporal", badge: "💫", tagline: "Ganhar músculo e perder gordura",   description: "Calorias em equilíbrio ou leve variação cíclica. Muda a composição corporal de forma sustentável, sem ciclos extremos. Mais lento que bulk ou cutting — mas sem as oscilações." },
+    { id: "manutencao",   label: "Manutenção Ativa",      badge: "⚖️", tagline: "Manter o peso com saúde e performance", description: "Calorias no ponto de equilíbrio do gasto diário. Foco em qualidade alimentar, desempenho esportivo e bem-estar. Ideal para quem está satisfeito com o peso e quer manter a forma." },
   ],
 };
+
+function getDietApproachOptions(goal) {
+  if (["hipertrofia", "powerlifting"].includes(goal)) return DIET_APPROACH_OPTIONS.gain;
+  if (["emagrecimento", "cutting"].includes(goal))    return DIET_APPROACH_OPTIONS.loss;
+  return DIET_APPROACH_OPTIONS.neutral;
+}
+
+// ── Foco do treino ─────────────────────────────────────────────────────────────
+const TRAINING_FOCUS_OPTIONS = [
+  { id: "hipertrofia",    label: "Hipertrofia",            badge: "💪", tagline: "Crescimento muscular",           description: "Volume alto, 8–15 reps, foco em tensão mecânica e tempo sob tensão. Treinos divididos por grupo muscular com progressão de carga contínua." },
+  { id: "forca",          label: "Força Máxima",           badge: "🏋️", tagline: "Mover mais peso",               description: "3–6 repetições, cargas altas, longas pausas entre séries. Periodização de força com ênfase nos movimentos fundamentais: agachamento, supino e levantamento terra." },
+  { id: "resistencia",    label: "Resistência Muscular",   badge: "🏃", tagline: "Aguentar mais por mais tempo",   description: "15–25 reps, descanso curto. Treino em circuito ou alta densidade de volume. Desenvolve capacidade de manter intensidade por mais tempo." },
+  { id: "condicionamento",label: "Condicionamento",        badge: "🔥", tagline: "Queima calórica e cardio",       description: "Circuitos de alta intensidade e exercícios funcionais. Foco em gasto calórico elevado e melhora da performance cardiovascular." },
+  { id: "funcional",      label: "Funcional / Mobilidade", badge: "🧘", tagline: "Qualidade de movimento",         description: "Exercícios multiplanares, mobilidade articular e estabilidade. Foco em longevidade, prevenção de lesões e qualidade de movimento no dia a dia." },
+];
+
+// ── Objetivo corporal — perguntas em linguagem natural que derivam a estratégia alimentar ──
+// O usuário NÃO vê "Bulk Limpo" / "Cutting" nessa etapa — só no resumo final.
+const BODY_GOAL_OPTIONS = {
+  // Quem quer ganhar massa (hipertrofia, powerlifting)
+  gain: [
+    {
+      id: "corpo-seco",
+      label: "Quero crescer mantendo o corpo mais definido",
+      badge: "🥗",
+      tagline: "Aceito um ritmo mais lento para preservar a definição",
+      description: "A IA vai montar uma dieta com superávit moderado e alimentos de qualidade. Você cresce com pouco acúmulo de gordura — ideal para quem não abre mão da definição.",
+      implies: "bulk-limpo",
+    },
+    {
+      id: "crescer-controlado",
+      label: "Quero crescer de forma estratégica e monitorada",
+      badge: "📊",
+      tagline: "Prefiro ajustar semana a semana conforme evoluo",
+      description: "Superávit calculado e ajustado pelo check-in. A IA monitora sua composição e calibra as calorias continuamente para maximizar o ganho muscular.",
+      implies: "bulk-inteligente",
+    },
+    {
+      id: "maximo-crescimento",
+      label: "Quero priorizar o máximo de crescimento agora",
+      badge: "🔥",
+      tagline: "A definição vem depois — agora é fase de crescimento",
+      description: "Dieta hipercalórica voltada para volume máximo. A fase de definição vem em um segundo momento — agora o foco é crescer.",
+      implies: "bulk-sujo",
+    },
+    {
+      id: "ganhar-e-perder",
+      label: "Quero ganhar músculo e perder gordura ao mesmo tempo",
+      badge: "⚖️",
+      tagline: "Sem extremos — quero melhorar minha composição gradualmente",
+      description: "A IA calibra as calorias para recomposição. Processo mais lento, mas muda a composição sem ciclos extremos de ganho e definição.",
+      implies: "recomposicao",
+    },
+  ],
+  // Quem quer emagrecer (emagrecimento, cutting)
+  loss: [
+    {
+      id: "emagrecer-suave",
+      label: "Quero emagrecer devagar, preservando o músculo",
+      badge: "🌿",
+      tagline: "Prefiro um ritmo gradual — não quero perder o que já tenho",
+      description: "Déficit leve. A IA prioriza proteína alta para proteger a massa magra durante todo o processo. Resultado mais sustentável.",
+      implies: "cutting-conservador",
+    },
+    {
+      id: "emagrecer-equilibrio",
+      label: "Quero emagrecer bem, sem sacrificar muito o músculo",
+      badge: "⚡",
+      tagline: "Equilíbrio entre velocidade e preservação muscular",
+      description: "Déficit moderado — o protocolo mais utilizado. Bom ritmo de perda de gordura com boa retenção muscular.",
+      implies: "cutting-moderado",
+    },
+    {
+      id: "emagrecer-rapido",
+      label: "Quero resultados rápidos — aceito um processo mais intenso",
+      badge: "🔥",
+      tagline: "Priorizo velocidade — aceito um cutting mais agressivo",
+      description: "Déficit agressivo. A IA vai maximizar a perda de gordura com proteína alta para minimizar a perda muscular. Indicado para quem tem urgência.",
+      implies: "cutting-agressivo",
+    },
+  ],
+  // Outros objetivos (recomposição, condicionamento, saúde)
+  neutral: [
+    {
+      id: "melhorar-composicao",
+      label: "Quero melhorar minha composição corporal",
+      badge: "💫",
+      tagline: "Menos gordura e mais músculo — sem extremos",
+      description: "A IA vai calibrar para recomposição — processo sustentável sem ciclos extremos. Mais lento, mas com mudanças reais na composição.",
+      implies: "recomposicao",
+    },
+    {
+      id: "manter-com-saude",
+      label: "Quero manter meu peso com saúde e desempenho",
+      badge: "⚖️",
+      tagline: "Estou bem — quero manter a forma com qualidade",
+      description: "Calorias no ponto de equilíbrio. Foco em qualidade alimentar, desempenho e bem-estar. A IA otimiza para manutenção.",
+      implies: "manutencao",
+    },
+  ],
+};
+
+function getBodyGoalOptions(goal) {
+  if (["hipertrofia", "powerlifting"].includes(goal)) return BODY_GOAL_OPTIONS.gain;
+  if (["emagrecimento", "cutting"].includes(goal))    return BODY_GOAL_OPTIONS.loss;
+  return BODY_GOAL_OPTIONS.neutral;
+}
+
+// Todos os body goals em lista plana para lookup
+const ALL_BODY_GOALS = [
+  ...BODY_GOAL_OPTIONS.gain,
+  ...BODY_GOAL_OPTIONS.loss,
+  ...BODY_GOAL_OPTIONS.neutral,
+];
+
+// ── Resumo do perfil completo ─────────────────────────────────────────────────
+function buildProfileSummary(form) {
+  const allApproaches = [
+    ...DIET_APPROACH_OPTIONS.gain,
+    ...DIET_APPROACH_OPTIONS.loss,
+    ...DIET_APPROACH_OPTIONS.neutral,
+  ];
+  const dietOpt     = allApproaches.find(a => a.id === form.dietApproach);
+  const trainingOpt = TRAINING_FOCUS_OPTIONS.find(f => f.id === form.trainingFocus);
+  const levelLabel  = form.trainingExperience === "avancado" ? "Avançado"
+    : form.trainingExperience === "intermediario" ? "Intermediário" : "Iniciante";
+  const GOAL_LABELS = {
+    hipertrofia: "Hipertrofia", powerlifting: "Força / Powerlifting",
+    emagrecimento: "Emagrecimento", recomposicao: "Recomposição corporal",
+    cutting: "Cutting (definição)", condicionamento: "Condicionamento físico", saude: "Saúde geral",
+  };
+  return {
+    goalLabel: GOAL_LABELS[form.goal] || form.goal,
+    dietOpt, trainingOpt, levelLabel,
+    trainingDaysCount: form.trainingAvailableDays
+      ? form.trainingAvailableDays.split(",").filter(Boolean).length : 0,
+  };
+}
 
 const WEEK_DAYS = [
   { id: "monday",    short: "SEG" }, { id: "tuesday",   short: "TER" },
@@ -103,10 +395,10 @@ const FIELD_DEFS = {
   weight:             { label: "Peso atual (kg)",    type: "text",   required: true, placeholder: "Ex: 85.4" },
   trainingAvailableDays: { label: "Quais dias pode treinar", type: "daypicker", required: false,
                             hint: "Marque os dias com disponibilidade real. A IA distribui os treinos com folgas bem posicionadas." },
-  trainingExperience: { label: "Nível de experiência", type: "select", required: false,
-                        options: [["","Selecione"],["iniciante","Iniciante"],["intermediario","Intermediário"],["avancado","Avançado"]] },
-  trainingAge:        { label: "Tempo de treinamento", type: "select", required: false,
-                        options: [["","Selecione"],["nunca","Nunca treinou"],["menos-6-meses","Menos de 6 meses"],["6-12-meses","6 a 12 meses"],["1-2-anos","1 a 2 anos"],["2-5-anos","2 a 5 anos"],["mais-5-anos","Mais de 5 anos"]] },
+  trainingLevel:      { label: "Há quanto tempo você treina?", type: "traininglevel", required: false },
+  trainingFrequency:  { label: "Com que frequência você treinava?", type: "trainingfrequency", required: false,
+                        hint: "Frequência média no período que você mencionou — isso calibra seu nível real de adaptação" },
+  // trainingExperience e trainingAge são derivados automaticamente de trainingLevel × trainingFrequency
   availableMinutes:   { label: "Tempo por sessão", type: "select", required: false,
                         options: [["","Selecione"],["30","30 min"],["45","45 min"],["60","60 min"],["75","75 min"],["90","90 min"],["120","120 min ou mais"]] },
   trainingPreference: { label: "Preferência de divisão de treino", type: "select", required: false,
@@ -146,6 +438,18 @@ const FIELD_DEFS = {
                         placeholder: "Ex: 8", hint: "Índice de gordura visceral da bioimpedância — geralmente entre 1 e 20 (saudável: abaixo de 10)" },
   muscleMass:         { label: "Massa muscular esquelética (kg)", type: "text", required: false,
                         placeholder: "Ex: 42.1", hint: "Massa muscular esquelética total — da bioimpedância (se disponível)" },
+  skeletalMuscleMass: { label: "Massa muscular esquelética (kg)", type: "text", required: false,
+                        placeholder: "Ex: 38.0", hint: "Massa muscular esquelética total da balança de bioimpedância" },
+  totalBodyWater:     { label: "Água corporal total (%)", type: "text", required: false,
+                        placeholder: "Ex: 57.2", hint: "% de água corporal total da bioimpedância" },
+  boneMass:           { label: "Massa óssea (kg)", type: "text", required: false,
+                        placeholder: "Ex: 3.4", hint: "Massa óssea da bioimpedância" },
+  basalMetabolicRate: { label: "Taxa metabólica basal (kcal)", type: "text", required: false,
+                        placeholder: "Ex: 1840", hint: "Calorias em repouso — da balança ou calculada" },
+  metabolicAge:       { label: "Idade metabólica", type: "text", required: false,
+                        placeholder: "Ex: 28", hint: "Idade metabólica da bioimpedância (se disponível)" },
+  bmi:                { label: "IMC", type: "text", required: false,
+                        placeholder: "Ex: 26.7", hint: "Índice de massa corporal" },
   photosAvailable:    { label: "Você tem fotos de progresso disponíveis?", type: "select", required: false,
                         options: [
                           ["","Selecione"],
@@ -155,16 +459,34 @@ const FIELD_DEFS = {
                         ],
                         hint: "Fotos de frente e de lado permitem análise visual de postura, simetria e composição muscular. Você pode enviá-las na tela de Check-in." },
   trainingPreferenceFreeText: {
-    label: "Descreva suas preferências de treino",
+    label: "Alguma preferência de treino?",
     type: "textarea", required: false,
-    placeholder: "Ex: Prefiro exercícios compostos, não gosto de máquinas, curto treinos intensos com pouco descanso, gosto de agachamento e terra...",
-    hint: "A IA usa esse texto como contexto ao montar seu protocolo — mesmo com split automático ativado",
+    placeholder: "Ex: prefiro máquinas, gosto de treinar peito e costas juntos, quero focar em pernas, não gosto de muito descanso entre séries...",
+    hint: "Opcional — conte qualquer preferência ou contexto. A IA usa isso ao montar seu protocolo.",
   },
   muscleGroupCombinations: {
     label: "Combinações de grupos musculares preferidas",
     type: "musclegroupicker", required: false,
     hint: "Selecione as combinações que mais gosta. A IA priorizará essas divisões.",
   },
+  favoriteExercises: {
+    label: "Exercícios favoritos",
+    type: "textarea", required: false,
+    placeholder: "Ex.: Supino com barra, Agachamento livre, Rosca direta, Puxada no pulley...",
+    hint: "A IA prioriza esses exercícios ao montar seu protocolo",
+  },
+  workoutDayProtocol: {
+    label: "Protocolo por dia de treino",
+    type: "dayprotocol", required: false,
+    hint: "Defina quais grupos musculares você quer treinar em cada dia. Opcional — se deixar vazio, a IA decide.",
+  },
+  bodyGoal:           { label: "Como você quer seu corpo?", type: "bodygoal", required: false,
+                        hint: "A IA usa essa resposta para definir sua estratégia alimentar — calorias, macros e tipo de dieta" },
+  dietApproach:       { label: "Como você quer se alimentar?", type: "dietapproach", required: false,
+                        hint: "Escolha a abordagem que mais combina com você — a IA vai calibrar calorias e macros com base nisso" },
+  trainingFocus:      { label: "Qual é o foco do seu treino?", type: "trainingfocus", required: false,
+                        hint: "Isso define o rep range, volume e estrutura do protocolo gerado" },
+  _summary:           { label: "Resumo do protocolo", type: "profilesummary" },
   notes:              { label: "Expectativas e contexto", type: "textarea", required: false,
                         placeholder: "Conte o que espera alcançar, sua rotina atual, qualquer informação relevante...",
                         hint: "Quanto mais você descrever, mais preciso o protocolo inicial" },
@@ -177,30 +499,156 @@ const FIELD_DEFS = {
 // ── Combinações de grupos musculares por sexo ─────────────────────────────────
 
 const MUSCLE_COMBOS_MASC = [
-  { id: "full_body",      label: "Full Body" },
-  { id: "push",           label: "Push (Peito + Ombros + Tri)" },
-  { id: "pull",           label: "Pull (Costas + Bíceps)" },
-  { id: "peito_tri",      label: "Peito + Tríceps" },
-  { id: "costas_bi",      label: "Costas + Bíceps" },
-  { id: "ombros_trap",    label: "Ombros + Trapézio" },
-  { id: "pernas",         label: "Pernas (Quad + Post + Glúteo)" },
-  { id: "peito_costas",   label: "Peito + Costas" },
-  { id: "bracos",         label: "Braços (Bíceps + Tríceps)" },
-  { id: "upper_lower",    label: "Superior + Inferior" },
+  // ── Splits clássicos ────────────────────────────────────────────────────────
+  { id: "full_body",           label: "Full Body" },
+  { id: "upper_lower",         label: "Superior + Inferior" },
+  { id: "push",                label: "Push (Peito + Ombros + Tríceps)" },
+  { id: "pull",                label: "Pull (Costas + Bíceps + Deltoide Post.)" },
+  { id: "legs",                label: "Legs (Quad + Post + Glúteo + Panturrilha)" },
+  // ── Por grupo muscular (ABC/ABCD) ───────────────────────────────────────────
+  { id: "peito_tri",           label: "Peito + Tríceps" },
+  { id: "costas_bi",           label: "Costas + Bíceps" },
+  { id: "ombros_trap",         label: "Ombros + Trapézio" },
+  { id: "peito_ombros",        label: "Peito + Ombros" },
+  { id: "costas_del_post",     label: "Costas + Deltoide Posterior" },
+  // ── Antagonistas (ciência do treino) ────────────────────────────────────────
+  { id: "peito_costas",        label: "Peito + Costas (antagonistas)" },
+  { id: "peito_bi",            label: "Peito + Bíceps (antagônico)" },
+  { id: "costas_tri",          label: "Costas + Tríceps (antagônico)" },
+  { id: "quad_posterior",      label: "Quadríceps + Posteriores (antagonistas)" },
+  // ── Cadeia anterior / posterior ─────────────────────────────────────────────
+  { id: "cadeia_anterior",     label: "Cadeia Anterior (Quad + Peito + Bíceps)" },
+  { id: "cadeia_posterior",    label: "Cadeia Posterior (Post + Costas + Glúteo)" },
+  // ── Grupos isolados / auxiliares ────────────────────────────────────────────
+  { id: "bracos",              label: "Braços (Bíceps + Tríceps)" },
+  { id: "ombros_bracos",       label: "Ombros + Braços" },
+  { id: "pernas_completas",    label: "Pernas completas (Quad + Post + Glúteo)" },
+  { id: "core_abdomen",        label: "Core + Abdômen" },
 ];
 
 const MUSCLE_COMBOS_FEM = [
-  { id: "full_body",           label: "Full Body" },
-  { id: "gluteos_posterior",   label: "Glúteos + Posteriores" },
+  // ── Foco inferior (prioridade feminina) ─────────────────────────────────────
   { id: "gluteos_iso",         label: "Glúteo isolado" },
+  { id: "gluteos_posterior",   label: "Glúteos + Posteriores" },
+  { id: "gluteos_core",        label: "Glúteos + Core" },
   { id: "pernas_completas",    label: "Pernas completas (Quad + Post + Glúteo)" },
+  { id: "quad_gluteos",        label: "Quadríceps + Glúteos (cadeia anterior)" },
+  { id: "posterior_panturr",   label: "Posteriores + Panturrilha" },
+  { id: "adutor_gluteos",      label: "Adutores + Glúteos (isolamento)" },
   { id: "lower",               label: "Inferior completo" },
+  // ── Splits global / superior ────────────────────────────────────────────────
+  { id: "full_body",           label: "Full Body" },
+  { id: "upper_lower",         label: "Superior + Inferior" },
   { id: "upper",               label: "Superior completo" },
+  // ── Push / Pull adaptado ────────────────────────────────────────────────────
+  { id: "push",                label: "Push (Peito + Ombros + Tríceps)" },
+  { id: "pull",                label: "Pull (Costas + Bíceps + Deltoide Post.)" },
+  // ── Grupos superiores combinados ────────────────────────────────────────────
   { id: "costas_bi",           label: "Costas + Bíceps" },
   { id: "peito_ombros",        label: "Peito + Ombros" },
+  { id: "peito_tri",           label: "Peito + Tríceps" },
+  { id: "ombros_bracos",       label: "Ombros + Braços" },
+  // ── Cadeia posterior completa ───────────────────────────────────────────────
+  { id: "cadeia_posterior",    label: "Cadeia Posterior (Post + Costas + Glúteo)" },
+  // ── Core / funcional ────────────────────────────────────────────────────────
   { id: "core_abdomen",        label: "Core + Abdômen" },
-  { id: "upper_lower",         label: "Superior + Inferior" },
 ];
+
+// ── Grupos musculares disponíveis para o protocolo por dia ───────────────────
+const ALL_MUSCLE_GROUPS_MASC = [
+  { id: "peito",     label: "Peito" },
+  { id: "costas",    label: "Costas" },
+  { id: "ombros",    label: "Ombros" },
+  { id: "triceps",   label: "Tríceps" },
+  { id: "biceps",    label: "Bíceps" },
+  { id: "pernas",    label: "Pernas" },
+  { id: "gluteos",   label: "Glúteos" },
+  { id: "trapezio",  label: "Trapézio" },
+  { id: "abdomen",   label: "Abdômen" },
+  { id: "panturrilha", label: "Panturrilha" },
+];
+
+const ALL_MUSCLE_GROUPS_FEM = [
+  { id: "gluteos",   label: "Glúteos" },
+  { id: "pernas",    label: "Pernas" },
+  { id: "costas",    label: "Costas" },
+  { id: "ombros",    label: "Ombros" },
+  { id: "peito",     label: "Peito" },
+  { id: "biceps",    label: "Bíceps" },
+  { id: "triceps",   label: "Tríceps" },
+  { id: "abdomen",   label: "Abdômen" },
+  { id: "panturrilha", label: "Panturrilha" },
+  { id: "trapezio",  label: "Trapézio" },
+];
+
+const SPLIT_DAY_LABELS = {
+  full_body: ["Treino A", "Treino B", "Treino C"],
+  upper_lower: ["Superior A", "Inferior A", "Superior B", "Inferior B"],
+  ppl: ["Push", "Pull", "Legs"],
+  abc: ["Treino A", "Treino B", "Treino C"],
+  abcd: ["Treino A", "Treino B", "Treino C", "Treino D"],
+  abcde: ["Treino A", "Treino B", "Treino C", "Treino D", "Treino E"],
+  powerlifting_split: ["Agachamento", "Supino", "Terra", "Acessórios"],
+};
+
+function WorkoutDayProtocolBuilder({ value = "", onChange, trainingPreference = "", sex = "" }) {
+  const dayLabels = SPLIT_DAY_LABELS[trainingPreference] || ["Treino A", "Treino B", "Treino C"];
+  const muscleGroups = sex === "feminino" ? ALL_MUSCLE_GROUPS_FEM : ALL_MUSCLE_GROUPS_MASC;
+
+  // Parse value: "A:peito,costas;B:biceps,triceps"
+  function parseProtocol(raw) {
+    const result = {};
+    if (!raw) return result;
+    raw.split(";").forEach(part => {
+      const [label, muscles] = part.split(":");
+      if (label && muscles) result[label.trim()] = muscles.split(",").filter(Boolean);
+    });
+    return result;
+  }
+
+  function serializeProtocol(proto) {
+    return Object.entries(proto)
+      .filter(([, muscles]) => muscles.length > 0)
+      .map(([label, muscles]) => `${label}:${muscles.join(",")}`)
+      .join(";");
+  }
+
+  const protocol = parseProtocol(value);
+
+  function toggleMuscle(dayLabel, muscleId) {
+    const current = protocol[dayLabel] || [];
+    const next = current.includes(muscleId)
+      ? current.filter(m => m !== muscleId)
+      : [...current, muscleId];
+    const updated = { ...protocol, [dayLabel]: next };
+    onChange(serializeProtocol(updated));
+  }
+
+  return (
+    <div className="ob-day-protocol">
+      {dayLabels.map(dayLabel => {
+        const selected = protocol[dayLabel] || [];
+        return (
+          <div key={dayLabel} className="ob-day-protocol__day">
+            <span className="ob-day-protocol__day-label">{dayLabel}</span>
+            <div className="ob-day-protocol__muscles">
+              {muscleGroups.map(g => (
+                <button
+                  key={g.id}
+                  type="button"
+                  className={`ob-day-protocol__muscle-btn${selected.includes(g.id) ? " is-active" : ""}`}
+                  onClick={() => toggleMuscle(dayLabel, g.id)}
+                >
+                  {g.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 function buildInitialForm() {
   const defaults = { cadence: "weekly" };
@@ -234,6 +682,8 @@ export default function FirstCheckinModal({ planId, onComplete }) {
   const [savedTrainingAge, setSavedTrainingAge]                 = useState("");
   const [savedAvailableMinutes, setSavedAvailableMinutes]       = useState("");
   const [savedTrainingPreference, setSavedTrainingPreference]   = useState("");
+  const [savedFavoriteExercises, setSavedFavoriteExercises]     = useState("");
+  const [savedWorkoutDayProtocol, setSavedWorkoutDayProtocol]   = useState("");
 
   const currentStep = steps[step];
   const isLast  = step === steps.length - 1;
@@ -251,6 +701,17 @@ export default function FirstCheckinModal({ planId, onComplete }) {
       if (field === "trainingAvailableDays") {
         next.weeklyTrainingDays = value ? String(value.split(",").filter(Boolean).length) : "";
       }
+      if (field === "bodyGoal") {
+        const opt = ALL_BODY_GOALS.find(o => o.id === value);
+        if (opt) next.dietApproach = opt.implies;
+      }
+      if (field === "trainingLevel" || field === "trainingFrequency") {
+        const levelId = field === "trainingLevel" ? value : (prev.trainingLevel || "");
+        const freqId  = field === "trainingFrequency" ? value : (prev.trainingFrequency || "");
+        const derived = deriveTrainingExperience(levelId, freqId);
+        next.trainingExperience = derived.experience;
+        next.trainingAge        = derived.age;
+      }
       return next;
     });
   }
@@ -259,21 +720,48 @@ export default function FirstCheckinModal({ planId, onComplete }) {
     setSaving(true);
     try {
       // 1 — Salva check-in local e remoto
-      const payload = { ...defaultCheckinForm, ...form, cadence: "weekly" };
+      // Todos os usuários iniciam como iniciantes — o app foca nesse perfil
+      const payload = {
+        ...defaultCheckinForm,
+        ...form,
+        cadence: "weekly",
+        trainingExperience: form.trainingExperience || "iniciante",
+        trainingAge:        form.trainingAge        || "menos-6-meses",
+      };
       const updated = saveCheckin(payload, { createdAt: new Date().toISOString() });
       await saveRemoteCheckin(updated[0]).catch(() => {});
 
-      // 2 — Salva avatar e nome do Personal nas configurações
+      // 2 — Salva avatar e nome do Personal nas configurações (local + remoto)
+      const personalName   = (form.personalName || "").trim() || "Personal Virtual";
+      const personalAvatar = form.personalAvatar || "default-personal";
+
+      // 2a — localStorage (fallback imediato)
       const SETTINGS_KEY = "shapeCertoSettings";
       const existing = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
       localStorage.setItem(SETTINGS_KEY, JSON.stringify({
         ...existing,
         personal: {
           ...(existing.personal || {}),
-          name: (form.personalName || "").trim() || "Personal Virtual",
-          avatarId: form.personalAvatar || "default-personal",
+          name: personalName,
+          avatarId: personalAvatar,
         },
       }));
+
+      // 2b — Persiste no backend para sobreviver à limpeza do localStorage (iOS Safari)
+      //      Carrega as configurações existentes para não sobrescrever notificações/privacidade
+      loadRemoteSettings()
+        .then(({ settings: remote }) => {
+          const merged = {
+            ...(remote || {}),
+            personal: {
+              ...(remote?.personal || {}),
+              name: personalName,
+              avatarId: personalAvatar,
+            },
+          };
+          return saveRemoteSettings(merged);
+        })
+        .catch(() => {}); // falha silenciosa — não bloqueia o onboarding
 
       // 3 — Salva snapshot dos dados para usar nos retries
       const goal                  = form.goal || "";
@@ -288,6 +776,8 @@ export default function FirstCheckinModal({ planId, onComplete }) {
       setSavedTrainingAge(trainingAge);
       setSavedAvailableMinutes(availableMinutes);
       setSavedTrainingPreference(trainingPreference);
+      setSavedFavoriteExercises(form.favoriteExercises || "");
+      setSavedWorkoutDayProtocol(form.workoutDayProtocol || "");
 
       // 4 — Exibe tela de geração imediatamente
       setWorkoutStatus("generating");
@@ -308,11 +798,19 @@ export default function FirstCheckinModal({ planId, onComplete }) {
       }
 
       await Promise.allSettled([
-        withTimeout(generateWorkoutWithAi({ persist: true, goal, trainingAvailableDays, trainingExperience, trainingAge, availableMinutes, trainingPreference }))
+        withTimeout(generateWorkoutWithAi({
+          persist: true, goal, trainingAvailableDays, trainingExperience, trainingAge, availableMinutes, trainingPreference,
+          trainingPreferenceFreeText: form.trainingPreferenceFreeText || "",
+          muscleGroupCombinations: form.muscleGroupCombinations || "",
+          workoutDayProtocol: form.workoutDayProtocol || "",
+          favoriteExercises: form.favoriteExercises || "",
+          trainingFocus: form.trainingFocus || "",
+          dietApproach: form.dietApproach || "",
+        }))
           .then(() => setWorkoutStatus("ok"))
           .catch(err => { setWorkoutStatus("error"); setWorkoutError(err?.message || "Erro desconhecido."); }),
 
-        withTimeout(generateDietWithAi({ persist: true, goal }))
+        withTimeout(generateDietWithAi({ persist: true, goal, dietApproach: form.dietApproach || "", trainingFocus: form.trainingFocus || "" }))
           .then(() => setDietStatus("ok"))
           .catch(err => { setDietStatus("error"); setDietError(err?.message || "Erro desconhecido."); }),
       ]);
@@ -339,6 +837,8 @@ export default function FirstCheckinModal({ planId, onComplete }) {
         trainingAge: savedTrainingAge,
         availableMinutes: savedAvailableMinutes,
         trainingPreference: savedTrainingPreference,
+        favoriteExercises: savedFavoriteExercises,
+        workoutDayProtocol: savedWorkoutDayProtocol,
       });
       setWorkoutStatus("ok");
     } catch (err) {
@@ -351,7 +851,7 @@ export default function FirstCheckinModal({ planId, onComplete }) {
     setDietStatus("generating");
     setDietError(null);
     try {
-      await generateDietWithAi({ persist: true, goal: savedGoal });
+      await generateDietWithAi({ persist: true, goal: savedGoal, dietApproach: form.dietApproach || "", trainingFocus: form.trainingFocus || "" });
       setDietStatus("ok");
     } catch (err) {
       setDietStatus("error");
@@ -404,6 +904,255 @@ export default function FirstCheckinModal({ planId, onComplete }) {
         </div>
       );
     }
+    if (def.type === "traininglevel") {
+      const selected = form[key] || "";
+      return (
+        <div key={key} className="ob-field">
+          <label className="ob-field__label">{def.label}</label>
+          <div className="ob-traininglevel">
+            {TRAINING_LEVEL_OPTIONS.map(opt => (
+              <button
+                key={opt.id}
+                type="button"
+                className={`ob-traininglevel__btn${selected === opt.id ? " is-active" : ""}`}
+                onClick={() => handleChange(key, opt.id)}
+              >
+                <span className="ob-traininglevel__badge">{opt.badge}</span>
+                <span className="ob-traininglevel__info">
+                  <span className="ob-traininglevel__label">{opt.label}</span>
+                  <span className={`ob-traininglevel__sublabel ob-traininglevel__sublabel--${TRAINING_LEVEL_MAP[opt.id]?.experience || "iniciante"}`}>
+                    {opt.sublabel}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+          {selected && (
+            <p className="ob-field__hint ob-traininglevel__hint">
+              {TRAINING_LEVEL_OPTIONS.find(o => o.id === selected)?.hint}
+            </p>
+          )}
+        </div>
+      );
+    }
+    if (def.type === "trainingfrequency") {
+      // Só aparece se a pessoa selecionou um tempo de treino (e não "nunca treinei")
+      const levelSelected = form.trainingLevel;
+      if (!levelSelected || levelSelected === "nunca") return null;
+      const selected = form[key] || "";
+      return (
+        <div key={key} className="ob-field">
+          <label className="ob-field__label">{def.label}</label>
+          {def.hint && <p className="ob-field__hint">{def.hint}</p>}
+          <div className="ob-traininglevel ob-traininglevel--freq">
+            {TRAINING_FREQUENCY_OPTIONS.map(opt => (
+              <button
+                key={opt.id}
+                type="button"
+                className={`ob-traininglevel__btn${selected === opt.id ? " is-active" : ""}`}
+                onClick={() => handleChange(key, opt.id)}
+              >
+                <span className="ob-traininglevel__badge">{opt.badge}</span>
+                <span className="ob-traininglevel__info">
+                  <span className="ob-traininglevel__label">{opt.label}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+          {selected && form.trainingExperience && (
+            <p className="ob-field__hint ob-traininglevel__hint">
+              {TRAINING_FREQUENCY_OPTIONS.find(o => o.id === selected)?.hint}
+              {" — "}
+              <strong style={{ color: "var(--brand)" }}>
+                {form.trainingExperience === "iniciante"
+                  ? "Seu nível: Iniciante"
+                  : form.trainingExperience === "intermediario"
+                  ? "Seu nível: Intermediário"
+                  : "Seu nível: Avançado"}
+              </strong>
+            </p>
+          )}
+        </div>
+      );
+    }
+    if (def.type === "bodygoal") {
+      const options  = getBodyGoalOptions(form.goal || "");
+      const selected = form[key] || "";
+      return (
+        <div key={key} className="ob-field">
+          <label className="ob-field__label">
+            {def.label}<span className="ob-field__optional">Opcional</span>
+          </label>
+          {def.hint && <p className="ob-field__hint">{def.hint}</p>}
+          <div className="ob-protocol-picker ob-protocol-picker--bodygoal">
+            {options.map(opt => (
+              <button
+                key={opt.id}
+                type="button"
+                className={`ob-protocol-picker__btn${selected === opt.id ? " is-active" : ""}`}
+                onClick={() => handleChange(key, opt.id)}
+              >
+                <span className="ob-protocol-picker__badge">{opt.badge}</span>
+                <div className="ob-protocol-picker__info">
+                  <span className="ob-protocol-picker__label">{opt.label}</span>
+                  <span className="ob-protocol-picker__tagline">{opt.tagline}</span>
+                  <span className="ob-protocol-picker__desc">{opt.description}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    if (def.type === "dietapproach") {
+      const options  = getDietApproachOptions(form.goal || "");
+      const selected = form[key] || "";
+      return (
+        <div key={key} className="ob-field">
+          <label className="ob-field__label">
+            {def.label}<span className="ob-field__optional">Opcional</span>
+          </label>
+          {def.hint && <p className="ob-field__hint">{def.hint}</p>}
+          {!form.goal && (
+            <p className="ob-field__hint ob-field__hint--warn">Selecione seu objetivo na primeira etapa para ver as opções disponíveis.</p>
+          )}
+          <div className="ob-protocol-picker">
+            {options.map(opt => (
+              <button
+                key={opt.id}
+                type="button"
+                className={`ob-protocol-picker__btn${selected === opt.id ? " is-active" : ""}`}
+                onClick={() => handleChange(key, opt.id)}
+              >
+                <span className="ob-protocol-picker__badge">{opt.badge}</span>
+                <div className="ob-protocol-picker__info">
+                  <span className="ob-protocol-picker__label">{opt.label}</span>
+                  <span className="ob-protocol-picker__tagline">{opt.tagline}</span>
+                  <span className="ob-protocol-picker__desc">{opt.description}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    if (def.type === "trainingfocus") {
+      const selected = form[key] || "";
+      return (
+        <div key={key} className="ob-field">
+          <label className="ob-field__label">
+            {def.label}<span className="ob-field__optional">Opcional</span>
+          </label>
+          {def.hint && <p className="ob-field__hint">{def.hint}</p>}
+          <div className="ob-protocol-picker ob-protocol-picker--focus">
+            {TRAINING_FOCUS_OPTIONS.map(opt => (
+              <button
+                key={opt.id}
+                type="button"
+                className={`ob-protocol-picker__btn${selected === opt.id ? " is-active" : ""}`}
+                onClick={() => handleChange(key, opt.id)}
+              >
+                <span className="ob-protocol-picker__badge">{opt.badge}</span>
+                <div className="ob-protocol-picker__info">
+                  <span className="ob-protocol-picker__label">{opt.label}</span>
+                  <span className="ob-protocol-picker__tagline">{opt.tagline}</span>
+                  <span className="ob-protocol-picker__desc">{opt.description}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    if (def.type === "profilesummary") {
+      const s = buildProfileSummary(form);
+      return (
+        <div key={key} className="ob-profile-summary">
+          <div className="ob-profile-summary__card ob-profile-summary__card--training">
+            <div className="ob-profile-summary__card-header">
+              <span className="ob-profile-summary__icon">
+                {s.trainingOpt?.badge || "🏋️"}
+              </span>
+              <div>
+                <p className="ob-profile-summary__card-label">Protocolo de treino</p>
+                <h3 className="ob-profile-summary__card-title">
+                  {s.trainingOpt?.label || "Personalizado"}
+                  {" — "}
+                  <span className={`ob-profile-summary__level ob-profile-summary__level--${form.trainingExperience || "iniciante"}`}>
+                    {s.levelLabel}
+                  </span>
+                </h3>
+              </div>
+            </div>
+            {s.trainingOpt && (
+              <>
+                <p className="ob-profile-summary__tagline">{s.trainingOpt.tagline}</p>
+                <p className="ob-profile-summary__desc">{s.trainingOpt.description}</p>
+              </>
+            )}
+            {!s.trainingOpt && (
+              <p className="ob-profile-summary__desc ob-profile-summary__desc--empty">
+                A IA vai escolher o foco ideal com base no seu objetivo e experiência.
+              </p>
+            )}
+          </div>
+
+          <div className="ob-profile-summary__card ob-profile-summary__card--diet">
+            <div className="ob-profile-summary__card-header">
+              <span className="ob-profile-summary__icon">
+                {s.dietOpt?.badge || "🥗"}
+              </span>
+              <div>
+                <p className="ob-profile-summary__card-label">Estratégia alimentar — definida pelo seu perfil</p>
+                <h3 className="ob-profile-summary__card-title">
+                  {s.dietOpt?.label || "Personalizado pelo objetivo"}
+                </h3>
+              </div>
+            </div>
+            {s.dietOpt && (
+              <>
+                <p className="ob-profile-summary__tagline">{s.dietOpt.tagline}</p>
+                <p className="ob-profile-summary__desc">{s.dietOpt.description}</p>
+              </>
+            )}
+            {!s.dietOpt && (
+              <p className="ob-profile-summary__desc ob-profile-summary__desc--empty">
+                A IA vai definir calorias e macros com base no seu objetivo, composição corporal e preferências alimentares.
+              </p>
+            )}
+          </div>
+
+          <div className="ob-profile-summary__meta">
+            <div className="ob-profile-summary__meta-item">
+              <span>📅</span>
+              <span>
+                {s.trainingDaysCount > 0
+                  ? `${s.trainingDaysCount} dia${s.trainingDaysCount > 1 ? "s" : ""} de treino por semana`
+                  : "Dias de treino a definir"}
+              </span>
+            </div>
+            <div className="ob-profile-summary__meta-item">
+              <span>🎯</span>
+              <span>Objetivo: {s.goalLabel}</span>
+            </div>
+            <div className="ob-profile-summary__meta-item">
+              <span>📊</span>
+              <span>Nível: {s.levelLabel}</span>
+            </div>
+          </div>
+
+          <div className="ob-profile-summary__ai-note">
+            <span className="ob-profile-summary__ai-icon">✨</span>
+            <p>
+              Com esses dados, o Personal Virtual vai montar um{" "}
+              <strong>protocolo de treino semanalizado</strong> e um{" "}
+              <strong>plano alimentar com macros calculados</strong> — tudo personalizado
+              para o seu objetivo, experiência e rotina.
+            </p>
+          </div>
+        </div>
+      );
+    }
     if (def.type === "select") {
       return (
         <div key={key} className="ob-field">
@@ -429,6 +1178,24 @@ export default function FirstCheckinModal({ planId, onComplete }) {
           {def.hint && <p className="ob-field__hint">{def.hint}</p>}
           <textarea className="ob-field__control" rows={3} placeholder={def.placeholder ?? ""}
             value={form[key] ?? ""} onChange={e => handleChange(key, e.target.value)} />
+        </div>
+      );
+    }
+    if (def.type === "dayprotocol") {
+      const split = form.trainingPreference || "";
+      return (
+        <div key={key} className="ob-field">
+          <label className="ob-field__label">
+            {def.label}
+            <span className="ob-field__optional">Opcional</span>
+          </label>
+          {def.hint && <p className="ob-field__hint">{def.hint}</p>}
+          <WorkoutDayProtocolBuilder
+            value={form[key] || ""}
+            onChange={v => handleChange(key, v)}
+            trainingPreference={split}
+            sex={form.sex || ""}
+          />
         </div>
       );
     }

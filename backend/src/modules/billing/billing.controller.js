@@ -8,6 +8,7 @@ import {
   listPlanChangeAcceptances,
   listStripePaymentMethods,
   loadBillingSummary,
+  loadTokenHistory,
   savePlanChangeAcceptance,
   setDefaultStripePaymentMethod,
 } from "./billing.service.js";
@@ -88,6 +89,15 @@ export async function handleLoadBillingSummary(req, res, next) {
   try {
     const data = await loadBillingSummary(req.auth.sub);
     res.json(data);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function handleLoadTokenHistory(req, res, next) {
+  try {
+    const history = await loadTokenHistory(req.auth.sub);
+    res.json({ history });
   } catch (error) {
     next(error);
   }

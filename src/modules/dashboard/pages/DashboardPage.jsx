@@ -23,6 +23,7 @@ import {
   loadWorkoutSessionHistory,
 } from "../../../data/workoutExecutionStorage";
 import logoMark from "../../../assets/logo_sp.svg";
+import "@/components/plan/plan-overview.css";
 import "./DashboardPage.css";
 
 const DashboardCharts = lazy(() => import("./DashboardCharts"));
@@ -311,14 +312,18 @@ const bodyChartGroups = [
 
 export default function DashboardPage() {
   const { canAccess } = usePlan();
-  const [activeTab, setActiveTab] = useState("resumo");
+  // "Resumo" agora é sempre visível; estas abas cobrem só a análise detalhada.
+  const [activeTab, setActiveTab] = useState("corpo");
+  // Gráficos detalhados ficam ocultos por padrão (dashboard simples estilo PDF)
+  const [showCharts, setShowCharts] = useState(false);
   const [, setRemoteRefresh] = useState(0);
 
   // Garante que o activeTab não fique travado em uma aba bloqueada para o plano atual
   useEffect(() => {
     const gatedTabs = ["corpo", "cargas", "mensal"];
     if (gatedTabs.includes(activeTab) && !canAccess(`dashboard_${activeTab}`)) {
-      setActiveTab("resumo");
+      const firstAccessible = gatedTabs.find((t) => canAccess(`dashboard_${t}`));
+      if (firstAccessible) setActiveTab(firstAccessible);
     }
   }, [activeTab, canAccess]);
   const allCheckins = loadCheckins();
@@ -394,74 +399,117 @@ export default function DashboardPage() {
     },
   ];
 
+  const heroDate = new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+
   return (
     <section className="dashboard-page">
-      <header className="dashboard-hero glass-panel">
-        <div className="dashboard-hero__logo">
-          <img src={logoMark} alt="Shape Certo" />
-        </div>
-        <div>
-          <span>Dashboard</span>
-          <h1>Acompanhamento semanal, mensal e histórico.</h1>
-          <p>
-            Evolução de treinos, cargas, sono, alimentação, check-ins e composição corporal em um único painel.
-          </p>
-          <div className="dashboard-hero__meta">
-            <div className="dashboard-hero__metric">
-              <ClipboardCheck aria-hidden="true" />
-              <span>
-                <strong>{weeklyCheckins.length} check-ins</strong>
-                <small>{adherencePercent(weeklyCheckins.length, weeklyCheckinTotal)} de aderência semanal</small>
-              </span>
+      <div className="plan-overview">
+        <header className="plan-hero">
+          <div className="plan-hero__label">Shape Certo · Painel · {heroDate}</div>
+          <h1 className="plan-hero__title">Seu progresso</h1>
+          <div className="plan-hero__stats">
+            <div className="plan-stat">
+              <span className="plan-stat__val is-accent">{weekSessions.length}<small>x</small></span>
+              <span className="plan-stat__label">Treinos na semana</span>
             </div>
-            <div className="dashboard-hero__metric">
-              <MoonStar aria-hidden="true" />
-              <span>
-                <strong>{average(weeklyCheckins, "sleep")}h</strong>
-                <small>sono medio nos registros recentes</small>
-              </span>
+            <div className="plan-stat">
+              <span className="plan-stat__val">{monthSessions.length}<small>x</small></span>
+              <span className="plan-stat__label">Treinos no mês</span>
             </div>
-            <div className="dashboard-hero__metric">
-              <Scale aria-hidden="true" />
-              <span>
-                <strong>{average(monthlyCheckins, "weight")} kg</strong>
-                <small>peso medio do ciclo atual</small>
-              </span>
+            <div className="plan-stat">
+              <span className="plan-stat__val is-orange">{workoutSummary.maxWeight || "--"}<small> kg</small></span>
+              <span className="plan-stat__label">Maior carga</span>
             </div>
-            <div className="dashboard-hero__metric">
-              <TrendingUp aria-hidden="true" />
-              <span>
-                <strong>{monthSessions.length} treinos</strong>
-                <small>sessões registradas nos últimos 30 dias</small>
-              </span>
+            <div className="plan-stat">
+              <span className="plan-stat__val">{weeklyCheckins.length}</span>
+              <span className="plan-stat__label">Check-ins na semana</span>
             </div>
           </div>
-        </div>
-      </header>
+          <div className="plan-hero__actions">
+            <button
+              type="button"
+              className="plan-cta"
+              onClick={() => window.dispatchEvent(new CustomEvent("shape-certo-open-checkin"))}
+            >
+              ▶ Iniciar check-in
+            </button>
+          </div>
+        </header>
 
-      <section className="dashboard-metrics">
-        {metrics.map((item) => (
-          <SectionCard
-            key={item.label}
-            className="dashboard-metric glass-panel"
-            eyebrow={item.label}
-            title={item.value}
-            description={item.helper}
-            badge={
-              <StatusPill tone="danger" className="dashboard-metric__badge" aria-hidden="true">
-                <item.icon />
-              </StatusPill>
-            }
-          />
-        ))}
+      {/* ── 01 · Resumo da semana (sempre visível) ── */}
+      <section className="plan-section">
+        <div className="plan-section__header">
+          <span className="plan-section__num">01</span>
+          <span className="plan-section__title">Resumo da semana</span>
+        </div>
+        <section className="dashboard-grid dashboard-grid--nested">
+          <article className="dashboard-card dashboard-card--nested glass-panel">
+            <h2>Comparação corporal</h2>
+            <p>{comparison.message}</p>
+            <div className="dashboard-comparison">
+              <div><span>Peso</span><strong>{comparison.weight} kg</strong></div>
+              <div><span>Gordura</span><strong>{comparison.bodyFat}%</strong></div>
+              <div><span>Massa muscular</span><strong>{comparison.muscleMass} kg</strong></div>
+            </div>
+          </article>
+
+          <article className="dashboard-card dashboard-card--nested glass-panel">
+            <h2>Check-ins e qualidade da semana</h2>
+            <p>Leitura com base nos registros recentes.</p>
+            <div className="dashboard-comparison">
+              <div><span>Check-ins semanais</span><strong>{weeklyCheckins.length}</strong></div>
+              <div><span>Sono medio</span><strong>{average(weeklyCheckins, "sleep")}h</strong></div>
+              <div><span>Aderência</span><strong>{average(weeklyCheckins, "adherence")}%</strong></div>
+            </div>
+          </article>
+
+          <article className="dashboard-card dashboard-card--nested glass-panel">
+            <h2>Aderência aos check-ins</h2>
+            <p>Realizados e gaps registrados ficam concentrados aqui para consulta.</p>
+            <div className="dashboard-comparison">
+              <div><span>Semana</span><strong>{adherencePercent(weeklyCheckins.length, weeklyCheckinTotal)}</strong></div>
+              <div><span>Gaps semanais</span><strong>{weeklyMissedCheckins.length}</strong></div>
+              <div><span>Mês</span><strong>{adherencePercent(monthlyCheckins.length, monthlyCheckinTotal)}</strong></div>
+            </div>
+          </article>
+        </section>
       </section>
 
+      {/* ── 02 · Feedback do Personal (escaneável, estilo PDF) ── */}
+      <section className="plan-section">
+        <div className="plan-section__header">
+          <span className="plan-section__num">02</span>
+          <span className="plan-section__title">Feedback do Personal</span>
+        </div>
+        <div className="virtual-feedback-grid">
+          {feedbacks.map((item) => (
+            <article key={item.title} className="glass-panel">
+              <strong>{item.title}</strong>
+              <p>{item.text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* ── 03 · Análise detalhada — gráficos sob demanda ── */}
+      <section className="plan-section">
+        {!showCharts ? (
+          <button type="button" className="dashboard-charts-toggle" onClick={() => setShowCharts(true)}>
+            <span>📊 Ver análise detalhada</span>
+            <small>Gráficos de evolução corporal, cargas e histórico mensal</small>
+            <span className="dashboard-charts-toggle__arrow">→</span>
+          </button>
+        ) : (
+        <>
+        <div className="plan-section__header">
+          <span className="plan-section__num">03</span>
+          <span className="plan-section__title">Análise detalhada</span>
+          <button type="button" className="dashboard-charts-hide" onClick={() => setShowCharts(false)}>
+            Ocultar
+          </button>
+        </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="dashboard-tabs-root">
         <TabsList className="dashboard-tabs" variant="line">
-          <TabsTrigger value="resumo" className="dashboard-tab-trigger">
-            <strong>Resumo</strong>
-            <StatusPill tone="neutral">{weeklyCheckins.length} check-ins</StatusPill>
-          </TabsTrigger>
           {canAccess("dashboard_corpo") ? (
           <TabsTrigger value="corpo" className="dashboard-tab-trigger">
             <strong>Corpo</strong>
@@ -513,83 +561,7 @@ export default function DashboardPage() {
             <StatusPill tone="neutral">Intermediário+</StatusPill>
           </button>
           )}
-          <TabsTrigger value="feedback" className="dashboard-tab-trigger">
-            <strong>Feedback</strong>
-            <StatusPill tone="warning">{feedbacks.length} alertas</StatusPill>
-          </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="resumo" className="dashboard-tab-panel">
-          <section className="dashboard-grid dashboard-grid--nested">
-            <article className="dashboard-card dashboard-card--nested glass-panel">
-              <h2>Comparação corporal</h2>
-              <p>{comparison.message}</p>
-              <div className="dashboard-comparison">
-                <div>
-                  <span>Peso</span>
-                  <strong>{comparison.weight} kg</strong>
-                </div>
-                <div>
-                  <span>Gordura</span>
-                  <strong>{comparison.bodyFat}%</strong>
-                </div>
-                <div>
-                  <span>Massa muscular</span>
-                  <strong>{comparison.muscleMass} kg</strong>
-                </div>
-              </div>
-            </article>
-
-            <article className="dashboard-card dashboard-card--nested glass-panel">
-              <h2>Check-ins e qualidade da semana</h2>
-              <p>Leitura com base nos registros recentes.</p>
-              <div className="dashboard-comparison">
-                <div>
-                  <span>Check-ins semanais</span>
-                  <strong>{weeklyCheckins.length}</strong>
-                </div>
-                <div>
-                  <span>Sono medio</span>
-                  <strong>{average(weeklyCheckins, "sleep")}h</strong>
-                </div>
-                <div>
-                  <span>Aderência</span>
-                  <strong>{average(weeklyCheckins, "adherence")}%</strong>
-                </div>
-              </div>
-            </article>
-
-            <article className="dashboard-card dashboard-card--nested glass-panel">
-              <h2>Aderência aos check-ins</h2>
-              <p>Realizados e gaps registrados ficam concentrados aqui para consulta.</p>
-              <div className="dashboard-comparison">
-                <div>
-                  <span>Semana</span>
-                  <strong>{adherencePercent(weeklyCheckins.length, weeklyCheckinTotal)}</strong>
-                </div>
-                <div>
-                  <span>Gaps semanais</span>
-                  <strong>{weeklyMissedCheckins.length}</strong>
-                </div>
-                <div>
-                  <span>Mês</span>
-                  <strong>{adherencePercent(monthlyCheckins.length, monthlyCheckinTotal)}</strong>
-                </div>
-              </div>
-            </article>
-          </section>
-
-          <Suspense fallback={<DashboardChartLoading label="Carregando aderência..." />}>
-            <DashboardCharts
-              type="adherence"
-              weeklyCheckins={weeklyCheckins.length}
-              weeklyCheckinTotal={weeklyCheckinTotal}
-              monthlyCheckins={monthlyCheckins.length}
-              monthlyCheckinTotal={monthlyCheckinTotal}
-              monthlyActivityData={monthlyActivityData}
-            />
-          </Suspense>
-        </TabsContent>
 
         <TabsContent value="corpo" className="dashboard-tab-panel">
           <Suspense fallback={<DashboardChartLoading label="Carregando graficos corporais..." />}>
@@ -668,17 +640,11 @@ export default function DashboardPage() {
           </Suspense>
         </TabsContent>
 
-        <TabsContent value="feedback" className="dashboard-tab-panel">
-          <div className="virtual-feedback-grid">
-            {feedbacks.map((item) => (
-              <article key={item.title} className="glass-panel">
-                <strong>{item.title}</strong>
-                <p>{item.text}</p>
-              </article>
-            ))}
-          </div>
-        </TabsContent>
       </Tabs>
+        </>
+        )}
+      </section>
+      </div>
     </section>
   );
 }

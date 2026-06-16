@@ -1,6 +1,8 @@
 import { LazyMotion, domAnimation, m, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import "./SectionCard.css";
+import "@/components/ui/spotlight-card.css";
+import { useGlowEffect } from "@/hooks/useGlowEffect";
 
 export default function SectionCard({
   eyebrow,
@@ -10,12 +12,15 @@ export default function SectionCard({
   children,
   className,
   bodyClassName,
+  glowColor = "brand-soft",
 }) {
   const reduceMotion = useReducedMotion();
+  const glowRef = useGlowEffect(glowColor);
 
   return (
     <LazyMotion features={domAnimation}>
       <m.section
+        ref={glowRef}
         className={cn("section-card", className)}
         initial={reduceMotion ? false : { opacity: 0, y: 10 }}
         animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}

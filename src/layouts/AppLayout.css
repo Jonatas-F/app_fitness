@@ -82,40 +82,73 @@
 .sidebar__link,
 .bottom-nav__link {
   text-decoration: none;
-  color: rgba(255, 255, 255, 0.78);
-  transition: all 0.2s ease-in-out;
+  color: rgba(255, 255, 255, 0.55);
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
+/* ── Menu geral (desktop) — padrão dos botões (.plan-cta) ─────
+   Inativo = ghost (contorno) · Ativo = primário (vermelho sólido). */
 .sidebar__link {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 11px 14px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.02);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.80);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-.sidebar__link:hover,
+/* Hover ghost — vira accent vermelho */
+.sidebar__link:hover {
+  color: #ff2e2e;
+  border-color: rgba(255, 46, 46, 0.50);
+  background: rgba(255, 46, 46, 0.06);
+}
+
+/* Ativo = botão primário sólido */
+.sidebar__link--active {
+  color: #fff;
+  background: #ff2e2e;
+  border-color: #ff2e2e;
+}
+
+.sidebar__link--active:hover {
+  color: #fff;
+  background: #ff4444;
+  border-color: #ff4444;
+}
+
+.sidebar__link--active .sidebar__link-icon {
+  color: #fff;
+}
+
+/* ── Menu geral (mobile / bottom nav) — mesmo padrão ───────── */
 .bottom-nav__link:hover {
-  transform: scale(1.02);
-  color: #ffffff;
+  color: #ff2e2e;
+  border-color: rgba(255, 46, 46, 0.45);
 }
 
-.sidebar__link--active,
 .bottom-nav__link--active {
-  color: #ffffff;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 46, 46, 0.18),
-    rgba(255, 255, 255, 0.08)
-  );
-  border: 1px solid rgba(255, 46, 46, 0.34);
-  box-shadow: 0 10px 28px rgba(255, 46, 46, 0.12);
+  color: #fff;
+  background: #ff2e2e;
+  border-color: #ff2e2e;
+}
+
+.bottom-nav__link--active .bottom-nav__icon,
+.bottom-nav__link--active svg {
+  color: #fff;
 }
 
 .sidebar__link-icon,
 .bottom-nav__icon {
   font-size: 1.05rem;
+  display: inline-flex;
+  align-items: center;
 }
 
 /* ── Token Chip — compacto, próximo ao logo ─────────────────── */
@@ -237,6 +270,191 @@
   color: #fca5a5;
 }
 
+/* ── Token chip: torna clicável ──────────────────────────────── */
+button.sidebar__token-chip {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-radius: 8px;
+}
+button.sidebar__token-chip:hover {
+  background: rgba(255,255,255,0.04);
+}
+
+/* ── Modal de histórico de tokens — overlay centralizado ─────── */
+.token-history-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9800;
+  padding: 16px;
+}
+
+.token-history-panel {
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  background: #16161e;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 18px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.7);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.token-history-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 20px 18px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
+}
+
+.token-history-panel__header strong {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.token-history-panel__period {
+  display: block;
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.4);
+}
+
+.token-history-panel__close {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.45);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+.token-history-panel__close:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.08);
+}
+
+.token-history-panel__loading,
+.token-history-panel__empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.35);
+  padding: 24px;
+}
+
+.token-history-panel__list {
+  flex: 1;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 8px 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+
+.token-history-panel__item {
+  padding: 10px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: background 0.12s;
+}
+.token-history-panel__item:hover {
+  background: rgba(255,255,255,0.03);
+}
+
+.token-history-panel__item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.token-history-panel__badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+.token-history-panel__badge--workout {
+  background: rgba(229,9,20,0.18);
+  color: #ff6b6b;
+}
+.token-history-panel__badge--diet {
+  background: rgba(72,199,142,0.18);
+  color: #48c78e;
+}
+.token-history-panel__badge--chat {
+  background: rgba(99,179,237,0.18);
+  color: #63b3ed;
+}
+.token-history-panel__badge--recommendation {
+  background: rgba(251,191,36,0.18);
+  color: #fbbf24;
+}
+
+.token-history-panel__tokens {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.token-history-panel__item-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.token-history-panel__date {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.35);
+}
+
+.token-history-panel__detail {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.3);
+  font-family: monospace;
+  letter-spacing: 0.02em;
+}
+
+.token-history-panel__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.5);
+}
+.token-history-panel__footer strong {
+  color: #fff;
+  font-weight: 700;
+}
+
+@media (max-width: 480px) {
+  .token-history-panel {
+    width: calc(100vw - 24px);
+    max-height: calc(100dvh - 32px);
+  }
+}
+
 /* Admin plan switcher */
 .sidebar__admin-switcher {
   position: relative;
@@ -337,7 +555,7 @@
   right: 16px;
   bottom: 16px;
   display: none;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 6px;
   padding: 8px 6px;
   z-index: 50;

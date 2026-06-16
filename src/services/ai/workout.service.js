@@ -1,6 +1,10 @@
 import { apiEndpoints } from "../api/endpoints";
 import { apiRequest } from "../api/client";
 
+function dispatchTokensUpdated() {
+  window.dispatchEvent(new CustomEvent("shape-certo-tokens-updated"));
+}
+
 export async function generateWorkoutWithAi({
   goal = "",
   persist = false,
@@ -11,15 +15,29 @@ export async function generateWorkoutWithAi({
   trainingPreference = "",
   trainingPreferenceFreeText = "",
   muscleGroupCombinations = "",
+  workoutDayProtocol = "",
+  favoriteExercises = "",
+  trainingFocus = "",
   adherenceAdjustedDays = undefined,
+  // monthly protocol review fields
+  keepWorkoutProtocol = "",
+  lastProtocolFeeling = "",
+  muscularSoreness = "",
+  generalDisposition = "",
+  laggingMuscleGroups = "",
+  requestedWorkoutChanges = "",
 } = {}) {
-  return apiRequest(apiEndpoints.aiWorkout, {
+  const result = await apiRequest(apiEndpoints.aiWorkout, {
     method: "POST",
     body: JSON.stringify({
       goal, persist, trainingAvailableDays, trainingExperience, trainingAge,
       availableMinutes, trainingPreference, trainingPreferenceFreeText,
-      muscleGroupCombinations,
+      muscleGroupCombinations, workoutDayProtocol, favoriteExercises, trainingFocus,
+      keepWorkoutProtocol, lastProtocolFeeling, muscularSoreness,
+      generalDisposition, laggingMuscleGroups, requestedWorkoutChanges,
       ...(adherenceAdjustedDays != null ? { adherenceAdjustedDays } : {}),
     }),
   });
+  dispatchTokensUpdated();
+  return result;
 }

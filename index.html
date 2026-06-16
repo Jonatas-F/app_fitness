@@ -16,6 +16,14 @@
       content="Plataforma fitness com IA: treinos personalizados, dieta, check-ins e evolução corporal."
     />
     <title>Shape Certo</title>
+    <!-- Registro explícito do Service Worker para detecção por crawlers (PWABuilder, Lighthouse) -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        });
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

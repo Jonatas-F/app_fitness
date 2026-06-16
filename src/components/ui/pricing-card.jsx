@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { GlowCard } from "@/components/ui/spotlight-card"
 
 function FeatureItem({ feature }) {
   const Icon = feature.isIncluded ? Check : X
@@ -53,7 +54,7 @@ function PricingCard({
   onPlanSelect,
   className,
   title = "Escolha o plano ideal para sua rotina.",
-  description = "Compare acompanhamento, tokens e recursos antes de finalizar a assinatura.",
+  description = "Todos os planos usam a mesma IA de ponta (GPT-4o). Compare créditos de IA, acompanhamento e recursos antes de assinar.",
   locale = "pt-BR",
   currency = "BRL",
   ...props
@@ -121,12 +122,17 @@ function PricingCard({
           const cardItems = plan.highlights ?? plan.features.slice(0, 6)
 
           return (
-            <Card
+            <GlowCard
               key={plan.id}
+              glowColor={isFeatured ? "brand" : "brand-soft"}
+              style={{ borderRadius: '10px' }}
+            >
+            <Card
               className={cn(
                 "pricing-card__plan",
                 isFeatured && "is-featured"
               )}
+              style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}
             >
               <CardHeader className="pricing-card__plan-header">
                 <div className="pricing-card__plan-heading">
@@ -176,6 +182,7 @@ function PricingCard({
                 </Button>
               </CardFooter>
             </Card>
+            </GlowCard>
           )
         })}
       </section>

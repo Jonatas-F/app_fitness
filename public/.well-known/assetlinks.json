@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "br.com.shapecerto.twa",
+        "sha256_cert_fingerprints": ["58:FC:C1:AE:9D:14:78:74:08:DB:9E:3F:DC:C3:53:ED:2C:14:F9:26:42:B0:4A:82:5B:FC:50:87:43:DF:F8:83"]
+      }
+    }]

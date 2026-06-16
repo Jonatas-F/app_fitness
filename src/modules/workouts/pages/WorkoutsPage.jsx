@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLocation, useParams } from "react-router-dom";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StatusPill from "@/components/ui/StatusPill";
 import Skeleton from "@/components/ui/skeleton";
 import {
@@ -70,6 +69,10 @@ function createEditExercise(workoutId, name, sourceEx = null) {
     })),
   };
 }
+import { PlanExportButton } from "@/components/PlanExportButton";
+import WorkoutPlanOverview from "@/components/plan/WorkoutPlanOverview";
+import WorkoutSessionModal from "@/components/plan/WorkoutSessionModal";
+import { loadCheckins } from "../../../data/checkinStorage";
 import "./WorkoutsPage.css";
 
 // ── Calendar helpers ──────────────────────────────────────────────────────────
@@ -128,8 +131,22 @@ function getInitialWorkoutState() {
   return { plan, selectedWorkoutId };
 }
 
+const DAY_SHORT_LABELS = {
+  monday:    "SEG",
+  tuesday:   "TER",
+  wednesday: "QUA",
+  thursday:  "QUI",
+  friday:    "SEX",
+  saturday:  "SÁB",
+  sunday:    "DOM",
+};
+
 function getDayPrefix(title) {
   return title.slice(0, 3).toUpperCase();
+}
+
+function getDayLabel(workoutId) {
+  return DAY_SHORT_LABELS[workoutId] || getDayPrefix(workoutId);
 }
 
 function countCompletedExercises(workout) {
@@ -900,6 +917,7 @@ function WorkoutExecutionSection() {
         </div>
 
         <div className="workout-header-actions">
+          <PlanExportButton variant="ghost" label="Baixar Plano" />
           <button type="button" className="workout-edit-button" onClick={handleOpenEditWorkout}>
             Editar treino
           </button>
@@ -961,20 +979,31 @@ function WorkoutExecutionSection() {
             disabled={!workout.enabled}
             onClick={() => handleSelectWorkout(workout)}
           >
-            <strong>{getDayPrefix(workout.title)}</strong>
+            <strong>{getDayLabel(workout.id)}</strong>
             <span>{workout.focus}</span>
           </button>
         ))}
       </nav>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="workout-content-tabs">
-        <TabsList className="dashboard-tabs workout-tabs">
-          <TabsTrigger value="treino" className="dashboard-tab-trigger">Treino</TabsTrigger>
-          <TabsTrigger value="historico" className="dashboard-tab-trigger">Histórico</TabsTrigger>
-          <TabsTrigger value="calendario" className="dashboard-tab-trigger">Calendário</TabsTrigger>
-        </TabsList>
+      <div className="workout-content-tabs">
+        <nav className="workout-section-tabs" role="tablist" aria-label="Seções do treino" hidden>
+          {[
+            { id: "treino",    label: "Treino"     },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              className={`workout-section-tab${activeTab === tab.id ? " is-active" : ""}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
 
-        <TabsContent value="treino">
+        {activeTab === "treino" && <div role="tabpanel">
           {isSessionActive && selectedExercise ? createPortal(
             <div className="live-session-overlay" role="dialog" aria-modal="true">
               <section className="live-session-panel">
@@ -1458,9 +1487,9 @@ function WorkoutExecutionSection() {
               })}
             </div>
           </article>
-        </TabsContent>
+        </div>}
 
-        <TabsContent value="historico">
+        {activeTab === "historico" && <div role="tabpanel">
           <div className="workout-history-overview">
             <article>
               <span>Última execução</span>
@@ -1516,9 +1545,9 @@ function WorkoutExecutionSection() {
               </div>
             </div>
           )}
-        </TabsContent>
+        </div>}
 
-        <TabsContent value="calendario">
+        {activeTab === "calendario" && <div role="tabpanel">
           <div className="workout-calendar glass-panel">
             {/* Navegação de mês */}
             <div className="workout-calendar__nav">
@@ -1619,8 +1648,8 @@ function WorkoutExecutionSection() {
               <span className="legend-item is-rest">· Descanso</span>
             </div>
           </div>
-        </TabsContent>
-      </Tabs>
+        </div>}
+      </div>
 
       {/* ── Modal de registro retroativo — fora das Tabs para funcionar de qualquer aba ── */}
       {isRetroLogging && retroWorkout && createPortal(
@@ -1927,7 +1956,7 @@ function WorkoutHistorySection() {
               disabled={!workout.enabled && sessionCount === 0}
               onClick={() => setSelectedWorkoutId(workout.id)}
             >
-              <strong>{getDayPrefix(workout.title)}</strong>
+              <strong>{getDayLabel(workout.id)}</strong>
               <span>{sessionCount} registro(s)</span>
             </button>
           );
@@ -1958,6 +1987,58 @@ export default function WorkoutsPage() {
     content.footerNote = `Rota dinâmica funcionando em /treinos/${workoutId}. Depois ela deve buscar o dia de treino real pelo id no backend.`;
   }
 
+  // Visão geral estilo PDF é o padrão; "Iniciar treino" abre o console de execução.
+  const [mode, setMode] = useState("overview");
+  const [overviewData, setOverviewData] = useState(() => ({
+    plan: loadWorkoutExecution(),
+    checkin: loadCheckins().find((c) => c.status !== "missed") || {},
+  }));
+
+  // Mantém a visão geral sincronizada com a API ao abrir
+  useEffect(() => {
+    let ignore = false;
+    hydrateWorkoutExecutionFromApi().then((res) => {
+      if (ignore || res?.error) return;
+      setOverviewData({
+        plan: res.plan || loadWorkoutExecution(),
+        checkin: loadCheckins().find((c) => c.status !== "missed") || {},
+      });
+    });
+    return () => { ignore = true; };
+  }, []);
+
+  // Rota padrão (/treinos): visão geral estilo PDF; "Iniciar treino" abre o
+  // console de execução como POP-UP no mesmo layout (não troca para a página antiga).
+  if (viewKey === "list") {
+    return (
+      <div className="workouts-page">
+        <WorkoutPlanOverview
+          plan={overviewData.plan}
+          checkin={overviewData.checkin}
+          onStartWorkout={() => setMode("execute")}
+        />
+        {mode === "execute" && (
+          <WorkoutSessionModal
+            plan={overviewData.plan}
+            onClose={(res) => {
+              setMode("overview");
+              if (res?.finished) {
+                hydrateWorkoutExecutionFromApi().then((r) => {
+                  if (r?.error) return;
+                  setOverviewData({
+                    plan: r.plan || loadWorkoutExecution(),
+                    checkin: loadCheckins().find((c) => c.status !== "missed") || {},
+                  });
+                });
+              }
+            }}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Rotas específicas (/treinos/gerar, /treinos/:id, /treinos/historico) — layout próprio
   return (
     <div className="workouts-page">
       <header className="workouts-clean-hero glass-panel">
@@ -1965,7 +2046,7 @@ export default function WorkoutsPage() {
         <h1>{content.title}</h1>
         <p>Plano de treino, execução, vídeos e histórico de cargas do protocolo atual.</p>
       </header>
-      {["list", "generate", "detail"].includes(viewKey) ? <WorkoutExecutionSection /> : null}
+      {["generate", "detail"].includes(viewKey) ? <WorkoutExecutionSection /> : null}
       {viewKey === "history" ? <WorkoutHistorySection /> : null}
     </div>
   );

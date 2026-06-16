@@ -3,12 +3,13 @@ import { loadAssistantContext } from "../assistant/assistant.service.js";
 import { saveDietPlan } from "../diets/diets.service.js";
 import { saveWorkoutPlan } from "../workouts/workouts.service.js";
 
-const defaultModel       = process.env.OPENAI_MODEL            || "gpt-4o-mini";
+// REVISÃO 2026-06: GPT-4o em TODOS os planos (o gpt-4o-mini fazia alterações
+// incorretas). A diferença entre planos passa a ser só a quantidade de créditos.
+// Dá para sobrescrever via OPENAI_MODEL no .env do VPS se precisar dialer custo.
+const defaultModel       = process.env.OPENAI_MODEL            || "gpt-4o";
 // Modelo base para geração estruturada (treino/dieta) — todos os planos
 const structuredModel    = process.env.OPENAI_STRUCTURED_MODEL || defaultModel;
-// Modelos por plano — configure no .env do VPS para ativar modelos melhores
-// OPENAI_PRO_MODEL=gpt-4o      → plano Pro (análise de bioimpedância, mais dados)
-// OPENAI_PLUS_MODEL=gpt-4o-mini → plano Intermediário (manter mini por enquanto)
+// Overrides opcionais por plano (por padrão herdam gpt-4o)
 const proModel           = process.env.OPENAI_PRO_MODEL        || structuredModel;
 const plusModel          = process.env.OPENAI_PLUS_MODEL       || structuredModel;
 
@@ -158,6 +159,81 @@ function compactContext(context) {
   };
 }
 
+/**
+ * Contexto reduzido para geração de dieta.
+ * Para dieta importam: preferências alimentares, restrições, número de refeições,
+ * último check-in (sinal de adesão/fome), medidas e bioimpedância recentes.
+ * Sessões de treino detalhadas e histórico longo não agregam para o plano alimentar.
+ */
+function compactDietContext(context) {
+  const full = compactContext(context);
+  return {
+    ...full,
+    // Apenas os 2 check-ins mais recentes (adesão à dieta anterior, fome, peso)
+    checkins: Array.isArray(full.checkins) ? full.checkins.slice(0, 2) : full.checkins,
+    // Treino: só plano ativo (referência de carga calórica), sem sessões detalhadas
+    workout: full.workout
+      ? { activePlan: full.workout.activePlan }
+      : full.workout,
+    // Histórico de dieta: últimos 2 (evita repetir o que já foi gerado)
+    diet: full.diet
+      ? {
+          activePlan: full.diet.activePlan,
+          history: Array.isArray(full.diet.history)
+            ? full.diet.history.slice(0, 2)
+            : full.diet.history,
+        }
+      : full.diet,
+    // Progresso: últimas 3 medições e últimas 2 bioimpedâncias (para TDEE)
+    progress: full.progress
+      ? {
+          measurements: Array.isArray(full.progress.measurements)
+            ? full.progress.measurements.slice(0, 3)
+            : full.progress.measurements,
+          bioimpedance: Array.isArray(full.progress.bioimpedance)
+            ? full.progress.bioimpedance.slice(0, 2)
+            : full.progress.bioimpedance,
+          photos: [], // fotos não são relevantes para geração de dieta
+        }
+      : full.progress,
+  };
+}
+
+/**
+ * Contexto reduzido para geração de treino.
+ * Limita checkins ao mais recente e sessões ao histórico das últimas 3 semanas,
+ * para não explodir o context window.
+ */
+function compactWorkoutContext(context) {
+  const full = compactContext(context);
+  return {
+    ...full,
+    // Apenas o checkin mais recente — histórico completo não agrega valor para montagem do split
+    checkins: Array.isArray(full.checkins) ? full.checkins.slice(0, 1) : full.checkins,
+    // Limita sessões recentes a 5 para referência de exercícios já feitos
+    workout: full.workout
+      ? {
+          ...full.workout,
+          recentSessions: Array.isArray(full.workout.recentSessions)
+            ? full.workout.recentSessions.slice(0, 5)
+            : full.workout.recentSessions,
+        }
+      : full.workout,
+    // Histórico de progresso: apenas as últimas 2 medições
+    progress: full.progress
+      ? {
+          ...full.progress,
+          measurements: Array.isArray(full.progress.measurements)
+            ? full.progress.measurements.slice(0, 2)
+            : full.progress.measurements,
+          bioimpedance: Array.isArray(full.progress.bioimpedance)
+            ? full.progress.bioimpedance.slice(0, 1)
+            : full.progress.bioimpedance,
+        }
+      : full.progress,
+  };
+}
+
 function extractJson(text) {
   if (!text) {
     return null;
@@ -206,6 +282,37 @@ async function createRun({ accountId, generationType, model, instructions, input
   );
 
   return result.rows[0];
+}
+
+/**
+ * Debita tokens consumidos do saldo da assinatura ativa do usuário.
+ * Usa GREATEST para nunca ir abaixo de zero.
+ */
+async function deductTokens(accountId, tokensUsed) {
+  if (!tokensUsed || tokensUsed <= 0) return;
+  try {
+    const result = await pool.query(
+      `
+        UPDATE subscriptions
+        SET token_balance = GREATEST(0, token_balance - $2),
+            updated_at    = now()
+        WHERE id = (
+          SELECT id FROM subscriptions
+          WHERE account_id = $1
+            AND status IN ('active', 'trialing', 'past_due')
+          ORDER BY updated_at DESC, id DESC
+          LIMIT 1
+        )
+        RETURNING token_balance
+      `,
+      [accountId, tokensUsed]
+    );
+    const newBalance = result.rows[0]?.token_balance;
+    console.log(`[ai] tokens debitados: -${tokensUsed} → saldo=${newBalance ?? "n/a"} (account ${accountId})`);
+  } catch (err) {
+    // Não quebrar a geração por falha no débito — apenas loga
+    console.error("[ai] Falha ao debitar tokens:", err.message);
+  }
 }
 
 async function completeRun(runId, { text, usage, responseJson = null }) {
@@ -281,10 +388,11 @@ function buildSystemMessage(instructions, context, accountId, personalNameOverri
  * @param {Array}    [opts.history]        - histórico de conversa [{role, text}]
  * @param {boolean}  [opts.expectJson]    - true para dieta/treino (extrai JSON da resposta)
  */
-async function callOpenAi({ accountId, generationType, instructions, input, history = [], expectJson = false, personalNameOverride = null, modelOverride = null, maxTokensOverride = null }) {
+async function callOpenAi({ accountId, generationType, instructions, input, history = [], expectJson = false, personalNameOverride = null, modelOverride = null, maxTokensOverride = null, contextBuilder = null }) {
   requireOpenAiKey();
 
-  const context = compactContext(await loadAssistantContext(accountId));
+  const rawContext = await loadAssistantContext(accountId);
+  const context = contextBuilder ? contextBuilder(rawContext) : compactContext(rawContext);
 
   // Resolve modelo: override explícito > modelo por plano > default
   const planId = context?.account?.plan_type || "basico";
@@ -378,6 +486,11 @@ async function callOpenAi({ accountId, generationType, instructions, input, hist
 
     const completedRun = await completeRun(run.id, { text, usage, responseJson });
 
+    // Debitar tokens do saldo da assinatura ativa
+    if (usage.total) {
+      await deductTokens(accountId, usage.total);
+    }
+
     return {
       run: completedRun,
       publicRun: toPublicRun(completedRun),
@@ -413,7 +526,7 @@ export async function generateAiChatResponse(accountId, { message, history = [],
   };
 }
 
-export async function generateAiDietPlan(accountId, { goal, persist = false } = {}) {
+export async function generateAiDietPlan(accountId, { goal, persist = false, dietApproach = "", trainingFocus = "", keepDietProtocol = "", requestedDietChanges = "" } = {}) {
   const instructions = `
 Gere um plano alimentar personalizado em JSON valido para o Shape Certo.
 
@@ -477,12 +590,41 @@ ESTRUTURA JSON OBRIGATORIA:
 Nao inclua texto fora do JSON.
 `.trim();
 
+  const dietApproachLabels = {
+    "bulk-limpo":          "BULK LIMPO — superavit moderado (~200-300 kcal), alimentos limpos e ricos em fibras e proteina, minimo acumulo de gordura.",
+    "bulk-inteligente":    "BULK INTELIGENTE — superavit calculado (~300-500 kcal) ajustado por check-in, controle ativo de gordura.",
+    "bulk-sujo":           "BULK SUJO — superavit alto (+500 kcal), foco maximo em volume muscular, aceita ganho de gordura.",
+    "recomposicao":        "RECOMPOSICAO — calorias proximas a manutencao, proteina alta, ganhar musculo e perder gordura simultaneamente.",
+    "cutting-conservador": "CUTTING CONSERVADOR — deficit leve (~200-300 kcal), proteina alta, maxima preservacao de massa magra.",
+    "cutting-moderado":    "CUTTING MODERADO — deficit moderado (~400-500 kcal), bom equilibrio entre velocidade e retencao muscular.",
+    "cutting-agressivo":   "CUTTING AGRESSIVO — deficit alto (~600-800 kcal), proteina muito alta para minimizar perda muscular.",
+    "manutencao":          "MANUTENCAO — calorias no ponto de equilibrio, foco em qualidade alimentar e desempenho.",
+  };
+  const approachLabel = dietApproach
+    ? `ESTRATEGIA ALIMENTAR DEFINIDA PELO USUARIO: ${dietApproachLabels[dietApproach] || dietApproach} Calibre calorias e macros de acordo com essa estrategia.`
+    : "";
+  const reviewLabel = keepDietProtocol === "nao"
+    ? [
+        "REVISAO DE PROTOCOLO: o usuario pediu ajustes na dieta com base no check-in.",
+        requestedDietChanges ? `MUDANCAS SOLICITADAS: "${requestedDietChanges}". Implemente essas mudancas mantendo o equilibrio de macros e o objetivo.` : "",
+      ].filter(Boolean).join(" ")
+    : keepDietProtocol === "manter"
+    ? "INSTRUCAO: o usuario quer MANTER a estrutura da dieta atual. Apenas atualize variedade de alimentos e ajuste porcoes conforme sinais do checkin."
+    : "";
+
   const result = await callOpenAi({
     accountId,
     generationType: "diet",
     expectJson: true,
     instructions,
-    input: `Gere um plano alimentar completo e atualizado com base em todos os dados do usuario.${goal ? ` Objetivo principal: ${goal}.` : ""} Consulte as preferencias e restricoes alimentares, o numero de refeicoes, os sinais do ultimo check-in e as medidas corporais para calcular as necessidades calorias e macros.`,
+    input: [
+      `Gere um plano alimentar completo e atualizado com base em todos os dados do usuario.`,
+      goal ? `Objetivo principal: ${goal}.` : "",
+      approachLabel,
+      reviewLabel,
+      `Consulte as preferencias e restricoes alimentares, o numero de refeicoes, os sinais do ultimo check-in e as medidas corporais para calcular as necessidades calorias e macros.`,
+    ].filter(Boolean).join(" "),
+    contextBuilder: compactDietContext,
   });
 
   if (persist && result.json) {
@@ -509,7 +651,7 @@ Nao inclua texto fora do JSON.
   };
 }
 
-export async function generateAiWorkoutPlan(accountId, { goal, persist = false, trainingAvailableDays = "", trainingExperience = "", trainingAge = "", availableMinutes = "", trainingPreference = "", trainingPreferenceFreeText = "", muscleGroupCombinations = "", adherenceAdjustedDays = 0 } = {}) {
+export async function generateAiWorkoutPlan(accountId, { goal, persist = false, trainingAvailableDays = "", trainingExperience = "", trainingAge = "", availableMinutes = "", trainingPreference = "", trainingPreferenceFreeText = "", muscleGroupCombinations = "", workoutDayProtocol = "", favoriteExercises = "", trainingFocus = "", adherenceAdjustedDays = 0, keepWorkoutProtocol = "", lastProtocolFeeling = "", muscularSoreness = "", generalDisposition = "", laggingMuscleGroups = "", requestedWorkoutChanges = "" } = {}) {
   const instructions = `
 Gere um plano de treino personalizado em JSON valido para o Shape Certo.
 
@@ -718,6 +860,17 @@ REGRAS FINAIS INEGOCIAVEIS:
     ? `PREFERENCIA DE SPLIT DO USUARIO: ${splitPrefLabels[trainingPreference] || trainingPreference}. Respeite esta preferencia ao escolher o split.`
     : "Escolha o split ideal com base na matriz de selecao (nivel + dias + objetivo).";
 
+  const focusLabels = {
+    hipertrofia:     "HIPERTROFIA — volume alto, 8-15 reps, foco em tensao mecanica e tempo sob tensao.",
+    forca:           "FORCA MAXIMA — 3-6 reps, cargas altas, pausas longas, enfase nos compostos fundamentais.",
+    resistencia:     "RESISTENCIA MUSCULAR — 15-25 reps, descanso curto, treino em circuito ou alta densidade.",
+    condicionamento: "CONDICIONAMENTO — circuitos de alta intensidade, exercicios funcionais, foco em gasto calorico e cardio.",
+    funcional:       "FUNCIONAL / MOBILIDADE — exercicios multiplanares, mobilidade articular, estabilidade, prevencao de lesoes.",
+  };
+  const focusLabel = trainingFocus
+    ? `FOCO DO TREINO ESCOLHIDO PELO USUARIO: ${focusLabels[trainingFocus] || trainingFocus} Ajuste rep ranges, descanso e selecao de exercicios para refletir esse foco.`
+    : "";
+
   const isPowelifting = goal === "powerlifting" || trainingPreference === "powerlifting_split";
   const adherenceLabel = adherenceAdjustedDays > 0
     ? `AJUSTE DE ADERENCIA: O usuario confirmou que consegue treinar APENAS ${adherenceAdjustedDays} dia${adherenceAdjustedDays !== 1 ? "s" : ""} por semana na pratica. Distribua ${adherenceAdjustedDays} dia${adherenceAdjustedDays !== 1 ? "s" : ""} de treino de forma otimizada (sem dias fixos pre-selecionados). Use o split mais adequado para ${adherenceAdjustedDays} dias e o objetivo declarado.`
@@ -727,13 +880,15 @@ REGRAS FINAIS INEGOCIAVEIS:
     accountId,
     generationType: "workout",
     expectJson: true,
-    maxTokensOverride: 10000,
+    maxTokensOverride: 7000,
+    contextBuilder: compactWorkoutContext,
     instructions,
     input: [
       `Gere um protocolo de treino completo e atualizado.`,
       goal ? `Objetivo principal: ${goal}${isPowelifting ? " — inclua obrigatoriamente os Big 4 (Agachamento, Supino, Terra, Desenvolvimento)" : ""}.` : "",
       `NIVEL DE EXPERIENCIA DO USUARIO: ${expLabel}.${trainingAgeLabel}${minutesLabel}`,
       prefLabel,
+      focusLabel,
       adherenceLabel,
       trainingDayCount > 0 && adherenceAdjustedDays === 0
         ? [
@@ -750,6 +905,23 @@ REGRAS FINAIS INEGOCIAVEIS:
         : "",
       trainingPreferenceFreeText
         ? `PREFERENCIAS LIVRES DE TREINO (texto do usuario — use como contexto de personalizacao): "${trainingPreferenceFreeText}"`
+        : "",
+      workoutDayProtocol
+        ? `PROTOCOLO DE DIAS DEFINIDO PELO USUARIO (respeite esta divisao por dia): ${workoutDayProtocol}. Use exatamente esses agrupamentos musculares para cada dia de treino ativo, apenas redistribuindo exercicios dentro de cada grupo.`
+        : "",
+      favoriteExercises
+        ? `EXERCICIOS FAVORITOS DO USUARIO (priorize-os no protocolo quando tecnicamente adequado): "${favoriteExercises}"`
+        : "",
+      keepWorkoutProtocol === "nao"
+        ? [
+            lastProtocolFeeling ? `FEEDBACK DO ULTIMO PROTOCOLO: o usuario se sentiu "${lastProtocolFeeling}" com o protocolo anterior.` : "",
+            muscularSoreness ? `DOR MUSCULAR NO ULTIMO CICLO: "${muscularSoreness}". ${muscularSoreness === "intensa" ? "Reduza volume ou reorganize a ordem dos treinos para mais recuperacao." : muscularSoreness === "moderada" ? "Considere redistribuir volume entre os dias." : ""}` : "",
+            generalDisposition ? `DISPOSICAO GERAL NO ULTIMO CICLO: "${generalDisposition}". ${generalDisposition === "baixa" ? "Priorize compostos basicos, reduza tecnicas avancadas e aumente recuperacao." : ""}` : "",
+            laggingMuscleGroups ? `GRUPOS MUSCULARES QUE FICARAM PARA TRAS: "${laggingMuscleGroups}". Aumente volume e prioridade para esses grupos no novo protocolo.` : "",
+            requestedWorkoutChanges ? `MUDANCAS SOLICITADAS PELO USUARIO: "${requestedWorkoutChanges}". Implemente essas mudancas no novo protocolo.` : "",
+          ].filter(Boolean).join(" ")
+        : keepWorkoutProtocol === "manter"
+        ? `INSTRUCAO: O usuario quer MANTER O MESMO PROTOCOLO DE TREINO (split, grupos musculares e estrutura). Apenas atualize exercicios para evitar acomodacao e ajuste volume/intensidade conforme os sinais do checkin.`
         : "",
       `Consulte equipamentos disponiveis (preferences.gymEquipment), sinais de fadiga/sono/performance do ultimo checkin e historico de sessoes.`,
     ].filter(Boolean).join(" "),

@@ -1,10 +1,11 @@
 import { ROUTE_PATHS } from "../routes/routePaths";
 
+// Check-in saiu do menu — agora é iniciado por um botão no Dashboard
+// (fluxo de revisão do protocolo via CheckinReviewModal).
 export const navigationItems = [
   { label: "Dashboard", path: ROUTE_PATHS.dashboard, iconKey: "dashboard" },
   { label: "Treinos", path: ROUTE_PATHS.workouts, iconKey: "workouts" },
   { label: "Dietas", path: ROUTE_PATHS.diets, iconKey: "diet" },
-  { label: "Check-ins", path: ROUTE_PATHS.checkins, iconKey: "checkin" },
   { label: "Personal Virtual", path: ROUTE_PATHS.chat, iconKey: "chat" },
   { label: "Configurações", path: ROUTE_PATHS.settings, iconKey: "settings" },
 ];
@@ -12,7 +13,6 @@ export const navigationItems = [
 export const mobileNavigationItems = [
   { shortLabel: "Início",    path: ROUTE_PATHS.dashboard, iconKey: "dashboard" },
   { shortLabel: "Treinos",   path: ROUTE_PATHS.workouts,  iconKey: "workouts"  },
-  { shortLabel: "Check-in",  path: ROUTE_PATHS.checkins,  iconKey: "checkin"   },
   { shortLabel: "Dietas",    path: ROUTE_PATHS.diets,     iconKey: "diet"      },
   { shortLabel: "Personal",  path: ROUTE_PATHS.chat,      iconKey: "chat"      },
   { shortLabel: "Ajustes",   path: ROUTE_PATHS.settings,  iconKey: "settings"  },

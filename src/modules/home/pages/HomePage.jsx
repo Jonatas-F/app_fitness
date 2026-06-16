@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PricingCard from "@/components/ui/pricing-card";
+import { GlowCard } from "@/components/ui/spotlight-card";
 import logoMark from "../../../assets/logo_sp.svg";
 import { featureMatrix, getAnnualPrice, subscriptionPlans } from "../../../data/plans";
 import {
@@ -197,11 +198,14 @@ export default function HomePage() {
 
       <section className="home-hero">
         <div className="home-hero__content">
-          <span className="home-eyebrow">Treino, dieta e evolução no mesmo lugar</span>
-          <h1>Uma plataforma para transformar check-ins em protocolos personalizados.</h1>
+          <span className="home-eyebrow">Shape Certo · Personal Virtual com IA</span>
+          <h1>
+            Treino, dieta e <span>evolução</span> no mesmo lugar.
+          </h1>
           <p>
-            O Shape Certo organiza dados corporais, rotina, aparelhos disponíveis, preferências
-            alimentares e histórico de treino para o Personal Virtual montar orientações mais precisas.
+            Uma plataforma que transforma check-ins em protocolos personalizados: o Shape Certo
+            organiza dados corporais, rotina, aparelhos disponíveis, preferências alimentares e
+            histórico de treino para o Personal Virtual montar orientações mais precisas.
           </p>
 
           <div className="home-hero__actions">
@@ -303,7 +307,10 @@ export default function HomePage() {
 
       <section className="home-section" id="quem-somos">
         <div className="home-section__copy">
-          <span className="home-eyebrow">Quem somos</span>
+          <div className="home-section__header">
+            <span className="home-section__num">01</span>
+            <span className="home-section__title">Quem somos</span>
+          </div>
           <h2>Um app feito para acompanhar a evolução real, não apenas gerar uma ficha solta.</h2>
           <p>
             A plataforma conecta check-ins, treino, dieta, bioimpedância, fotos e vídeos de execução
@@ -314,21 +321,26 @@ export default function HomePage() {
 
         <div className="home-feature-grid">
           {platformItems.map((item) => (
-            <article key={item} className="home-feature-card">
-              <span />
-              <strong>{item}</strong>
-            </article>
+            <GlowCard key={item} glowColor="brand-soft" style={{ borderRadius: '8px' }}>
+              <article className="home-feature-card home-feature-card--glow">
+                <span />
+                <strong>{item}</strong>
+              </article>
+            </GlowCard>
           ))}
         </div>
       </section>
 
       <section className="home-section" id="planos">
         <div className="home-section__copy">
-          <span className="home-eyebrow">Planos</span>
-          <h2>Escolha a quantidade de acompanhamento e tokens que combina com a rotina.</h2>
+          <div className="home-section__header">
+            <span className="home-section__num">02</span>
+            <span className="home-section__title">Planos</span>
+          </div>
+          <h2>Escolha a quantidade de créditos de IA e acompanhamento que combina com a rotina.</h2>
           <p>
-            Os valores e limites abaixo são ilustrativos para estruturar o produto antes da integração
-            com pagamento, backend e controle real de consumo.
+            Assinatura mensal ou anual com 20% de desconto. Os créditos de IA cobrem as gerações de
+            protocolo e as conversas com o Personal Virtual — cancele quando quiser.
           </p>
         </div>
 
@@ -342,6 +354,14 @@ export default function HomePage() {
           description=""
         />
       </section>
+
+      <footer className="home-footer">
+        <span>© {new Date().getFullYear()} Shape Certo</span>
+        <nav className="home-footer__links" aria-label="Links legais">
+          <Link to="/privacidade">Política de Privacidade</Link>
+          <Link to="/termos">Termos de Uso</Link>
+        </nav>
+      </footer>
     </main>
   );
 }

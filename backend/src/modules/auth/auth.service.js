@@ -67,9 +67,19 @@ async function hasActivePlan(accountId) {
 
 export function toAuthResponse(account, profile = null) {
   const now = Math.floor(Date.now() / 1000);
+
+  // reset_onboarding: true quando o admin pediu reset DEPOIS do último login do usuário
+  const resetOnboarding = Boolean(
+    account.reset_onboarding_at &&
+    (!account.last_login_at ||
+      new Date(account.reset_onboarding_at) > new Date(account.last_login_at))
+  );
+
   const user = {
     id: String(account.id),
     email: account.email,
+    plan_type: account.plan_type || "intermediario",
+    reset_onboarding: resetOnboarding,
     user_metadata: {
       full_name: profile?.full_name || "",
     },
@@ -164,6 +174,9 @@ export async function ensureLocalAuthColumns() {
 
     alter table accounts
       add column if not exists is_admin boolean not null default false;
+
+    alter table accounts
+      add column if not exists reset_onboarding_at timestamptz;
 
     create unique index if not exists idx_accounts_google_subject
       on accounts (google_subject)

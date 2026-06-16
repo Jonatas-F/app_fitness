@@ -53,10 +53,11 @@ class ChunkErrorBoundary extends Component {
 const AppLayout = lazy(() => import("../layouts/AppLayout"));
 const HomePage = lazy(() => import("../modules/home/pages/HomePage"));
 const CheckoutPage = lazy(() => import("../modules/checkout/pages/CheckoutPage"));
+const PrivacyPage = lazy(() => import("../modules/legal/pages/PrivacyPage"));
+const TermsPage = lazy(() => import("../modules/legal/pages/TermsPage"));
 const DashboardPage = lazy(() => import("../modules/dashboard/pages/DashboardPage"));
 const WorkoutsPage = lazy(() => import("../modules/workouts/pages/WorkoutsPage"));
 const NutritionPage = lazy(() => import("../modules/nutrition/pages/NutritionPage"));
-const CheckinsPage = lazy(() => import("../modules/checkins/pages/CheckinsPage"));
 const ChatPage = lazy(() => import("../modules/chat/pages/ChatPage"));
 const SettingsPage = lazy(() => import("../modules/settings/pages/SettingsPage"));
 const AdminPage    = lazy(() => import("../modules/admin/pages/AdminPage"));
@@ -98,6 +99,8 @@ export const router = createBrowserRouter(
   [
     { path: "/", element: withSuspense(<HomePage />) },
     { path: "/checkout", element: withSuspense(<CheckoutPage />) },
+    { path: "/privacidade", element: withSuspense(<PrivacyPage />) },
+    { path: "/termos", element: withSuspense(<TermsPage />) },
     {
       element: <RequireAuth>{withSuspense(<AppLayout />)}</RequireAuth>,
       children: [
@@ -113,8 +116,8 @@ export const router = createBrowserRouter(
         { path: "dietas/gerar", element: withSuspense(<NutritionPage />) },
         { path: "dietas/:dietId", element: withSuspense(<NutritionPage />) },
 
-        { path: "checkins", element: withSuspense(<CheckinsPage />) },
-        { path: "checkins/novo", element: withSuspense(<CheckinsPage />) },
+        { path: "checkins", element: <Navigate to="/dashboard" replace /> },
+        { path: "checkins/novo", element: <Navigate to="/dashboard" replace /> },
 
         { path: "chat", element: withSuspense(<ChatPage />) },
 

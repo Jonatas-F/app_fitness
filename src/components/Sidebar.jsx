@@ -22,6 +22,9 @@ function fmtTokens(n) {
 // ── Token Chip (compacto, próximo ao logo) ───────────────────────────────────
 
 function TokenChip({ subscription, loading }) {
+  function openHistory() {
+    window.dispatchEvent(new CustomEvent("shape-certo-open-token-history", { detail: { subscription } }));
+  }
   if (loading) {
     return (
       <div className="sidebar__token-chip sidebar__token-chip--loading">
@@ -49,9 +52,11 @@ function TokenChip({ subscription, loading }) {
   const variant   = pct >= 95 ? "critical" : pct >= 80 ? "warning" : "";
 
   return (
-    <div
+    <button
+      type="button"
       className={`sidebar__token-chip${variant ? ` sidebar__token-chip--${variant}` : ""}`}
-      title={`${fmtTokens(used)} de ${fmtTokens(total)} tokens usados (${pctRound}%)`}
+      title="Clique para ver o histórico de uso"
+      onClick={openHistory}
     >
       {/* Barra fina de progresso */}
       <div className="sidebar__token-chip__bar">
@@ -80,7 +85,7 @@ function TokenChip({ subscription, loading }) {
           recarga {refill}
         </div>
       )}
-    </div>
+    </button>
   );
 }
 
@@ -180,19 +185,29 @@ export default function Sidebar() {
       .finally(() => setSubLoading(false));
   }, []);
 
-  // Recarrega subscription quando o usuário faz login
+  // Recarrega subscription quando o usuário faz login ou quando a IA gera algo
   useEffect(() => {
-    function onAuth() {
+    function refreshSub() {
       const user = getStoredApiUser();
       if (!user) { setSubscription(null); setSubLoading(false); return; }
-      setSubLoading(true);
       apiRequest(apiEndpoints.billingSubscription)
         .then((data) => setSubscription(data?.subscription ?? null))
-        .catch(() => {})
-        .finally(() => setSubLoading(false));
+        .catch(() => {});
     }
+
+    function onAuth() {
+      setSubLoading(true);
+      refreshSub();
+      setSubLoading(false);
+    }
+
     window.addEventListener("shape-certo-auth-updated", onAuth);
-    return () => window.removeEventListener("shape-certo-auth-updated", onAuth);
+    // Dispatchado por workout.service e diet.service após geração com IA
+    window.addEventListener("shape-certo-tokens-updated", refreshSub);
+    return () => {
+      window.removeEventListener("shape-certo-auth-updated", onAuth);
+      window.removeEventListener("shape-certo-tokens-updated", refreshSub);
+    };
   }, []);
 
   return (
@@ -208,7 +223,10 @@ export default function Sidebar() {
       </div>
 
       {/* Token chip — compacto, logo abaixo do brand */}
-      <TokenChip subscription={subscription} loading={subLoading} />
+      <TokenChip
+        subscription={subscription}
+        loading={subLoading}
+      />
 
       <nav className="sidebar__nav">
         {navigationItems.map((item) => {

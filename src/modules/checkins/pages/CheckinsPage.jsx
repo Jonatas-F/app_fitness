@@ -897,29 +897,59 @@ function CheckinsLoadingSkeleton() {
 // ── Combinações de grupos musculares ─────────────────────────────────────────
 
 const MUSCLE_COMBOS_MASC = [
-  { id: "full_body",      label: "Full Body" },
-  { id: "push",           label: "Push (Peito + Ombros + Tri)" },
-  { id: "pull",           label: "Pull (Costas + Bíceps)" },
-  { id: "peito_tri",      label: "Peito + Tríceps" },
-  { id: "costas_bi",      label: "Costas + Bíceps" },
-  { id: "ombros_trap",    label: "Ombros + Trapézio" },
-  { id: "pernas",         label: "Pernas (Quad + Post + Glúteo)" },
-  { id: "peito_costas",   label: "Peito + Costas" },
-  { id: "bracos",         label: "Braços (Bíceps + Tríceps)" },
-  { id: "upper_lower",    label: "Superior + Inferior" },
+  // ── Splits clássicos ────────────────────────────────────────────────────────
+  { id: "full_body",           label: "Full Body" },
+  { id: "upper_lower",         label: "Superior + Inferior" },
+  { id: "push",                label: "Push (Peito + Ombros + Tríceps)" },
+  { id: "pull",                label: "Pull (Costas + Bíceps + Deltoide Post.)" },
+  { id: "legs",                label: "Legs (Quad + Post + Glúteo + Panturrilha)" },
+  // ── Por grupo muscular (ABC/ABCD) ───────────────────────────────────────────
+  { id: "peito_tri",           label: "Peito + Tríceps" },
+  { id: "costas_bi",           label: "Costas + Bíceps" },
+  { id: "ombros_trap",         label: "Ombros + Trapézio" },
+  { id: "peito_ombros",        label: "Peito + Ombros" },
+  { id: "costas_del_post",     label: "Costas + Deltoide Posterior" },
+  // ── Antagonistas (ciência do treino) ────────────────────────────────────────
+  { id: "peito_costas",        label: "Peito + Costas (antagonistas)" },
+  { id: "peito_bi",            label: "Peito + Bíceps (antagônico)" },
+  { id: "costas_tri",          label: "Costas + Tríceps (antagônico)" },
+  { id: "quad_posterior",      label: "Quadríceps + Posteriores (antagonistas)" },
+  // ── Cadeia anterior / posterior ─────────────────────────────────────────────
+  { id: "cadeia_anterior",     label: "Cadeia Anterior (Quad + Peito + Bíceps)" },
+  { id: "cadeia_posterior",    label: "Cadeia Posterior (Post + Costas + Glúteo)" },
+  // ── Grupos isolados / auxiliares ────────────────────────────────────────────
+  { id: "bracos",              label: "Braços (Bíceps + Tríceps)" },
+  { id: "ombros_bracos",       label: "Ombros + Braços" },
+  { id: "pernas_completas",    label: "Pernas completas (Quad + Post + Glúteo)" },
+  { id: "core_abdomen",        label: "Core + Abdômen" },
 ];
 
 const MUSCLE_COMBOS_FEM = [
-  { id: "full_body",          label: "Full Body" },
-  { id: "gluteos_posterior",  label: "Glúteos + Posteriores" },
-  { id: "gluteos_iso",        label: "Glúteo isolado" },
-  { id: "pernas_completas",   label: "Pernas completas (Quad + Post + Glúteo)" },
-  { id: "lower",              label: "Inferior completo" },
-  { id: "upper",              label: "Superior completo" },
-  { id: "costas_bi",          label: "Costas + Bíceps" },
-  { id: "peito_ombros",       label: "Peito + Ombros" },
-  { id: "core_abdomen",       label: "Core + Abdômen" },
-  { id: "upper_lower",        label: "Superior + Inferior" },
+  // ── Foco inferior (prioridade feminina) ─────────────────────────────────────
+  { id: "gluteos_iso",         label: "Glúteo isolado" },
+  { id: "gluteos_posterior",   label: "Glúteos + Posteriores" },
+  { id: "gluteos_core",        label: "Glúteos + Core" },
+  { id: "pernas_completas",    label: "Pernas completas (Quad + Post + Glúteo)" },
+  { id: "quad_gluteos",        label: "Quadríceps + Glúteos (cadeia anterior)" },
+  { id: "posterior_panturr",   label: "Posteriores + Panturrilha" },
+  { id: "adutor_gluteos",      label: "Adutores + Glúteos (isolamento)" },
+  { id: "lower",               label: "Inferior completo" },
+  // ── Splits global / superior ────────────────────────────────────────────────
+  { id: "full_body",           label: "Full Body" },
+  { id: "upper_lower",         label: "Superior + Inferior" },
+  { id: "upper",               label: "Superior completo" },
+  // ── Push / Pull adaptado ────────────────────────────────────────────────────
+  { id: "push",                label: "Push (Peito + Ombros + Tríceps)" },
+  { id: "pull",                label: "Pull (Costas + Bíceps + Deltoide Post.)" },
+  // ── Grupos superiores combinados ────────────────────────────────────────────
+  { id: "costas_bi",           label: "Costas + Bíceps" },
+  { id: "peito_ombros",        label: "Peito + Ombros" },
+  { id: "peito_tri",           label: "Peito + Tríceps" },
+  { id: "ombros_bracos",       label: "Ombros + Braços" },
+  // ── Cadeia posterior completa ───────────────────────────────────────────────
+  { id: "cadeia_posterior",    label: "Cadeia Posterior (Post + Costas + Glúteo)" },
+  // ── Core / funcional ────────────────────────────────────────────────────────
+  { id: "core_abdomen",        label: "Core + Abdômen" },
 ];
 
 function MuscleGroupPicker({ sex = "", value = "", onChange }) {
@@ -1020,6 +1050,14 @@ export default function CheckinsPage() {
   const [aiTrainingPreference, setAiTrainingPreference] = useState("");
   const [aiTrainingPreferenceFreeText, setAiTrainingPreferenceFreeText] = useState("");
   const [aiMuscleGroupCombinations, setAiMuscleGroupCombinations] = useState("");
+  const [aiWorkoutDayProtocol, setAiWorkoutDayProtocol] = useState("");
+  const [aiFavoriteExercises, setAiFavoriteExercises] = useState("");
+  const [keepWorkoutProtocol, setKeepWorkoutProtocol] = useState("");
+  const [lastProtocolFeeling, setLastProtocolFeeling] = useState("");
+  const [muscularSoreness, setMuscularSoreness] = useState("");
+  const [generalDisposition, setGeneralDisposition] = useState("");
+  const [laggingMuscleGroups, setLaggingMuscleGroups] = useState("");
+  const [requestedWorkoutChanges, setRequestedWorkoutChanges] = useState("");
   const cancelButtonRef = useRef(null);
   const [isHydratingCheckins, setIsHydratingCheckins] = useState(true);
 
@@ -1260,6 +1298,8 @@ export default function CheckinsPage() {
     setAiTrainingPreference(payload.trainingPreference || "");
     setAiTrainingPreferenceFreeText(payload.trainingPreferenceFreeText || "");
     setAiMuscleGroupCombinations(payload.muscleGroupCombinations || "");
+    setAiWorkoutDayProtocol(payload.workoutDayProtocol || "");
+    setAiFavoriteExercises(payload.favoriteExercises || "");
 
     setFormData(makePrefilledCheckinForm(updated, activeCadence));
     setPrefilledSnapshot(makePrefilledSnapshot(updated, activeCadence));
@@ -1338,7 +1378,15 @@ export default function CheckinsPage() {
           trainingPreference: aiTrainingPreference,
           trainingPreferenceFreeText: aiTrainingPreferenceFreeText,
           muscleGroupCombinations: aiMuscleGroupCombinations,
+          workoutDayProtocol: aiWorkoutDayProtocol,
+          favoriteExercises: aiFavoriteExercises,
           adherenceAdjustedDays: adherenceAdjustedDays > 0 ? adherenceAdjustedDays : undefined,
+          keepWorkoutProtocol,
+          lastProtocolFeeling,
+          muscularSoreness,
+          generalDisposition,
+          laggingMuscleGroups,
+          requestedWorkoutChanges,
         }))
           .then(async (res) => {
             if (res?.protocol) await hydrateWorkoutExecutionFromApi();
@@ -1384,7 +1432,15 @@ export default function CheckinsPage() {
         trainingPreference: aiTrainingPreference,
         trainingPreferenceFreeText: aiTrainingPreferenceFreeText,
         muscleGroupCombinations: aiMuscleGroupCombinations,
+        workoutDayProtocol: aiWorkoutDayProtocol,
+        favoriteExercises: aiFavoriteExercises,
         adherenceAdjustedDays: adherenceAdjustedDays > 0 ? adherenceAdjustedDays : undefined,
+        keepWorkoutProtocol,
+        lastProtocolFeeling,
+        muscularSoreness,
+        generalDisposition,
+        laggingMuscleGroups,
+        requestedWorkoutChanges,
       }));
       if (res?.protocol) await hydrateWorkoutExecutionFromApi();
       setCiWorkoutStatus("ok");
@@ -1990,6 +2046,92 @@ export default function CheckinsPage() {
       >
         <FormStaleContext.Provider value={{ isStale: isStaleField }}>
         <div className="checkins-form__main">
+          {showMonthly && checkins.length > 0 ? (
+            <Section
+              eyebrow="01"
+              title="Revisão do protocolo de treino"
+              description="Com base no último ciclo, avalie seu protocolo e oriente a IA para o próximo mês."
+            >
+              <div className="checkins-grid checkins-grid--two">
+                <Field label="Quer manter o mesmo protocolo?" hint="Manter = IA ajusta volume/intensidade. Mudar = IA reconstrói com base no seu feedback." className="checkin-field--full">
+                  <select
+                    name="keepWorkoutProtocol"
+                    value={keepWorkoutProtocol}
+                    onChange={e => setKeepWorkoutProtocol(e.target.value)}
+                  >
+                    <option value="">Selecione</option>
+                    <option value="manter">Manter o mesmo split e grupos musculares</option>
+                    <option value="parcial">Manter estrutura, mas ajustar alguns grupos</option>
+                    <option value="nao">Quero um protocolo diferente</option>
+                  </select>
+                </Field>
+
+                {keepWorkoutProtocol && keepWorkoutProtocol !== "manter" ? (
+                <>
+                <Field label="Como você se sentiu com o último protocolo?">
+                  <select
+                    name="lastProtocolFeeling"
+                    value={lastProtocolFeeling}
+                    onChange={e => setLastProtocolFeeling(e.target.value)}
+                  >
+                    <option value="">Selecione</option>
+                    <option value="excelente">Excelente — progredi muito</option>
+                    <option value="bom">Bom — evolução consistente</option>
+                    <option value="regular">Regular — faltou progressão</option>
+                    <option value="ruim">Ruim — não me adaptei</option>
+                  </select>
+                </Field>
+
+                <Field label="Nível de dor muscular no ciclo">
+                  <select
+                    name="muscularSoreness"
+                    value={muscularSoreness}
+                    onChange={e => setMuscularSoreness(e.target.value)}
+                  >
+                    <option value="">Selecione</option>
+                    <option value="leve">Leve — normal e confortável</option>
+                    <option value="moderada">Moderada — às vezes limitou</option>
+                    <option value="intensa">Intensa — prejudicou treinos seguintes</option>
+                  </select>
+                </Field>
+
+                <Field label="Disposição geral no ciclo">
+                  <select
+                    name="generalDisposition"
+                    value={generalDisposition}
+                    onChange={e => setGeneralDisposition(e.target.value)}
+                  >
+                    <option value="">Selecione</option>
+                    <option value="otima">Ótima — cheio de energia</option>
+                    <option value="boa">Boa — dentro do esperado</option>
+                    <option value="regular">Regular — cansaço acumulado</option>
+                    <option value="baixa">Baixa — muito desgaste</option>
+                  </select>
+                </Field>
+
+                <Field label="Grupos musculares que ficaram para trás" hint="A IA aumentará volume e prioridade para eles">
+                  <input
+                    name="laggingMuscleGroups"
+                    value={laggingMuscleGroups}
+                    onChange={e => setLaggingMuscleGroups(e.target.value)}
+                    placeholder="Ex.: posterior de coxa, ombros, bíceps..."
+                  />
+                </Field>
+
+                <Field label="Mudanças que você quer no próximo ciclo" className="checkin-field--full">
+                  <textarea
+                    name="requestedWorkoutChanges"
+                    value={requestedWorkoutChanges}
+                    onChange={e => setRequestedWorkoutChanges(e.target.value)}
+                    placeholder="Ex.: quero mudar de ABC para ABCD, adicionar mais volume em pernas, trocar de Push/Pull/Legs para Upper/Lower..."
+                  />
+                </Field>
+                </>
+                ) : null}
+              </div>
+            </Section>
+          ) : null}
+
           {showProtocolBase ? (
             <Section
               eyebrow="02"
@@ -2217,7 +2359,7 @@ export default function CheckinsPage() {
                 </Field>
                 ) : null}
 
-                {showMonthly ? (
+                {showMonthly && (formData.trainingExperience === "intermediario" || formData.trainingExperience === "avancado") ? (
                 <Field label="Divisão de treino preferida" hint="O split que a IA vai usar como base" className="checkin-field--full">
                   <select name="trainingPreference" value={formData.trainingPreference} onChange={handleChange}>
                     <option value="">Deixar a IA decidir o melhor split (recomendado)</option>
@@ -2232,7 +2374,7 @@ export default function CheckinsPage() {
                 </Field>
                 ) : null}
 
-                {showMonthly ? (
+                {showMonthly && (formData.trainingExperience === "intermediario" || formData.trainingExperience === "avancado") ? (
                 <Field label="Combinações de grupos musculares preferidas" hint="Selecione todas as combinações que você gosta" className="checkin-field--full">
                   <MuscleGroupPicker
                     sex={formData.sex}
@@ -2242,7 +2384,7 @@ export default function CheckinsPage() {
                 </Field>
                 ) : null}
 
-                {showMonthly ? (
+                {showMonthly && (formData.trainingExperience === "intermediario" || formData.trainingExperience === "avancado") ? (
                 <Field label="Preferências livres de treino" hint="A IA usa como contexto mesmo com split automático" className="checkin-field--full">
                   <textarea
                     name="trainingPreferenceFreeText"

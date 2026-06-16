@@ -7,12 +7,14 @@ const stripe = process.env.STRIPE_SECRET_KEY
     })
   : null;
 
+// REVISÃO 2026-06: créditos recalibrados para GPT-4o (~16x o custo do mini),
+// mantendo preços-âncora e margem-alvo COGS ≤ ~30%. partner/admin seguem altos.
 const plans = {
-  basico:        { name: "Basico",        monthlyPrice: 29.90, tokenLimit: 260_000   },
-  intermediario: { name: "Intermediario", monthlyPrice: 59.90, tokenLimit: 1_500_000 },
-  pro:           { name: "Pro",           monthlyPrice: 99.90, tokenLimit: 4_500_000 },
+  basico:        { name: "Basico",        monthlyPrice: 29.90, tokenLimit: 350_000   },
+  intermediario: { name: "Intermediario", monthlyPrice: 59.90, tokenLimit: 900_000   },
+  pro:           { name: "Pro",           monthlyPrice: 99.90, tokenLimit: 1_600_000 },
   // Alias para registros antigos que usam 'avancado' no banco
-  avancado:      { name: "Pro",           monthlyPrice: 99.90, tokenLimit: 4_500_000 },
+  avancado:      { name: "Pro",           monthlyPrice: 99.90, tokenLimit: 1_600_000 },
   // Parceiros — acesso Pro gratuito
   partner:       { name: "Parceiro",      monthlyPrice: 0,     tokenLimit: 4_500_000 },
   // Administrador — acesso Pro, sem custo
@@ -226,6 +228,11 @@ export async function provisionPartnerSubscriptions() {
           plan          = 'partner',
           status        = 'active',
           token_limit   = $2,
+          token_balance = CASE
+            WHEN date_trunc('month', subscriptions.current_period_start) < date_trunc('month', now())
+            THEN $2
+            ELSE subscriptions.token_balance
+          END,
           current_period_start = date_trunc('month', now()),
           current_period_end   = date_trunc('month', now()) + interval '1 month',
           updated_at    = current_timestamp;
@@ -277,6 +284,12 @@ export async function provisionAdminSubscriptions() {
           plan         = 'admin',
           status       = 'active',
           token_limit  = $2,
+          -- Reseta o saldo apenas quando começa um novo período (mês virou)
+          token_balance = CASE
+            WHEN date_trunc('month', subscriptions.current_period_start) < date_trunc('month', now())
+            THEN $2
+            ELSE subscriptions.token_balance
+          END,
           current_period_start = date_trunc('month', now()),
           current_period_end   = date_trunc('month', now()) + interval '1 month',
           updated_at   = current_timestamp;
@@ -861,6 +874,53 @@ export async function createSubscriptionChangeSession(
   });
 
   return { url: portal.url, id: portal.id, mode: "portal", proration: prorationSummary };
+}
+
+/**
+ * Retorna o histórico de gerações de IA do período de cobrança vigente.
+ * Se não houver assinatura ativa, usa o mês corrente como fallback.
+ */
+export async function loadTokenHistory(accountId) {
+  const result = await pool.query(
+    `
+      WITH active_sub AS (
+        SELECT current_period_start, current_period_end
+        FROM subscriptions
+        WHERE account_id = $1
+        ORDER BY updated_at DESC, id DESC
+        LIMIT 1
+      )
+      SELECT
+        r.id,
+        r.generation_type,
+        r.status,
+        r.model,
+        r.tokens_input,
+        r.tokens_output,
+        r.tokens_total,
+        r.created_at
+      FROM ai_generation_runs r
+      WHERE r.account_id = $1
+        AND r.status = 'completed'
+        AND r.created_at >= COALESCE(
+          (SELECT current_period_start FROM active_sub),
+          date_trunc('month', now())
+        )
+      ORDER BY r.created_at DESC
+      LIMIT 200;
+    `,
+    [accountId]
+  );
+
+  return result.rows.map((row) => ({
+    id: String(row.id),
+    type: row.generation_type,
+    model: row.model,
+    tokensInput:  row.tokens_input  ?? 0,
+    tokensOutput: row.tokens_output ?? 0,
+    tokensTotal:  row.tokens_total  ?? 0,
+    createdAt: row.created_at,
+  }));
 }
 
 export async function loadBillingSummary(accountId) {

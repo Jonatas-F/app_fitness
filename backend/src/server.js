@@ -41,6 +41,7 @@ import {
   handleCreateStripePortalSession,
   handleCreateStripeSubscriptionChangeSession,
   handleLoadBillingSummary,
+  handleLoadTokenHistory,
   handleListStripePaymentMethods,
   handleListPlanChangeAcceptances,
   handleSavePlanChangeAcceptance,
@@ -92,6 +93,10 @@ import {
   handleListTables,
   handleGetTableData,
   handleRunQuery,
+  handleResetUserOnboarding,
+  handleSearchUsers,
+  handleSetUserPlan,
+  handleResetUserData,
 } from "./modules/admin/admin.controller.js";
 import { requireAdmin } from "./modules/admin/admin.service.js";
 
@@ -232,6 +237,7 @@ app.delete("/checkins", requireAuth, handleDeleteCheckins);
 app.get("/billing/plan-change-acceptances",              requireAuth, handleListPlanChangeAcceptances);
 app.post("/billing/plan-change-acceptances",             requireAuth, validate(planChangeAcceptanceSchema), handleSavePlanChangeAcceptance);
 app.get("/billing/subscription",                         requireAuth, handleLoadBillingSummary);
+app.get("/billing/token-history",                        requireAuth, handleLoadTokenHistory);
 app.get("/billing/stripe/payment-methods",               requireAuth, handleListStripePaymentMethods);
 app.put("/billing/stripe/default-payment-method",        requireAuth, validate(setDefaultPaymentMethodSchema), handleSetDefaultStripePaymentMethod);
 app.post("/billing/stripe/checkout-session",             requireAuth, validate(checkoutSessionSchema), handleCreateStripeCheckoutSession);
@@ -269,9 +275,14 @@ app.post("/ai/workout", requireAuth, aiLimiter, validate(aiGenerateSchema), hand
 app.get( "/chat/history", requireAuth, handleLoadChatHistory);
 
 // ── Admin (acesso restrito ao admin) ─────────────────────────────────────────
-app.get( "/admin/tables",             requireAuth, requireAdmin, handleListTables);
-app.get( "/admin/tables/:tableName",  requireAuth, requireAdmin, handleGetTableData);
-app.post("/admin/query",              requireAuth, requireAdmin, handleRunQuery);
+app.get( "/admin/tables",                  requireAuth, requireAdmin, handleListTables);
+app.get( "/admin/tables/:tableName",       requireAuth, requireAdmin, handleGetTableData);
+app.post("/admin/query",                   requireAuth, requireAdmin, handleRunQuery);
+app.post("/admin/reset-onboarding",        requireAuth, requireAdmin, handleResetUserOnboarding);
+// Gerenciamento de usuários
+app.get( "/admin/users",                   requireAuth, requireAdmin, handleSearchUsers);
+app.post("/admin/users/set-plan",          requireAuth, requireAdmin, handleSetUserPlan);
+app.post("/admin/users/reset-data",        requireAuth, requireAdmin, handleResetUserData);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

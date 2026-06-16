@@ -9,6 +9,7 @@ export const apiEndpoints = {
   checkins: "/checkins",
   planChangeAcceptances: "/billing/plan-change-acceptances",
   billingSubscription: "/billing/subscription",
+  billingTokenHistory: "/billing/token-history",
   stripeCheckoutSession: "/billing/stripe/checkout-session",
   stripeSubscriptionChangeSession: "/billing/stripe/subscription-change-session",
   stripePaymentMethodSession: "/billing/stripe/payment-method-session",
@@ -31,4 +32,8 @@ export const apiEndpoints = {
   adminTables: "/admin/tables",
   adminTableData: (name) => `/admin/tables/${name}`,
   adminQuery: "/admin/query",
+  adminResetOnboarding: "/admin/reset-onboarding",
+  adminUsers: "/admin/users",
+  adminSetUserPlan: "/admin/users/set-plan",
+  adminResetUserData: "/admin/users/reset-data",
 };
