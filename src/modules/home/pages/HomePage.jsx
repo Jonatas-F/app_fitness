@@ -354,6 +354,14 @@ export default function HomePage() {
           description=""
         />
       </section>
+
+      <footer className="home-footer">
+        <span>© {new Date().getFullYear()} Shape Certo</span>
+        <nav className="home-footer__links" aria-label="Links legais">
+          <Link to="/privacidade">Política de Privacidade</Link>
+          <Link to="/termos">Termos de Uso</Link>
+        </nav>
+      </footer>
     </main>
   );
 }

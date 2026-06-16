@@ -53,6 +53,8 @@ class ChunkErrorBoundary extends Component {
 const AppLayout = lazy(() => import("../layouts/AppLayout"));
 const HomePage = lazy(() => import("../modules/home/pages/HomePage"));
 const CheckoutPage = lazy(() => import("../modules/checkout/pages/CheckoutPage"));
+const PrivacyPage = lazy(() => import("../modules/legal/pages/PrivacyPage"));
+const TermsPage = lazy(() => import("../modules/legal/pages/TermsPage"));
 const DashboardPage = lazy(() => import("../modules/dashboard/pages/DashboardPage"));
 const WorkoutsPage = lazy(() => import("../modules/workouts/pages/WorkoutsPage"));
 const NutritionPage = lazy(() => import("../modules/nutrition/pages/NutritionPage"));
@@ -97,6 +99,8 @@ export const router = createBrowserRouter(
   [
     { path: "/", element: withSuspense(<HomePage />) },
     { path: "/checkout", element: withSuspense(<CheckoutPage />) },
+    { path: "/privacidade", element: withSuspense(<PrivacyPage />) },
+    { path: "/termos", element: withSuspense(<TermsPage />) },
     {
       element: <RequireAuth>{withSuspense(<AppLayout />)}</RequireAuth>,
       children: [

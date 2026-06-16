@@ -837,6 +837,28 @@
   }
 }
 
+/* ── Rodapé com links legais (exigência Play Store) ─────────────────────────── */
+.home-footer {
+  max-width: 1180px;
+  margin: 40px auto 0;
+  padding: 24px 0 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.82rem;
+}
+.home-footer__links { display: flex; gap: 18px; flex-wrap: wrap; }
+.home-footer__links a {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  font-weight: 600;
+}
+.home-footer__links a:hover { color: #ff2e2e; }
+
 /* ── GlowCard em pricing plans ──────────────────────────────────────────────── */
 /* O wrapper GlowCard é agora o item de grid — precisa herdar stretch behavior  */
 .home-pricing-card .pricing-card__plans .glow-card-wrapper {
